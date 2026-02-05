@@ -1,0 +1,12 @@
+// prisma/seed/data/index.ts
+import type { SubjectSeed, ModuleSeed, TopicSeed, SectionSeed } from "./subjects/_types";
+
+import { PYTHON } from "./subjects/python/subject";
+import { LINEAR_ALGEBRA } from "./subjects/linear-algebra/subject";
+
+const SUBJECT_PACKS = [ PYTHON, LINEAR_ALGEBRA];
+
+export const SUBJECTS: SubjectSeed[] = SUBJECT_PACKS.map((p) => p.subject);
+export const MODULES: ModuleSeed[] = SUBJECT_PACKS.flatMap((p) => p.modules);
+export const TOPICS: TopicSeed[] = SUBJECT_PACKS.flatMap((p) => p.topics);
+export const SECTIONS: SectionSeed[] = SUBJECT_PACKS.flatMap((p) => p.sections);

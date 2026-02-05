@@ -110,7 +110,9 @@ enum PracticeKind {
   vector_drag_dot
   matrix_input
     code_input // ✅ ADD
-
+ text_input
+  drag_reorder
+  voice_input
 }
 
 enum PracticeDifficulty {
@@ -392,7 +394,7 @@ model PracticeSubject {
   description String?
   order       Int      @default(0)
   meta        Json?
-  
+
 // ✅ NEW: Cloudinary image reference
   imagePublicId String? // e.g. "learnoir/subjects/linear-algebra"
   imageAlt      String?

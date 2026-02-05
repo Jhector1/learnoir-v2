@@ -27,6 +27,41 @@ function getRequiredMatrixShape(ex: any): { rows: number; cols: number } | null 
  */
 export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined {
   const ex = item.exercise;
+  if (ex.kind === "text_input") {
+    const v = String((item as any).text ?? "").trim();
+    if (!v) return undefined;
+    return { kind: "text_input", value: v };
+  }
+if (ex.kind === "drag_reorder") {
+  const tokensRaw = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
+  const tokenIds = tokensRaw.map((t: any) => String(t?.id ?? t));
+
+  const orderRaw = Array.isArray((item as any).reorder) ? (item as any).reorder : [];
+  const orderIds = orderRaw.map((x: any) => String(x?.id ?? x));
+
+  // must have full ordering
+  if (!orderIds.length || orderIds.length !== tokenIds.length) return undefined;
+
+  // must be a permutation of tokenIds
+  const tokenSet = new Set(tokenIds);
+  if (orderIds.some((id) => !tokenSet.has(id))) return undefined;
+  if (new Set(orderIds).size !== tokenIds.length) return undefined;
+
+  return { kind: "drag_reorder", order: orderIds };
+}
+
+
+  if (ex.kind === "voice_input") {
+    const transcript = String((item as any).voiceTranscript ?? "").trim();
+    if (!transcript) return undefined;
+
+    const audioId = String((item as any).voiceAudioId ?? "").trim();
+    return {
+      kind: "voice_input",
+      transcript,
+      ...(audioId ? { audioId } : {}),
+    };
+  }
 
   if (ex.kind === "single_choice") {
     if (!item.single) return undefined;
@@ -197,6 +232,12 @@ export function initItemFromExercise(ex: Exercise, key: string): QItem {
 
 
 const exAny = ex as any;
+const reorder =
+  ex.kind === "drag_reorder" && Array.isArray(exAny.tokens)
+    ? exAny.tokens.map((t: any) => String(t?.id ?? t))
+    : [];
+
+
 
 const allowResize = ex.kind === "matrix_input" && Boolean(exAny.allowResize);
 
@@ -262,7 +303,18 @@ const mat =
     codeLang: "python",
     code: "",
     codeStdin: "",
+
+     text: "",
+    reorder,
+    voiceTranscript: "",
+    voiceAudioId: ""
   };
+  if (ex.kind === "text_input") {
+    return {
+      ...base,
+      text: (ex as any).starterText ?? "",
+    };
+  }
 
   if (ex.kind === "code_input") {
     const lang = (ex as any).language ?? "python";

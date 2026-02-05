@@ -1,7 +1,7 @@
 // src/components/practice/kinds/VectorDragTargetExerciseUI.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise, Vec3 } from "@/lib/practice/types";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import VectorPad from "@/components/vectorpad/VectorPad";
@@ -21,7 +21,6 @@ function toVec3(v: any, fallback: Vec3): Vec3 {
 
 export default function VectorDragTargetExerciseUI({
   exercise,
-  exerciseKey,
   a,
   b,
   onChange,
@@ -29,7 +28,6 @@ export default function VectorDragTargetExerciseUI({
   disabled,
 }: {
   exercise: Exercise;
-  exerciseKey: string; // ✅ new
   a: Vec3;
   b: Vec3;
   onChange: (a: Vec3, b: Vec3) => void;
@@ -43,20 +41,36 @@ export default function VectorDragTargetExerciseUI({
   const initB = (exercise as any).initialB as Vec3 | undefined;
   const lockB = Boolean((exercise as any).lockB);
 
-  const [liveA, setLiveA] = useState<Vec3>(() => toVec3(a, { x: 0, y: 0, z: 0 }));
-  const [liveB, setLiveB] = useState<Vec3>(() => toVec3(b, { x: 0, y: 0, z: 0 }));
+  // stable exercise identity for init effect
+  const exId = useMemo(
+    () => String((exercise as any).id ?? (exercise as any).key ?? ""),
+    [exercise],
+  );
 
+  const [liveA, setLiveA] = useState<Vec3>(() =>
+    toVec3(a, { x: 0, y: 0, z: 0 }),
+  );
+  const [liveB, setLiveB] = useState<Vec3>(() =>
+    toVec3(b, { x: 0, y: 0, z: 0 }),
+  );
+
+  // ✅ init ONLY when the exercise identity changes (not on random rerenders)
   useEffect(() => {
     const pad: any = padRef.current;
     if (!pad) return;
 
     pad.mode = "2d";
 
-    // ✅ seed:
+    // seed:
     // - interactive: initA/initB (or props)
     // - review/disabled: saved answers a/b
-    const seedA = interactive ? (initA ?? a ?? { x: 0, y: 0, z: 0 }) : (a ?? { x: 0, y: 0, z: 0 });
-    const seedB = interactive ? (initB ?? b ?? { x: 2, y: 1, z: 0 }) : (b ?? { x: 0, y: 0, z: 0 });
+    const seedA = interactive
+      ? initA ?? a ?? { x: 0, y: 0, z: 0 }
+      : a ?? { x: 0, y: 0, z: 0 };
+
+    const seedB = interactive
+      ? initB ?? b ?? { x: 2, y: 1, z: 0 }
+      : b ?? { x: 0, y: 0, z: 0 };
 
     pad.a = { ...seedA, z: seedA.z ?? 0 };
     pad.b = { ...seedB, z: seedB.z ?? 0 };
@@ -64,14 +78,16 @@ export default function VectorDragTargetExerciseUI({
     setLiveA(toVec3(pad.a, seedA));
     setLiveB(toVec3(pad.b, seedB));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey]); // ✅ only this
+  }, [exId]);
 
   function reset() {
     if (!interactive) return;
     if (!padRef.current || !initA || !initB) return;
+
     const pad: any = padRef.current;
     pad.a = { ...initA, z: initA.z ?? 0 };
     pad.b = { ...initB, z: initB.z ?? 0 };
+
     setLiveA(toVec3(pad.a, initA));
     setLiveB(toVec3(pad.b, initB));
     onChange(initA, initB);

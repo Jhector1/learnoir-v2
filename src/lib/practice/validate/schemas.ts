@@ -43,6 +43,23 @@ const KeySchema = z.union([
   z.object({ value: z.string().min(10) }).passthrough(),
 ]);
 
+// ✅ NEW answer kinds
+const TextInputAnswerSchema = z.object({
+  kind: z.literal("text_input"),
+  value: z.string().min(1),
+});
+
+const DragReorderAnswerSchema = z.object({
+  kind: z.literal("drag_reorder"),
+  order: z.array(z.string().min(1)).min(1),
+});
+
+const VoiceInputAnswerSchema = z.object({
+  kind: z.literal("voice_input"),
+  transcript: z.string().min(1),
+  audioId: z.string().optional(),
+});
+
 const SubmitAnswerSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("single_choice"), optionId: z.string().min(1) }),
   z.object({
@@ -80,6 +97,11 @@ const SubmitAnswerSchema = z.discriminatedUnion("kind", [
         });
       }
     }),
+
+  // ✅ add them to the union
+  TextInputAnswerSchema,
+  DragReorderAnswerSchema,
+  VoiceInputAnswerSchema,
 ]);
 
 export const BodySchema = z

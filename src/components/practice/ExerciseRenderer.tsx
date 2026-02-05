@@ -12,6 +12,11 @@ import VectorDragTargetExerciseUI from "./kinds/VectorDragTargetExerciseUI";
 import VectorDragDotExerciseUI from "./kinds/VectorDragDotExerciseUI";
 import CodeInputExerciseUI from "./kinds/CodeInputExerciseUI";
 
+// ✅ NEW kinds
+import TextInputExerciseUI from "./kinds/TextInputExerciseUI";
+import DragReorderExerciseUI from "./kinds/DragReorderExerciseUI";
+import VoiceInputExerciseUI from "./kinds/VoiceInputExerciseUI";
+
 import type { QItem } from "./practiceType";
 import MatrixInputPanel from "./MatrixInputPanel";
 import { resizeGrid } from "@/lib/practice/matrixHelpers";
@@ -75,7 +80,7 @@ export default function ExerciseRenderer({
   }
 
   // -----------------------------
-  // single_choice (in-place highlight)
+  // single_choice
   // -----------------------------
   if (exercise.kind === "single_choice") {
     const reviewCorrectId =
@@ -97,7 +102,7 @@ export default function ExerciseRenderer({
   }
 
   // -----------------------------
-  // multi_choice (in-place per option)
+  // multi_choice
   // -----------------------------
   if (exercise.kind === "multi_choice") {
     const reviewCorrectIds =
@@ -114,6 +119,77 @@ export default function ExerciseRenderer({
         checked={checked}
         ok={ok}
         reviewCorrectIds={reviewCorrectIds}
+      />
+    );
+  }
+
+  // -----------------------------
+  // text_input ✅ NEW
+  // -----------------------------
+  if (exercise.kind === "text_input") {
+    const reviewCorrectText =
+      reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
+        ? String((reviewCorrectItem as any).text)
+        : null;
+
+    return (
+      <TextInputExerciseUI
+        exercise={exercise as any}
+        value={(current as any).text ?? ""}
+        onChange={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+        disabled={lockInputs}
+        checked={checked}
+        ok={ok}
+        reviewCorrectText={reviewCorrectText}
+      />
+    );
+  }
+
+  // -----------------------------
+  // drag_reorder ✅ NEW
+  // -----------------------------
+  if (exercise.kind === "drag_reorder") {
+    const reviewCorrectTokenIds =
+      reviewCorrectItem && Array.isArray((reviewCorrectItem as any).reorderIds)
+        ? (reviewCorrectItem as any).reorderIds.map((x: any) => String(x))
+        : null;
+
+    return (
+      <DragReorderExerciseUI
+        exercise={exercise as any}
+        tokenIds={(current as any).reorderIds ?? []}
+        onChange={(tokenIds) =>
+          updateCurrent({ reorderIds: tokenIds, ...resetCheckPatch() })
+        }
+        disabled={lockInputs}
+        checked={checked}
+        ok={ok}
+        reviewCorrectTokenIds={reviewCorrectTokenIds}
+      />
+    );
+  }
+
+  // -----------------------------
+  // voice_input ✅ NEW
+  // -----------------------------
+  if (exercise.kind === "voice_input") {
+    const reviewCorrectTranscript =
+      reviewCorrectItem &&
+      typeof (reviewCorrectItem as any).voiceTranscript === "string"
+        ? String((reviewCorrectItem as any).voiceTranscript)
+        : null;
+
+    return (
+      <VoiceInputExerciseUI
+        exercise={exercise as any}
+        transcript={(current as any).voiceTranscript ?? ""}
+        onChangeTranscript={(voiceTranscript) =>
+          updateCurrent({ voiceTranscript, ...resetCheckPatch() })
+        }
+        disabled={lockInputs}
+        checked={checked}
+        ok={ok}
+        reviewCorrectTranscript={reviewCorrectTranscript}
       />
     );
   }
@@ -171,8 +247,6 @@ export default function ExerciseRenderer({
         onChange={(a, b) =>
           updateCurrent({ dragA: a, dragB: b, ...resetCheckPatch() })
         }
-
-        
         padRef={padRef}
         disabled={lockInputs}
       />
@@ -195,7 +269,7 @@ export default function ExerciseRenderer({
   }
 
   // -----------------------------
-  // code_input (show correct below if incorrect + reviewCorrect provided)
+  // code_input
   // -----------------------------
   if (exercise.kind === "code_input") {
     const reviewCorrect =
@@ -235,5 +309,3 @@ export default function ExerciseRenderer({
 function assertNever(x: never): never {
   throw new Error(`Unsupported exercise kind: ${JSON.stringify(x)}`);
 }
-
-

@@ -168,6 +168,38 @@ export type ReviewQuestion =
       maxAttempts?: number;
     };
 
+
+    export type ReviewVideoProvider = "auto" | "youtube" | "vimeo" | "iframe" | "file";
+
+export type ReviewVideoCard = {
+  type: "video";
+  id: string;
+  title?: string;
+
+  /** Can be hosted anywhere */
+  url: string;
+
+  /**
+   * auto:
+   *  - youtube/vimeo => iframe embed
+   *  - .mp4/.webm/.mov => <video>
+   *  - otherwise => iframe
+   */
+  provider?: ReviewVideoProvider;
+
+  /** Optional start time in seconds (works for youtube/vimeo; for <video> we seek on mount best-effort) */
+  startSeconds?: number;
+
+  /** Optional poster image for <video> */
+  posterUrl?: string;
+
+  /** Optional caption/notes under the video */
+  captionMarkdown?: string;
+};
+
+// then include it in ReviewCard
+
+
 export type ReviewCard =
   | { type: "text"; id: string; title?: string; markdown: string }
   | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
@@ -177,7 +209,8 @@ export type ReviewCard =
       title?: string;
       passScore?: number;
       spec: ReviewQuizSpec; // ✅ spec, not questions
-    };
+    }
+  | ReviewVideoCard;
 
 export type ReviewModule = {
   id: string;

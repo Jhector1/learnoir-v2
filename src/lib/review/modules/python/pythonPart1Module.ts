@@ -57,6 +57,28 @@ print(" again")
 `.trim(),
         },
         {
+  type: "sketch",
+  id: "py1_v1",
+  title: "Video: print() — sep and end",
+  sketchId: "video.embed",
+  height: 520,
+  props: {
+    title: "print() formatting (sep/end)",
+    url: "https://youtu.be/QXeEoD0pB3E?si=uqlAuzd9PF9gmFCQ",
+    provider: "auto",
+    captionMarkdown: String.raw`
+Watch this, then try the playground sketch below.
+`.trim(),
+    hudMarkdown: String.raw`
+**Key idea**
+
+- \`sep\` changes the separator between values  
+- \`end\` changes what prints at the end (default is newline)
+`.trim(),
+  },
+},
+
+        {
           type: "sketch",
           id: "py1_s1",
           title: "print() formatting playground",

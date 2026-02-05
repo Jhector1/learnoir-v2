@@ -10,6 +10,8 @@ import { matricesPart2Module } from "@/lib/review/modules/linear_algebra/matrice
 import { pythonPart1Module } from "@/lib/review/modules/python/pythonPart1Module";
 import { PY_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/python/constants";
 import { LA_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/linear-algebra/constants";
+import { HC_MOD0, HC_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/haitian-creole/constants";
+import { haitianCreolePart1Module } from "./modules/haitian-creole/haitianCreolePart1Module";
 
 export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
   [LA_SUBJECT_SLUG]: {
@@ -20,6 +22,10 @@ export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
   },
   [PY_SUBJECT_SLUG]: {
     [PY_MOD0]: pythonPart1Module,
+  },
+  [HC_SUBJECT_SLUG]: {
+    [HC_MOD0]:haitianCreolePart1Module
+
   },
 };
 

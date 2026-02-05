@@ -1,3 +1,5 @@
+import { PracticeKind } from "@prisma/client";
+
 // src/lib/practice/types.ts
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -15,7 +17,6 @@ export type Topic = TopicSlug;
 /**
  * Generator engine keys (ONLY engines you implement).
  */
-
 
 export type GenKey =
   | "dot"
@@ -35,11 +36,11 @@ export type GenKey =
   | "matrices_part1"
   | "matrices_part2" // ✅ NEW
   | "python_part1" // ✅ NEW
-      | "linear_algebra_mod0"
+  | "linear_algebra_mod0"
   | "linear_algebra_mod1"
   | "linear_algebra_mod2"
-  | "linear_algebra_mod3";
-
+  | "linear_algebra_mod3"
+  | "haitian_creole_part1"; // ✅ NEW
 
 export type ExerciseKind =
   | "single_choice"
@@ -47,9 +48,13 @@ export type ExerciseKind =
   | "numeric"
   | "vector_drag_target"
   | "vector_drag_dot"
-    | "matrix_input"   | "code_input"; // ✅ ADD
+  | "matrix_input"
+  | "code_input"
+  // ✅ NEW
+  | "text_input"
+  | "drag_reorder"
+  | "voice_input"; // ✅ ADD
 // ✅ NEW;
-  
 
 export type Vec3 = { x: number; y: number; z?: number };
 
@@ -81,7 +86,6 @@ export type MatrixInputExercise = ExerciseBase & {
   integerOnly?: boolean;
 };
 
-
 export type MultiChoiceExercise = ExerciseBase & {
   kind: "multi_choice";
   options: { id: string; text: string }[];
@@ -104,13 +108,10 @@ export type VectorDragTargetExercise = ExerciseBase & {
   initialB?: Vec3;
   targetA: Vec3;
   lockB: boolean;
-    targetB?: Vec3; // ✅ add
+  targetB?: Vec3; // ✅ add
 
   tolerance: number;
 };
-
-
-
 
 export type VectorDragDotExercise = ExerciseBase & {
   kind: "vector_drag_dot";
@@ -120,18 +121,57 @@ export type VectorDragDotExercise = ExerciseBase & {
   tolerance: number;
 };
 
+// ---------------- NEW Exercise types ----------------
 
+export type TextInputExercise = ExerciseBase & {
+  kind: "text_input";
+  placeholder?: string;
+  /**
+   * optional UI helper: "short" vs "long"
+   */
+  ui?: "short" | "long";
+  hint?: string | null;
+};
 
+export type DragToken = { id: string; text: string };
+
+export type DragReorderExercise = ExerciseBase & {
+  kind: "drag_reorder";
+  tokens: DragToken[];
+  hint?: string | null;
+};
+
+export type VoiceInputExercise = ExerciseBase & {
+  kind: "voice_input";
+  /**
+   * What the learner should say (displayed as the target).
+   */
+  targetText: string;
+  /**
+   * optional locale hint for client STT
+   */
+  locale?: string; // e.g. "ht-HT" (or "fr-FR", etc.)
+  maxSeconds?: number;
+  hint?: string | null;
+};
+
+// ---------------- Existing exercises ----------------
+// export type SingleChoiceExercise = ...
+// export type CodeInputExercise = ...
+// etc
 
 // src/lib/practice/types.ts (or wherever Exercise is defined)
 
-export type CodeLanguage = "python" | "javascript" | "typescript" | "java" | "csharp";
-
+export type CodeLanguage =
+  | "python"
+  | "javascript"
+  | "typescript"
+  | "java"
+  | "csharp";
 
 // export type CodeInputExercise = ExerciseBase & {
- 
+
 //   kind: "code_input";
- 
 
 //   language: CodeLanguage;
 //   starterCode?: string;
@@ -140,19 +180,16 @@ export type CodeLanguage = "python" | "javascript" | "typescript" | "java" | "cs
 //   examples?: Array<{ input?: string; output: string }>;
 // };
 
-export type CodeInputExercise =  ExerciseBase & {
-  
+export type CodeInputExercise = ExerciseBase & {
   kind: "code_input";
 
-
-
-  language?: CodeLanguage;      // default "python" if omitted
-  starterCode?: string;         // what user starts with
-  stdinHint?: string;           // optional UI hint
-  editorHeight?: number;        // optional (defaults in UI)
+  language?: CodeLanguage; // default "python" if omitted
+  starterCode?: string; // what user starts with
+  stdinHint?: string; // optional UI hint
+  editorHeight?: number; // optional (defaults in UI)
   allowLanguageSwitch?: boolean; // optional (default true/false, your choice)
 
-  hint?: string;                // optional hint shown like other exercises
+  hint?: string; // optional hint shown like other exercises
 
   // Optional: if you want to show sample IO
   examples?: Array<{ stdin?: string; stdout: string }>;
@@ -164,12 +201,24 @@ export type CodeInputExercise =  ExerciseBase & {
 //   | MatrixInputExercise
 //   | VectorDragTargetExercise
 //   | VectorDragDotExercise
- 
 
+export type TextInputSubmitAnswer = {
+  kind: "text_input";
+  value: string;
+};
 
+export type DragReorderSubmitAnswer = {
+  kind: "drag_reorder";
+  tokenIds?: string[];order?: string[] ;
+};
 
-
-
+export type VoiceInputSubmitAnswer = {
+  kind: "voice_input";
+  transcript: string; // client STT result
+  // optional if you store audio elsewhere:
+  audioUrl?: string;
+  audioId?: string
+};
 
 export type Exercise =
   | SingleChoiceExercise
@@ -177,7 +226,11 @@ export type Exercise =
   | NumericExercise
   | VectorDragTargetExercise
   | VectorDragDotExercise
-  | MatrixInputExercise | CodeInputExercise;; // ✅ include
+  | MatrixInputExercise
+  | CodeInputExercise
+  | TextInputExercise
+  | DragReorderExercise
+  | VoiceInputExercise; // ✅ include
 export type SubmitAnswer =
   | { kind: "single_choice"; optionId: string }
   | { kind: "multi_choice"; optionIds: string[] }
@@ -190,11 +243,14 @@ export type SubmitAnswer =
       language?: CodeLanguage;
       code: string;
       stdin?: string;
-    };
+    }
+  | TextInputSubmitAnswer
+  | DragReorderSubmitAnswer
+  | VoiceInputSubmitAnswer;
 
 export type ValidateResponse = {
   ok: boolean;
   expected: any;
   explanation?: string;
 };
-
+export type PoolKind = PracticeKind;

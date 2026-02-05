@@ -11,6 +11,11 @@ export function toPracticeKindOrThrow(kind: unknown): PracticeKind {
     PracticeKind.vector_drag_dot,
     PracticeKind.matrix_input,
     PracticeKind.code_input,
+
+    // ✅ NEW
+    PracticeKind.text_input,
+    PracticeKind.drag_reorder,
+    PracticeKind.voice_input,
   ]);
   if (!allowed.has(k)) throw new Error(`Unsupported kind "${k}" for PracticeKind.`);
   return k;

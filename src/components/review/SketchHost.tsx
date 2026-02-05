@@ -40,8 +40,17 @@ import StringsSketch from "@/components/review/sketches/python/chapter1/StringsS
 import ArithmeticPrecedenceSketch from "@/components/review/sketches/python/chapter1/ArithmeticPrecedenceSketch";
 import ErrorMessagesSketch from "@/components/review/sketches/python/chapter1/ErrorMessagesSketch";
 import CommentsDocstringsSketch from "@/components/review/sketches/python/chapter1/CommentsDocstringsSketch";
+import dynamic from "next/dynamic";
+// import VideoEmbedSketch from "@/components/review/sketches/video/VideoEmbedSketch";
+import HCGreetingsSketch from "@/components/review/sketches/haitian-creole/HCGreetingsSketch";
+import HCPronounsSketch from "@/components/review/sketches/haitian-creole/HCPronounsSketch";
+import HCSentencesSketch from "@/components/review/sketches/haitian-creole/HCSentencesSketch";
+import HCQuestionsSketch from "@/components/review/sketches/haitian-creole/HCQuestionsSketch";
+import HCNumbersSketch from "@/components/review/sketches/haitian-creole/HCNumbersSketch";
 
-
+const VideoEmbedSketch = dynamic(() => import("@/components/review/sketches/python/chapter1/VideoEmbedSketch"), {
+  ssr: false,
+});
 const SKETCHES: Record<string, React.ComponentType<any>> = {
   "vec.basics": VectorBasicsSketch,
   "vec.dot": DotProductSketch,
@@ -78,6 +87,7 @@ const SKETCHES: Record<string, React.ComponentType<any>> = {
   "mat2.rowspace": Mat2RowSpaceSketch,
 
   "mat2.leftnull": Mat2LeftNullspaceSketch,
+  "video.embed": VideoEmbedSketch,
 
   "mat2.rankTol": RankToleranceSketch,
   "mat2.augRank": AugmentedRankProofSketch,
@@ -93,6 +103,12 @@ const SKETCHES: Record<string, React.ComponentType<any>> = {
 "py.arith": ArithmeticPrecedenceSketch,
 "py.errors": ErrorMessagesSketch,
 "py.docs": CommentsDocstringsSketch,
+//  "video.embed": VideoEmbedSketch,
+  "hc.greetings": HCGreetingsSketch,
+  "hc.pronouns": HCPronounsSketch,
+  "hc.sentences": HCSentencesSketch,
+  "hc.questions": HCQuestionsSketch,
+  "hc.numbers": HCNumbersSketch,
 
 };
 

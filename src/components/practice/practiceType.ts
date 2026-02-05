@@ -27,6 +27,19 @@ export type QItem = {
 
   codeStdin: string;
   codeLang: "python" | "java";
+
+
+   // ✅ NEW
+  text: string;                 // text_input
+  reorder: string[];            // drag_reorder current order (same length as tokens)
+  voiceTranscript: string;       // voice_input transcript
+  voiceAudioId?: string;         // optional if you upload audio
+
+  // meta
+  // result: any;
+  // submitted: boolean;
+  // revealed: boolean;
+  // attempts: number;
 };
 
 // export type MissedItem = {

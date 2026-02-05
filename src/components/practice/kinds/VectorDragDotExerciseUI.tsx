@@ -27,14 +27,12 @@ function toVec3(v: any, fallback: Vec3): Vec3 {
 
 export default function VectorDragDotExerciseUI({
   exercise,
-  exerciseKey,
   a,
   onChange,
   padRef,
   disabled,
 }: {
   exercise: Exercise;
-  exerciseKey: string; // ✅ new
   a: Vec3;
   onChange: (a: Vec3) => void;
   padRef: React.MutableRefObject<VectorPadState>;
@@ -52,7 +50,9 @@ export default function VectorDragDotExerciseUI({
   const [liveA, setLiveA] = useState<Vec3>(() => toVec3(a, { x: 0, y: 0, z: 0 }));
   const [liveB, setLiveB] = useState<Vec3>(() => toVec3(bFromExercise, { x: 0, y: 0, z: 0 }));
 
-  // ✅ only re-init when exerciseKey changes (NOT on every rerender)
+  // ✅ init only when the EXERCISE identity changes
+  const exId = String((exercise as any).id ?? (exercise as any).key ?? "");
+
   useEffect(() => {
     const pad: any = padRef.current;
     if (!pad) return;
@@ -60,17 +60,13 @@ export default function VectorDragDotExerciseUI({
     pad.mode = "2d";
     pad.b = { ...bFromExercise, z: bFromExercise.z ?? 0 };
 
-    // ✅ IMPORTANT:
-    // - interactive run: seed from initA (or a)
-    // - review/disabled: seed from the saved answer `a`
     const seedA = interactive ? (initA ?? a ?? { x: 0, y: 0, z: 0 }) : (a ?? { x: 0, y: 0, z: 0 });
-
     pad.a = { ...seedA, z: seedA.z ?? 0 };
 
     setLiveA(toVec3(pad.a, seedA));
     setLiveB(toVec3(pad.b, bFromExercise));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey]); // ✅ only this
+  }, [exId]);
 
   const liveDot = useMemo(() => dot3(liveA, liveB), [liveA, liveB]);
   const ok = Math.abs(liveDot - targetDot) <= tol;
@@ -98,7 +94,7 @@ export default function VectorDragDotExerciseUI({
         mode="2d"
         stateRef={padRef}
         zHeldRef={zHeldRef}
-        handles={{ a: interactive, b: false }} // ✅ lock in review
+        handles={{ a: interactive, b: false }}
         onPreview={
           interactive
             ? (aNow) => {

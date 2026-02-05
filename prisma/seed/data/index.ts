@@ -3,8 +3,9 @@ import type { SubjectSeed, ModuleSeed, TopicSeed, SectionSeed } from "./subjects
 
 import { PYTHON } from "./subjects/python/subject";
 import { LINEAR_ALGEBRA } from "./subjects/linear-algebra/subject";
+import { HAITIAN_CREOLE } from "./subjects/haitian-creole";
 
-const SUBJECT_PACKS = [ PYTHON, LINEAR_ALGEBRA];
+const SUBJECT_PACKS = [ PYTHON, LINEAR_ALGEBRA, HAITIAN_CREOLE];
 
 export const SUBJECTS: SubjectSeed[] = SUBJECT_PACKS.map((p) => p.subject);
 export const MODULES: ModuleSeed[] = SUBJECT_PACKS.flatMap((p) => p.modules);

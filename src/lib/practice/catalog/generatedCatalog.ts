@@ -144,6 +144,35 @@ export const GENERATED_CATALOG = {
         }
       }
     }
+  },
+  "haitian-creole": {
+    "subjectSlug": "haitian-creole",
+    "modulesBySlug": {
+      "haitian-creole-0": {
+        "moduleSlug": "haitian-creole-0",
+        "sectionSlug": "haitian-creole-0-foundations",
+        "sectionTitle": "Haitian Creole 0 — Foundations",
+        "sectionOrder": 0,
+        "genKey": "haitian_creole_part1",
+        "prefix": "hc0",
+        "topicIds": [
+          "greetings",
+          "pronouns",
+          "simple_sentences",
+          "numbers",
+          "everyday_phrases",
+          "foundations"
+        ],
+        "topics": {
+          "greetings": "hc0.greetings",
+          "pronouns": "hc0.pronouns",
+          "simple_sentences": "hc0.simple_sentences",
+          "numbers": "hc0.numbers",
+          "everyday_phrases": "hc0.everyday_phrases",
+          "foundations": "hc0.foundations"
+        }
+      }
+    }
   }
 }
 ;

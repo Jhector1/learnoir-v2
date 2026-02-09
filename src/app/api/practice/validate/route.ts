@@ -191,7 +191,7 @@ export async function POST(req: Request) {
 
   // reveal never finalizes (practice/review + assignment)
   const finalized = isReveal
-    ? true
+    ? false
     : graded.ok || nextNonRevealAttempts >= maxAttempts;
 
   const persisted = await persistAttemptAndFinalize(prisma, {
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
     actor,
     isReveal,
     answerPayload: isReveal ? { reveal: true } : (answer ?? Prisma.JsonNull),
-    ok: isReveal ? true : graded.ok,
+    ok: isReveal ? false : graded.ok,
     finalized,
   });
 

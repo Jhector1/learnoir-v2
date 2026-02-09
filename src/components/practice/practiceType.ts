@@ -32,6 +32,7 @@ export type QItem = {
    // ✅ NEW
   text: string;                 // text_input
   reorder: string[];            // drag_reorder current order (same length as tokens)
+  reorderIds: string[];
   voiceTranscript: string;       // voice_input transcript
   voiceAudioId?: string;         // optional if you upload audio
 

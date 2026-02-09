@@ -48,16 +48,12 @@ export function isEmptyPracticeAnswer(
     return !(hasA && hasB);
   }
 
-  if (ex.kind === "drag_reorder") {
-    const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
-    const order = Array.isArray((item as any).reorder)
-      ? (item as any).reorder
-      : Array.isArray((item as any).order)
-        ? (item as any).order
-        : [];
+ if (ex.kind === "drag_reorder") {
+  const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
+  const orderIds = Array.isArray((item as any).reorderIds) ? (item as any).reorderIds : [];
+  return !(tokens.length > 0 && orderIds.length === tokens.length);
+}
 
-    return !(tokens.length > 0 && order.length === tokens.length);
-  }
 
   const built = buildSubmitAnswerFromItem(item);
   return !built;
@@ -335,12 +331,12 @@ export function useQuizPracticeBank(args: {
             ...prev[q.id],
             busy: false,
             error: null,
-            ok: (prev[q.id].ok ?? null) as any,
+            ok: false,//(prev[q.id].ok ?? null) as any,
             item: {
               ...prev[q.id].item!,
               result: data as any,
               revealed: true,
-              submitted: Boolean((data as any)?.finalized) || prev[q.id].item!.submitted,
+              submitted: true, //Boolean((data as any)?.finalized) || prev[q.id].item!.submitted,
             } as any,
           },
         }));

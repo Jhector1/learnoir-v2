@@ -178,6 +178,118 @@ export default function RevealAnswerCard({
         ),
       };
     }
+// text_input
+if (kind === "text_input") {
+  const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
+  const preferred = String(reveal.preferred ?? answers[0] ?? "").trim();
+  const copyText = preferred || (answers[0] ?? "");
+
+  return {
+    title: "Accepted answers",
+    copyText,
+    fillPatch: copyText ? ({ text: copyText } as Partial<QItem>) : null,
+    node: (
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+        <div className="text-xs font-extrabold text-white/70">Accepted</div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {answers.length ? (
+            answers.map((a: string) => (
+              <span
+                key={a}
+                className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+              >
+                {a}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-white/60">—</span>
+          )}
+        </div>
+      </div>
+    ),
+  };
+}
+
+// voice_input
+if (kind === "voice_input") {
+  const transcript =
+    String(reveal.preferred ?? reveal.transcript ?? "").trim() ||
+    String((Array.isArray(reveal.answers) ? reveal.answers[0] : "") ?? "").trim();
+
+  const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
+  const copyText = transcript;
+
+  return {
+    title: "Correct transcript",
+    copyText,
+    fillPatch: transcript
+      ? ({ voiceTranscript: transcript } as Partial<QItem>)
+      : null,
+    node: (
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+        <div className="text-xs font-extrabold text-white/70">Transcript</div>
+        <div className="mt-1 text-sm font-black text-white/90">
+          {transcript || "—"}
+        </div>
+
+        {answers.length ? (
+          <>
+            <div className="mt-3 text-xs font-extrabold text-white/60">Also accepted</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {answers.map((a: string) => (
+                <span
+                  key={a}
+                  className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : null}
+      </div>
+    ),
+  };
+}
+
+// drag_reorder
+if (kind === "drag_reorder") {
+  const order = Array.isArray(reveal.order) ? reveal.order.map(String) : [];
+  const tokens = Array.isArray((exercise as any)?.tokens) ? (exercise as any).tokens : [];
+  const byId = new Map(tokens.map((t: any) => [String(t.id), String(t.text ?? t.label ?? t.id)]));
+
+  const copyText = order.map((id) => byId.get(id) ?? id).join(" ");
+
+  return {
+    title: "Correct order",
+    copyText,
+    fillPatch: order.length
+      ? ({
+          reorder: order,
+          reorderIds: order, // optional safety for your other code paths
+        } as Partial<QItem>)
+      : null,
+    node: (
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+        <div className="text-xs font-extrabold text-white/70">Correct order</div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {order.length ? (
+            order.map((id: string) => (
+              <span
+                key={id}
+                className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+              >
+                {byId.get(id) ?? id}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-white/60">—</span>
+          )}
+        </div>
+      </div>
+    ),
+  };
+}
 
     // Single choice (try to show label)
     if (kind === "single_choice") {

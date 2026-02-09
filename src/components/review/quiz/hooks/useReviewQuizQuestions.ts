@@ -15,6 +15,7 @@ export function useReviewQuizQuestions(args: {
   const [quizError, setQuizError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<ReviewQuestion[]>([]);
   const [serverQuizKey, setServerQuizKey] = useState(stableQuizKey);
+const specSnap = JSON.stringify(spec);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -41,7 +42,7 @@ export function useReviewQuizQuestions(args: {
     })();
 
     return () => ctrl.abort();
-  }, [quizId, stableQuizKey, reloadNonce, spec]);
+  }, [quizId, stableQuizKey, reloadNonce, specSnap]);
 
   return { quizLoading, quizError, questions, serverQuizKey };
 }

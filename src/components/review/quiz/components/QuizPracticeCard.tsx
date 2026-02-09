@@ -48,8 +48,8 @@ export default function QuizPracticeCard(props: {
   onUpdateItem: (patch: any) => void;
   onSubmit: () => void;
   onReveal: () => void;
-  skipped?: boolean;
-  onSkip?: () => void;
+  excused?: boolean;
+  onExcused?: () => void;
 }) {
   const {
     q,
@@ -63,7 +63,7 @@ export default function QuizPracticeCard(props: {
     onSubmit,
     onReveal,
   } = props;
-  // ps = {error: "bad input"}
+
   const outOfAttempts = useMemo(() => {
     if (!ps) return false;
     return !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
@@ -74,6 +74,9 @@ export default function QuizPracticeCard(props: {
     return !isEmptyPracticeAnswer(ps.exercise, ps.item, padRef?.current);
   }, [ps?.exercise, ps?.item, padRef]);
 
+  // ✅ reveal state
+  const revealed = Boolean(ps?.item?.revealed);
+
   const disableCheck =
     !unlocked ||
     isCompleted ||
@@ -82,7 +85,8 @@ export default function QuizPracticeCard(props: {
     outOfAttempts ||
     ps?.ok === true ||
     !hasInput ||
-    Boolean(props.skipped);
+    // revealed || // ✅ don't "check" after reveal (prevents red-on-reveal paths)
+    Boolean(props.excused);
 
   const disableReveal =
     !unlocked ||
@@ -90,13 +94,16 @@ export default function QuizPracticeCard(props: {
     locked ||
     ps?.ok === true ||
     (ps?.busy ?? false) ||
-    Boolean(props.skipped);
+    // revealed || // ✅ don't allow reveal twice
+    Boolean(props.excused);
+
   const disableSkip =
     !unlocked ||
     isCompleted ||
     locked ||
-    Boolean(props.skipped) ||
+    Boolean(props.excused) ||
     ps?.ok === true;
+
   const btnLabel = ps?.busy ? (
     <span className="inline-flex items-center gap-2">
       <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-400/60 border-t-transparent dark:border-white/40 dark:border-t-transparent" />
@@ -123,20 +130,17 @@ export default function QuizPracticeCard(props: {
           {ps.error}{" "}
           <button
             type="button"
-            onClick={props.onSkip}
+            onClick={props.onExcused}
             disabled={disableSkip}
             className={[
               "ui-quiz-action",
-              disableSkip
-                ? "ui-quiz-action--disabled"
-                : "ui-quiz-action--ghost",
+              disableSkip ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
             ].join(" ")}
           >
-            {props.skipped ? "Skipped" : "Skip"}
+            {props.excused ? "Excused" : "Continue"}
           </button>
         </div>
-      ) : // </div>
-      ps?.exercise && ps?.item ? (
+      ) : ps?.exercise && ps?.item ? (
         <div className="mt-1">
           {ps.exercise.prompt ? (
             <MathMarkdown
@@ -200,33 +204,19 @@ export default function QuizPracticeCard(props: {
               >
                 Reveal
               </button>
-
-              <button
-                type="button"
-                onClick={props.onSkip}
-                disabled={disableSkip}
-                className={[
-                  "ui-quiz-action",
-                  disableSkip
-                    ? "ui-quiz-action--disabled"
-                    : "ui-quiz-action--ghost",
-                ].join(" ")}
-              >
-                {props.skipped ? "Skipped" : "Skip"}
-              </button>
             </div>
 
             <div className="min-w-0 text-xs font-extrabold text-neutral-600 dark:text-white/60 sm:text-right">
               <span className="whitespace-normal">
-                Attempts: {ps.attempts}/
-                {Number.isFinite(ps.maxAttempts) ? ps.maxAttempts : "∞"}
+                Attempts: {ps.attempts}/{Number.isFinite(ps.maxAttempts) ? ps.maxAttempts : "∞"}
               </span>
 
               {ps.ok === true ? (
                 <span className="ml-2 whitespace-nowrap text-emerald-700 dark:text-emerald-300/80">
                   ✓ Correct
                 </span>
-              ) : ps.ok === false && ps.item?.result ? (
+              ) : ps.ok === false && ps.item?.result && !revealed ? (
+                // ✅ don't show "Not correct" on reveal
                 <span className="ml-2 whitespace-nowrap text-rose-700 dark:text-rose-300/80">
                   ✕ Not correct
                 </span>
@@ -234,7 +224,7 @@ export default function QuizPracticeCard(props: {
             </div>
           </div>
 
-          {ps.item?.revealed && ps.item?.result ? (
+          {revealed && ps.item?.result ? (
             <div className="mt-3">
               <RevealAnswerCard
                 exercise={ps.exercise}

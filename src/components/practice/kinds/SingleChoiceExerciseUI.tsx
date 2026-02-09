@@ -59,23 +59,30 @@ export default function SingleChoiceExerciseUI({
           const isCorrect = hasReviewCorrect ? reviewCorrectId === o.id : false;
 
           // ✅ Theme-aware tones (light defaults + dark overrides)
-          const tone = !checked
-            ? selected
-              ? "border-sky-300/40 bg-sky-300/10"
-              : "border-neutral-200 bg-white hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
-            : hasReviewCorrect
-              ? isCorrect
-                ? "border-emerald-300/40 bg-emerald-300/10"
-                : selected && !isCorrect
-                  ? "border-rose-300/40 bg-rose-300/10"
-                  : "border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.03]"
-              : selected
-                ? ok === true
-                  ? "border-emerald-300/40 bg-emerald-300/10"
-                  : ok === false
-                    ? "border-rose-300/40 bg-rose-300/10"
-                    : "border-sky-300/40 bg-sky-300/10"
-                : "border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.03]";
+        // ✅ Unselected (idle) — keep background stable, only tweak border on hover
+const idleUnselected =
+  "border-neutral-200 bg-white transition-colors " +
+  "hover:!border-sky-300/60 hover:!bg-sky-50/40 " +
+  "dark:border-white/10 dark:bg-white/[0.03] " +
+  "dark:hover:!border-sky-300/40 dark:hover:!bg-sky-400/[0.10]";
+
+ const tone = !checked
+  ? selected
+    ? "border-sky-300/40 bg-sky-300/10"
+    : idleUnselected
+  : hasReviewCorrect
+    ? isCorrect
+      ? "border-emerald-300/40 bg-emerald-300/10"
+      : selected && !isCorrect
+        ? "border-rose-300/40 bg-rose-300/10"
+        : "border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.03]"
+    : selected
+      ? ok === true
+        ? "border-emerald-300/40 bg-emerald-300/10"
+        : ok === false
+          ? "border-rose-300/40 bg-rose-300/10"
+          : "border-sky-300/40 bg-sky-300/10"
+      : "border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.03]";
 
           const dotTone = !checked
             ? selected

@@ -90,19 +90,21 @@ export default function QuizBlock({
       stableQuizKey,
       reloadNonce,
     });
-const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
+  const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
 
-useEffect(() => {
-  setExcusedById(initState?.excusedById ?? {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [resetKey]);
+  useEffect(() => {
+    setExcusedById(initState?.excusedById ?? {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
-useEffect(() => {
-  // reset when quiz resets
-  setExcusedById({});
-}, [resetKey]);
-const isExcused = useCallback((qid: string) => Boolean(excusedById[qid]), [excusedById]);
-
+  // useEffect(() => {
+  //   // reset when quiz resets
+  //   setExcusedById({});
+  // }, [resetKey]);
+  const isExcused = useCallback(
+    (qid: string) => Boolean(excusedById[qid]),
+    [excusedById],
+  );
 
   const local = useQuizLocalAnswers();
 
@@ -141,21 +143,21 @@ const isExcused = useCallback((qid: string) => Boolean(excusedById[qid]), [excus
   }
 
   function isQuestionChecked(q: ReviewQuestion): boolean {
- // ✅ excused bypass (system error)
-  if (isExcused(q.id)) return true;
+    // ✅ excused bypass (system error)
+    if (isExcused(q.id)) return true;
     if (q.kind === "practice") return practiceBank.isPracticeChecked(q);
     return Boolean(local.checkedById[q.id]);
   }
 
   function isUnlocked(index: number): boolean {
-    console.log("fff", prereqsMet)
-    if(!prereqsMet) return false;
+    console.log("fff", prereqsMet);
+    if (!prereqsMet) return false;
     if (!sequential) return true;
     if (index === 0) return true;
 
     const prev = questions[index - 1];
- // ✅ excused bypass (system error)
-  if (isExcused(prev.id)) return true;
+    // ✅ excused bypass (system error)
+    if (isExcused(prev.id)) return true;
 
     const ok = getQuestionOk(prev) === true;
 
@@ -169,43 +171,49 @@ const isExcused = useCallback((qid: string) => Boolean(excusedById[qid]), [excus
     return ok;
   }
 
-const summary = useMemo(() => {
-  let checkedCount = 0;
-  let correctCount = 0;
-  let denom = 0;
-  let excusedCount = 0;
+  const summary = useMemo(() => {
+    let checkedCount = 0;
+    let correctCount = 0;
+    let denom = 0;
+    let excusedCount = 0;
 
-  for (const q of questions) {
-    if (isQuestionChecked(q)) checkedCount++;
+    for (const q of questions) {
+      if (isQuestionChecked(q)) checkedCount++;
 
-    if (isExcused(q.id)) {
-      excusedCount++;
-      continue; // ✅ excused questions do not affect score
+      if (isExcused(q.id)) {
+        excusedCount++;
+        continue; // ✅ excused questions do not affect score
+      }
+
+      denom++;
+      if (getQuestionOk(q) === true) correctCount++;
     }
 
-    denom++;
-    if (getQuestionOk(q) === true) correctCount++;
-  }
+    const allChecked = checkedCount >= questions.length && questions.length > 0;
 
-  const allChecked = checkedCount >= questions.length && questions.length > 0;
+    const score = denom === 0 ? 1 : correctCount / denom; // ✅ if everything excused, treat as passable
 
-  const score =
-    denom === 0 ? 1 : correctCount / denom; // ✅ if everything excused, treat as passable
+    const passed = allChecked && (denom === 0 ? true : score >= passScore);
 
-  const passed = allChecked && (denom === 0 ? true : score >= passScore);
-
-  return {
-    checkedCount,
-    correctCount,
-    total: questions.length,
-    denom,
-    score,
-    allChecked,
-    passed,
-    excusedCount,
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [questions, local.checkedById, local.answers, practiceBank.practice, passScore, excusedById]);
+    return {
+      checkedCount,
+      correctCount,
+      total: questions.length,
+      denom,
+      score,
+      allChecked,
+      passed,
+      excusedCount,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    questions,
+    local.checkedById,
+    local.answers,
+    practiceBank.practice,
+    passScore,
+    excusedById,
+  ]);
 
   const nextState = useMemo<SavedQuizState>(() => {
     const base = initState;
@@ -219,7 +227,6 @@ const summary = useMemo(() => {
       if (q.kind !== "practice") continue;
 
       const ps = practiceBank.practice[q.id];
-
       if (ps) {
         practiceMeta[q.id] = {
           attempts: ps.attempts ?? practiceMeta[q.id]?.attempts ?? 0,
@@ -238,6 +245,7 @@ const summary = useMemo(() => {
       checkedById: local.checkedById,
       practiceItemPatch,
       practiceMeta,
+      excusedById, // ✅ NEW
     };
   }, [
     questions,
@@ -245,6 +253,7 @@ const summary = useMemo(() => {
     local.checkedById,
     practiceBank.practice,
     initState,
+    excusedById,
   ]);
 
   const emitState = useCallback(
@@ -257,12 +266,22 @@ const summary = useMemo(() => {
     enabled: Boolean(onStateChange && questions.length),
   });
 
+  // useLayoutEffect(() => {
+  //   emitter.prime({
+  //     answers: initState?.answers ?? {},
+  //     checkedById: initState?.checkedById ?? {},
+  //     practiceItemPatch: initState?.practiceItemPatch ?? {},
+  //     practiceMeta: initState?.practiceMeta ?? {},
+  //   } as SavedQuizState);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [resetKey]);
   useLayoutEffect(() => {
     emitter.prime({
       answers: initState?.answers ?? {},
       checkedById: initState?.checkedById ?? {},
       practiceItemPatch: initState?.practiceItemPatch ?? {},
       practiceMeta: initState?.practiceMeta ?? {},
+      excusedById: initState?.excusedById ?? {}, // ✅
     } as SavedQuizState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
@@ -281,6 +300,7 @@ const summary = useMemo(() => {
     onReset?.();
     local.reset();
     practiceBank.setPractice({});
+    setExcusedById({});
     setReloadNonce((n) => n + 1);
   }
 
@@ -316,16 +336,20 @@ const summary = useMemo(() => {
         if (q.kind === "practice") {
           const ps = practiceBank.practice[q.id];
           const pr = practiceBank.getPadRef(q.id);
-          const skipped = isSkipped(q.id);
+          const excused = isExcused(q.id);
 
           return (
             <QuizPracticeCard
               key={q.id}
               q={q}
-              skipped={skipped}
-              onSkip={() =>
-                setSkippedById((prev) => ({ ...prev, [q.id]: true }))
-              }
+              excused={excused}
+              onExcused={() => {
+                const ps = practiceBank.practice[q.id];
+                if (!unlocked) return;
+                if (!ps?.error) return; // ✅ error-only
+
+                setExcusedById((prev) => ({ ...prev, [q.id]: true }));
+              }}
               ps={ps}
               unlocked={unlocked}
               isCompleted={isCompleted}
@@ -343,13 +367,12 @@ const summary = useMemo(() => {
 
         const checked = Boolean(local.checkedById[q.id]);
         const ok = getQuestionOk(q);
-        const skipped = isSkipped(q.id);
+        // const excused = isExcused(q.id);
         return (
           <QuizLocalCard
+          prereqsMet={prereqsMet}
             key={q.id}
             q={q}
-            skipped={skipped}
-            onSkip={() => setSkippedById((prev) => ({ ...prev, [q.id]: true }))}
             unlocked={unlocked}
             isCompleted={isCompleted}
             locked={locked}
@@ -357,7 +380,6 @@ const summary = useMemo(() => {
             checked={checked}
             ok={ok}
             onPick={(val) => local.setAnswer(q.id, val)}
-            
             onCheck={() => {
               if (isCompleted || locked) return;
               local.check(q.id);
@@ -381,7 +403,7 @@ const summary = useMemo(() => {
         <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">
           ✓ Completed
         </div>
-      ) : prereqsMet && summary.allChecked && summary.allOk ? (
+      ) : prereqsMet && summary.passed ? (
         <button
           type="button"
           onClick={onPass}
@@ -391,11 +413,10 @@ const summary = useMemo(() => {
         </button>
       ) : null}
 
-      {!isCompleted && summary.allChecked && summary.allOk && !prereqsMet ? (
-        <div className="rounded-xl border border-neutral-200 bg-white/70 px-3 py-2 text-xs font-extrabold text-neutral-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60">
-          Finish “Mark as read” / “Mark explored” items in this topic first.
-        </div>
-      ) : null}
+     {!isCompleted && summary.allChecked && !prereqsMet ? (
+  <div>Finish “Mark as read” items in this topic first.</div>
+) : null}
+
 
       <ConfirmDialog
         open={confirmResetQuiz}

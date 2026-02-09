@@ -47,20 +47,26 @@ export default function ExerciseRenderer({
 }) {
   const attempts = current.attempts ?? 0;
 
-  const outOfAttempts =
-    isAssignmentRun && attempts >= maxAttempts && current.result?.ok !== true;
+  // ✅ "any result exists" includes reveal result objects (even when ok=null)
+  const hasAnyResult = Boolean(current.submitted || current.result);
 
-  // ✅ checked should work for history too (result exists even if submitted flag doesn't)
-  const checked = Boolean(current.submitted || current.result);
-  const ok = current.result?.ok ?? null;
+  // ✅ only treat ok as graded when boolean (reveal often sets ok=null)
+  const ok: boolean | null =
+    typeof current.result?.ok === "boolean" ? current.result.ok : null;
+
+  // ✅ checked for STYLING should mean "graded", not merely "result object exists"
+  // (prevents Reveal from forcing red/green states)
+  const checked = Boolean(current.submitted || ok !== null);
+
+  const outOfAttempts = isAssignmentRun && attempts >= maxAttempts && ok !== true;
 
   // lock if readOnly, busy, already correct, or no attempts left
   const lockInputs = readOnly || busy || ok === true || outOfAttempts;
 
-  // when user edits after checking, clear result/submitted (back to “unchecked” look)
+  // when user edits after checking/reveal, clear result/submitted (back to “unchecked” look)
   function resetCheckPatch() {
     if (readOnly) return {}; // ✅ don't mutate in summary/review
-    return checked ? { submitted: false, result: null } : {};
+    return hasAnyResult ? { submitted: false, result: null } : {};
   }
 
   // -----------------------------
@@ -221,13 +227,13 @@ export default function ExerciseRenderer({
             matRows: r,
             matCols: c,
             mat: resizeGrid(current.mat, r, c),
-            ...(checked ? { submitted: false, result: null } : {}),
+            ...(hasAnyResult ? { submitted: false, result: null } : {}),
           });
         }}
         onChange={(next) =>
           updateCurrent({
             mat: next,
-            ...(checked ? { submitted: false, result: null } : {}),
+            ...(hasAnyResult ? { submitted: false, result: null } : {}),
           })
         }
       />

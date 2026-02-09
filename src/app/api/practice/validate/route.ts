@@ -11,23 +11,23 @@ import {
   BodySchema,
   normalizeKey,
   type ValidateBody,
-} from "@/lib/practice/validate/schemas";
+} from "@/lib/practice/api/validate/schemas";
 
 import {
   resolveActorForPayload,
   isActorMismatch,
-} from "@/lib/practice/validate/actorBinding";
+} from "@/lib/practice/api/validate/actorBinding";
 
-import { loadInstance } from "@/lib/practice/validate/load";
-import { getExpectedCanon } from "@/lib/practice/validate/expected";
+import { loadInstance } from "@/lib/practice/api/validate/load";
+import { getExpectedCanon } from "@/lib/practice/api/validate/expected";
 import {
   computeCanReveal,
   computeMaxAttempts,
   countPriorNonRevealAttempts,
-} from "@/lib/practice/validate/policies";
+} from "@/lib/practice/api/validate/policies";
 
-import { gradeInstance } from "@/lib/practice/validate/grade";
-import { persistAttemptAndFinalize } from "@/lib/practice/validate/persist";
+import { gradeInstance } from "@/lib/practice/api/validate/grade";
+import { persistAttemptAndFinalize } from "@/lib/practice/api/validate/persist";
 
 export const runtime = "nodejs";
 

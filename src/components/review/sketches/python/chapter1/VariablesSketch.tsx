@@ -1,3 +1,4 @@
+// VariablesSketch.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -35,48 +36,40 @@ When you update a variable, future prints use the new value.
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Team 1</div>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
-              />
-              <div className="mt-3 text-xs font-extrabold text-white/70">Score 1</div>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Team 1</div>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="ui-sketch-input mt-2" />
+              <div className="mt-3 ui-sketch-label">Score 1</div>
               <input
                 type="number"
                 value={score}
                 onChange={(e) => setScore(Number(e.target.value))}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                className="ui-sketch-input mt-2"
               />
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Team 2</div>
-              <input
-                value={name2}
-                onChange={(e) => setName2(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
-              />
-              <div className="mt-3 text-xs font-extrabold text-white/70">Score 2</div>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Team 2</div>
+              <input value={name2} onChange={(e) => setName2(e.target.value)} className="ui-sketch-input mt-2" />
+              <div className="mt-3 ui-sketch-label">Score 2</div>
               <input
                 type="number"
                 value={score2}
                 onChange={(e) => setScore2(Number(e.target.value))}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                className="ui-sketch-input mt-2"
               />
             </div>
 
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-3">
-              <div className="text-xs font-extrabold text-white/70">Output</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/85">{output}</pre>
+            <div className="md:col-span-2 ui-sketch-codeblock">
+              <div className="ui-sketch-label">Output</div>
+              <pre className="ui-sketch-code">{output}</pre>
             </div>
 
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Python code</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">{`team1 = "${name.replaceAll('"', '\\"')}"
+            <div className="md:col-span-2 ui-sketch-codeblock">
+              <div className="ui-sketch-label">Python code</div>
+              <pre className="ui-sketch-code">{`team1 = "${name.replaceAll('"', '\\"')}"
 team2 = "${name2.replaceAll('"', '\\"')}"
 score1 = ${score}
 score2 = ${score2}
@@ -87,8 +80,8 @@ print("Final score:", score1, "to", score2)`}</pre>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+        <div className="ui-sketch-panel">
+          <MathMarkdown className="ui-math" content={hud} />
         </div>
       </div>
     </div>

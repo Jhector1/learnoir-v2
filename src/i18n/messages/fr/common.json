@@ -1,11 +1,12 @@
 {
-"Header": {
-      "language": "Langue"
-,
+  "Header": {
+    "language": "Langue",
+    "billing": "Prix",
+    "settings": "Parametres",
     "home": "Accueil",
     "practice": "Apprendre & Exercices",
     "assignments": "Devoirs",
-      "subjects": "Matiere",
+    "subjects": "Matiere",
     "tagline": "Math visuelle • Exercices • Progrès",
     "startSession": "Commencer",
     "signIn": "Se connecter",
@@ -15,7 +16,7 @@
     "close": "Fermer",
     "tip": "Astuce : utilisez Exercices pour suivre vos tentatives, vos bonnes réponses et vos questions manquées."
   },
-  
+
   "UserMenu": {
     "ariaLabel": "Menu utilisateur",
     "avatarAlt": "Avatar de {name}",
@@ -23,5 +24,4 @@
     "progress": "Progrès",
     "logout": "Se déconnecter"
   }
- 
 }

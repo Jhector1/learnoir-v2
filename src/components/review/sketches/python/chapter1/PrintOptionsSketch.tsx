@@ -1,3 +1,4 @@
+// PrintOptionsSketch.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -55,9 +56,9 @@ Try:
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="grid gap-3">
-            <div className="text-xs font-extrabold text-white/70">Values to print</div>
+            <div className="ui-sketch-label">Values to print</div>
 
             <div className="flex flex-wrap gap-2">
               {parts.map((p, idx) => (
@@ -67,13 +68,13 @@ Try:
                   onChange={(e) =>
                     setParts((prev) => prev.map((x, i) => (i === idx ? e.target.value : x)))
                   }
-                  className="w-[160px] rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                  className="ui-sketch-input w-[160px]"
                 />
               ))}
               <button
                 type="button"
                 onClick={() => setParts((p) => [...p, "beans"])}
-                className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-xs font-extrabold text-white/80 hover:bg-white/15"
+                className="ui-sketch-chip ui-sketch-chip--idle px-3 py-2"
               >
                 + add value
               </button>
@@ -81,7 +82,7 @@ Try:
                 <button
                   type="button"
                   onClick={() => setParts((p) => p.slice(0, -1))}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/70 hover:bg-white/10"
+                  className="ui-sketch-chip ui-sketch-chip--idle px-3 py-2"
                 >
                   remove last
                 </button>
@@ -90,39 +91,41 @@ Try:
 
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <div className="text-xs font-extrabold text-white/70">sep</div>
+                <div className="ui-sketch-label">sep</div>
                 <input
                   value={sep}
                   onChange={(e) => setSep(e.target.value)}
                   placeholder=" "
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                  className="ui-sketch-input"
                 />
-                <div className="mt-1 text-[11px] text-white/50">Try: space, "...", "-", " | "</div>
+                <div className="mt-1 text-[11px] text-neutral-500 dark:text-white/50">
+                  Try: space, "...", "-", " | "
+                </div>
               </div>
 
               <div>
-                <div className="text-xs font-extrabold text-white/70">end</div>
+                <div className="ui-sketch-label">end</div>
                 <input
                   value={end}
                   onChange={(e) => setEnd(e.target.value)}
                   placeholder="\\n"
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                  className="ui-sketch-input"
                 />
-                <div className="mt-1 text-[11px] text-white/50">Use \n, "", "!!", or any text</div>
+                <div className="mt-1 text-[11px] text-neutral-500 dark:text-white/50">
+                  Use \n, "", "!!", or any text
+                </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-3">
-              <div className="text-xs font-extrabold text-white/70">Simulated output</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/85">
-                {rendered || "\u00A0"}
-              </pre>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Simulated output</div>
+              <pre className="ui-sketch-code">{rendered || "\u00A0"}</pre>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+        <div className="ui-sketch-panel">
+          <MathMarkdown className="ui-math" content={hud} />
         </div>
       </div>
     </div>

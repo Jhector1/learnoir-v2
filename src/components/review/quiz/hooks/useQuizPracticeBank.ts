@@ -47,13 +47,15 @@ export function isEmptyPracticeAnswer(
     const hasB = b && ([b.x, b.y, b.z].some((v) => Number.isFinite(v)));
     return !(hasA && hasB);
   }
-   if (ex.kind === "drag_reorder") {
-    const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
-    const order =
-      Array.isArray((item as any).reorder) ? (item as any).reorder :
-      Array.isArray((item as any).order) ? (item as any).order : []; // tolerate old key
 
-    // enable check once we have a full ordering
+  if (ex.kind === "drag_reorder") {
+    const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
+    const order = Array.isArray((item as any).reorder)
+      ? (item as any).reorder
+      : Array.isArray((item as any).order)
+        ? (item as any).order
+        : [];
+
     return !(tokens.length > 0 && order.length === tokens.length);
   }
 
@@ -66,25 +68,17 @@ export function useQuizPracticeBank(args: {
   spec: ReviewQuizSpec;
   unlimitedAttempts: boolean;
   initialState: SavedQuizState | null;
-  resetKey: string; // stableQuizKey + reloadNonce etc.
+  resetKey: string;
   isCompleted: boolean;
   locked: boolean;
 }) {
-  const {
-    questions,
-    spec,
-    unlimitedAttempts,
-    initialState,
-    resetKey,
-    isCompleted,
-    locked,
-  } = args;
+  const { questions, spec, unlimitedAttempts, initialState, resetKey, isCompleted, locked } = args;
+
+  const specMaxAttempts = (spec as any).maxAttempts;
 
   const [practice, setPractice] = useState<Record<string, PracticeState>>({});
 
-  const padRefs = useRef<
-    Record<string, React.MutableRefObject<VectorPadState>>
-  >({});
+  const padRefs = useRef<Record<string, React.MutableRefObject<VectorPadState>>>({});
 
   function getPadRef(id: string) {
     if (!padRefs.current[id]) {
@@ -110,6 +104,9 @@ export function useQuizPracticeBank(args: {
 
       setPractice((prev) => {
         if (prev[q.id]) return prev;
+
+        const initMeta = initialState?.practiceMeta?.[q.id];
+
         return {
           ...prev,
           [q.id]: {
@@ -118,14 +115,14 @@ export function useQuizPracticeBank(args: {
             busy: false,
             exercise: null,
             item: null,
-            attempts: 0,
+
+            // ✅ seed from initialState so summary/unlock doesn't "drop"
+            attempts: initMeta?.attempts ?? 0,
+            ok: initMeta?.ok ?? null,
+
             maxAttempts: unlimitedAttempts
               ? Number.POSITIVE_INFINITY
-              : Math.max(
-                  1,
-                  Math.floor(q.maxAttempts ?? (spec as any).maxAttempts ?? 1),
-                ),
-            ok: null,
+              : Math.max(1, Math.floor(q.maxAttempts ?? specMaxAttempts ?? 1)),
           },
         };
       });
@@ -145,14 +142,8 @@ export function useQuizPracticeBank(args: {
         const ex = (res as any)?.exercise;
         const key = (res as any)?.key;
 
-        if (
-          !ex ||
-          typeof (ex as any)?.kind !== "string" ||
-          typeof key !== "string"
-        ) {
-          throw new Error(
-            "Malformed response from /api/practice (missing exercise/key).",
-          );
+        if (!ex || typeof (ex as any)?.kind !== "string" || typeof key !== "string") {
+          throw new Error("Malformed response from /api/practice (missing exercise/key).");
         }
 
         const item = initItemFromExercise(ex as Exercise, key);
@@ -170,8 +161,8 @@ export function useQuizPracticeBank(args: {
             error: null,
             exercise: ex as Exercise,
             item: patchedItem,
-            attempts: initialState?.practiceMeta?.[q.id]?.attempts ?? 0,
-            ok: initialState?.practiceMeta?.[q.id]?.ok ?? null,
+            attempts: initialState?.practiceMeta?.[q.id]?.attempts ?? prev[q.id]?.attempts ?? 0,
+            ok: initialState?.practiceMeta?.[q.id]?.ok ?? prev[q.id]?.ok ?? null,
           },
         }));
       } catch (e: any) {
@@ -193,20 +184,35 @@ export function useQuizPracticeBank(args: {
     return () => {
       cancelled = true;
     };
-  }, [questions, unlimitedAttempts, spec, initialState]);
+  }, [questions, unlimitedAttempts, specMaxAttempts, initialState]);
 
   const updatePracticeItem = useCallback((qid: string, patch: Partial<QItem>) => {
+    // ✅ sync pad when patch includes vectors
+    const pr = padRefs.current[qid];
+    if (pr?.current) {
+      if ((patch as any).dragA) pr.current.a = cloneVec((patch as any).dragA) as any;
+      if ((patch as any).dragB) pr.current.b = cloneVec((patch as any).dragB) as any;
+    }
+
     setPractice((prev) => {
       const ps = prev[qid];
       if (!ps?.item) return prev;
-       const nextItem = { ...ps.item, ...patch };
 
-    // ✅ if the UI reset check status, also reset meta ok
-    const isReset =
-      ("submitted" in patch && patch.submitted === false) ||
-      ("result" in patch && (patch as any).result == null);
-      return { ...prev, [qid]: { ...ps,   item: nextItem,
-        ok: isReset ? null : ps.ok, } };
+      const nextItem = { ...ps.item, ...patch };
+
+      // ✅ if the UI reset check status, also reset meta ok
+      const isReset =
+        ("submitted" in patch && (patch as any).submitted === false) ||
+        ("result" in patch && (patch as any).result == null);
+
+      return {
+        ...prev,
+        [qid]: {
+          ...ps,
+          item: nextItem,
+          ok: isReset ? null : ps.ok,
+        },
+      };
     });
   }, []);
 
@@ -217,8 +223,7 @@ export function useQuizPracticeBank(args: {
       const ps = practice[q.id];
       if (!ps || ps.loading || ps.busy || !ps.item || !ps.exercise) return;
 
-      const outOfAttempts =
-        !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+      const outOfAttempts = !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
       if (outOfAttempts) return;
       if (ps.ok === true) return;
 
@@ -241,10 +246,7 @@ export function useQuizPracticeBank(args: {
           const a = pr.current?.a ?? (ps.item as any).dragA;
           const b = pr.current?.b ?? (ps.item as any).dragB;
           answer = { kind: "vector_drag_target", a: cloneVec(a), b: cloneVec(b) };
-          updatePracticeItem(q.id, {
-            dragA: cloneVec(a),
-            dragB: cloneVec(b),
-          } as any);
+          updatePracticeItem(q.id, { dragA: cloneVec(a), dragB: cloneVec(b) } as any);
         } else {
           answer = buildSubmitAnswerFromItem(ps.item);
         }
@@ -259,7 +261,7 @@ export function useQuizPracticeBank(args: {
         const ok = Boolean((data as any)?.ok);
 
         setPractice((prev) => {
-          const nextAttempts = prev[q.id].attempts + 1;
+          const nextAttempts = (prev[q.id]?.attempts ?? 0) + 1;
           return {
             ...prev,
             [q.id]: {
@@ -338,8 +340,7 @@ export function useQuizPracticeBank(args: {
               ...prev[q.id].item!,
               result: data as any,
               revealed: true,
-              submitted:
-                Boolean((data as any)?.finalized) || prev[q.id].item!.submitted,
+              submitted: Boolean((data as any)?.finalized) || prev[q.id].item!.submitted,
             } as any,
           },
         }));

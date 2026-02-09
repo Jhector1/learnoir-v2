@@ -1,0 +1,189 @@
+{
+  "Home": {
+    "meta": {
+      "title": "Learnoir — Apprendre l’algèbre linéaire et Python en pratiquant",
+      "description": "Pratique interactive pour l’algèbre linéaire et Python : feedback immédiat, devoirs, suivi de progression, et apprentissage multilingue (anglais, français, créole haïtien)."
+    },
+    "nav": {
+      "product": "Produit",
+      "subjects": "Matières",
+      "pricing": "Tarifs",
+      "faq": "FAQ",
+      "signIn": "Connexion"
+    },
+    "hero": {
+      "badge": "Plateforme d’apprentissage interactive",
+      "title": "Maîtrisez l’algèbre linéaire et Python en pratiquant — pas seulement en regardant.",
+      "subtitle": "Learnoir combine visualisations, exercices ciblés et explications claires pour développer l’intuition et la confiance.",
+      "ctaPrimary": "Commencer",
+      "ctaSecondary": "Voir le catalogue",
+      "pills": ["Feedback immédiat", "Devoirs & révision", "Multilingue (EN/FR/HT)"]
+    },
+    "trust": {
+      "kicker": "Conçu pour la manière dont les étudiants apprennent vraiment",
+      "title": "Rappel actif. Retour immédiat. Progrès réel.",
+      "subtitle": "Une plateforme orientée pratique pour transformer les notions en compétences.",
+      "items": [
+        { "k": "Interactif", "v": "Visuels type VectorPad + questions pratiques" },
+        { "k": "Structuré", "v": "Modules → sections → pratique → maîtrise" },
+        { "k": "Utile", "v": "Compétences utiles aux examens et aux projets" }
+      ]
+    },
+    "features": {
+      "kicker": "Fonctionnalités",
+      "title": "Une boucle de pratique complète",
+      "subtitle": "Tout ce qu’il faut pour passer de « je comprends à peu près » à « je sais résoudre sous pression ».",
+      "items": [
+        {
+          "title": "Visuels interactifs (Algèbre linéaire)",
+          "desc": "Manipulez des vecteurs, explorez produit scalaire, projections, espaces engendrés, bases, intuition du rang, etc."
+        },
+        {
+          "title": "Pratique Python (avec structure)",
+          "desc": "Des bases aux patterns de résolution : consignes claires, vérification, progression régulière."
+        },
+        {
+          "title": "Devoirs & sessions",
+          "desc": "Des runs orientés objectifs pour garder l’élève sur la bonne trajectoire et revenir en révision."
+        },
+        {
+          "title": "Progression persistante",
+          "desc": "Suivi de complétion, erreurs fréquentes, et continuité après rechargement."
+        },
+        {
+          "title": "Multilingue",
+          "desc": "Même structure en anglais, français et créole haïtien."
+        },
+        {
+          "title": "Clarté avant tout",
+          "desc": "Interface minimaliste et lisible : l’essentiel, c’est la pratique."
+        }
+      ]
+    },
+    "subjects": {
+      "kicker": "Matières",
+      "title": "Deux parcours essentiels pour démarrer",
+      "subtitle": "Modules et sections pour savoir exactement quoi faire ensuite.",
+      "cards": [
+        {
+          "title": "Algèbre linéaire",
+          "desc": "Vecteurs → systèmes linéaires → matrices → transformations et intuition via visuels.",
+          "bullets": ["Vecteurs & produit scalaire", "Espace engendré / base", "Intuition du rang", "Opérations matricielles"],
+          "cta": "Explorer l’algèbre linéaire"
+        },
+        {
+          "title": "Python",
+          "desc": "Fondamentaux et pratique orientée résolution de problèmes avec vérifications immédiates.",
+          "bullets": ["Variables & conditions", "Fonctions", "Listes & dictionnaires", "Habitudes de debug"],
+          "cta": "Explorer Python"
+        }
+      ]
+    },
+    "how": {
+      "kicker": "Méthode",
+      "title": "Une boucle simple qui marche",
+      "steps": [
+        { "title": "Choisir un module", "desc": "Démarrez au bon niveau, sans hésiter ni vous disperser." },
+        { "title": "Pratiquer avec feedback", "desc": "Répondez, utilisez les visuels, progressez grâce aux explications ciblées." },
+        { "title": "Réviser et consolider", "desc": "Revenez sur les points faibles et améliorez la rétention sur le long terme." }
+      ]
+    },
+    "educators": {
+      "kicker": "Pour enseignants & équipes",
+      "title": "Enseigner de façon cohérente, mesurer avec confiance",
+      "subtitle": "Une couche de pratique propre : devoirs, signaux de progression, expérience étudiante répétable.",
+      "bullets": [
+        "Structure cohérente entre les langues",
+        "Devoirs guidant section par section",
+        "Résultats clairs : ce que l’élève sait faire après"
+      ],
+      "cta": "Nous contacter"
+    },
+    "testimonials": {
+      "kicker": "Preuve sociale",
+      "title": "Remplacez ces textes par de vrais avis",
+      "subtitle": "Placeholders sûrs pour la mise en page. Remplacez avant lancement public.",
+      "items": [
+        { "quote": "Les visuels sur les vecteurs ont rendu les projections beaucoup plus concrètes.", "who": "Étudiant (placeholder)" },
+        { "quote": "La structure m’aide : je ne perds plus de temps à choisir quoi apprendre.", "who": "Autodidacte (placeholder)" },
+        { "quote": "Idéal en tutorat : feedback rapide, interface propre, progression claire.", "who": "Tuteur (placeholder)" }
+      ]
+    },
+    "pricing": {
+      "kicker": "Tarifs",
+      "title": "Commencez gratuitement, évoluez ensuite",
+      "subtitle": "Placeholders maintenant ; branchez Stripe plus tard. Conçu pour convertir proprement.",
+      "tiers": [
+        {
+          "name": "Gratuit",
+          "price": "0€",
+          "desc": "Pour découvrir la plateforme.",
+          "features": ["Accès à la pratique de base", "Suivi de progression", "UI multilingue"],
+          "cta": "Commencer",
+          "highlight": false
+        },
+        {
+          "name": "Pro",
+          "price": "—",
+          "desc": "Pour les apprenants sérieux qui veulent plus de structure.",
+          "features": ["Devoirs & sessions de révision", "Plus de profondeur", "Mises à jour prioritaires"],
+          "cta": "Voir les tarifs",
+          "highlight": true
+        },
+        {
+          "name": "Classe",
+          "price": "—",
+          "desc": "Pour enseignants, cohortes et équipes.",
+          "features": ["Workflow cohorte", "Reporting/export (option)", "Support déploiement"],
+          "cta": "Contacter",
+          "highlight": false
+        }
+      ],
+      "note": "Astuce : si vous n’avez pas encore les prix, mettez Pro/Classe sur “Contact” jusqu’à Stripe."
+    },
+    "faq": {
+      "kicker": "FAQ",
+      "title": "Questions fréquentes",
+      "items": [
+        { "q": "C’est un cours ?", "a": "C’est une plateforme de pratique. Elle complète cours/vidéos en transformant les notions en compétences." },
+        { "q": "Pour débutants ?", "a": "Oui. Les modules démarrent aux bases, avec progression guidée et feedback." },
+        { "q": "Multilingue comment ?", "a": "Même structure entre langues : anglais, français, créole haïtien." },
+        { "q": "Devoirs ?", "a": "Oui. Les runs de devoirs gardent l’élève focalisé et le ramènent au bon next step." },
+        { "q": "Progression après reload ?", "a": "C’est central : progression, erreurs, et résultats doivent rester cohérents." },
+        { "q": "Et la suite ?", "a": "Plus de modules, plus de types de questions, et une révision plus profonde." }
+      ]
+    },
+    "finalCta": {
+      "title": "Prêt à construire une vraie intuition ?",
+      "subtitle": "Choisissez un module, pratiquez avec feedback, et gagnez en confiance.",
+      "primary": "Commencer",
+      "secondary": "Voir le catalogue"
+    },
+    "footer": {
+      "rights": "© {year} Learnoir. Tous droits réservés.",
+      "links": {
+        "catalog": "Catalogue",
+        "review": "Révision",
+        "pricing": "Tarifs",
+        "contact": "Contact",
+        "privacy": "Confidentialité",
+        "terms": "Conditions"
+      }
+    },
+    "ui": {
+      "heroCard": {
+        "title": "Pratique interactive",
+        "subtitle": "VectorPad • Code • Vérifs",
+        "laLabel": "Algèbre linéaire",
+        "laText": "Manipulez des vecteurs → dot product & projection se mettent à jour instantanément.",
+        "assetNote": "Remplacez par une vraie capture/GIF plus tard.",
+        "pyLabel": "Python",
+        "pyText": "Pratiquez les bases avec vérification immédiate et consignes claires."
+      },
+      "tagline": "Pas de blabla. Pas de scroll infini. Juste de la pratique utile.",
+      "recommended": "Recommandé",
+      "browseModules": "Voir les modules",
+      "tryReview": "Essayer la révision"
+    }
+  }
+}

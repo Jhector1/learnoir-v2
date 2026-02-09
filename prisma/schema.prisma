@@ -438,3 +438,15 @@ model ReviewQuizInstance {
   @@unique([actorKey, quizKey], name: "actorKey_quizKey")
   @@index([actorKey])
 }
+
+
+model StripeEvent {
+  // Stripe event id: "evt_..."
+  id        String   @id
+
+  type      String
+  livemode  Boolean
+  created   Int      // unix seconds from Stripe
+
+  receivedAt DateTime @default(now())
+}

@@ -1,11 +1,13 @@
 {
   "Header": {
-        "language": "Lang",
+    "language": "Lang",
 
     "home": "Akèy",
+    "billing": "Pri",
+     "settings": "Paramet",
     "practice": "Aprann & Pratik",
     "assignments": "Devwa",
-      "subjects": "Matyè",
+    "subjects": "Matyè",
     "tagline": "Matematik vizyèl • Pratik • Pwogrè",
     "startSession": "Kòmanse",
     "signIn": "Konekte",
@@ -15,7 +17,7 @@
     "close": "Fèmen",
     "tip": "Konsèy: itilize Pratik pou swiv tantativ ou yo, repons ou jwenn kòrèk, ak kestyon ou rate yo."
   },
-    "UserMenu": {
+  "UserMenu": {
     "ariaLabel": "Meni itilizatè",
     "avatarAlt": "Imaj pwofil {name}",
     "profile": "Pwofil",

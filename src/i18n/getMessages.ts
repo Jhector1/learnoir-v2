@@ -5,6 +5,8 @@ import module0 from "@/i18n/messages/en/module0.json";
 import practiceSection from "@/i18n/messages/en/practiceSection.json";
 import sketchesVectorPart1 from "@/i18n/messages/en/sketchesVectorPart1.json";
 import { matricesPart2Landing } from "@/components/practice/sections/landingCatalog";
+import home from "@/i18n/messages/en/home.json";
+
 export const messages = {
   ...common,
   ...playground,
@@ -13,4 +15,5 @@ export const messages = {
   ...matricesPart2Landing,
     ...practiceSection,
     ...sketchesVectorPart1,
+    ...home
 };

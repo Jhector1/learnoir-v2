@@ -1,3 +1,4 @@
+// StringsSketch.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -45,18 +46,16 @@ Tip: In Python, \(\texttt{print("Hi", name)}\) often feels cleaner than using \(
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="text-xs font-extrabold text-white/70">Mode</div>
+            <div className="ui-sketch-label">Mode</div>
             {(["len", "concat"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={[
-                  "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
-                  mode === m
-                    ? "border-emerald-300/30 bg-emerald-300/10 text-white/90"
-                    : "border-white/10 bg-white/5 text-white/75 hover:bg-white/10",
+                  "ui-sketch-chip",
+                  mode === m ? "ui-sketch-chip--active-emerald" : "ui-sketch-chip--idle",
                 ].join(" ")}
               >
                 {m === "len" ? "len()" : "concatenation"}
@@ -65,38 +64,30 @@ Tip: In Python, \(\texttt{print("Hi", name)}\) often feels cleaner than using \(
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">First string</div>
-              <input
-                value={first}
-                onChange={(e) => setFirst(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
-              />
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">First string</div>
+              <input value={first} onChange={(e) => setFirst(e.target.value)} className="ui-sketch-input mt-2" />
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Second string</div>
-              <input
-                value={last}
-                onChange={(e) => setLast(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
-              />
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Second string</div>
+              <input value={last} onChange={(e) => setLast(e.target.value)} className="ui-sketch-input mt-2" />
             </div>
 
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-3">
-              <div className="text-xs font-extrabold text-white/70">Result</div>
+            <div className="md:col-span-2 ui-sketch-codeblock">
+              <div className="ui-sketch-label">Result</div>
               {mode === "len" ? (
-                <pre className="mt-2 whitespace-pre-wrap text-xs text-white/85">{`Your first string is ${firstLen} characters long
+                <pre className="ui-sketch-code">{`Your first string is ${firstLen} characters long
 Your second string is ${lastLen} characters long`}</pre>
               ) : (
-                <pre className="mt-2 whitespace-pre-wrap text-xs text-white/85">{`${concat}
+                <pre className="ui-sketch-code">{`${concat}
 ${bang}`}</pre>
               )}
             </div>
 
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Python code</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">
+            <div className="md:col-span-2 ui-sketch-codeblock">
+              <div className="ui-sketch-label">Python code</div>
+              <pre className="ui-sketch-code">
                 {mode === "len"
                   ? `first = "${first.replaceAll('"', '\\"')}"
 last  = "${last.replaceAll('"', '\\"')}"
@@ -111,8 +102,8 @@ print("Your favorite color is " + a + "!")`}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+        <div className="ui-sketch-panel">
+          <MathMarkdown className="ui-math" content={hud} />
         </div>
       </div>
     </div>

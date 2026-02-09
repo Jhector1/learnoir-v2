@@ -2,6 +2,8 @@
   "Header": {
     "language": "Language",
     "home": "Home",
+    "billing": "Billing",
+    "settings": "Settings",
     "practice": "Learn & Practice",
     "assignments": "Assignments",
     "subjects": "Subjects",

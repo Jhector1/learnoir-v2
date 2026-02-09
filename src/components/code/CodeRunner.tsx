@@ -1,15 +1,21 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import MathMarkdown from "@/components/math/MathMarkdown";
 import type { Lang, RunResult } from "@/lib/code/runCode";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
+const DEFAULT_LANGS: Lang[] = ["python", "java", "javascript", "c", "cpp"];
+
 const DEFAULT_CODE: Record<Lang, string> = {
   python: `print("Hello from Python!")\n`,
   java: `public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from Java!");\n  }\n}\n`,
+  javascript: `console.log("Hello from JavaScript!");\n`,
+  c: `#include <stdio.h>\n\nint main() {\n  printf("Hello from C!\\n");\n  return 0;\n}\n`,
+  cpp: `#include <iostream>\n\nint main() {\n  std::cout << "Hello from C++!" << std::endl;\n  return 0;\n}\n`,
 };
 
 type TermLine =
@@ -18,63 +24,26 @@ type TermLine =
   | { type: "in"; text: string }
   | { type: "err"; text: string };
 
-/**
- * Why it "stays white" for you:
- * - Many runners sometimes put errors/tracebacks into stdout (not stderr).
- * - Or Tailwind might not be emitting your dynamic text-* classes.
- *
- * This version fixes BOTH:
- * 1) If run failed and stderr/compile_output is empty, stdout is treated as error (red).
- * 2) We use inline color styles (guaranteed), while still keeping Tailwind classes for weight/etc.
- */
+type TerminalDock = "bottom" | "right";
 
-// Tailwind for font weight / general style (color handled by inline style below)
-const termLineClass = (t: TermLine["type"]) => {
-  switch (t) {
-    case "err":
-      return "font-semibold";
-    case "in":
-      return "";
-    case "sys":
-      return "";
-    case "out":
-    default:
-      return "";
-  }
-};
+function clamp(n: number, a: number, b: number) {
+  return Math.max(a, Math.min(b, n));
+}
 
-// Guaranteed colors (no Tailwind dependency)
-const termLineStyle = (t: TermLine["type"]): React.CSSProperties => {
-  switch (t) {
-    case "err":
-      return { color: "#fda4af" }; // rose-300
-    case "in":
-      return { color: "#bae6fd" }; // sky-200
-    case "sys":
-      return { color: "rgba(255,255,255,0.70)" };
-    case "out":
-    default:
-      return { color: "rgba(255,255,255,0.90)" };
-  }
-};
-
-// Strip carriage returns + basic ANSI color codes (prevents “missing/overwritten” looking text)
 function cleanTermText(s: string) {
-  return (s ?? "")
-    .replace(/\r/g, "")
-    .replace(/\x1b\[[0-9;]*m/g, "");
+  return (s ?? "").replace(/\r/g, "").replace(/\x1b\[[0-9;]*m/g, "");
 }
 
 function detectNeedsInput(lang: Lang, r: RunResult) {
+  if (lang !== "python" && lang !== "java") return { needs: false, prompt: "" };
+
   const stderr = cleanTermText(
     (r.stderr ?? "") + "\n" + (r.message ?? "") + "\n" + (r.error ?? ""),
   );
 
-  // Python interactive: input() causes EOFError on Judge0-style runners if stdin missing
   const pythonNeeds =
     /EOFError: EOF when reading a line/.test(stderr) || /input\(\)/.test(stderr);
 
-  // Java interactive: Scanner nextLine/nextInt with no stdin
   const javaNeeds =
     /NoSuchElementException/.test(stderr) ||
     /java\.util\.NoSuchElementException/.test(stderr) ||
@@ -82,12 +51,10 @@ function detectNeedsInput(lang: Lang, r: RunResult) {
 
   const needs = lang === "python" ? pythonNeeds : javaNeeds;
 
-  // Guess the prompt from last stdout line
   const outLines = cleanTermText(r.stdout ?? "")
     .split("\n")
     .map((s) => s.replace(/\r$/, ""));
-  const lastNonEmpty =
-    [...outLines].reverse().find((l) => l.trim().length) ?? "";
+  const lastNonEmpty = [...outLines].reverse().find((l) => l.trim().length) ?? "";
 
   return { needs, prompt: lastNonEmpty };
 }
@@ -96,6 +63,13 @@ function fmtMeta(r: RunResult) {
   const time = r.time ? ` • ${r.time}s` : "";
   const mem = r.memory ? ` • ${Math.round(r.memory / 1024)}MB` : "";
   return `${r.status ?? (r.ok ? "OK" : "Error")}${time}${mem}`;
+}
+
+function monacoLang(l: Lang) {
+  if (l === "python") return "python";
+  if (l === "java") return "java";
+  if (l === "javascript") return "javascript";
+  return "cpp";
 }
 
 type ControlledProps = {
@@ -107,102 +81,312 @@ type ControlledProps = {
 
   stdin: string;
   onChangeStdin: (stdin: string) => void;
+
+  terminalDock?: TerminalDock;
+  onChangeTerminalDock?: (d: TerminalDock) => void;
 };
 
 type UncontrolledProps = {
   initialLanguage?: Lang;
   initialCode?: string;
   initialStdin?: string;
+
+  initialTerminalDock?: TerminalDock;
+  initialTerminalSize?: number; // used as initial terminal height/width
+};
+
+type CommonProps = {
+  title?: string;
+
+  /** editor starting height (same meaning as before) */
+  height?: number;
+
+  hintMarkdown?: string;
+
+  showHeaderBar?: boolean;
+  showEditor?: boolean;
+  showTerminal?: boolean;
+  showHint?: boolean;
+  showStdin?: boolean;
+
+  fixedLanguage?: Lang;
+  allowedLanguages?: Lang[];
+  showLanguagePicker?: boolean;
+
+  allowReset?: boolean;
+  allowRun?: boolean;
+  disabled?: boolean;
+
+  resetTerminalOnRun?: boolean;
+  resetStdinOnRun?: boolean;
+
+  fixedTerminalDock?: TerminalDock;
+
+  showEditorThemeToggle?: boolean;
+  showTerminalDockToggle?: boolean;
+
+  onRun?: (args: { language: Lang; code: string; stdin: string }) => Promise<RunResult>;
 };
 
 type CodeRunnerProps =
-  | ({
-      title?: string;
-      height?: number;
-      hintMarkdown?: string;
+  | (CommonProps & ControlledProps)
+  | (CommonProps & UncontrolledProps);
 
-      showLanguagePicker?: boolean;
-      allowReset?: boolean;
-      allowRun?: boolean;
-      disabled?: boolean;
-
-      resetTerminalOnRun?: boolean;
-      resetStdinOnRun?: boolean;
-
-      onRun?: (args: {
-        language: Lang;
-        code: string;
-        stdin: string;
-      }) => Promise<RunResult>;
-    } & ControlledProps)
-  | ({
-      title?: string;
-      height?: number;
-      hintMarkdown?: string;
-
-      showLanguagePicker?: boolean;
-      allowReset?: boolean;
-      allowRun?: boolean;
-      disabled?: boolean;
-
-      resetTerminalOnRun?: boolean;
-      resetStdinOnRun?: boolean;
-
-      onRun?: (args: {
-        language: Lang;
-        code: string;
-        stdin: string;
-      }) => Promise<RunResult>;
-    } & UncontrolledProps);
-
-function isControlled(
-  p: CodeRunnerProps,
-): p is Extract<CodeRunnerProps, ControlledProps> {
+function isControlled(p: CodeRunnerProps): p is CommonProps & ControlledProps {
   return (
     (p as any).language !== undefined &&
     typeof (p as any).onChangeLanguage === "function"
   );
 }
 
+const lineCls = (t: TermLine["type"]) => {
+  switch (t) {
+    case "err":
+      return "font-semibold text-rose-600 dark:text-rose-300";
+    case "in":
+      return "text-sky-700 dark:text-sky-200";
+    case "sys":
+      return "text-neutral-500 dark:text-white/60";
+    default:
+      return "text-neutral-900 dark:text-white/85";
+  }
+};
+
 export default function CodeRunner(props: CodeRunnerProps) {
   const {
     title = "Try it",
     height = 320,
     hintMarkdown,
+
+    showHeaderBar = true,
+    showEditor = true,
+    showTerminal = true,
+    showHint = true,
+    showStdin = false,
+
+    fixedLanguage,
+    allowedLanguages,
     showLanguagePicker = true,
+
     allowReset = true,
     allowRun = true,
     disabled = false,
-    resetTerminalOnRun = true,
-     // ✅ NEW
-  showEditorThemeToggle = true,
-    resetStdinOnRun = false,
-    onRun,
-  } = props;
 
-  // ----- controlled vs uncontrolled state -----
+    resetTerminalOnRun = true,
+    resetStdinOnRun = false,
+
+    showEditorThemeToggle = true,
+    showTerminalDockToggle = true,
+    fixedTerminalDock,
+
+    onRun,
+  } = props as any;
+
   const controlled = isControlled(props);
 
-  const [uLang, setULang] = useState<Lang>(props.initialLanguage ?? "python");
+  // ---------- theme aware Monaco ----------
+  const { resolvedTheme } = useTheme();
+  const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
+
+  useEffect(() => {
+    if (!showEditorThemeToggle) {
+      setEditorTheme(resolvedTheme === "dark" ? "vs-dark" : "vs");
+    }
+  }, [resolvedTheme, showEditorThemeToggle]);
+
+  // ---------- languages ----------
+  const allowedLangs = useMemo(() => {
+    const base = allowedLanguages?.length ? allowedLanguages : DEFAULT_LANGS;
+    if (fixedLanguage) return [fixedLanguage];
+    return base;
+  }, [allowedLanguages, fixedLanguage]);
+
+  const initialLang: Lang =
+    fixedLanguage ??
+    (controlled ? (props as any).language : (props as any).initialLanguage) ??
+    allowedLangs[0] ??
+    "python";
+
+  // ---------- uncontrolled state ----------
+  const [uLang, setULang] = useState<Lang>(initialLang);
   const [uCode, setUCode] = useState<string>(
-    props.initialCode ?? DEFAULT_CODE[props.initialLanguage ?? "python"],
+    (props as any).initialCode ?? DEFAULT_CODE[initialLang],
   );
-  const [uStdin, setUStdin] = useState<string>(
-    (props as any).initialStdin ?? "",
-  );
+  const [uStdin, setUStdin] = useState<string>((props as any).initialStdin ?? "");
 
-  const lang = controlled ? props.language : uLang;
-  const code = controlled ? props.code : uCode;
-  const stdin = controlled ? props.stdin : uStdin;
+  // ---------- resolved state ----------
+  const lang: Lang = fixedLanguage
+    ? fixedLanguage
+    : controlled
+      ? (props as any).language
+      : uLang;
 
-  const setLang = (l: Lang) =>
-    controlled ? props.onChangeLanguage(l) : setULang(l);
+  const code: string = controlled ? (props as any).code : uCode;
+  const stdin: string = controlled ? (props as any).stdin : uStdin;
+
+  const setLang = (l: Lang) => {
+    if (fixedLanguage) return;
+    if (!allowedLangs.includes(l)) return;
+    controlled ? (props as any).onChangeLanguage(l) : setULang(l);
+  };
   const setCode = (c: string) =>
-    controlled ? props.onChangeCode(c) : setUCode(c);
+    controlled ? (props as any).onChangeCode(c) : setUCode(c);
   const setStdin = (s: string) =>
-    controlled ? props.onChangeStdin(s) : setUStdin(s);
+    controlled ? (props as any).onChangeStdin(s) : setUStdin(s);
 
-  // ----- terminal state -----
+  // ---------- dock ----------
+  const [uDock, setUDock] = useState<TerminalDock>(
+    (props as any).initialTerminalDock ?? "bottom",
+  );
+
+  const dock: TerminalDock =
+    fixedTerminalDock ?? (props as any).terminalDock ?? uDock;
+
+  const setDock = (d: TerminalDock) => {
+    if (fixedTerminalDock) return;
+    const cb = (props as any).onChangeTerminalDock as
+      | ((d: TerminalDock) => void)
+      | undefined;
+    if (cb) cb(d);
+    else setUDock(d);
+  };
+
+  // ---------- split sizing (IMPORTANT: separate sizes) ----------
+  const SPLIT_PX = 8; // h-2 / w-2
+  const MIN_EDITOR_H = 160;
+  const MIN_TERM_H = 140;
+
+  const MIN_EDITOR_W = 320;
+  const MIN_TERM_W = 240;
+
+  const initialTerm = (props as any).initialTerminalSize ?? 240;
+
+  // ✅ separate bottom-height and right-width
+  const [termH, setTermH] = useState<number>(clamp(initialTerm, MIN_TERM_H, 520));
+  const [termW, setTermW] = useState<number>(clamp(initialTerm, MIN_TERM_W, 720));
+
+  // bottom total height is fixed while dragging:
+  // total = editorStart(height) + terminalStart(termH) + splitter
+  const [bottomTotalH, setBottomTotalH] = useState<number>(() => {
+    // if editor/terminal not both shown, just use height
+    if (!(showEditor && showTerminal)) return height;
+    return height + clamp(initialTerm, MIN_TERM_H, 520) + SPLIT_PX;
+  });
+
+  // keep total sane if parent changes height (rare but happens)
+  useEffect(() => {
+    if (!(showEditor && showTerminal)) {
+      setBottomTotalH(height);
+      return;
+    }
+    // keep current terminal height if possible; recompute total from new editor base
+    setBottomTotalH((_) => height + termH + SPLIT_PX);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height]);
+
+  // ---------- measure width for right dock clamp ----------
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const [mainW, setMainW] = useState<number>(0);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+
+    const update = () => setMainW(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    update();
+
+    return () => ro.disconnect();
+  }, []);
+
+  // ---------- Monaco layout reliability ----------
+  const monacoEditorRef = useRef<any>(null);
+
+  const requestLayout = () => {
+    const ed = monacoEditorRef.current;
+    if (!ed) return;
+    // Monaco needs a tick
+    requestAnimationFrame(() => {
+      try {
+        ed.layout?.();
+      } catch {}
+    });
+  };
+
+  useEffect(() => {
+    requestLayout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dock, termH, termW, bottomTotalH]);
+
+  // ---------- splitter drag ----------
+  const splitDragRef = useRef<{
+    startX: number;
+    startY: number;
+    startSize: number;
+    dock: TerminalDock;
+  } | null>(null);
+
+  function onMouseDownSplit(e: React.MouseEvent) {
+    if (disabled) return;
+    e.preventDefault();
+
+    splitDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startSize: dock === "bottom" ? termH : termW,
+      dock,
+    };
+
+    const prevSelect = document.body.style.userSelect;
+    const prevCursor = document.body.style.cursor;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = dock === "bottom" ? "row-resize" : "col-resize";
+
+    const onMove = (ev: MouseEvent) => {
+      const d = splitDragRef.current;
+      if (!d) return;
+
+      if (d.dock === "bottom") {
+        const dy = ev.clientY - d.startY;
+
+        const maxTerm = Math.max(
+          MIN_TERM_H,
+          bottomTotalH - SPLIT_PX - MIN_EDITOR_H,
+        );
+
+        const next = clamp(d.startSize - dy, MIN_TERM_H, maxTerm);
+        setTermH(next);
+      } else {
+        const dx = ev.clientX - d.startX;
+
+        const available = mainW || 0;
+        const maxTerm = Math.max(
+          MIN_TERM_W,
+          available - 2 - MIN_EDITOR_W,
+        );
+
+        const next = clamp(d.startSize - dx, MIN_TERM_W, maxTerm || 720);
+        setTermW(next);
+      }
+
+      requestLayout();
+    };
+
+    const onUp = () => {
+      splitDragRef.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+
+      document.body.style.userSelect = prevSelect;
+      document.body.style.cursor = prevCursor;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
+
+  // ---- terminal state ----
   const [stdinBuffer, setStdinBuffer] = useState<string>("");
   const [terminal, setTerminal] = useState<TermLine[]>([
     { type: "sys", text: "Ready." },
@@ -212,14 +396,12 @@ export default function CodeRunner(props: CodeRunnerProps) {
   const [inputPrompt, setInputPrompt] = useState<string>("");
   const [inputLine, setInputLine] = useState<string>("");
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
 
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<RunResult | null>(null);
 
-  const appendLines = (lines: TermLine[]) => {
+  const appendLines = (lines: TermLine[]) =>
     setTerminal((prev) => [...prev, ...lines]);
-  };
 
   const resetTerminal = (opts?: { keepReady?: boolean }) => {
     setTerminal(
@@ -238,41 +420,41 @@ export default function CodeRunner(props: CodeRunnerProps) {
     setBusy(true);
     setLastResult(null);
 
-    if (onRun) {
-      const data = await onRun({ language: lang, code, stdin: stdinToUse });
-      setBusy(false);
+    try {
+      if (onRun) {
+        const data = await onRun({ language: lang, code, stdin: stdinToUse });
+        setLastResult(data);
+        return data;
+      }
+
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
+      });
+
+      const text = await res.text();
+      let data: RunResult;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {
+          ok: false,
+          error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
+        };
+      }
       setLastResult(data);
       return data;
+    } finally {
+      setBusy(false);
     }
-
-    const res = await fetch("/api/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
-    });
-
-    const text = await res.text();
-    let data: RunResult;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = {
-        ok: false,
-        error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
-      };
-    }
-
-    setBusy(false);
-    setLastResult(data);
-    return data;
   };
 
   const startRun = async () => {
     if (disabled || busy || !allowRun) return;
 
-    if (resetTerminalOnRun) {
-      resetTerminal();
-    } else {
+    if (resetTerminalOnRun) resetTerminal();
+    else {
       setAwaitingInput(false);
       setInputPrompt("");
       setInputLine("");
@@ -281,18 +463,15 @@ export default function CodeRunner(props: CodeRunnerProps) {
     if (resetStdinOnRun) setStdin("");
 
     const baseStdin = (resetStdinOnRun ? "" : stdin) + stdinBuffer;
-
     appendLines([{ type: "sys", text: `Running… (${lang})` }]);
 
     const data = await runOnce(baseStdin);
     const info = detectNeedsInput(lang, data);
 
-    // Decide if this run is a failure (used to color stdout red when runner stuffs errors into stdout)
     const hasErrFields =
       !!data.compile_output || !!data.stderr || !!data.message || !!data.error;
     const isFailure = data.ok === false || hasErrFields;
 
-    // stdout (sometimes contains errors on some runners)
     const stdoutText = cleanTermText(data.stdout ?? "");
     if (stdoutText) {
       const stdoutType: TermLine["type"] =
@@ -335,7 +514,6 @@ export default function CodeRunner(props: CodeRunnerProps) {
     setInputLine("");
 
     const combinedStdin = stdin + nextTyped;
-
     appendLines([{ type: "sys", text: "Continuing…" }]);
 
     const data = await runOnce(combinedStdin);
@@ -381,6 +559,9 @@ export default function CodeRunner(props: CodeRunnerProps) {
   };
 
   const onSwitchLang = (next: Lang) => {
+    if (fixedLanguage) return;
+    if (!allowedLangs.includes(next)) return;
+
     setLang(next);
     setCode(
       (code?.trim()?.length ? code : DEFAULT_CODE[next]) ?? DEFAULT_CODE[next],
@@ -388,46 +569,69 @@ export default function CodeRunner(props: CodeRunnerProps) {
     resetTerminal();
   };
 
+  const showPickerUI =
+    showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
+
+  const showEditorThemeToggleUI = showEditorThemeToggle && showHeaderBar;
+  const showDockToggleUI =
+    showTerminalDockToggle &&
+    !fixedTerminalDock &&
+    showHeaderBar &&
+    showEditor &&
+    showTerminal;
+
+  // ----- computed bottom trade sizes -----
+  const bottomMaxTerm = Math.max(
+    MIN_TERM_H,
+    bottomTotalH - SPLIT_PX - MIN_EDITOR_H,
+  );
+  const bottomTermH = clamp(termH, MIN_TERM_H, bottomMaxTerm);
+  const bottomEditorH = Math.max(
+    MIN_EDITOR_H,
+    bottomTotalH - SPLIT_PX - bottomTermH,
+  );
+
   const terminalView = useMemo(() => {
     const stdinLines = stdinBuffer
       ? stdinBuffer.split("\n").filter(Boolean).length
       : 0;
-
-    const terminalHasError = !!lastResult && lastResult.ok === false && !awaitingInput;
+    const terminalHasError =
+      !!lastResult && lastResult.ok === false && !awaitingInput;
 
     return (
       <div
         className={[
-          "rounded-2xl border bg-black/40 p-3",
-          terminalHasError ? "border-rose-300/30" : "border-white/10",
+          "h-full rounded-2xl border p-3 flex flex-col",
+          "bg-white/80 dark:bg-black/40",
+          terminalHasError
+            ? "border-rose-300/30"
+            : "border-neutral-200 dark:border-white/10",
         ].join(" ")}
       >
         <div className="flex items-center justify-between">
-          <div className="text-[11px] font-extrabold text-white/60">
+          <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
             Terminal
           </div>
-          <div className="text-[11px] font-extrabold text-white/50">
+          <div className="text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
             typed lines: {stdinLines}
           </div>
         </div>
 
         <div
           className={[
-            "mt-2 max-h-[260px] overflow-auto rounded-xl border bg-black/30 p-3",
-            terminalHasError ? "border-rose-300/20" : "border-white/10",
+            "mt-2 flex-1 overflow-auto rounded-xl border p-3",
+            "bg-white/60 dark:bg-black/30",
+            terminalHasError
+              ? "border-rose-300/20"
+              : "border-neutral-200 dark:border-white/10",
           ].join(" ")}
         >
-          {/* Base color prevents any "black-on-black" even if something isn't wrapped */}
-          <pre className="whitespace-pre-wrap break-words text-xs leading-5 text-white/85">
+          <pre className="whitespace-pre-wrap break-words text-xs leading-5">
             {terminal.map((l, i) => {
-              const prefix =
-                l.type === "sys" ? "• " : l.type === "in" ? "> " : "";
+              const prefix = l.type === "sys" ? "• " : l.type === "in" ? "> " : "";
               return (
                 <React.Fragment key={i}>
-                  <span
-                    className={termLineClass(l.type)}
-                    style={termLineStyle(l.type)}
-                  >
+                  <span className={lineCls(l.type)}>
                     {prefix}
                     {cleanTermText(l.text)}
                   </span>
@@ -439,7 +643,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
           {awaitingInput ? (
             <div className="mt-2 flex items-center gap-2">
-              <div className="text-xs font-extrabold text-white/70">
+              <div className="text-xs font-extrabold text-neutral-700 dark:text-white/70">
                 {inputPrompt || "Input:"}
               </div>
               <input
@@ -450,7 +654,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                   if (e.key === "Enter") submitInput();
                 }}
                 placeholder="Type and press Enter…"
-                className="h-9 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-xs text-white/80 outline-none"
+                className="h-9 w-full rounded-xl border border-neutral-200 bg-white/70 px-3 text-xs text-neutral-900 outline-none dark:border-white/10 dark:bg-black/40 dark:text-white/80"
               />
               <button
                 type="button"
@@ -459,8 +663,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                 className={[
                   "rounded-xl border px-3 py-2 text-xs font-extrabold transition",
                   busy || disabled
-                    ? "border-white/10 bg-white/5 text-white/50"
-                    : "border-amber-300/30 bg-amber-300/10 text-white/90 hover:bg-amber-300/15",
+                    ? "border-neutral-200 bg-neutral-50 text-neutral-400 dark:border-white/10 dark:bg-white/5 dark:text-white/50"
+                    : "border-amber-300/40 bg-amber-300/15 text-neutral-900 hover:bg-amber-300/20 dark:text-white/90",
                 ].join(" ")}
               >
                 Enter
@@ -473,7 +677,9 @@ export default function CodeRunner(props: CodeRunnerProps) {
           <div
             className={[
               "mt-2 text-[11px] font-extrabold",
-              lastResult.ok === false ? "text-rose-300" : "text-white/50",
+              lastResult.ok === false
+                ? "text-rose-600 dark:text-rose-300"
+                : "text-neutral-500 dark:text-white/50",
             ].join(" ")}
           >
             Last run: {fmtMeta(lastResult)}
@@ -481,125 +687,248 @@ export default function CodeRunner(props: CodeRunnerProps) {
         ) : null}
       </div>
     );
-  }, [terminal, awaitingInput, inputPrompt, inputLine, busy, stdinBuffer, lastResult, disabled]);
+  }, [
+    terminal,
+    awaitingInput,
+    inputPrompt,
+    inputLine,
+    busy,
+    stdinBuffer,
+    lastResult,
+    disabled,
+  ]);
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-black text-white/90">{title}</div>
+    <div className="ui-card w-full p-4">
+      {showHeaderBar ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+            {title}
+          </div>
 
-        <div className="flex items-center gap-2">
-         {showEditorThemeToggle ? (
-  <button
-    type="button"
-    onClick={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
-    className="rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/80 hover:bg-white/10"
-    title="Toggle editor theme"
-    disabled={disabled}
-  >
-    {editorTheme === "vs-dark" ? "Editor: Dark" : "Editor: Light"}
-  </button>
-) : null}
+          <div className="flex items-center gap-2">
+            {showEditorThemeToggleUI ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))
+                }
+                className="ui-authbtn"
+                title="Toggle editor theme"
+                disabled={disabled}
+              >
+                {editorTheme === "vs-dark" ? "Editor: Dark" : "Editor: Light"}
+              </button>
+            ) : null}
 
-          {showLanguagePicker ? (
-            <>
-              <div className="text-xs font-extrabold text-white/60">
-                Language
+            {showDockToggleUI ? (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setDock(dock === "bottom" ? "right" : "bottom")}
+                className="ui-authbtn disabled:opacity-60"
+                title="Toggle terminal position"
+              >
+                Terminal: {dock === "bottom" ? "Bottom" : "Right"}
+              </button>
+            ) : null}
+
+            {showPickerUI ? (
+              <>
+                <div className="text-xs font-extrabold text-neutral-600 dark:text-white/60">
+                  Language
+                </div>
+                {allowedLangs.map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSwitchLang(l)}
+                    className={[
+                      "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
+                      lang === l
+                        ? "border-emerald-300/30 bg-emerald-300/10 text-neutral-900 dark:text-white/90"
+                        : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",
+                      disabled ? "opacity-60" : "",
+                    ].join(" ")}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </>
+            ) : (
+              <div className="text-xs font-extrabold text-neutral-500 dark:text-white/60">
+                Language:{" "}
+                <span className="text-neutral-900 dark:text-white/85">{lang}</span>
               </div>
-              {(["python", "java"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => onSwitchLang(l)}
-                  className={[
-                    "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
-                    lang === l
-                      ? "border-emerald-300/30 bg-emerald-300/10 text-white/90"
-                      : "border-white/10 bg-white/5 text-white/75 hover:bg-white/10",
-                    disabled ? "opacity-60" : "",
-                  ].join(" ")}
-                >
-                  {l}
-                </button>
-              ))}
-            </>
-          ) : null}
+            )}
 
-          {allowReset ? (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => {
-                setCode(DEFAULT_CODE[lang]);
-                setStdin("");
-                resetTerminal();
-              }}
-              className="ml-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/80 hover:bg-white/10 disabled:opacity-60"
-            >
-              Reset
-            </button>
-          ) : null}
+            {allowReset ? (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  setCode(DEFAULT_CODE[lang]);
+                  setStdin("");
+                  resetTerminal();
+                }}
+                className="ui-authbtn disabled:opacity-60"
+              >
+                Reset
+              </button>
+            ) : null}
 
-          {allowRun ? (
-            <button
-              type="button"
-              disabled={busy || disabled}
-              onClick={startRun}
-              className={[
-                "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
-                busy || disabled
-                  ? "border-white/10 bg-white/5 text-white/50"
-                  : "border-sky-300/30 bg-sky-300/10 text-white/90 hover:bg-sky-300/15",
-              ].join(" ")}
-            >
-              {busy ? "Running…" : "Run"}
-            </button>
-          ) : null}
+            {allowRun ? (
+              <button
+                type="button"
+                disabled={busy || disabled}
+                onClick={startRun}
+                className={[
+                  "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
+                  busy || disabled
+                    ? "border-neutral-200 bg-white/60 text-neutral-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/40"
+                    : "border-sky-300/30 bg-sky-300/10 text-neutral-900 hover:bg-sky-300/15 dark:text-white/90",
+                ].join(" ")}
+              >
+                {busy ? "Running…" : "Run"}
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {hintMarkdown ? (
-        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-          <MathMarkdown
-            className="text-sm text-white/80 [&_.katex]:text-white/90"
-            content={hintMarkdown}
+      {showHint && hintMarkdown ? (
+        <div className="ui-soft mt-3 p-3">
+          <MathMarkdown className="ui-math" content={hintMarkdown} />
+        </div>
+      ) : null}
+
+      {showStdin ? (
+        <div className="ui-soft mt-3 p-3">
+          <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
+            stdin
+          </div>
+          <textarea
+            value={stdin}
+            disabled={disabled}
+            onChange={(e) => setStdin(e.target.value)}
+            placeholder="Optional input fed to your program (before interactive typed lines)…"
+            className="mt-2 h-20 w-full resize-none rounded-xl border border-neutral-200 bg-white/80 p-2 text-xs font-extrabold text-neutral-900 outline-none transition placeholder:text-neutral-400 disabled:opacity-60 dark:border-white/10 dark:bg-black/30 dark:text-white/85 dark:placeholder:text-white/35"
           />
         </div>
       ) : null}
 
-      {/* stdin box */}
-      <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-        <div className="text-[11px] font-extrabold text-white/60">stdin</div>
-        <textarea
-          value={stdin}
-          disabled={disabled}
-          onChange={(e) => setStdin(e.target.value)}
-          placeholder="Optional input fed to your program (before interactive typed lines)…"
-          className="mt-2 h-20 w-full resize-none rounded-xl border border-white/10 bg-black/30 p-2 text-xs text-white/80 outline-none disabled:opacity-60"
-        />
-      </div>
+      {showEditor || showTerminal ? (
+        <div
+          ref={mainRef}
+          className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50/60 dark:border-white/10 dark:bg-black/20"
+        >
+          {/* Editor only */}
+          {showEditor && !showTerminal ? (
+            <div className="bg-white/70 dark:bg-black/10">
+              <Monaco
+                height={height}
+                language={monacoLang(lang)}
+                value={code}
+                theme={editorTheme}
+                onMount={(ed) => {
+                  monacoEditorRef.current = ed;
+                  requestLayout();
+                }}
+                onChange={(v) => setCode(v ?? "")}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  scrollBeyondLastLine: false,
+                  wordWrap: "on",
+                  automaticLayout: true,
+                  readOnly: disabled,
+                }}
+              />
+            </div>
+          ) : null}
 
-      <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-        <Monaco
-          height={height}
-          language={lang === "python" ? "python" : "java"}
-          value={code}
-                    theme={editorTheme}   // ✅ switches on the fly
+          {/* Terminal only */}
+          {!showEditor && showTerminal ? (
+            <div style={{ height }} className="p-3">
+              {terminalView}
+            </div>
+          ) : null}
 
-          onChange={(v) => setCode(v ?? "")}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 13,
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            automaticLayout: true,
-            readOnly: disabled,
-          }}
-        />
-      </div>
+          {/* Editor + Terminal (TRADE SPACE) */}
+          {showEditor && showTerminal ? (
+            dock === "bottom" ? (
+              <div className="flex flex-col" style={{ height: bottomTotalH }}>
+                <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                  <Monaco
+                    height={bottomEditorH}
+                    language={monacoLang(lang)}
+                    value={code}
+                    theme={editorTheme}
+                    onMount={(ed) => {
+                      monacoEditorRef.current = ed;
+                      requestLayout();
+                    }}
+                    onChange={(v) => setCode(v ?? "")}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      readOnly: disabled,
+                    }}
+                  />
+                </div>
 
-      <div className="mt-3">{terminalView}</div>
+                <div
+                  onMouseDown={onMouseDownSplit}
+                  className="h-2 cursor-row-resize bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
+                  title="Drag to resize terminal"
+                />
+
+                <div className="min-h-0 p-3" style={{ height: bottomTermH }}>
+                  {terminalView}
+                </div>
+              </div>
+            ) : (
+              <div className="flex" style={{ height }}>
+                <div className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                  <Monaco
+                    height={height}
+                    language={monacoLang(lang)}
+                    value={code}
+                    theme={editorTheme}
+                    onMount={(ed) => {
+                      monacoEditorRef.current = ed;
+                      requestLayout();
+                    }}
+                    onChange={(v) => setCode(v ?? "")}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      readOnly: disabled,
+                    }}
+                  />
+                </div>
+
+                <div
+                  onMouseDown={onMouseDownSplit}
+                  className="w-2 cursor-col-resize bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
+                  title="Drag to resize terminal"
+                />
+
+                <div className="min-w-0 p-3" style={{ width: termW, height }}>
+                  {terminalView}
+                </div>
+              </div>
+            )
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

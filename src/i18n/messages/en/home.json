@@ -1,0 +1,225 @@
+{
+  "Home": {
+    "meta": {
+      "title": "Learnoir — Learn Linear Algebra & Python by Practicing",
+      "description": "Interactive practice for Linear Algebra and Python: instant feedback, assignments, progress tracking, and multilingual learning (English, French, Haitian Creole)."
+    },
+    "nav": {
+      "product": "Product",
+      "subjects": "Subjects",
+      "pricing": "Pricing",
+      "faq": "FAQ",
+      "signIn": "Sign in"
+    },
+    "hero": {
+      "badge": "Interactive learning platform",
+      "title": "Learn Linear Algebra & Python by practicing — not just watching.",
+      "subtitle": "Learnoir combines interactive visualizations, targeted drills, and clear explanations so students build real intuition and confidence.",
+      "ctaPrimary": "Start learning",
+      "ctaSecondary": "Explore catalog",
+      "pills": ["Instant feedback", "Assignments & review", "Multilingual (EN/FR/HT)"]
+    },
+    "trust": {
+      "kicker": "Built for the way students actually learn",
+      "title": "Active recall. Immediate feedback. Real progress.",
+      "subtitle": "A practice-first platform designed to turn concepts into solvable skills.",
+      "items": [
+        { "k": "Interactive", "v": "VectorPad-style visuals + hands-on questions" },
+        { "k": "Structured", "v": "Modules → sections → practice → mastery" },
+        { "k": "Practical", "v": "Skills that transfer to exams and real projects" }
+      ]
+    },
+    "features": {
+      "kicker": "What you get",
+      "title": "A full practice loop, end-to-end",
+      "subtitle": "Everything you need to move from “I kind of get it” to “I can solve it under pressure.”",
+      "items": [
+        {
+          "title": "Interactive visuals (Linear Algebra)",
+          "desc": "Drag vectors, explore dot products, projections, spans, bases, rank intuition, and more."
+        },
+        {
+          "title": "Python practice (with structure)",
+          "desc": "From fundamentals to problem-solving patterns: clear prompts, checks, and steady progression."
+        },
+        {
+          "title": "Assignments & sessions",
+          "desc": "Run focused assignments, keep learners on track, and bring them back for review when it matters."
+        },
+        {
+          "title": "Progress that persists",
+          "desc": "Track completion, missed items, and momentum—so practice stays meaningful after reloads."
+        },
+        {
+          "title": "Multilingual learning",
+          "desc": "Teach and learn across English, French, and Haitian Creole with consistent structure."
+        },
+        {
+          "title": "Designed for clarity",
+          "desc": "Minimal, distraction-free UI: the goal is practice—not noise."
+        }
+      ]
+    },
+    "subjects": {
+      "kicker": "Subjects",
+      "title": "Start with two core tracks",
+      "subtitle": "Organized modules and sections so learners always know what to do next.",
+      "cards": [
+        {
+          "title": "Linear Algebra",
+          "desc": "Vectors → linear systems → matrices → transformations and intuition-building visuals.",
+          "bullets": ["Vectors & dot product", "Span / basis", "Rank intuition", "Matrix operations"],
+          "cta": "Explore Linear Algebra"
+        },
+        {
+          "title": "Python",
+          "desc": "Fundamentals and problem-solving practice with clean prompts and immediate checks.",
+          "bullets": ["Variables & control flow", "Functions", "Lists & dicts", "Debugging habits"],
+          "cta": "Explore Python"
+        }
+      ]
+    },
+    "how": {
+      "kicker": "How it works",
+      "title": "A simple loop that actually works",
+      "steps": [
+        {
+          "title": "Pick a module",
+          "desc": "Start at the right level—no guessing, no overwhelm."
+        },
+        {
+          "title": "Practice with feedback",
+          "desc": "Answer questions, use visuals when needed, and learn from targeted explanations."
+        },
+        {
+          "title": "Review and lock it in",
+          "desc": "Revisit missed concepts and build long-term retention through structured review."
+        }
+      ]
+    },
+    "educators": {
+      "kicker": "For educators & teams",
+      "title": "Teach consistently, measure confidently",
+      "subtitle": "Use Learnoir as a clean practice layer: assignments, progress signals, and a repeatable student experience.",
+      "bullets": [
+        "Consistent curriculum structure across locales",
+        "Assignments that guide students section-by-section",
+        "Clear outcomes: what learners can do after practice"
+      ],
+      "cta": "Talk to us"
+    },
+    "testimonials": {
+      "kicker": "Social proof",
+      "title": "Swap these with real quotes when ready",
+      "subtitle": "Safe placeholders to show layout. Replace with verified testimonials before launch.",
+      "items": [
+        {
+          "quote": "The interactive vector visuals finally made dot products and projections click. Practice felt less abstract and more real.",
+          "who": "Student (placeholder)"
+        },
+        {
+          "quote": "I like that it’s structured. I don’t waste time deciding what to learn next — I just practice and improve.",
+          "who": "Self-learner (placeholder)"
+        },
+        {
+          "quote": "Great for review sessions: quick feedback, clean UI, and the progress tracking keeps students honest.",
+          "who": "Tutor (placeholder)"
+        }
+      ]
+    },
+    "pricing": {
+      "kicker": "Pricing",
+      "title": "Start free, upgrade when you need more",
+      "subtitle": "Use placeholders now; wire real Stripe pricing later. Designed to convert cleanly.",
+      "tiers": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "desc": "Perfect for exploring the platform.",
+          "features": ["Access to core practice", "Progress tracking", "Multilingual UI"],
+          "cta": "Start free",
+          "highlight": false
+        },
+        {
+          "name": "Pro",
+          "price": "—",
+          "desc": "For serious learners who want deeper structure.",
+          "features": ["Assignments & review runs", "More practice depth", "Priority updates"],
+          "cta": "View pricing",
+          "highlight": true
+        },
+        {
+          "name": "Classroom",
+          "price": "—",
+          "desc": "For educators, cohorts, and teams.",
+          "features": ["Cohort workflows", "Reporting/export (optional)", "Custom rollout support"],
+          "cta": "Contact sales",
+          "highlight": false
+        }
+      ],
+      "note": "Tip: If you don’t have pricing yet, keep Pro and Classroom as “Contact us” until Stripe is wired."
+    },
+    "faq": {
+      "kicker": "FAQ",
+      "title": "Common questions",
+      "items": [
+        {
+          "q": "Is this a course or practice platform?",
+          "a": "Learnoir is practice-first. It complements classes and videos by turning concepts into solvable skills."
+        },
+        {
+          "q": "Does it work for beginners?",
+          "a": "Yes—modules build from fundamentals and guide learners step-by-step with checks and feedback."
+        },
+        {
+          "q": "How does multilingual content work?",
+          "a": "Learnoir keeps the same structure across locales so learners can study in English, French, or Haitian Creole."
+        },
+        {
+          "q": "Do you support assignments?",
+          "a": "Yes—assignment runs keep learners focused and can return them to the right next step after completion."
+        },
+        {
+          "q": "Will my progress persist after reloads?",
+          "a": "That’s a core goal: progress, missed items, and session outcomes should stay consistent over time."
+        },
+        {
+          "q": "What’s coming next?",
+          "a": "More modules, more question types, and deeper review flows—without sacrificing UI clarity."
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Ready to build real intuition?",
+      "subtitle": "Start with a module, practice with feedback, and turn abstract concepts into confidence.",
+      "primary": "Start learning",
+      "secondary": "Explore catalog"
+    },
+    "footer": {
+      "rights": "© {year} Learnoir. All rights reserved.",
+      "links": {
+        "catalog": "Catalog",
+        "review": "Review",
+        "pricing": "Pricing",
+        "contact": "Contact",
+        "privacy": "Privacy",
+        "terms": "Terms"
+      }
+    },
+    "ui": {
+      "heroCard": {
+        "title": "Interactive Practice",
+        "subtitle": "VectorPad • Code • Checks",
+        "laLabel": "Linear Algebra",
+        "laText": "Drag vectors → see dot product & projection update instantly.",
+        "assetNote": "Replace with a real screenshot/GIF later.",
+        "pyLabel": "Python",
+        "pyText": "Practice fundamentals with instant checks and clean prompts."
+      },
+      "tagline": "No fluff. No scrolling forever. Just practice that makes you better.",
+      "recommended": "Recommended",
+      "browseModules": "Browse modules",
+      "tryReview": "Try review"
+    }
+  }
+}

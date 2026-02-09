@@ -32,6 +32,6 @@ export default async function PracticePage() {
       imageAlt: s.imageAlt ?? null,
     }))
     .filter((s) => !!s.slug);
-
+console.log(cards)
   return <SubjectPicker initialSubjects={cards} />;
 }

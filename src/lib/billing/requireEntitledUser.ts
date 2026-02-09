@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getEntitlementForUser } from "@/lib/billing/entitlement";
+import { syncSubscriptionsForUser } from "@/lib/billing/stripeService";
 
 export async function requireEntitledUser() {
   const s = await auth();
@@ -10,6 +11,9 @@ export async function requireEntitledUser() {
   if (!userId) {
     return { ok: false as const, res: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) };
   }
+
+  // ✅ makes Stripe truth “instant” if webhook is delayed
+  await syncSubscriptionsForUser(userId).catch(() => {});
 
   const ent = await getEntitlementForUser(userId);
   if (!ent.ok) {
@@ -20,9 +24,12 @@ export async function requireEntitledUser() {
           message: "Subscription required.",
           paywall: true,
           reason: ent.reason,
-            redirectTo: "/billing",
+          status: ent.status,
+          currentPeriodEnd: ent.currentPeriodEnd,
+          trialEnd: ent.trialEnd,
+          redirectTo: "/billing",
         },
-        { status: 402 } // Payment Required
+        { status: 402 }
       ),
     };
   }

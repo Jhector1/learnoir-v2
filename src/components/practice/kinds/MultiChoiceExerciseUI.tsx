@@ -82,8 +82,15 @@ export default function MultiChoiceExerciseUI({
     const isCorrect = correctIds.includes(optionId);
 
     // Defaults
-    let tone = "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]";
-    let boxTone = "border-white/20 bg-black/20";
+   // was:
+// let tone = "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]";
+// let boxTone = "border-white/20 bg-black/20";
+
+// use:
+let tone =
+  "border-neutral-200 bg-white hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:hover:bg-white/[0.10]";
+let boxTone =
+  "border-neutral-200 bg-white dark:border-white/20 dark:bg-black/20";
 
     // Before checking: selected is BLUE
     if (!checked) {
@@ -123,10 +130,13 @@ export default function MultiChoiceExerciseUI({
 
     return { tone, boxTone };
   }
+// ✅ only className strings changed
 
   return (
     <div className="grid gap-2">
-      <div className="text-xs font-extrabold text-white/70">Choose all that apply</div>
+      <div className="text-xs font-extrabold text-neutral-600 dark:text-white/70">
+        Choose all that apply
+      </div>
 
       <div className="grid gap-2">
         {options.map((o) => {
@@ -140,13 +150,14 @@ export default function MultiChoiceExerciseUI({
               onClick={() => toggle(o.id)}
               className={[
                 "rounded-2xl border p-3 text-left transition",
+                // keep your tone logic, but ensure default tones are theme-aware inside toneForOption (see note below)
                 tone,
                 "disabled:opacity-60 disabled:cursor-not-allowed",
               ].join(" ")}
             >
               <div className="flex items-start gap-3">
                 <div className={["mt-0.5 h-4 w-4 rounded border", boxTone].join(" ")} />
-                <div className="min-w-0 text-sm text-white/90">
+                <div className="min-w-0 text-sm text-neutral-900 dark:text-white/90">
                   <MathMarkdown inline content={o.text} />
                 </div>
               </div>
@@ -155,9 +166,10 @@ export default function MultiChoiceExerciseUI({
         })}
       </div>
 
-      <div className="text-[11px] text-white/45">
+      <div className="text-[11px] text-neutral-500 dark:text-white/45">
         Stored as <span className="font-mono">optionIds[]</span> for submit.
       </div>
     </div>
   );
+
 }

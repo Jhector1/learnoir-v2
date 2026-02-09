@@ -1,3 +1,4 @@
+// VideoEmbedSketch.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -46,11 +47,10 @@ function vimeoId(url: string) {
   return null;
 }
 
-function buildEmbed(args: {
-  url: string;
-  provider: VideoProvider;
-  startSeconds?: number;
-}): { kind: "iframe" | "video"; src: string } {
+function buildEmbed(args: { url: string; provider: VideoProvider; startSeconds?: number }): {
+  kind: "iframe" | "video";
+  src: string;
+} {
   const { url, provider, startSeconds } = args;
   const p = provider ?? "auto";
 
@@ -84,10 +84,7 @@ export default function VideoEmbedSketch(props: VideoEmbedSketchProps) {
     posterUrl,
   } = props;
 
-  const embed = useMemo(
-    () => buildEmbed({ url, provider, startSeconds }),
-    [url, provider, startSeconds],
-  );
+  const embed = useMemo(() => buildEmbed({ url, provider, startSeconds }), [url, provider, startSeconds]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -112,7 +109,7 @@ export default function VideoEmbedSketch(props: VideoEmbedSketchProps) {
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="text-sm font-black">{title}</div>
@@ -120,14 +117,14 @@ export default function VideoEmbedSketch(props: VideoEmbedSketchProps) {
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] font-extrabold text-white/60 hover:text-white/80 underline"
+                className="text-[11px] font-extrabold text-neutral-600 hover:text-neutral-900 underline dark:text-white/60 dark:hover:text-white/80"
               >
                 Open video in new tab
               </a>
             </div>
           </div>
 
-          <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-black/30">
             <div className="aspect-video w-full">
               {embed.kind === "iframe" ? (
                 <iframe
@@ -152,17 +149,12 @@ export default function VideoEmbedSketch(props: VideoEmbedSketchProps) {
             </div>
           </div>
 
-          {captionMarkdown ? (
-            <MathMarkdown
-              className="mt-3 text-sm text-white/80 [&_.katex]:text-white/90"
-              content={captionMarkdown}
-            />
-          ) : null}
+          {captionMarkdown ? <MathMarkdown className="ui-math mt-3" content={captionMarkdown} /> : null}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <MathMarkdown
-            className="text-sm text-white/80 [&_.katex]:text-white/90"
+            className="ui-math"
             content={
               hudMarkdown ??
               String.raw`

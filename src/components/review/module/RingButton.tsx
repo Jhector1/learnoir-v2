@@ -19,20 +19,26 @@ export default function RingButton(props: {
       disabled={props.disabled}
       onClick={props.onClick}
       className={[
-        "mt-4 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2",
-        "text-xs font-extrabold transition text-center hover:bg-white/15",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
+        // theme-aware surface
+        "mt-4 w-full rounded-xl border px-3 py-2",
+        "border-neutral-200 bg-white hover:bg-neutral-50",
+        "dark:border-white/10 dark:bg-white/10 dark:hover:bg-white/15",
+        // text
+        "text-xs font-extrabold text-neutral-900 dark:text-white/90",
+        // behavior
+        "text-center transition disabled:opacity-50 disabled:cursor-not-allowed",
       ].join(" ")}
     >
       <div className="flex items-center justify-between gap-3">
         <span
           className="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
           style={{
-            background: `conic-gradient(rgba(16,185,129,0.9) ${deg}deg, rgba(255,255,255,0.14) 0deg)`,
+            // theme-aware ring track + fill
+            background: `conic-gradient(rgba(16,185,129,0.9) ${deg}deg, rgba(0,0,0,0.10) 0deg)`,
           }}
         >
-          <span className="h-7 w-7 inline-grid place-items-center rounded-full bg-[#0b0d12] border border-white/10">
-            <span className="text-[7px] leading-none text-white tabular-nums">
+          <span className="inline-grid h-7 w-7 place-items-center rounded-full border border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.06]">
+            <span className="tabular-nums text-[7px] leading-none text-neutral-900 dark:text-white">
               {Math.round(pct * 100)}%
             </span>
           </span>
@@ -41,7 +47,7 @@ export default function RingButton(props: {
         <span className="min-w-0 text-left">
           <div className="truncate">{props.label}</div>
           {props.sublabel ? (
-            <div className="text-[11px] font-black text-white/60 truncate">
+            <div className="truncate text-[11px] font-black text-neutral-600 dark:text-white/60">
               {props.sublabel}
             </div>
           ) : null}

@@ -14,14 +14,14 @@ export default function Providers({
 }) {
   return (
     <SessionProvider session={session}>
-   <ThemeProvider
-  attribute="class"
-  value={{ dark: "dark", light: "light" }}
-  defaultTheme="dark"
-  enableSystem={false}
-  enableColorScheme={false} // 👈 stops setting style="color-scheme: ..."
-  disableTransitionOnChange
->
+      <ThemeProvider
+        attribute="class"
+        value={{ dark: "dark", light: "light" }}
+  defaultTheme="system"
+enableSystem
+        enableColorScheme={false} // 👈 stops setting style="color-scheme: ..."
+        disableTransitionOnChange
+      >
         {children}
       </ThemeProvider>
     </SessionProvider>

@@ -1,9 +1,11 @@
+// src/components/UserMenuSlick.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/cn";
 
 type Props = {
   name: string;
@@ -12,10 +14,6 @@ type Props = {
   profileHref?: string;
   onSignOut: () => void;
 };
-
-function cn(...cls: Array<string | false | undefined | null>) {
-  return cls.filter(Boolean).join(" ");
-}
 
 export default function UserMenuSlick({
   name,
@@ -58,15 +56,11 @@ export default function UserMenuSlick({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "group inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-2.5 py-2",
-          "text-xs font-extrabold text-white/85 shadow-[0_12px_30px_rgba(0,0,0,0.20)]",
-          "hover:bg-white/[0.10] focus:outline-none focus:ring-2 focus:ring-white/15"
-        )}
+        className="group ui-user-btn"
         aria-expanded={open}
         aria-label={t("ariaLabel")}
       >
-        <span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06]">
+        <span className="ui-avatar-wrap">
           {image ? (
             <Image
               src={image}
@@ -77,14 +71,16 @@ export default function UserMenuSlick({
               unoptimized
             />
           ) : (
-            <span className="text-[11px] font-black text-white/85">{initials}</span>
+            <span className="text-[11px] font-black text-neutral-800 dark:text-white/85">
+              {initials}
+            </span>
           )}
         </span>
 
-        <span className="hidden lg:block max-w-[140px] truncate">{name}</span>
+        <span className="ui-user-name">{name}</span>
 
         <svg
-          className={cn("h-3 w-3 text-white/60 transition", open && "rotate-180")}
+          className={cn("ui-user-chevron", open && "rotate-180")}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -100,48 +96,47 @@ export default function UserMenuSlick({
       {/* Dropdown */}
       <div
         className={cn(
-          "absolute right-0 mt-2 w-64 origin-top-right",
-          "transition-[opacity,transform] duration-150",
+          "ui-user-panelwrap",
           open
             ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-1 pointer-events-none"
+            : "opacity-0 -translate-y-1 pointer-events-none",
         )}
       >
-        <div className="rounded-2xl border border-white/10 bg-black/70 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10">
-            <div className="text-sm font-extrabold text-white/90 truncate">{name}</div>
-            {email ? (
-              <div className="mt-0.5 text-[12px] text-white/55 truncate">{email}</div>
-            ) : null}
-          </div>
+        <div className={cn("ui-user-panel", "relative")}>
+          <div aria-hidden className="ui-user-panelglow" />
 
-          <div className="p-2">
-            <Link
-              href={profileHref}
-              onClick={() => setOpen(false)}
-              className="block rounded-xl px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/[0.08] hover:text-white/90"
-            >
-              {t("profile")}
-            </Link>
+          <div className="relative">
+            <div className="ui-user-panelheader">
+              <div className="text-sm font-extrabold truncate text-neutral-900 dark:text-white">
+                {name}
+              </div>
+              {email ? (
+                <div className="mt-0.5 text-[12px] truncate text-neutral-600 dark:text-white/60">
+                  {email}
+                </div>
+              ) : null}
+            </div>
 
-            <Link
-              href="/progress"
-              onClick={() => setOpen(false)}
-              className="block rounded-xl px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/[0.08] hover:text-white/90"
-            >
-              {t("progress")}
-            </Link>
+            <div className="p-2">
+              <Link href={profileHref} onClick={() => setOpen(false)} className="ui-user-item">
+                {t("profile")}
+              </Link>
 
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onSignOut();
-              }}
-              className="mt-1 w-full text-left rounded-xl px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/[0.08] hover:text-white/90"
-            >
-              {t("logout")}
-            </button>
+              <Link href="/progress" onClick={() => setOpen(false)} className="ui-user-item">
+                {t("progress")}
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onSignOut();
+                }}
+                className="ui-user-logout"
+              >
+                {t("logout")}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -54,7 +54,9 @@ export default function RevealAnswerCard({
   updateCurrent: (patch: Partial<QItem>) => void;
 }) {
   // Prefer new API shape, fallback to old `expected`
-const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as any;
+  const reveal = (result?.revealAnswer ??
+    result?.reveal ??
+    result?.expected) as any;
 
   const [copied, setCopied] = useState(false);
 
@@ -112,12 +114,14 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
               </div>
             </div>
             <pre className="p-3 text-xs leading-relaxed text-white/85 overflow-x-auto">
-{code ? (
-  <MathMarkdown
-    content={code}
-    className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
-  />
-) : "// (no solutionCode provided)"}
+              {code ? (
+                <MathMarkdown
+                  content={code}
+                  className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
+                />
+              ) : (
+                "// (no solutionCode provided)"
+              )}
             </pre>
 
             {stdin ? (
@@ -126,7 +130,7 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
                   stdin
                 </div>
                 <pre className="mt-1 text-xs text-white/80 overflow-x-auto">
-{stdin}
+                  {stdin}
                 </pre>
               </div>
             ) : null}
@@ -136,7 +140,9 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
     }
 
     if (kind === "matrix_input") {
-      const values = Array.isArray(reveal.values) ? (reveal.values as number[][]) : [];
+      const values = Array.isArray(reveal.values)
+        ? (reveal.values as number[][])
+        : [];
       const rows = values.length;
       const cols = values[0]?.length ?? 0;
 
@@ -155,7 +161,9 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
         node: (
           <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
             <MatrixInputPanel
-              labelLatex={(reveal.labelLatex as string) ?? String.raw`\mathbf{A}=`}
+              labelLatex={
+                (reveal.labelLatex as string) ?? String.raw`\mathbf{A}=`
+              }
               rows={rows}
               cols={cols}
               allowResize={false}
@@ -177,7 +185,11 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
       const options = (exercise as any)?.options ?? [];
       const found = options.find((o: any) => String(o.id) === optionId);
       const label =
-        found?.label ?? found?.text ?? found?.markdown ?? found?.latex ?? optionId;
+        found?.label ??
+        found?.text ??
+        found?.markdown ??
+        found?.latex ??
+        optionId;
 
       return {
         title: "Correct choice",
@@ -207,7 +219,9 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
       return {
         title: "Correct choices",
         copyText,
-        fillPatch: optionIds.length ? ({ multi: optionIds } as Partial<QItem>) : null,
+        fillPatch: optionIds.length
+          ? ({ multi: optionIds } as Partial<QItem>)
+          : null,
         node: (
           <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
             <div className="text-xs text-white/70 font-extrabold">Options</div>
@@ -225,15 +239,19 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
       return {
         title: "One valid vector answer",
         copyText,
-        fillPatch: sol ? ({ dragA: sol } as Partial<QItem>) : null,
+        fillPatch: sol ? ({ dragA: sol,...(b ? { dragB: b } : {}) } as Partial<QItem>) : null,
         node: (
           <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-white/80">
             <div className="font-extrabold text-white/85">a</div>
-            <pre className="mt-1 overflow-x-auto">{JSON.stringify(sol, null, 2)}</pre>
+            <pre className="mt-1 overflow-x-auto">
+              {JSON.stringify(sol, null, 2)}
+            </pre>
             {b ? (
               <>
                 <div className="mt-3 font-extrabold text-white/85">b</div>
-                <pre className="mt-1 overflow-x-auto">{JSON.stringify(b, null, 2)}</pre>
+                <pre className="mt-1 overflow-x-auto">
+                  {JSON.stringify(b, null, 2)}
+                </pre>
               </>
             ) : null}
           </div>
@@ -256,7 +274,7 @@ const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as a
 
   function onFill() {
     if (!model.fillPatch) return;
-    updateCurrent(model.fillPatch);
+    updateCurrent({ ...model.fillPatch, submitted: false, result: null });
   }
 
   return (

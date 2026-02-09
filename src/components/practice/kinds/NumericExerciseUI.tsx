@@ -8,8 +8,6 @@ export default function NumericExerciseUI({
   value,
   onChange,
   disabled,
-
-  // ✅ new
   checked,
   ok,
 }: {
@@ -18,19 +16,20 @@ export default function NumericExerciseUI({
   onChange: (v: string) => void;
   disabled: boolean;
 
-  checked: boolean;          // current.submitted
-  ok: boolean | null;        // current.result?.ok ?? null
+  checked: boolean; // current.submitted
+  ok: boolean | null; // current.result?.ok ?? null
 }) {
   const placeholder = (exercise as any).placeholder ?? "Enter a number…";
   const hasDraft = String(value ?? "").trim().length > 0;
 
+  // ✅ theme-aware using your ui tokens
   const tone = checked
     ? ok === true
       ? "border-emerald-300/40 bg-emerald-300/10"
       : "border-rose-300/40 bg-rose-300/10"
     : hasDraft
       ? "border-sky-300/30 bg-sky-300/10"
-      : "border-white/10 bg-black/20";
+      : "border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.06]";
 
   const focusTone = checked
     ? ok === true
@@ -40,12 +39,13 @@ export default function NumericExerciseUI({
 
   return (
     <div className="grid gap-2">
-      <div className="text-xs font-extrabold text-white/70">Your answer</div>
+      <div className="ui-sketch-label">Your answer</div>
 
       <input
         className={[
           "h-11 w-full rounded-xl border px-3",
-          "text-sm font-extrabold text-white/90 outline-none transition",
+          "text-sm font-extrabold text-neutral-900 outline-none transition",
+          "dark:text-white/90",
           tone,
           focusTone,
           "disabled:opacity-60 disabled:cursor-not-allowed",
@@ -56,7 +56,7 @@ export default function NumericExerciseUI({
         onChange={(e) => onChange(e.target.value)}
       />
 
-      <div className="text-[11px] text-white/45">
+      <div className="ui-sketch-muted">
         Tip: decimals are allowed unless the prompt says “integer”.
       </div>
     </div>

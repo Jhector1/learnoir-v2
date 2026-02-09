@@ -9,6 +9,7 @@ import MathMarkdown from "@/components/math/MathMarkdown";
 import SketchHost from "@/components/review/SketchHost";
 import QuizBlock from "@/components/review/QuizBlock";
 import { buildReviewQuizKey } from "@/lib/review/quizClient";
+import { cn } from "@/lib/cn";
 
 export default function CardRenderer(props: {
   card: ReviewCard;
@@ -17,7 +18,6 @@ export default function CardRenderer(props: {
 
   progressHydrated: boolean;
 
-  // quiz wiring
   savedQuiz: SavedQuizState | null;
   versionStr: string;
 
@@ -40,27 +40,32 @@ export default function CardRenderer(props: {
     onQuizReset,
   } = props;
 
+  const wrapCls = "ui-soft p-4";
+
+  const actionBtn = cn(
+    "ui-btn ui-btn-secondary",
+    "px-3 py-2 text-xs font-extrabold",
+    done &&
+      "border-emerald-600/20 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/15 " +
+        "dark:border-emerald-400/30 dark:bg-emerald-300/10 dark:text-emerald-100 dark:hover:bg-emerald-300/15",
+  );
+
   if (card.type === "text") {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-        {card.title ? <div className="text-sm font-black">{card.title}</div> : null}
+      <div className={wrapCls}>
+        {card.title ? (
+          <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+            {card.title}
+          </div>
+        ) : null}
 
         <MathMarkdown
-          className="text-sm text-white/80 [&_.katex]:text-white/90"
+          className="text-sm text-neutral-800 dark:text-white/80 [&_.katex]:text-inherit"
           content={card.markdown}
         />
 
         <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={onMarkDone}
-            className={[
-              "rounded-xl border px-3 py-2 text-xs font-extrabold transition",
-              done
-                ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100/90"
-                : "border-white/10 bg-white/10 text-white/80 hover:bg-white/15",
-            ].join(" ")}
-          >
+          <button type="button" onClick={onMarkDone} className={actionBtn}>
             {done ? "✓ Read" : "Mark as read"}
           </button>
         </div>
@@ -70,8 +75,12 @@ export default function CardRenderer(props: {
 
   if (card.type === "sketch") {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-        {card.title ? <div className="text-sm font-black">{card.title}</div> : null}
+      <div className={wrapCls}>
+        {card.title ? (
+          <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+            {card.title}
+          </div>
+        ) : null}
 
         <div className="mt-3">
           <SketchHost
@@ -82,16 +91,7 @@ export default function CardRenderer(props: {
         </div>
 
         <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={onMarkDone}
-            className={[
-              "rounded-xl border px-3 py-2 text-xs font-extrabold transition",
-              done
-                ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100/90"
-                : "border-white/10 bg-white/10 text-white/80 hover:bg-white/15",
-            ].join(" ")}
-          >
+          <button type="button" onClick={onMarkDone} className={actionBtn}>
             {done ? "✓ Explored" : "Mark explored"}
           </button>
         </div>
@@ -99,21 +99,26 @@ export default function CardRenderer(props: {
     );
   }
 
-  // quiz
   const quizKey = buildReviewQuizKey(card.spec as ReviewQuizSpec, card.id, versionStr);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      {card.title ? <div className="text-sm font-black">{card.title}</div> : null}
+    <div className={wrapCls}>
+      {card.title ? (
+        <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+          {card.title}
+        </div>
+      ) : null}
 
       {!prereqsMet ? (
-        <div className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/10 p-2 text-xs font-extrabold text-amber-100/90">
-          Complete the cards above to unlock this quiz.
+        <div className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
+          Read the topics and mark them as read to unlock this quiz.
         </div>
       ) : null}
 
       {!progressHydrated ? (
-        <div className="mt-2 text-xs text-white/60">Loading saved quiz state…</div>
+        <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
+          Loading saved quiz state…
+        </div>
       ) : (
         <QuizBlock
           key={quizKey}
@@ -133,7 +138,9 @@ export default function CardRenderer(props: {
       )}
 
       {done ? (
-        <div className="mt-2 text-xs font-extrabold text-emerald-300/80">✓ Completed</div>
+        <div className="mt-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300/80">
+          ✓ Completed
+        </div>
       ) : null}
     </div>
   );

@@ -67,6 +67,8 @@ export default function CodeInputExerciseUI({
         stdin={stdin}
         onChangeStdin={onChangeStdin}
         onRun={onRun}
+        fixedLanguage="python"
+        fixedTerminalDock="bottom"
       />
 
       {showCorrect ? (

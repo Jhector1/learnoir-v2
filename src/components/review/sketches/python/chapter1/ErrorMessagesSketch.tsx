@@ -1,3 +1,4 @@
+// ErrorMessagesSketch.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -80,9 +81,9 @@ Common beginner pattern:
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="text-xs font-extrabold text-white/70">Pick an error</div>
+            <div className="ui-sketch-label">Pick an error</div>
             {(
               [
                 { k: "name", label: "NameError" },
@@ -95,10 +96,8 @@ Common beginner pattern:
                 key={x.k}
                 onClick={() => setKind(x.k)}
                 className={[
-                  "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
-                  kind === x.k
-                    ? "border-rose-300/30 bg-rose-300/10 text-white/90"
-                    : "border-white/10 bg-white/5 text-white/75 hover:bg-white/10",
+                  "ui-sketch-chip",
+                  kind === x.k ? "ui-sketch-chip--active-rose" : "ui-sketch-chip--idle",
                 ].join(" ")}
               >
                 {x.label}
@@ -107,26 +106,26 @@ Common beginner pattern:
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Bad code</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">{b.code}</pre>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Bad code</div>
+              <pre className="ui-sketch-code">{b.code}</pre>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Fix</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">{b.fix}</pre>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Fix</div>
+              <pre className="ui-sketch-code">{b.fix}</pre>
             </div>
 
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-black/30 p-3">
-              <div className="text-xs font-extrabold text-white/70">{b.title}</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">{b.msg}</pre>
-              <div className="mt-2 text-xs text-white/60">{b.why}</div>
+            <div className="md:col-span-2 ui-sketch-codeblock">
+              <div className="ui-sketch-label">{b.title}</div>
+              <pre className="ui-sketch-code">{b.msg}</pre>
+              <div className="mt-2 ui-sketch-muted">{b.why}</div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+        <div className="ui-sketch-panel">
+          <MathMarkdown className="ui-math" content={hud} />
         </div>
       </div>
     </div>

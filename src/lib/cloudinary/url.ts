@@ -6,38 +6,41 @@ type CloudinaryImageOpts = {
   quality?: "auto" | number;
   format?: "auto" | "webp" | "jpg" | "png";
   dpr?: "auto" | number;
+  v?: string | number;
 };
 
 function encPublicId(publicId: string) {
-  // keep folder slashes, but encode other chars safely
   return encodeURIComponent(publicId).replace(/%2F/g, "/");
 }
 
 export function cloudinaryImageUrl(publicId: string, opts: CloudinaryImageOpts = {}) {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-  // If env isn't set, return empty and let caller fallback.
   if (!cloudName) return "";
 
   const {
     w = 1200,
-    h = 320,
+    h,
     crop = "fill",
     gravity = "auto",
     quality = "auto",
     format = "auto",
     dpr = "auto",
+    v,
   } = opts;
 
-  const tr = [
-    `f_${format}`,
-    `q_${quality}`,
-    `c_${crop}`,
-    `g_${gravity}`,
-    `w_${w}`,
-    `h_${h}`,
-    `dpr_${dpr}`,
-  ].join(",");
+  const trParts: string[] = [`f_${format}`, `q_${quality}`, `c_${crop}`, `w_${w}`, `dpr_${dpr}`];
 
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${tr}/${encPublicId(publicId)}`;
+  // Only include gravity when it matters
+  if ((crop === "fill" || crop === "crop") && gravity) trParts.push(`g_${gravity}`);
+
+  // Only include height when it makes sense (prevents unexpected aspect behavior)
+  if (typeof h === "number" && (crop === "fill" || crop === "crop")) trParts.push(`h_${h}`);
+
+  const tr = trParts.join(",");
+
+  const versionSeg = v ? `v${v}/` : "";
+
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${tr}/${versionSeg}${encPublicId(
+    publicId,
+  )}`;
 }

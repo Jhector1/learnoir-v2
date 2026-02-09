@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ReviewProgressState } from "@/lib/review/progressTypes";
+import { emptyReviewProgress, fetchReviewProgressGET } from "@/lib/review/progressClient";
 
 function emptyProgress(): ReviewProgressState {
   return {
@@ -73,51 +74,37 @@ export function useReviewProgress(args: {
   );
 
   // load progress
-  useEffect(() => {
-    if (!subjectSlug || !moduleId) return;
+ useEffect(() => {
+  if (!subjectSlug || !moduleId) return;
 
-    const ctrl = new AbortController();
-    setHydrated(false);
+  const ctrl = new AbortController();
+  setHydrated(false);
 
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/review/progress?subjectSlug=${encodeURIComponent(subjectSlug)}&moduleId=${encodeURIComponent(
-            moduleId,
-          )}&locale=${encodeURIComponent(locale)}`,
-          { signal: ctrl.signal, cache: "no-store" },
-        );
+  (async () => {
+    try {
+      const p = await fetchReviewProgressGET({
+        subjectSlug,
+        moduleId,
+        locale,
+        signal: ctrl.signal,
+      });
 
-        if (!res.ok) {
-          setProgress(emptyProgress());
-          setActiveTopicId(firstTopicId);
-          setViewTopicId(firstTopicId);
-          return;
-        }
+      setProgress(p);
 
-        const data = await res.json().catch(() => null);
-        const p = (data?.progress ?? null) as ReviewProgressState | null;
+      const nextActive = (p as any).activeTopicId || firstTopicId;
+      setActiveTopicId(nextActive);
+      setViewTopicId(nextActive);
+    } catch {
+      setProgress(emptyReviewProgress());
+      setActiveTopicId(firstTopicId);
+      setViewTopicId(firstTopicId);
+    } finally {
+      setHydrated(true);
+    }
+  })();
 
-        if (p) {
-          setProgress(p);
-
-          const nextActive = (p as any).activeTopicId || firstTopicId;
-          setActiveTopicId(nextActive);
-          setViewTopicId(nextActive);
-        } else {
-          setProgress(emptyProgress());
-          setActiveTopicId(firstTopicId);
-          setViewTopicId(firstTopicId);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setHydrated(true);
-      }
-    })();
-
-    return () => ctrl.abort();
-  }, [subjectSlug, moduleId, locale, firstTopicId]);
+  return () => ctrl.abort();
+}, [subjectSlug, moduleId, locale, firstTopicId]);
 
   // save progress (debounced)
   useEffect(() => {

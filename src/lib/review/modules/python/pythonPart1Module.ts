@@ -1,8 +1,5 @@
 import type { ReviewModule } from "@/lib/review/types";
-import {
-  PY_SECTION_PART1,
-  PY_TOPIC,
-} from "@/lib/practice/catalog/subjects/python/slugs";
+import { PY_SECTION_PART1, PY_TOPIC } from "@/lib/practice/catalog/subjects/python/slugs";
 import { PY_MOD0 } from "../../../../../prisma/seed/data/subjects/python/constants";
 
 export const pythonPart1Module: ReviewModule = {
@@ -15,8 +12,11 @@ export const pythonPart1Module: ReviewModule = {
     `/practice?section=${PY_SECTION_PART1}&difficulty=easy&topic=${encodeURIComponent(topicSlug)}`,
 
   topics: [
+    // ------------------------------------------------------------
+    // print
+    // ------------------------------------------------------------
     {
-      id: "py_print",
+      id: PY_TOPIC.print,
       label: "Printing output: print(), sep, end",
       minutes: 10,
       summary:
@@ -43,7 +43,7 @@ By default:
           type: "text",
           id: "py1_t2",
           title: "sep and end control formatting",
-               markdown: String.raw`
+          markdown: String.raw`
 Two useful options:
 
 - \(\texttt{sep}\) controls the **separator** between values
@@ -57,27 +57,26 @@ print(" again")
 `.trim(),
         },
         {
-  type: "sketch",
-  id: "py1_v1",
-  title: "Video: print() — sep and end",
-  sketchId: "video.embed",
-  height: 520,
-  props: {
-    title: "print() formatting (sep/end)",
-    url: "https://youtu.be/QXeEoD0pB3E?si=uqlAuzd9PF9gmFCQ",
-    provider: "auto",
-    captionMarkdown: String.raw`
+          type: "sketch",
+          id: "py1_v1",
+          title: "Video: print() — sep and end",
+          sketchId: "video.embed",
+          height: 520,
+          props: {
+            title: "print() formatting (sep/end)",
+            url: "https://youtu.be/QXeEoD0pB3E?si=uqlAuzd9PF9gmFCQ",
+            provider: "auto",
+            captionMarkdown: String.raw`
 Watch this, then try the playground sketch below.
 `.trim(),
-    hudMarkdown: String.raw`
+            hudMarkdown: String.raw`
 **Key idea**
 
 - \`sep\` changes the separator between values  
 - \`end\` changes what prints at the end (default is newline)
 `.trim(),
-  },
-},
-
+          },
+        },
         {
           type: "sketch",
           id: "py1_s1",
@@ -102,8 +101,11 @@ Watch this, then try the playground sketch below.
       ],
     },
 
+    // ------------------------------------------------------------
+    // io_vars
+    // ------------------------------------------------------------
     {
-      id: "py_io_vars",
+      id: PY_TOPIC.io_vars,
       label: "Input + variables: store values and reuse them",
       minutes: 14,
       summary:
@@ -113,7 +115,7 @@ Watch this, then try the playground sketch below.
           type: "text",
           id: "py2_t1",
           title: "input() reads a line of text",
-                markdown: String.raw`
+          markdown: String.raw`
 \(\texttt{input()}\) pauses the program and reads what the user types:
 
 ~~~python
@@ -128,7 +130,7 @@ Important: \(\texttt{input()}\) returns a **string**.
           type: "text",
           id: "py2_t2",
           title: "Variables are named boxes",
-               markdown: String.raw`
+          markdown: String.raw`
 Assignment uses **=**:
 
 ~~~python
@@ -171,8 +173,11 @@ The name points to a value; updating the value changes future results.
       ],
     },
 
+    // ------------------------------------------------------------
+    // strings
+    // ------------------------------------------------------------
     {
-      id: "py_strings",
+      id: PY_TOPIC.strings,
       label: "Strings: quotes, len(), joining text",
       minutes: 12,
       summary:
@@ -182,7 +187,7 @@ The name points to a value; updating the value changes future results.
           type: "text",
           id: "py3_t1",
           title: "Strings are text in quotes",
-                  markdown: String.raw`
+          markdown: String.raw`
 A **string** is a sequence of characters:
 
 ~~~python
@@ -198,7 +203,7 @@ Both single and double quotes work (just be consistent).
           type: "text",
           id: "py3_t2",
           title: "len() and building messages",
-        markdown: String.raw`
+          markdown: String.raw`
 \(\texttt{len()}\) counts characters:
 
 ~~~python
@@ -244,8 +249,11 @@ print("Hi", first)
       ],
     },
 
+    // ------------------------------------------------------------
+    // math_precedence
+    // ------------------------------------------------------------
     {
-      id: "py_math_precedence",
+      id: PY_TOPIC.math_precedence,
       label: "Math + operator precedence",
       minutes: 14,
       summary:
@@ -255,7 +263,7 @@ print("Hi", first)
           type: "text",
           id: "py4_t1",
           title: "Basic arithmetic operators",
-                  markdown: String.raw`
+          markdown: String.raw`
 Python arithmetic:
 
 - \(\texttt{+}\) add
@@ -276,7 +284,7 @@ print(2 ** 3)  # 8
           type: "text",
           id: "py4_t2",
           title: "Precedence (order of operations)",
-                 markdown: String.raw`
+          markdown: String.raw`
 Python uses standard precedence:
 
 1) parentheses  
@@ -315,8 +323,11 @@ print((-4) ** 2)  # 16
       ],
     },
 
+    // ------------------------------------------------------------
+    // comments_errors
+    // ------------------------------------------------------------
     {
-      id: "py_comments_errors",
+      id: PY_TOPIC.comments_errors,
       label: "Comments, docstrings, and reading error messages",
       minutes: 16,
       summary:
@@ -326,7 +337,7 @@ print((-4) ** 2)  # 16
           type: "text",
           id: "py5_t1",
           title: "Comments explain code for humans",
-                markdown: String.raw`
+          markdown: String.raw`
 Comments start with \(\#\):
 
 ~~~python
@@ -341,7 +352,7 @@ Good comments explain **why**, not just what the code already says.
           type: "text",
           id: "py5_t2",
           title: "Docstrings document programs and functions",
-               markdown: String.raw`
+          markdown: String.raw`
 Docstrings use triple quotes and often appear at the top of a file or inside a function:
 
 ~~~python
@@ -363,7 +374,7 @@ This script asks for a number and prints its square.
           type: "text",
           id: "py5_t3",
           title: "Common errors to recognize quickly",
-                 markdown: String.raw`
+          markdown: String.raw`
 Three very common beginner errors:
 
 - **SyntaxError**: the code cannot be parsed (missing quote, missing parenthesis)
@@ -391,6 +402,49 @@ Rule of thumb: read the **last line** of the traceback first (it tells you the e
             topic: PY_TOPIC.comments_errors,
             difficulty: "easy",
             n: 4,
+            allowReveal: true,
+          },
+        },
+      ],
+    },
+
+    // ------------------------------------------------------------
+    // foundations (MIXED)  ✅ this is the one that didn’t surface
+    // ------------------------------------------------------------
+    {
+      id: PY_TOPIC.foundations,
+      label: "Python foundations (mixed)",
+      minutes: 10,
+      summary:
+        "A mixed review of print/input, variables, strings, precedence, and common beginner errors.",
+      cards: [
+        {
+          type: "text",
+          id: "py6_t1",
+          title: "Mixed review mode",
+          markdown: String.raw`
+This topic mixes questions from Part 1:
+
+- print(), sep, end  
+- input() + variables  
+- strings + len()  
+- math + precedence  
+- comments + common errors  
+
+Do this when you want a quick “everything so far” check.
+`.trim(),
+        },
+        {
+          type: "quiz",
+          id: "py6_q1",
+          title: "Foundations (mixed) — Quick check",
+          spec: {
+            subject: "python",
+            module: PY_MOD0,
+            section: PY_SECTION_PART1,
+            topic: PY_TOPIC.foundations,
+            difficulty: "easy",
+            n: 8,
             allowReveal: true,
           },
         },

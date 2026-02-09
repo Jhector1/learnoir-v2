@@ -47,8 +47,12 @@ export default function VectorDragDotExerciseUI({
   const targetDot = Number((exercise as any).targetDot ?? 0);
   const tol = Number((exercise as any).tolerance ?? 0);
 
-  const [liveA, setLiveA] = useState<Vec3>(() => toVec3(a, { x: 0, y: 0, z: 0 }));
-  const [liveB, setLiveB] = useState<Vec3>(() => toVec3(bFromExercise, { x: 0, y: 0, z: 0 }));
+  const [liveA, setLiveA] = useState<Vec3>(() =>
+    toVec3(a, { x: 0, y: 0, z: 0 }),
+  );
+  const [liveB, setLiveB] = useState<Vec3>(() =>
+    toVec3(bFromExercise, { x: 0, y: 0, z: 0 }),
+  );
 
   // ✅ init only when the EXERCISE identity changes
   const exId = String((exercise as any).id ?? (exercise as any).key ?? "");
@@ -60,7 +64,9 @@ export default function VectorDragDotExerciseUI({
     pad.mode = "2d";
     pad.b = { ...bFromExercise, z: bFromExercise.z ?? 0 };
 
-    const seedA = interactive ? (initA ?? a ?? { x: 0, y: 0, z: 0 }) : (a ?? { x: 0, y: 0, z: 0 });
+    const seedA = interactive
+      ? (initA ?? a ?? { x: 0, y: 0, z: 0 })
+      : (a ?? { x: 0, y: 0, z: 0 });
     pad.a = { ...seedA, z: seedA.z ?? 0 };
 
     setLiveA(toVec3(pad.a, seedA));
@@ -82,11 +88,13 @@ export default function VectorDragDotExerciseUI({
 
   return (
     <div className="grid gap-3">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/70">
+      <div className="ui-soft p-3 text-xs text-neutral-700 dark:text-white/70">
         Drag <span className="font-extrabold">A</span>.{" "}
-        <span className="font-extrabold">B</span> stays fixed as the reference vector.
-        <div className="mt-2 text-[11px] text-white/60">
-          Goal: <span className="font-mono">A·B ≈ {targetDot}</span> (±<span className="font-mono">{tol}</span>)
+        <span className="font-extrabold">B</span> stays fixed as the reference
+        vector.
+        <div className="mt-2 text-[11px] text-neutral-500 dark:text-white/60">
+          Goal: <span className="font-mono">A·B ≈ {targetDot}</span> (±
+          <span className="font-mono">{tol}</span>)
         </div>
       </div>
 

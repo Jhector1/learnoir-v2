@@ -11,6 +11,8 @@ export type SavedQuizState = {
   >;
 
   updatedAt?: number;
+    excusedById?: Record<string /*questionId*/, boolean>;
+
 };
 
 export type ReviewProgressState = {

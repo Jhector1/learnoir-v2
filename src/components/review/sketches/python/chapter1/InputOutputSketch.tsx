@@ -1,3 +1,4 @@
+// InputOutputSketch.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -37,36 +38,36 @@ Typical pattern:
   return (
     <div className="w-full">
       <div className="grid gap-3 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="ui-sketch-panel">
           <div className="grid gap-3">
             <div className="grid gap-2 md:grid-cols-2">
               <div>
-                <div className="text-xs font-extrabold text-white/70">Prompt</div>
+                <div className="ui-sketch-label">Prompt</div>
                 <input
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                  className="ui-sketch-input"
                 />
               </div>
 
               <div>
-                <div className="text-xs font-extrabold text-white/70">User input</div>
+                <div className="ui-sketch-label">User input</div>
                 <input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-white/90 outline-none"
+                  className="ui-sketch-input"
                 />
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-3">
-              <div className="text-xs font-extrabold text-white/70">Simulated run</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/85">{transcript}</pre>
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Simulated run</div>
+              <pre className="ui-sketch-code">{transcript}</pre>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs font-extrabold text-white/70">Python code</div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs text-white/80">
+            <div className="ui-sketch-codeblock">
+              <div className="ui-sketch-label">Python code</div>
+              <pre className="ui-sketch-code">
                 {`name = input("${prompt.replaceAll('"', '\\"')}")
 print("You entered:", name)`}
               </pre>
@@ -74,8 +75,8 @@ print("You entered:", name)`}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+        <div className="ui-sketch-panel">
+          <MathMarkdown className="ui-math" content={hud} />
         </div>
       </div>
     </div>

@@ -54,26 +54,28 @@ export default function MatrixInputExerciseUI({
     onChangeDims(r, c, next);
   }
 
+ // ✅ only className strings changed
+
   return (
     <div className="grid gap-3">
       {allowDimEdit ? (
         <div className="flex flex-wrap items-end gap-2">
           <div>
-            <div className="text-[11px] font-extrabold text-white/60">Rows</div>
+            <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">Rows</div>
             <input
               value={rText}
               disabled={disabled}
               onChange={(e) => setRText(e.target.value)}
-              className="h-9 w-20 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-extrabold text-white/90 outline-none disabled:opacity-60"
+              className="h-9 w-20 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-extrabold text-neutral-900 outline-none disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/90"
             />
           </div>
           <div>
-            <div className="text-[11px] font-extrabold text-white/60">Cols</div>
+            <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">Cols</div>
             <input
               value={cText}
               disabled={disabled}
               onChange={(e) => setCText(e.target.value)}
-              className="h-9 w-20 rounded-xl border border-white/10 bg-black/20 px-3 text-sm font-extrabold text-white/90 outline-none disabled:opacity-60"
+              className="h-9 w-20 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-extrabold text-neutral-900 outline-none disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/90"
             />
           </div>
 
@@ -81,12 +83,12 @@ export default function MatrixInputExerciseUI({
             type="button"
             disabled={disabled}
             onClick={applyDims}
-            className="h-9 rounded-xl border border-white/10 bg-white/10 px-3 text-xs font-extrabold hover:bg-white/15 disabled:opacity-60"
+            className="h-9 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.10] dark:text-white/85 dark:hover:bg-white/[0.15]"
           >
             Apply size
           </button>
 
-          <div className="text-[11px] text-white/45">
+          <div className="text-[11px] text-neutral-500 dark:text-white/45">
             (Medium/Hard allows resizing; easy is fixed by the prompt.)
           </div>
         </div>
@@ -101,9 +103,10 @@ export default function MatrixInputExerciseUI({
         readOnly={disabled}
       />
 
-      <div className="text-[11px] text-white/45">
+      <div className="text-[11px] text-neutral-500 dark:text-white/45">
         Submit will parse into <span className="font-mono">values: number[][]</span>.
       </div>
     </div>
   );
+
 }

@@ -14,7 +14,7 @@ export default function SandboxIdePage() {
 
     return (
         <div className="h-dvh w-dvw overflow-hidden bg-transparent">
-            <div className="h-full min-h-0 grid grid-rows-[auto_1fr]">
+            <div className="h-full min-h-0 grid  grid-rows-[auto_1fr]">
                 {/* Header */}
                 {/*<div className="px-4 py-4">*/}
                 {/*    <div className="ui-container !max-w-none">*/}

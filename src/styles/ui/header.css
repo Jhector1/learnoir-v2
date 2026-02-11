@@ -21,7 +21,9 @@
   .ui-navcard {
     @apply relative rounded-2xl border p-1 border-neutral-200 bg-white shadow-sm;
   }
-
+  .ui-navcard-unround {
+    @apply relative  border p-1 border-neutral-200 bg-white shadow-sm;
+  }
   .dark .ui-navcard {
     @apply border-white/10 bg-white/[0.06];
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);

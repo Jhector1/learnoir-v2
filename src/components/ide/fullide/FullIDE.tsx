@@ -144,58 +144,58 @@ export default function FullIDE(props: FullIDEProps) {
             ) : null}
 
             {/* Top bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-                    {title}
-                </div>
+            {/*<div className="flex flex-wrap items-center justify-between gap-2">*/}
+            {/*    <div className="text-sm font-black text-neutral-900 dark:text-white/90">*/}
+            {/*        {title}*/}
+            {/*    </div>*/}
 
-                <div className="flex flex-wrap items-center gap-2">
-                    {showTopLanguageButtons ? (
-                        <>
-                            <div className="text-xs font-extrabold text-neutral-600 dark:text-white/60">
-                                Language
-                            </div>
+            {/*    <div className="flex flex-wrap items-center gap-2">*/}
+            {/*        {showTopLanguageButtons ? (*/}
+            {/*            <>*/}
+            {/*                <div className="text-xs font-extrabold text-neutral-600 dark:text-white/60">*/}
+            {/*                    Language*/}
+            {/*                </div>*/}
 
-                            {languages.map((l) => (
-                                <button
-                                    key={l}
-                                    type="button"
-                                    onClick={() => setLangUI(l)}
-                                    className={cn(
-                                        "rounded-xl border px-3 py-1 text-xs font-extrabold transition",
-                                        language === l
-                                            ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"
-                                            : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",
-                                    )}
-                                >
-                                    {l}
-                                </button>
-                            ))}
+            {/*                {languages.map((l) => (*/}
+            {/*                    <button*/}
+            {/*                        key={l}*/}
+            {/*                        type="button"*/}
+            {/*                        onClick={() => setLangUI(l)}*/}
+            {/*                        className={cn(*/}
+            {/*                            "rounded-xl border px-3 py-1 text-xs font-extrabold transition",*/}
+            {/*                            language === l*/}
+            {/*                                ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"*/}
+            {/*                                : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",*/}
+            {/*                        )}*/}
+            {/*                    >*/}
+            {/*                        {l}*/}
+            {/*                    </button>*/}
+            {/*                ))}*/}
 
-                            <div className="mx-2 hidden h-6 w-px bg-neutral-200 dark:bg-white/10 md:block" />
-                        </>
-                    ) : null}
+            {/*                <div className="mx-2 hidden h-6 w-px bg-neutral-200 dark:bg-white/10 md:block" />*/}
+            {/*            </>*/}
+            {/*        ) : null}*/}
 
-                    <button
-                        type="button"
-                        onClick={() => actions.startNewFile(rootSrc?.id ?? null)}
-                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"
-                    >
-                        + New file
-                    </button>
+            {/*        <button*/}
+            {/*            type="button"*/}
+            {/*            onClick={() => actions.startNewFile(rootSrc?.id ?? null)}*/}
+            {/*            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"*/}
+            {/*        >*/}
+            {/*            + New file*/}
+            {/*        </button>*/}
 
-                    <button
-                        type="button"
-                        onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}
-                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"
-                    >
-                        + New folder
-                    </button>
-                </div>
-            </div>
+            {/*        <button*/}
+            {/*            type="button"*/}
+            {/*            onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}*/}
+            {/*            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"*/}
+            {/*        >*/}
+            {/*            + New folder*/}
+            {/*        </button>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Split region */}
-            <div className="mt-4 min-h-0 flex-1">
+            <div className="mt-4 min-h-0  flex-1">
                 <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-black/20">
                     <div
                         ref={splitRef}

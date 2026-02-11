@@ -14,6 +14,12 @@ import { PracticeKind } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// src/app/api/review/quiz/route.ts
+import { createHash } from "crypto";
+
+function shortHash(s: string) {
+  return createHash("sha1").update(s).digest("hex").slice(0, 10);
+}
 
 const SpecSchema = z.object({
   subject: z.string().min(1),
@@ -69,6 +75,30 @@ function pickTopicsForQuiz(rng: any, slugs: string[], n: number) {
   const out = [...pool];
   let k = 0;
   while (out.length < n) out.push(pool[k++ % pool.length]);
+  return out;
+}
+
+function pickTopicsForQuizUnique(rng: any, slugs: string[], n: number) {
+  const unique = Array.from(new Set(slugs));
+  if (!unique.length) return [];
+
+  shuffleInPlace(rng, unique);
+  return unique.slice(0, Math.min(n, unique.length)); // ✅ never repeats
+}
+
+function pickTopicsForQuizPreferUnique(rng: any, slugs: string[], n: number) {
+  const unique = Array.from(new Set(slugs));
+  if (!unique.length) return [];
+
+  shuffleInPlace(rng, unique);
+
+  // ✅ use each topic at most once until we run out
+  const out = unique.slice(0, Math.min(n, unique.length));
+
+  // ✅ if not enough unique topics, repeat (unavoidable)
+  let k = 0;
+  while (out.length < n) out.push(unique[k++ % unique.length]);
+
   return out;
 }
 
@@ -188,12 +218,13 @@ export async function POST(req: Request) {
     }
   }
 const pickedTopics = pickTopicsForQuiz(rng, allowedTopicSlugs, n);
+const qk = shortHash(quizKey);
 
 const questions = Array.from({ length: n }, (_v, i) => {
   const pickedTopic = pickedTopics[i];
   return {
     kind: "practice" as const,
-    id: `p${i + 1}`,
+    id: `p${i + 1}:${qk}`, // ✅ unique per quiz instance
     fetch: {
       subject: spec.subject,
       module: spec.module,
@@ -202,11 +233,67 @@ const questions = Array.from({ length: n }, (_v, i) => {
       difficulty: spec.difficulty ?? "easy",
       allowReveal: Boolean(spec.allowReveal),
       preferKind: spec.preferKind ?? null,
-      salt: `${quizKey}|q=${i + 1}`, // keep this
+      salt: `${quizKey}|q=${i + 1}`,
     },
     maxAttempts,
   };
 });
+
+  // const pickedTopics = pickTopicsForQuizPreferUnique(rng, allowedTopicSlugs, n);
+  // const qk = shortHash(quizKey);
+  //
+  // const questions = pickedTopics.map((pickedTopic, i) => ({
+  //   kind: "practice" as const,
+  //   id: `p${i + 1}:${qk}`,
+  //   fetch: {
+  //     subject: spec.subject,
+  //     module: spec.module,
+  //     section: spec.section,
+  //     topic: pickedTopic,
+  //     difficulty: spec.difficulty ?? "easy",
+  //     allowReveal: Boolean(spec.allowReveal),
+  //     preferKind: spec.preferKind ?? null,
+  //     salt: `${quizKey}|topic=${pickedTopic}|q=${i + 1}`, // ✅ different per slot
+  //   },
+  //   maxAttempts,
+  // }));
+
+//   const pickedTopics = pickTopicsForQuizUnique(rng, allowedTopicSlugs, n);
+//   const qk = shortHash(quizKey);
+//
+//   const questions = pickedTopics.map((pickedTopic, i) => ({
+//     kind: "practice" as const,
+//     id: `p${i + 1}:${qk}`, // ✅ unique per quiz instance
+//     fetch: {
+//       subject: spec.subject,
+//       module: spec.module,
+//       section: spec.section,
+//       topic: pickedTopic,
+//       difficulty: spec.difficulty ?? "easy",
+//       allowReveal: Boolean(spec.allowReveal),
+//       preferKind: spec.preferKind ?? null,
+//       salt: `${quizKey}|topic=${pickedTopic}|q=${i + 1}`, // ✅ extra explicit
+//     },
+//     maxAttempts,
+//   }));
+// const questions = Array.from({ length: n }, (_v, i) => {
+//   const pickedTopic = pickedTopics[i];
+//   return {
+//     kind: "practice" as const,
+//     id: `p${i + 1}`,
+//     fetch: {
+//       subject: spec.subject,
+//       module: spec.module,
+//       section: spec.section,
+//       topic: pickedTopic,
+//       difficulty: spec.difficulty ?? "easy",
+//       allowReveal: Boolean(spec.allowReveal),
+//       preferKind: spec.preferKind ?? null,
+//       salt: `${quizKey}|q=${i + 1}`, // keep this
+//     },
+//     maxAttempts,
+//   };
+// });
 
   // ✅ Handle StrictMode / double POST race:
   // create may throw unique violation; if so, re-read and return.

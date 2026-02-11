@@ -29,7 +29,7 @@ function bool01(v: any) {
 export function buildReviewQuizKey(
   spec: ReviewQuizSpec,
   quizCardId: string,
-  version: string | number = 0
+  version: string | number = 1
 ) {
   const s: any = spec as any;
   return [

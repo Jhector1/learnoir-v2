@@ -33,7 +33,7 @@ export async function GET(req: Request) {
       actor,
       params: parsed.data,
     });
-console.log(actor)
+console.log("current user: ",actor)
     // allow handler to return a prebuilt NextResponse (e.g. entitlement gate)
     if (out.kind === "res") {
       return attachGuestCookie(out.res, setGuestId);

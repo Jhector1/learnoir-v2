@@ -435,7 +435,7 @@ export function usePracticeController(args: {
       current,
     ],
   );
-  console.log("PracticeController shellProps:", engine.reviewStack);
+
 
   return { shellProps };
 }

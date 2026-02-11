@@ -31,7 +31,7 @@ export default function SummaryView(props: PracticeShellProps) {
     onReturn,
   } = props;
 
-  console.log("Rendering SummaryView with props:", stack, maxAttempts, isLockedRun);
+
 const list = (reviewStack && reviewStack.length ? reviewStack : stack);
 
 

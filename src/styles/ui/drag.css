@@ -1,0 +1,83 @@
+@layer components {
+  /* =========================
+   * Drag Reorder tokens (final)
+   * ========================= */
+  .ui-drag-zone {
+    @apply relative;
+  }
+
+  .ui-drag-chip {
+    @apply relative inline-flex items-center gap-2 rounded-xl border px-3 py-2;
+    @apply text-xs font-extrabold select-none transform-gpu;
+    @apply transition duration-150;
+    @apply border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50;
+    @apply shadow-sm;
+
+    transition-property: background-color, border-color, box-shadow, transform, opacity;
+  }
+
+  .dark .ui-drag-chip {
+    @apply border-white/10 bg-white/[0.07] text-white/90 hover:bg-white/[0.11];
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .ui-drag-chip--disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  .ui-drag-chip--dragging {
+    @apply cursor-grabbing;
+  }
+
+  .ui-drag-chip--over {
+    @apply ring-2 ring-emerald-300/40;
+  }
+
+  .dark .ui-drag-chip--over {
+    @apply ring-emerald-300/25;
+  }
+
+  .ui-drag-handle {
+    @apply text-neutral-500;
+  }
+
+  .dark .ui-drag-handle {
+    @apply text-white/60;
+  }
+
+  .ui-drag-indicator {
+    @apply pointer-events-none absolute top-1 bottom-1 w-1 rounded-full;
+    @apply bg-emerald-500/70;
+  }
+
+  .dark .ui-drag-indicator {
+    @apply bg-emerald-300/40;
+  }
+
+  .ui-drag-indicator--before { @apply left-1; }
+  .ui-drag-indicator--after  { @apply right-1; }
+
+  .ui-drag-actions {
+    @apply inline-flex items-center gap-1;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ui-drag-actions {
+      opacity: 0;
+      transition: opacity 150ms;
+    }
+    .ui-drag-chip:hover .ui-drag-actions,
+    .ui-drag-chip:focus-within .ui-drag-actions {
+      opacity: 1;
+    }
+  }
+
+  .ui-drag-actionbtn {
+    @apply rounded-md border px-2 py-1 text-[10px] font-black transition;
+    @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-40;
+  }
+
+  .dark .ui-drag-actionbtn {
+    @apply border-white/10 bg-white/[0.07] text-white/80 hover:bg-white/[0.11];
+  }
+}

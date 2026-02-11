@@ -45,7 +45,7 @@ export function signPracticeKey(payload: PracticeKeyPayload) {
  */
 export function verifyPracticeKey(key: unknown): PracticeKeyPayload | null {
   if (typeof key !== "string") return null;
-  console.log("Verifying practice key with body:", 'body');
+
 
   const dot = key.indexOf(".");
   if (dot <= 0) return null;
@@ -53,7 +53,7 @@ export function verifyPracticeKey(key: unknown): PracticeKeyPayload | null {
   const body = key.slice(0, dot);
   const sigB64 = key.slice(dot + 1);
   if (!body || !sigB64) return null;
-    console.log("Verifying practice key with body:", body);
+
 
 
   let sigBuf: Buffer;

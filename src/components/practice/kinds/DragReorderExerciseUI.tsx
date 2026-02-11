@@ -1,7 +1,8 @@
 // src/components/practice/kinds/DragReorderExerciseUI.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import MathMarkdown from "@/components/math/MathMarkdown";
 
 type Token = { id: string; text: string };
@@ -9,9 +10,19 @@ type Token = { id: string; text: string };
 function move<T>(arr: T[], from: number, to: number) {
   const copy = arr.slice();
   const [item] = copy.splice(from, 1);
-  copy.splice(to, 0, item);
+  const clamped = Math.max(0, Math.min(to, copy.length));
+  copy.splice(clamped, 0, item);
   return copy;
 }
+
+type DropSide = "before" | "after" | null;
+
+const LAYOUT_SPRING = {
+  type: "spring" as const,
+  stiffness: 700,
+  damping: 45,
+  mass: 0.7,
+};
 
 export default function DragReorderExerciseUI({
   exercise,
@@ -43,35 +54,20 @@ export default function DragReorderExerciseUI({
 
   const order = useMemo(() => {
     const ids = Array.isArray(tokenIds) && tokenIds.length ? tokenIds.map(String) : defaultOrder;
-    // keep only known ids (and preserve order)
     const filtered = ids.filter((id) => tokensById.has(id));
-    // add any missing ids at end
     for (const id of defaultOrder) if (!filtered.includes(id)) filtered.push(id);
     return filtered;
   }, [tokenIds, defaultOrder, tokensById]);
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [draftOrder, setDraftOrder] = useState<string[] | null>(null);
+  const [dropOverId, setDropOverId] = useState<string | null>(null);
+  const [dropSide, setDropSide] = useState<DropSide>(null);
 
-//   const border =
-//     checked && ok === true
-//       ? "border-emerald-400/30"
-//       : checked && ok === false
-//         ? "border-rose-400/30"
-//         : "border-white/10";
+  // prevent over-updating draftOrder on every dragover pixel
+  const lastPreviewKey = useRef<string>("");
 
-//   const bg =
-//     checked && ok === true
-//       ? "bg-emerald-300/10"
-//       : checked && ok === false
-//         ? "bg-rose-300/10"
-//         : "bg-white/[0.04]";
-
-  function apply(next: string[]) {
-    if (disabled) return;
-    onChange(next);
-  }
-
- // ✅ only className strings changed (logic/structure unchanged)
+  const renderOrder = draftOrder ?? order;
 
   const border =
     checked && ok === true
@@ -87,13 +83,53 @@ export default function DragReorderExerciseUI({
         ? "bg-rose-300/10"
         : "bg-white dark:bg-white/[0.03]";
 
+  function apply(next: string[]) {
+    if (disabled) return;
+    onChange(next);
+  }
+
+  function resetDnDState() {
+    setDraggingId(null);
+    setDraftOrder(null);
+    setDropOverId(null);
+    setDropSide(null);
+    lastPreviewKey.current = "";
+  }
+
+  function computeSide(e: React.DragEvent, el: HTMLElement): DropSide {
+    const r = el.getBoundingClientRect();
+    const midX = r.left + r.width / 2;
+    return e.clientX < midX ? "before" : "after";
+  }
+
+  function previewMove(overId: string, side: DropSide) {
+    if (disabled) return;
+    if (!draggingId) return;
+    if (overId === draggingId) return;
+    if (!side) return;
+
+    const key = `${draggingId}|${overId}|${side}`;
+    if (lastPreviewKey.current === key) return;
+    lastPreviewKey.current = key;
+
+    const cur = (draftOrder ?? order).slice();
+    const from = cur.indexOf(draggingId);
+    const overIdx = cur.indexOf(overId);
+    if (from < 0 || overIdx < 0) return;
+
+    let to = overIdx + (side === "after" ? 1 : 0);
+    if (to > from) to -= 1; // compensate for removal shift
+
+    if (to === from) return;
+
+    setDraftOrder(move(cur, from, to));
+  }
+
   return (
     <div className={`rounded-2xl border ${border} ${bg} p-4`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-            {exercise.title}
-          </div>
+          <div className="text-sm font-black text-neutral-900 dark:text-white/90">{exercise.title}</div>
           <MathMarkdown
             className="mt-2 text-sm text-neutral-700 dark:text-white/80 [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90"
             content={String(exercise.prompt ?? "")}
@@ -104,7 +140,9 @@ export default function DragReorderExerciseUI({
           <div
             className={[
               "ui-pill",
-              ok === true ? "ui-pill--good" : "border-rose-300/30 bg-rose-300/10 text-rose-900 dark:text-rose-100",
+              ok === true
+                ? "ui-pill--good"
+                : "border-rose-300/30 bg-rose-300/10 text-rose-900 dark:text-rose-100",
             ].join(" ")}
           >
             {ok === true ? "Correct" : "Try again"}
@@ -117,75 +155,138 @@ export default function DragReorderExerciseUI({
           Drag to reorder (or use arrows)
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {order.map((id, idx) => {
-            const t = tokensById.get(id);
-            if (!t) return null;
+        <LayoutGroup id="drag-reorder">
+          <motion.div
+            layout
+            transition={LAYOUT_SPRING}
+            className="ui-drag-zone mt-3 flex flex-wrap gap-2"
+            onDragOver={(e) => {
+              if (disabled) return;
+              e.preventDefault();
+            }}
+            onDrop={() => {
+              if (disabled) return;
+              if (draftOrder && draggingId) apply(draftOrder);
+              resetDnDState();
+            }}
+          >
+            {renderOrder.map((id, idx) => {
+              const t = tokensById.get(id);
+              if (!t) return null;
 
-            const isDragging = draggingId === id;
+              const isDragging = draggingId === id;
+              const isOver = dropOverId === id && !isDragging;
 
-            return (
-              <div
-                key={id}
-                draggable={!disabled}
-                onDragStart={() => setDraggingId(id)}
-                onDragEnd={() => setDraggingId(null)}
-                onDragOver={(e) => {
-                  if (disabled) return;
-                  e.preventDefault();
-                }}
-                onDrop={() => {
-                  if (disabled) return;
-                  if (!draggingId || draggingId === id) return;
-                  const from = order.indexOf(draggingId);
-                  const to = order.indexOf(id);
-                  if (from < 0 || to < 0) return;
-                  apply(move(order, from, to));
-                }}
-                className={[
-                  "group flex items-center gap-2 rounded-xl border px-3 py-2",
-                  "bg-white text-xs font-extrabold text-neutral-900",
-                  "border-neutral-200 hover:bg-neutral-50",
-                  "dark:bg-white/[0.06] dark:text-white/90 dark:border-white/10 dark:hover:bg-white/[0.10]",
-                  disabled ? "opacity-70" : "",
-                  isDragging ? "opacity-60" : "",
-                ].join(" ")}
-                title={disabled ? "" : "Drag me"}
-              >
-                <span className="text-neutral-500 dark:text-white/60">≡</span>
-                <span>{t.text}</span>
+              return (
+                <motion.div
+                  key={id}
+                  layout
+                  transition={LAYOUT_SPRING}
+                  draggable={!disabled}
+                  onDragStart={(e) => {
+                    if (disabled) return;
+                    try {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", id);
+                    } catch {}
+                    setDraggingId(id);
+                    setDraftOrder(order);
+                  }}
+                  onDragEnd={() => {
+                    // if user cancels drag or drops outside
+                    resetDnDState();
+                  }}
+                  onDragOver={(e) => {
+                    if (disabled) return;
+                    if (!draggingId) return;
+                    e.preventDefault();
 
-                <div className="ml-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                  <button
-                    type="button"
-                    disabled={disabled || idx === 0}
-                    onClick={() => apply(move(order, idx, idx - 1))}
-                    className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-black text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80 dark:hover:bg-white/[0.10]"
-                    aria-label="Move left"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    disabled={disabled || idx === order.length - 1}
-                    onClick={() => apply(move(order, idx, idx + 1))}
-                    className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-black text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80 dark:hover:bg-white/[0.10]"
-                    aria-label="Move right"
-                  >
-                    →
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    const side = computeSide(e, e.currentTarget as HTMLElement);
+
+                    setDropOverId(id);
+                    setDropSide(side);
+                    previewMove(id, side);
+                  }}
+                  onDragLeave={(e) => {
+                    const toEl = e.relatedTarget as Node | null;
+                    if (toEl && (e.currentTarget as HTMLElement).contains(toEl)) return;
+                    if (dropOverId === id) {
+                      setDropOverId(null);
+                      setDropSide(null);
+                      lastPreviewKey.current = "";
+                    }
+                  }}
+                  onDrop={(e) => {
+                    if (disabled) return;
+                    e.preventDefault();
+                    if (draftOrder && draggingId) apply(draftOrder);
+                    resetDnDState();
+                  }}
+                  className={[
+                    "ui-drag-chip group",
+                    disabled && "ui-drag-chip--disabled",
+                    isDragging && "ui-drag-chip--dragging",
+                    isOver && "ui-drag-chip--over",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  animate={{
+                    opacity: isDragging ? 0.6 : 1,
+                    scale: isDragging ? 0.985 : 1,
+                  }}
+                >
+                  <AnimatePresence>
+                    {isOver && dropSide ? (
+                      <motion.span
+                        key={`${id}:${dropSide}`}
+                        className={[
+                          "ui-drag-indicator",
+                          dropSide === "before" ? "ui-drag-indicator--before" : "ui-drag-indicator--after",
+                        ].join(" ")}
+                        initial={{ opacity: 0, scaleY: 0.6 }}
+                        animate={{ opacity: 1, scaleY: 1 }}
+                        exit={{ opacity: 0, scaleY: 0.6 }}
+                        transition={{ duration: 0.12 }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </AnimatePresence>
+
+                  <span className="ui-drag-handle" aria-hidden="true">
+                    ≡
+                  </span>
+                  <span>{t.text}</span>
+
+                  <div className="ui-drag-actions ml-1 flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={disabled || idx === 0}
+                      onClick={() => apply(move(order, idx, idx - 1))}
+                      className="ui-drag-actionbtn"
+                      aria-label="Move left"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      disabled={disabled || idx === order.length - 1}
+                      onClick={() => apply(move(order, idx, idx + 1))}
+                      className="ui-drag-actionbtn"
+                      aria-label="Move right"
+                    >
+                      →
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </LayoutGroup>
       </div>
 
       {checked && ok === false && Array.isArray(reviewCorrectTokenIds) ? (
         <div className="mt-3 ui-soft p-3">
-          <div className="text-xs font-extrabold text-neutral-600 dark:text-white/70">
-            Correct order
-          </div>
+          <div className="text-xs font-extrabold text-neutral-600 dark:text-white/70">Correct order</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {reviewCorrectTokenIds
               .map((id) => tokensById.get(String(id)))
@@ -209,5 +310,4 @@ export default function DragReorderExerciseUI({
       ) : null}
     </div>
   );
-
 }

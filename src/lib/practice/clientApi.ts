@@ -47,7 +47,7 @@ export async function fetchPracticeExercise(args: {
   });
 
   const data = await readJsonSafe(res);
-  console.log(data);
+
   if (!res.ok) throw new Error(data?.explanation ?? data?.message ?? `Failed (${res.status})`);
   return data as PracticeGetResponse;
 }

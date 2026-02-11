@@ -25,7 +25,7 @@ export default function SubjectTile({
   const disabled = !s.defaultModuleSlug;
 
   const publicId = s.imagePublicId ?? publicIdFallback(s.slug);
-  console.log(publicId);
+
 
   const url = cloudinaryImageUrl(publicId, {
     w: 1200,
@@ -38,7 +38,7 @@ export default function SubjectTile({
   });
 
   const imgSrc = url || "/subjects/_default.png";
-  console.log(imgSrc);
+
 
   const accent =
     s.slug === "linear-algebra"

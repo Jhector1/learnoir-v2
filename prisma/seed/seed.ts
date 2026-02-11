@@ -11,7 +11,7 @@ export async function main() {
 }
 main()
   .then((r) => {
-    console.log("Seeded practice modules + sections.", r);
+
   })
   .catch((e) => {
     console.error(e);

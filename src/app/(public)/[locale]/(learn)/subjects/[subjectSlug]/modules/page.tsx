@@ -97,7 +97,7 @@ export default async function SubjectModulesPage({
   });
 
   const topicIdsBySectionId: Record<string, string[]> = {};
-  console.log(sectionLinks)
+
   for (const link of sectionLinks) {
     const sid = String(link.sectionId);
     (topicIdsBySectionId[sid] ??= []).push(String(link.topicId));

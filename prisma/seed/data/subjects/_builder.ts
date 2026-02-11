@@ -2,7 +2,7 @@
 import type { ModuleSeed, SectionDef, SectionSeed, SubjectSeed, TopicSeed } from "./_types";
 
 function assertNonEmptyString(v: unknown, label: string) {
-  console.log("Checking", label, v);
+
   if (typeof v !== "string" || !v.trim()) throw new Error(`${label} must be a non-empty string.`);
 }
 
@@ -25,7 +25,7 @@ export function defineSubject(input: {
   modules: ModuleSeed[];
   topicGroups: SectionDef[];
 }) {
-  console.log("Defining subject:", input.subject);
+
   // Basic validation
   assertNonEmptyString(input.subject.slug, "subject.slug");
   assertUnique(input.modules.map((m) => m.slug), "modules[].slug");

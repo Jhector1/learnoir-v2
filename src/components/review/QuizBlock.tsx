@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/review/types";
 import type { SavedQuizState } from "@/lib/review/progressTypes";
@@ -61,33 +62,42 @@ export default function QuizBlock({
 }) {
   const initState = initialState ?? null;
 
-  const stableQuizKey = useMemo(() => {
-    if (quizKey?.trim()) return quizKey.trim();
-    return buildReviewQuizKey(spec, quizCardId ?? quizId, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    quizKey,
-    quizId,
-    quizCardId,
-    spec.subject,
-    spec.module,
-    spec.section,
-    spec.topic,
-    spec.difficulty,
-    spec.n,
-    (spec as any).allowReveal,
-    (spec as any).preferKind,
-    (spec as any).maxAttempts,
-  ]);
+  // const stableQuizKey = useMemo(() => {
+  //   if (quizKey?.trim()) return quizKey.trim();
+  //   return buildReviewQuizKey(spec, quizCardId ?? quizId, 0);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [
+  //   quizKey,
+  //   quizId,
+  //   quizCardId,
+  //   spec.subject,
+  //   spec.module,
+  //   spec.section,
+  //   spec.topic,
+  //   spec.difficulty,
+  //   spec.n,
+  //   (spec as any).allowReveal,
+  //   (spec as any).preferKind,
+  //   (spec as any).maxAttempts,
+  // ]);
+const stableQuizKeyRef = useRef<string>("");
 
-  const [reloadNonce, setReloadNonce] = useState(0);
-  const resetKey = `${stableQuizKey}:${reloadNonce}`;
+if (!stableQuizKeyRef.current) {
+  stableQuizKeyRef.current = quizKey?.trim()
+    ? quizKey.trim()
+    : buildReviewQuizKey(spec, quizCardId ?? quizId, 0); // or 1 if you prefer
+}
+
+const stableKey = stableQuizKeyRef.current;
+
+const [reloadNonce, setReloadNonce] = useState(0);
+const resetKey = `${stableKey}:${reloadNonce}`;
 
   const { quizLoading, quizError, questions, serverQuizKey } =
     useReviewQuizQuestions({
       quizId,
       spec,
-      stableQuizKey,
+      stableQuizKey:stableKey,
       reloadNonce,
     });
   const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
@@ -150,7 +160,7 @@ export default function QuizBlock({
   }
 
   function isUnlocked(index: number): boolean {
-    console.log("fff", prereqsMet);
+
     if (!prereqsMet) return false;
     if (!sequential) return true;
     if (index === 0) return true;
@@ -287,22 +297,21 @@ export default function QuizBlock({
   }, [resetKey]);
 
   const [confirmResetQuiz, setConfirmResetQuiz] = useState(false);
+async function resetThisQuiz() {
+  const key = (serverQuizKey || stableKey).trim();
+  if (!key) return;
 
-  async function resetThisQuiz() {
-    const key = (serverQuizKey || stableQuizKey).trim();
-    if (!key) return;
+  await fetch(`/api/review/quiz?quizKey=${encodeURIComponent(key)}`, {
+    method: "DELETE",
+    cache: "no-store",
+  });
 
-    await fetch(`/api/review/quiz?quizKey=${encodeURIComponent(key)}`, {
-      method: "DELETE",
-      cache: "no-store",
-    });
-
-    onReset?.();
-    local.reset();
-    practiceBank.setPractice({});
-    setExcusedById({});
-    setReloadNonce((n) => n + 1);
-  }
+  onReset?.();
+  local.reset();
+  practiceBank.setPractice({});
+  setExcusedById({});
+  setReloadNonce((n) => n + 1);
+}
 
   if (quizLoading) {
     return (

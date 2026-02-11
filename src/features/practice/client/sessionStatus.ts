@@ -116,17 +116,16 @@ export async function getSessionStatus(
   const qs = new URLSearchParams();
   qs.set("sessionId", sessionId);
   qs.set("statusOnly", "true");
-  console.log("Fetching session status for sessionId:", sessionId, "with options:", opts);
 
   if (opts?.includeMissed) qs.set("includeMissed", "true");
   if (opts?.includeHistory) qs.set("includeHistory", "true");
 
   const res = await fetch(`/api/practice?${qs.toString()}`, { cache: "no-store" });
-  console.log("Fetched session status response:", res);
+
   if (!res.ok) return null;
 
   const data = await res.json().catch(() => null);
-  console.log("Fetched session status data:", data);
+
   if (!data) return null;
 
   return data as SessionStatus;

@@ -113,7 +113,7 @@ Try swapping **li** and notice English depends on context.
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <MathMarkdown className="text-sm text-white/80 [&_.katex]:text-white/90" content={hud} />
+          <div className="text-sm text-white/80 [&_.katex]:text-white/90"  >{hud}</div>
         </div>
       </div>
     </div>

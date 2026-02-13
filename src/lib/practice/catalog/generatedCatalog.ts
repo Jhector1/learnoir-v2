@@ -219,6 +219,35 @@ export const GENERATED_CATALOG = {
         }
       }
     }
+  },
+  "ai": {
+    "subjectSlug": "ai",
+    "modulesBySlug": {
+      "ai-0": {
+        "moduleSlug": "ai-0",
+        "sectionSlug": "ai-0-foundations",
+        "sectionTitle": "AI 0 — Foundations",
+        "sectionOrder": 0,
+        "genKey": "ai_mod0",
+        "prefix": "ai0",
+        "topicIds": [
+          "ai_basics",
+          "clear_prompts",
+          "accuracy_checking",
+          "privacy_safety",
+          "simple_workflow",
+          "foundations"
+        ],
+        "topics": {
+          "ai_basics": "ai0.ai_basics",
+          "clear_prompts": "ai0.clear_prompts",
+          "accuracy_checking": "ai0.accuracy_checking",
+          "privacy_safety": "ai0.privacy_safety",
+          "simple_workflow": "ai0.simple_workflow",
+          "foundations": "ai0.foundations"
+        }
+      }
+    }
   }
 }
 ;

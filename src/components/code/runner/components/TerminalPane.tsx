@@ -58,10 +58,13 @@ export default function TerminalPane(props: {
         el.scrollTop = el.scrollHeight;
     }, [terminal, awaitingInput]);
 
-    const stdinLines = useMemo(
-        () => (stdinBuffer ? stdinBuffer.split("\n").filter(Boolean).length : 0),
-        [stdinBuffer],
-    );
+    const stdinLines = useMemo(() => {
+        if (!stdinBuffer) return 0;
+        const parts = stdinBuffer.split("\n");
+        if (parts.length && parts[parts.length - 1] === "") parts.pop(); // trailing newline
+        return parts.length; // counts blanks too
+    }, [stdinBuffer]);
+
 
     const terminalHasError = !!lastResult && lastResult.ok === false && !awaitingInput;
 

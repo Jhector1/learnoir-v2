@@ -14,3 +14,20 @@
 @import "./ui/sketch.css";
 @import "./ui/drag.css";
 @import "./ui/ide.css";
+.ui-tile--active {
+    @apply ring-2 ring-emerald-300/40;
+}
+.dark .ui-tile--active {
+    @apply ring-emerald-300/25;
+}
+
+@layer components {
+    .ui-playground-bg {
+        @apply min-h-screen p-3 md:p-4 text-neutral-900;
+        background: radial-gradient(1200px 700px at 20% 0%, #eef2ff 0%, #f8fafc 55%);
+    }
+    .dark .ui-playground-bg {
+        @apply text-white/90;
+        background: radial-gradient(1200px 700px at 20% 0%, #151a2c 0%, #0b0d12 55%);
+    }
+}

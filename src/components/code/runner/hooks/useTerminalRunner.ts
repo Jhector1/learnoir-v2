@@ -1,23 +1,131 @@
+// src/components/code/runner/hooks/useTerminalRunner.ts
 "use client";
 
 import * as React from "react";
-import type {Lang, RunResult} from "@/lib/code/runCode";
-import type {TermLine, OnRun} from "../types";
-import {cleanTermText, toLines} from "../utils/text";
-import {
-    detectNeedsInput,
-    extractFirstInputPrompt,
-    extractJavaPrintPrompts,
-    findPromptSplit, inferInputPlan,
-    stripPromptsFromStdout
-} from "../utils/input";
-import {extractInputPromptsPython} from "@/components/code/runner/utils/input.python";
+import type { Lang, RunResult } from "@/lib/code/runCode";
+import type { TermLine, OnRun } from "../types";
+import { cleanTermText, toLines } from "../utils/text";
+import { inferInputPlan } from "../utils/input";
+import { expandPrompts, prettyPrompt, splitStdoutByPrompts } from "../utils/prompts";
+
+// ---- helpers ----
 
 function fmtMeta(r: RunResult) {
     const time = r.time ? ` • ${r.time}s` : "";
-    const mem = r.memory ? ` • ${Math.round(r.memory / 1024)}MB` : "";
+    const mem = r.memory ? ` • ${Math.round((Number(r.memory) || 0) / 1024)}MB` : "";
     return `${r.status ?? (r.ok ? "OK" : "Error")}${time}${mem}`;
 }
+
+function needsMoreInput(lang: Lang, r: RunResult) {
+    const blob = cleanTermText(
+        (r.compile_output ?? "") + "\n" + (r.stderr ?? "") + "\n" + (r.message ?? "") + "\n" + (r.error ?? ""),
+    );
+
+    if (lang === "python") return /\bEOFError\b/.test(blob);
+    if (lang === "java") return /NoSuchElementException/.test(blob);
+    return false;
+}
+
+// Remove lines that are ONLY spaces/tabs (these are usually artifacts from prompt splitting)
+function toOutTermLines(seg: string): TermLine[] {
+    const lines = toLines(cleanTermText(seg ?? ""));
+    return lines
+        .filter((l) => l === "" || l.trim().length > 0) // keep real blank line, drop whitespace-only
+        .map((t) => ({ type: "out" as const, text: t }));
+}
+
+// ---- safe-ish pre-output extraction for C/C++ (so "Hello" shows before inputs) ----
+
+function unescapeCStringContent(x: string) {
+    const s = String(x ?? "");
+    let out = "";
+    for (let i = 0; i < s.length; ) {
+        const ch = s[i];
+        if (ch !== "\\") {
+            out += ch;
+            i++;
+            continue;
+        }
+        const nxt = s[i + 1];
+        if (nxt == null) {
+            out += "\\";
+            i++;
+            continue;
+        }
+        switch (nxt) {
+            case "\\":
+                out += "\\";
+                i += 2;
+                break;
+            case "n":
+                out += "\n";
+                i += 2;
+                break;
+            case "r":
+                out += "\r";
+                i += 2;
+                break;
+            case "t":
+                out += "\t";
+                i += 2;
+                break;
+            case '"':
+                out += '"';
+                i += 2;
+                break;
+            default:
+                out += nxt;
+                i += 2;
+                break;
+        }
+    }
+    return out;
+}
+
+function extractPreOutputForCCpp(lang: Lang, code: string, prompts: string[]) {
+    const src = String(code ?? "");
+
+    const firstInputIdx =
+        lang === "c"
+            ? (() => {
+                const i = src.search(/\bscanf\s*\(|\bgets\s*\(|\bfgets\s*\(/);
+                return i >= 0 ? i : src.length;
+            })()
+            : (() => {
+                const i = src.search(/\b(?:std::)?cin\s*>>|\bgetline\s*\(/);
+                return i >= 0 ? i : src.length;
+            })();
+
+    const pre = src.slice(0, firstInputIdx);
+
+    const rawStrings: string[] = [];
+
+    if (lang === "c") {
+        const re = /\bprintf\s*\(\s*"([^"]*)"\s*(?:,|\))/g;
+        for (const m of pre.matchAll(re)) rawStrings.push(unescapeCStringContent(m[1] ?? ""));
+    } else if (lang === "cpp") {
+        const re = /\b(?:std::)?cout\s*<<\s*"([^"]*)"/g;
+        for (const m of pre.matchAll(re)) rawStrings.push(unescapeCStringContent(m[1] ?? ""));
+    }
+
+    // Filter out strings that are actually prompts (avoid duplicate prompts)
+    const promptSet = new Set(prompts.map((p) => String(p ?? "").trimEnd()));
+    const filtered = rawStrings.filter((s) => {
+        const t = String(s ?? "").trimEnd();
+        if (!t) return false;
+        if (promptSet.has(t)) return false;
+        // also skip if it begins with a prompt (common: "Enter a: ")
+        for (const p of promptSet) if (p && t.startsWith(p)) return false;
+        return true;
+    });
+
+    // Turn into terminal lines
+    const lines: TermLine[] = [];
+    for (const s of filtered) lines.push(...toOutTermLines(s));
+    return lines;
+}
+
+// ---- main hook ----
 
 export function useTerminalRunner(args: {
     lang: Lang;
@@ -27,10 +135,10 @@ export function useTerminalRunner(args: {
     resetTerminalOnRun: boolean;
     onRun?: OnRun;
 }) {
-    const {lang, code, disabled, allowRun, resetTerminalOnRun, onRun} = args;
+    const { lang, code, disabled, allowRun, resetTerminalOnRun, onRun } = args;
 
     const [stdinBuffer, setStdinBuffer] = React.useState("");
-    const [terminal, setTerminal] = React.useState<TermLine[]>([{type: "sys", text: "Ready."}]);
+    const [terminal, setTerminal] = React.useState<TermLine[]>([{ type: "sys", text: "Ready." }]);
 
     const [awaitingInput, setAwaitingInput] = React.useState(false);
     const [inputPrompt, setInputPrompt] = React.useState("");
@@ -43,28 +151,26 @@ export function useTerminalRunner(args: {
     const runLockRef = React.useRef(false);
     const runIdRef = React.useRef(0);
     const activeRunIdRef = React.useRef<number | null>(null);
+
+    const [typedLines, setTypedLines] = React.useState<string[]>([]);
+    const hasStartedExecRef = React.useRef(false); // probe-run done for python/java?
+
     const inputPlan = React.useMemo(() => inferInputPlan(lang, code), [lang, code]);
 
-// For C/C++ we collect inputs first, then run once.
-    const deferredRunRef = React.useRef(false);
-
     const replaceRunLines = React.useCallback((runId: number, lines: TermLine[]) => {
-        const tagged = lines.map((l) => ({...l, runId}));
+        const tagged = lines.map((l) => ({ ...l, runId }));
         setTerminal((prev) => [...prev.filter((l) => l.runId !== runId), ...tagged]);
     }, []);
 
-    const appendRunLines = React.useCallback((runId: number, lines: TermLine[]) => {
-        const tagged = lines.map((l) => ({...l, runId}));
-        setTerminal((prev) => [...prev, ...tagged]);
-    }, []);
-
     const resetTerminal = React.useCallback((opts?: { keepReady?: boolean }) => {
-        setTerminal([{type: "sys", text: opts?.keepReady === false ? "" : "Ready."}].filter((l) => l.text));
+        setTerminal([{ type: "sys", text: opts?.keepReady === false ? "" : "Ready." }].filter((l) => l.text));
         setAwaitingInput(false);
         setInputPrompt("");
         setInputLine("");
         setLastResult(null);
         setStdinBuffer("");
+        setTypedLines([]);
+        hasStartedExecRef.current = false;
         activeRunIdRef.current = null;
     }, []);
 
@@ -72,21 +178,20 @@ export function useTerminalRunner(args: {
         async (stdinToUse: string) => {
             if (runLockRef.current) return null;
             runLockRef.current = true;
-
             setBusy(true);
             setLastResult(null);
 
             try {
                 if (onRun) {
-                    const data = await onRun({language: lang, code, stdin: stdinToUse});
+                    const data = await onRun({ language: lang, code, stdin: stdinToUse });
                     setLastResult(data);
                     return data;
                 }
 
                 const res = await fetch("/api/run", {
                     method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({language: lang, code, stdin: stdinToUse}),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
                 });
 
                 const text = await res.text();
@@ -94,7 +199,7 @@ export function useTerminalRunner(args: {
                 try {
                     data = JSON.parse(text);
                 } catch {
-                    data = {ok: false, error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`};
+                    data = { ok: false, error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}` };
                 }
                 setLastResult(data);
                 return data;
@@ -105,355 +210,191 @@ export function useTerminalRunner(args: {
         },
         [onRun, lang, code],
     );
-    const splitStdoutByPrompts = React.useCallback((stdout: string, prompts: string[]) => {
-        const out = String(stdout ?? "");
-        if (!prompts.length) return [out];
 
-        let pos = 0;
-        const segs: string[] = [];
+    const rebuildInteractiveTranscript = React.useCallback(
+        (runId: number, lines: string[], r: RunResult, showWaiting: boolean) => {
+            const promptsRaw = inputPlan.prompts?.length ? inputPlan.prompts : ["Input:"];
 
-        for (const pRaw of prompts) {
-            const p = String(pRaw ?? "");
-            if (!p) continue;
+            // split stdout by prompts in correct order
+            const splitCount = showWaiting ? lines.length + 1 : lines.length;
+            const promptsForSplit = expandPrompts(promptsRaw, Math.max(splitCount, 1), "Input:");
 
-            const variants = [p, p + " ", p.trimEnd(), p.trimEnd() + " "].filter(Boolean);
+            const stdoutText = cleanTermText(r.stdout ?? "");
+            const segs = splitStdoutByPrompts(stdoutText, promptsForSplit);
 
-            let bestIdx = -1;
-            let bestLen = 0;
+            const rebuilt: TermLine[] = [{ type: "sys", text: `Running… (${lang})` }];
 
-            // find the earliest match >= pos for THIS prompt
-            for (const v of variants) {
-                const idx = out.indexOf(v, pos);
-                if (idx !== -1 && (bestIdx === -1 || idx < bestIdx)) {
-                    bestIdx = idx;
-                    bestLen = v.length;
-                }
-            }
-
-            if (bestIdx === -1) break;
-
-            segs.push(out.slice(pos, bestIdx));
-            pos = bestIdx + bestLen;
-        }
-
-        segs.push(out.slice(pos));
-        return segs;
-    }, []);
-
-    const toOutTermLines = React.useCallback((s: string) => {
-        const txt = cleanTermText(s ?? "");
-        return toLines(txt).map<TermLine>((t) => ({ type: "out", text: t }));
-    }, []);
-
-    const startRun = React.useCallback(async () => {
-        if (disabled || runLockRef.current || busy || !allowRun) return;
-
-        setStdinBuffer("");
-
-        if (resetTerminalOnRun) resetTerminal();
-        else {
-            setAwaitingInput(false);
-            setInputPrompt("");
-            setInputLine("");
-        }
-
-        const runId = ++runIdRef.current;
-
-
-
-        activeRunIdRef.current = runId;
-
-        appendRunLines(runId, [{type: "sys", text: `Running… (${lang})`}]);
-
-
-        // ---- C/C++: collect inputs first to avoid uninitialized garbage ----
-        if ((lang === "python" || lang === "c" || lang === "cpp") && inputPlan.expected > 0) {
-            deferredRunRef.current = true;
-            setAwaitingInput(true);
-            setInputPrompt(inputPlan.prompts[0] || "Input:");
-            appendRunLines(runId, [{ type: "sys", text: "Waiting for input…" }]);
-            setTimeout(() => inputRef.current?.focus(), 0);
-            return;
-        }
-
-        deferredRunRef.current = false;
-
-        const data = await runOnce("");
-        if (!data) return;
-
-        const info = detectNeedsInput(lang, data, code);
-        const stdoutText = cleanTermText(data.stdout ?? "");
-        const outLines = toLines(stdoutText).map<TermLine>((t) => ({type: "out", text: t}));
-
-        if (info.needs) {
-            if (lang === "python") {
-                const prompts = extractInputPromptsPython(code);
-                const firstPrompt = prompts[0] || extractFirstInputPrompt(code) || info.prompt || "Input:";
-
-                // show only output BEFORE the first prompt
-                const segs = splitStdoutByPrompts(stdoutText, prompts.length ? [prompts[0]] : [firstPrompt]);
-                const pre = segs[0] ?? "";
-                const preLines = toOutTermLines(pre);
-                if (preLines.length) appendRunLines(runId, preLines);
-
-                setAwaitingInput(true);
-                setInputPrompt(firstPrompt);
-                appendRunLines(runId, [{ type: "sys", text: "Waiting for input…" }]);
-                setTimeout(() => inputRef.current?.focus(), 0);
-                return;
-            }
-            if (outLines.length) appendRunLines(runId, outLines);
-
-            const promptFromCode = extractFirstInputPrompt(code);
-            setAwaitingInput(true);
-            setInputPrompt(info.prompt || promptFromCode || "Input:");
-            appendRunLines(runId, [{type: "sys", text: "Waiting for input…"}]);
-            setTimeout(() => inputRef.current?.focus(), 0);
-            return;
-        }
-
-        const extraErrs: TermLine[] = [];
-        if (data.compile_output) extraErrs.push({type: "err", text: cleanTermText(data.compile_output)});
-        if (data.stderr) extraErrs.push({type: "err", text: cleanTermText(data.stderr)});
-        if (data.message) extraErrs.push({type: "err", text: cleanTermText(data.message)});
-        if (data.error) extraErrs.push({type: "err", text: cleanTermText(data.error)});
-
-        appendRunLines(runId, [
-            ...outLines,
-            ...extraErrs,
-            {type: data.ok === false ? "err" : "sys", text: `Done • ${fmtMeta(data)}`},
-        ]);
-    }, [
-        disabled,
-        busy,
-        allowRun,
-        resetTerminalOnRun,
-        resetTerminal,
-        appendRunLines,
-        runOnce,
-        lang,
-        code,
-    ]);
-
-    const submitInput = React.useCallback(async () => {
-        if (disabled || runLockRef.current || busy) return;
-        const runId = activeRunIdRef.current;
-        if (!runId) return;
-
-        const typed = String(inputLine ?? "");
-        if (!typed.length) return;
-
-        const nextBuffer = stdinBuffer + typed + "\n";
-
-        setInputLine("");
-        setStdinBuffer(nextBuffer);
-
-        const data = await runOnce(nextBuffer);
-
-
-        if (!data) return;
-
-        const info = detectNeedsInput(lang, data, code);
-
-        const stdoutText = cleanTermText(data.stdout ?? "");
-        const prompt = inputPrompt || extractFirstInputPrompt(code) || "Input:";
-        const typedLinesAll = nextBuffer.split("\n").filter(Boolean);
-        // const typedLinesAll = nextBuffer.split("\n").filter(Boolean);
-
-        if ((lang === "c" || lang === "cpp") && deferredRunRef.current) {
-            const expected = inputPlan.expected || typedLinesAll.length;
-
-            // If we still need more inputs, just update transcript and keep waiting.
-            if (typedLinesAll.length < expected) {
-                const rebuilt = [
-                    { type: "sys" as const, text: `Running… (${lang})` },
-                    ...typedLinesAll.map((val, i) => ({
-                        type: "in" as const,
-                        text: `${inputPlan.prompts[i] || "Input:"} ${val}`,
-                    })),
-                    { type: "sys" as const, text: "Waiting for input…" },
-                ];
-
-                setAwaitingInput(true);
-                setInputPrompt(inputPlan.prompts[typedLinesAll.length] || "Input:");
-                replaceRunLines(runId, rebuilt);
-                setTimeout(() => inputRef.current?.focus(), 0);
-                return;
-            }
-
-            // We have enough inputs -> run ONCE with full stdin
-            deferredRunRef.current = false;
-        }
-
-        let preOutLines: string[] = [];
-        // let postOutLines: string[] = [];
-
-        if (lang === "python") {
-            const promptsFromCode = extractInputPromptsPython(code);
-            const typedCount = typedLinesAll.length;
-
-            // fallback if prompts can't be extracted (rare)
-            const fallbackPrompt = extractFirstInputPrompt(code) || info.prompt || "Input:";
-            const prompts =
-                promptsFromCode.length > 0
-                    ? promptsFromCode
-                    : Array(Math.max(typedCount + (info.needs ? 1 : 0), 1)).fill(fallbackPrompt);
-
-            // Split stdout in the *real* order by prompts
-            const segs = splitStdoutByPrompts(stdoutText, prompts);
-
-            const rebuilt: any[] = [{ type: "sys", text: `Running… (${lang})` }];
-
-            // output before first prompt
             rebuilt.push(...toOutTermLines(segs[0] ?? ""));
 
-            // interleave: input i, then output segment i+1
-            for (let i = 0; i < typedCount; i++) {
-                const p = prompts[i] || "Input:";
-                rebuilt.push({ type: "in", text: `${p} ${typedLinesAll[i]}` });
-                rebuilt.push(...toOutTermLines(segs[i + 1] ?? ""));
+            for (let i = 0; i < lines.length; i++) {
+                const pDisp = prettyPrompt(promptsForSplit[i] || promptsRaw[i] || promptsRaw[0] || "Input:");
+                rebuilt.push({ type: "in", text: `${pDisp} ${lines[i] ?? ""}` });
+
+                // if prompt splitting left a leading single space, drop it
+                let seg = segs[i + 1] ?? "";
+                if (seg.startsWith(" ") && !seg.startsWith(" \n")) seg = seg.slice(1);
+
+                rebuilt.push(...toOutTermLines(seg));
             }
 
-            if (info.needs) {
+            const extraErrs: TermLine[] = [];
+            if (r.compile_output) extraErrs.push({ type: "err", text: cleanTermText(r.compile_output) });
+            if (r.stderr) extraErrs.push({ type: "err", text: cleanTermText(r.stderr) });
+            if (r.message) extraErrs.push({ type: "err", text: cleanTermText(r.message) });
+            if (r.error) extraErrs.push({ type: "err", text: cleanTermText(r.error) });
+
+            if (showWaiting) {
+                const nextRaw = promptsRaw[lines.length] || promptsRaw[0] || "Input:";
                 setAwaitingInput(true);
-                setInputPrompt(prompts[typedCount] || info.prompt || "Input:");
+                setInputPrompt(prettyPrompt(nextRaw));
                 rebuilt.push({ type: "sys", text: "Waiting for input…" });
                 replaceRunLines(runId, rebuilt);
                 setTimeout(() => inputRef.current?.focus(), 0);
                 return;
             }
 
-            // finished: append errors + Done
-            if (data.compile_output) rebuilt.push({ type: "err", text: cleanTermText(data.compile_output) });
-            if (data.stderr) rebuilt.push({ type: "err", text: cleanTermText(data.stderr) });
-            if (data.message) rebuilt.push({ type: "err", text: cleanTermText(data.message) });
-            if (data.error) rebuilt.push({ type: "err", text: cleanTermText(data.error) });
-
+            rebuilt.push(...extraErrs);
             setAwaitingInput(false);
             setInputPrompt("");
-            rebuilt.push({ type: data.ok === false ? "err" : "sys", text: `Done • ${fmtMeta(data)}` });
+            rebuilt.push({ type: r.ok === false ? "err" : "sys", text: `Done • ${fmtMeta(r)}` });
 
             replaceRunLines(runId, rebuilt);
-            return;
-        }
+        },
+        [inputPlan.prompts, lang, replaceRunLines],
+    );
 
+    const startRun = React.useCallback(async () => {
+        if (disabled || runLockRef.current || busy || !allowRun) return;
 
-        // const stdoutText = cleanTermText(data.stdout ?? "");
-        else if (lang === "java") {
-            const prompts = extractJavaPrintPrompts(code);
-            const stdoutClean = stripPromptsFromStdout(stdoutText, prompts);
-            const outLines = toLines(stdoutClean).map((t) => ({type: "out" as const, text: t}));
-
-            const inLines = typedLinesAll.map((val, i) => {
-                const p = prompts[i] || "Input:";
-                return {type: "in" as const, text: `${p} ${val}`};
-            });
-
-            const rebuilt: any[] = [
-                {type: "sys", text: `Running… (${lang})`},
-                ...inLines,
-                ...outLines,
-            ];
-
-            if (info.needs) {
-                // next prompt = next expected prompt by index
-                setAwaitingInput(true);
-                setInputPrompt(prompts[typedLinesAll.length] || info.prompt || "Input:");
-                rebuilt.push({type: "sys", text: "Waiting for input…"});
-                replaceRunLines(runId, rebuilt);
-                setTimeout(() => inputRef.current?.focus(), 0);
-                return;
-            }
-
-            setAwaitingInput(false);
-            setInputPrompt("");
-
-            rebuilt.push({
-                type: data.ok === false ? "err" : "sys",
-                text: `Done • ${fmtMeta(data)}`,
-            });
-
-            replaceRunLines(runId, rebuilt);
-            return;
-        }else if (lang === "c" || lang === "cpp") {
-            const promptList = inputPlan.prompts;
-            const stdoutClean = stripPromptsFromStdout(cleanTermText(data.stdout ?? ""), promptList);
-            const outLines = toLines(stdoutClean).map((t) => ({ type: "out" as const, text: t }));
-
-            const inLines = typedLinesAll.map((val, i) => ({
-                type: "in" as const,
-                text: `${promptList[i] || "Input:"} ${val}`,
-            }));
-
-            const extraErrs: any[] = [];
-            if (data.compile_output) extraErrs.push({ type: "err", text: cleanTermText(data.compile_output) });
-            if (data.stderr) extraErrs.push({ type: "err", text: cleanTermText(data.stderr) });
-            if (data.message) extraErrs.push({ type: "err", text: cleanTermText(data.message) });
-            if (data.error) extraErrs.push({ type: "err", text: cleanTermText(data.error) });
-
-            const rebuilt = [
-                { type: "sys" as const, text: `Running… (${lang})` },
-                ...inLines,
-                ...outLines,
-                ...extraErrs,
-                { type: data.ok === false ? ("err" as const) : ("sys" as const), text: `Done • ${fmtMeta(data)}` },
-            ];
-
-            setAwaitingInput(false);
-            setInputPrompt("");
-            replaceRunLines(runId, rebuilt);
-            return;
-        }
-
-
-
-
-
+        if (resetTerminalOnRun) resetTerminal();
         else {
-            preOutLines = toLines(stdoutText);
+            setAwaitingInput(false);
+            setInputPrompt("");
+            setInputLine("");
+            setLastResult(null);
+            setStdinBuffer("");
+            setTypedLines([]);
+            hasStartedExecRef.current = false;
         }
 
-        const extraErrs: TermLine[] = [];
-        if (!info.needs) {
-            if (data.compile_output) extraErrs.push({type: "err", text: cleanTermText(data.compile_output)});
-            if (data.stderr) extraErrs.push({type: "err", text: cleanTermText(data.stderr)});
-            if (data.message) extraErrs.push({type: "err", text: cleanTermText(data.message)});
-            if (data.error) extraErrs.push({type: "err", text: cleanTermText(data.error)});
+        const runId = ++runIdRef.current;
+        activeRunIdRef.current = runId;
+
+        const expectsInput = inputPlan.expected > 0;
+        const probeSafe = lang === "python" || lang === "java";
+
+        // If no input expected: just run once
+        if (!expectsInput) {
+            replaceRunLines(runId, [{ type: "sys", text: `Running… (${lang})` }]);
+            const r = await runOnce("");
+            if (!r) return;
+            rebuildInteractiveTranscript(runId, [], r, false);
+            return;
         }
 
-        const rebuilt: TermLine[] = [
-            {type: "sys", text: `Running… (${lang})`},
-            ...preOutLines.map((t) => ({type: "out", text: t})),
-            {type: "in", text: `${prompt} ${typed}`},
-            ...postOutLines.map((t) => ({type: "out", text: t})),
-            ...extraErrs,
-        ];
+        // ---- Python/Java: PROBE RUN so early prints show before input ----
+        if (probeSafe) {
+            replaceRunLines(runId, [{ type: "sys", text: `Running… (${lang})` }]);
+            hasStartedExecRef.current = true;
 
-        if (info.needs) {
-            const promptFromCode = extractFirstInputPrompt(code);
+            const r = await runOnce(""); // empty stdin => should hit EOF/NoSuchElement quickly
+            if (!r) return;
+
+            const more = needsMoreInput(lang, r);
+            // show early output now, then wait for input
+            rebuildInteractiveTranscript(runId, [], r, more || true);
+            return;
+        }
+
+        // ---- C/C++: static pre-output (safe), then collect inputs (no probe-run) ----
+        const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
+        const firstPrompt = prettyPrompt(inputPlan.prompts[0] || "Input:");
+        setAwaitingInput(true);
+        setInputPrompt(firstPrompt);
+        setTypedLines([]);
+        setStdinBuffer("");
+        hasStartedExecRef.current = false;
+
+        replaceRunLines(runId, [
+            { type: "sys", text: `Running… (${lang})` },
+            ...preOut,
+            { type: "sys", text: "Waiting for input…" },
+        ]);
+
+        setTimeout(() => inputRef.current?.focus(), 0);
+    }, [
+        disabled,
+        busy,
+        allowRun,
+        resetTerminalOnRun,
+        resetTerminal,
+        lang,
+        code,
+        inputPlan,
+        runOnce,
+        replaceRunLines,
+        rebuildInteractiveTranscript,
+    ]);
+
+    const submitInput = React.useCallback(async () => {
+        if (disabled || runLockRef.current || busy) return;
+
+        const runId = activeRunIdRef.current;
+        if (!runId) return;
+
+        // IMPORTANT: allow blank line input (needed to stop loops)
+        const typed = String(inputLine ?? "");
+        const next = [...typedLines, typed];
+
+        setTypedLines(next);
+        setInputLine("");
+        setStdinBuffer(next.join("\n") + "\n");
+
+        const expectsInput = inputPlan.expected > 0;
+        const probeSafe = lang === "python" || lang === "java";
+
+        // C/C++ collecting phase: wait until we have expected lines
+        if (expectsInput && !probeSafe && next.length < inputPlan.expected) {
+            const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
+            const nextPrompt = prettyPrompt(inputPlan.prompts[next.length] || inputPlan.prompts[0] || "Input:");
+
             setAwaitingInput(true);
-            setInputPrompt(info.prompt || promptFromCode || prompt || "Input:");
-            rebuilt.push({type: "sys", text: "Waiting for input…"});
-            replaceRunLines(runId, rebuilt);
+            setInputPrompt(nextPrompt);
+
+            replaceRunLines(runId, [
+                { type: "sys", text: `Running… (${lang})` },
+                ...preOut,
+                ...next.map((val, i) => ({
+                    type: "in" as const,
+                    text: `${prettyPrompt(inputPlan.prompts[i] || "Input:")} ${val}`,
+                })),
+                { type: "sys", text: "Waiting for input…" },
+            ]);
+
             setTimeout(() => inputRef.current?.focus(), 0);
             return;
         }
 
-        setAwaitingInput(false);
-        setInputPrompt("");
+        // Run with all collected stdin (Python/Java reruns each submit; C/C++ runs once at the end)
+        const stdin = next.join("\n") + "\n";
+        const r = await runOnce(stdin);
+        if (!r) return;
 
-        rebuilt.push({type: data.ok === false ? "err" : "sys", text: `Done • ${fmtMeta(data)}`});
-        replaceRunLines(runId, rebuilt);
+        const more = (probeSafe && needsMoreInput(lang, r)) || false;
+        rebuildInteractiveTranscript(runId, next, r, more);
+
+        // if waiting for more, keep input focused
     }, [
         disabled,
         busy,
         inputLine,
-        stdinBuffer,
-        runOnce,
+        typedLines,
         lang,
         code,
-        inputPrompt,
+        inputPlan,
+        runOnce,
         replaceRunLines,
+        rebuildInteractiveTranscript,
     ]);
 
     return {

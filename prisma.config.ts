@@ -1,13 +1,17 @@
 // prisma.config.ts
-import { defineConfig, env } from "prisma/config";
-import "dotenv/config";
+import { defineConfig } from "prisma/config";
+import { config } from "dotenv";
+
+// Load the same env files Next uses (order matters)
+config({ path: ".env.local" });
+config({ path: ".env" });
 
 export default defineConfig({
     schema: "prisma/schema.prisma",
     migrations: {
-        path: "prisma/migrations",
+        seed: "tsx prisma/seed/seed.ts",
     },
     datasource: {
-        url: env("DATABASE_URL"),
+        url: process.env.DATABASE_URL!,
     },
 });

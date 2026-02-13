@@ -8,8 +8,12 @@ import { PY_SUBJECT_SLUG as PY_SUBJECT } from "./data/subjects/python/constants"
 import { LA_SECTIONS } from "./data/subjects/linear-algebra/sections";
 import { LA_SUBJECT_SLUG as LA_SUBJECT } from "./data/subjects/linear-algebra/constants";
 import { HC_SUBJECT_SLUG as HC_SUBJECT } from "./data/subjects/haitian-creole/constants";
+
+
 import { HC_SECTIONS } from "./data/subjects/haitian-creole/sections";
 
+import { AI_SUBJECT_SLUG as AI_SUBJECT } from "./data/subjects/ai/constants";
+import { AI_SECTIONS } from "./data/subjects/ai/sections";
 
 type GenModule = {
   moduleSlug: string;
@@ -76,6 +80,7 @@ export function genPracticeCatalog() {
     [PY_SUBJECT]: buildSubject(PY_SUBJECT, PY_SECTIONS as any),
     [LA_SUBJECT]: buildSubject(LA_SUBJECT, LA_SECTIONS as any),
         [HC_SUBJECT]: buildSubject(HC_SUBJECT, HC_SECTIONS as any),
+    [AI_SUBJECT]: buildSubject(AI_SUBJECT, AI_SECTIONS as any),
   };
 
   const outDir = path.join(process.cwd(), "src/lib/practice/catalog");

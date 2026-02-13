@@ -73,6 +73,12 @@ import VectorNormsSketch from "@/components/review/sketches/linear_algebra/mod4/
 import GeoNormUnitBallsSketch from "@/components/review/sketches/linear_algebra/mod4/GeoNormUnitBallsSketch";
 import InnerProductGeometrySketch from "@/components/review/sketches/linear_algebra/mod4/InnerProductGeometrySketch";
 import DistanceSketch from "@/components/review/sketches/linear_algebra/mod4/DistanceSketch";
+import AiWhatIsSketch from "@/components/review/sketches/ai/AiWhatIsSketch";
+import AiPromptBuilderSketch from "@/components/review/sketches/ai/AiPromptBuilderSketch";
+import AiPromptRefineSketch from "@/components/review/sketches/ai/AiPromptRefineSketch";
+import AiPrivacyRedactionSketch from "@/components/review/sketches/ai/AiPrivacyRedactionSketch";
+import AiToneRewriteSketch from "@/components/review/sketches/ai/AiToneRewriteSketch";
+import AiVerifyChecklistSketch from "@/components/review/sketches/ai/AiVerifyChecklistSketch";
 
 const VideoEmbedSketch = dynamic(() => import("@/components/review/sketches/python/chapter1/VideoEmbedSketch"), {
   ssr: false,
@@ -189,6 +195,15 @@ const SKETCHES: Record<string, React.ComponentType<any>> = {
   "hc.questions": HCQuestionsSketch,
   "hc.numbers": HCNumbersSketch,
 
+
+
+
+  "ai0.what": AiWhatIsSketch,
+  "ai0.prompt_builder": AiPromptBuilderSketch,
+  "ai0.prompt_refine": AiPromptRefineSketch,
+  "ai0.verify": AiVerifyChecklistSketch,
+  "ai0.privacy": AiPrivacyRedactionSketch,
+  "ai0.tone": AiToneRewriteSketch,
 };
 
 export default function SketchHost({

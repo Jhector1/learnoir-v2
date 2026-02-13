@@ -32,7 +32,17 @@ import Mat2ShiftRankSketch from "./sketches/linear_algebra/matricespart2/Mat2Shi
 import Mat2AugmentedRankSketch from "./sketches/linear_algebra/matricespart2/Mat2AugmentedRankSketch";
 import Mat2RankOpsSketch from "./sketches/linear_algebra/matricespart2/Mat2RankOpsSketch";
 import Mat2OuterProductSketch from "./sketches/linear_algebra/matricespart2/Mat2OuterProductSketch";
+
+
+
+
+
 // import PrintOptionsSketch from "./sketches/python/chapter1/PrintOptionsSketch";
+
+
+
+
+
 import PrintOptionsSketch from "@/components/review/sketches/python/chapter1/PrintOptionsSketch";
 import InputOutputSketch from "@/components/review/sketches/python/chapter1/InputOutputSketch";
 import VariablesSketch from "@/components/review/sketches/python/chapter1/VariablesSketch";
@@ -42,11 +52,27 @@ import ErrorMessagesSketch from "@/components/review/sketches/python/chapter1/Er
 import CommentsDocstringsSketch from "@/components/review/sketches/python/chapter1/CommentsDocstringsSketch";
 import dynamic from "next/dynamic";
 // import VideoEmbedSketch from "@/components/review/sketches/video/VideoEmbedSketch";
+
+
+
 import HCGreetingsSketch from "@/components/review/sketches/haitian-creole/HCGreetingsSketch";
 import HCPronounsSketch from "@/components/review/sketches/haitian-creole/HCPronounsSketch";
 import HCSentencesSketch from "@/components/review/sketches/haitian-creole/HCSentencesSketch";
 import HCQuestionsSketch from "@/components/review/sketches/haitian-creole/HCQuestionsSketch";
 import HCNumbersSketch from "@/components/review/sketches/haitian-creole/HCNumbersSketch";
+import OrthonormalBasisCoordsSketch from "@/components/review/sketches/linear_algebra/mod4/OrthonormalBasisCoordsSketch";
+import OrthogonalMatrixSketch from "@/components/review/sketches/linear_algebra/mod4/OrthogonalMatrixSketch";
+import GramSchmidtSketch from "@/components/review/sketches/linear_algebra/mod4/GramSchmidtSketch";
+import WeightedInnerProductSketch from "@/components/review/sketches/linear_algebra/mod4/WeightedInnerProductSketch";
+import SPD2x2Sketch from "@/components/review/sketches/linear_algebra/mod4/SPD2x2Sketch";
+import ProjectionMatrixSketch from "@/components/review/sketches/linear_algebra/mod4/ProjectionMatrixSketch";
+import ProjectionLineSketch from "@/components/review/sketches/linear_algebra/mod4/ProjectionLineSketch";
+import AngleOrthogonalitySketch from "@/components/review/sketches/linear_algebra/mod4/AngleOrthogonalitySketch";
+import InnerProductSketch from "@/components/review/sketches/linear_algebra/mod4/InnerProductSketch";
+import VectorNormsSketch from "@/components/review/sketches/linear_algebra/mod4/VectorNormsSketch";
+import GeoNormUnitBallsSketch from "@/components/review/sketches/linear_algebra/mod4/GeoNormUnitBallsSketch";
+import InnerProductGeometrySketch from "@/components/review/sketches/linear_algebra/mod4/InnerProductGeometrySketch";
+import DistanceSketch from "@/components/review/sketches/linear_algebra/mod4/DistanceSketch";
 
 const VideoEmbedSketch = dynamic(() => import("@/components/review/sketches/python/chapter1/VideoEmbedSketch"), {
   ssr: false,
@@ -93,6 +119,59 @@ const SKETCHES: Record<string, React.ComponentType<any>> = {
   "mat2.augRank": AugmentedRankProofSketch,
 
   "mat2.linind": LinearIndependenceRankSketch,
+
+
+
+
+
+
+
+
+  "mod4.norms2": VectorNormsSketch,
+  "mod4.inner": InnerProductSketch,
+  "mod4.angle": AngleOrthogonalitySketch,
+  "mod4.projline": ProjectionLineSketch,
+  "mod4.projmat": ProjectionMatrixSketch,
+  "mod4.onb": OrthonormalBasisCoordsSketch,
+  "mod4.orthmat": OrthogonalMatrixSketch,
+  "mod4.gs": GramSchmidtSketch,
+  "mod4.weighted": WeightedInnerProductSketch,
+  "mod4.spd": SPD2x2Sketch,
+  "geo.distance":DistanceSketch,
+  "geo.norm_unitballs": GeoNormUnitBallsSketch,
+  "geo.inner_product_geometry": InnerProductGeometrySketch,
+  "geo.norm_unitballs": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoNormUnitBallsSketch"),
+      { ssr: false },
+  ),
+  "geo.inner_product_geometry": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoInnerProductGeometrySketch"),
+      { ssr: false },
+  ),
+  "geo.angle_orthogonality": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoAngleOrthogonalitySketch"),
+      { ssr: false },
+  ),
+  "geo.projection_line": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoProjectionLineSketch"),
+      { ssr: false },
+  ),
+  "geo.projection_dataset": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoProjectionDatasetSketch"),
+      { ssr: false },
+  ),
+  "geo.projection_affine": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoProjectionAffineSketch"),
+      { ssr: false },
+  ),
+  "geo.gram_schmidt": dynamic(
+      () => import("@/components/review/sketches/linear_algebra/mod4/GeoGramSchmidtSketch"),
+      { ssr: false },
+  ),
+  // "geo.rotations_givens": dynamic(
+  //     () => import("../sketches/mod4/GeoRotationsGivensSketch"),
+  //     { ssr: false },
+  // ),
 
 
 

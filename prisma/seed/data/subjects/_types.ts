@@ -22,7 +22,7 @@ export type ModuleSeed = {
   description?: string;
   weekStart?: number;
   weekEnd?: number;
-  meta?: any;
+  meta?: ModuleMeta;
 };
 
 export type PoolItem = { key: string; w: number };
@@ -45,6 +45,15 @@ export type TopicSeed = {
   variant: string | null; // IMPORTANT: null allowed (mixed)
   meta?: any;
 };
+// ✅ define ModuleMeta first (before ModuleSeed uses it)
+export const ModuleMetaSchema = z.object({
+  outcomes: z.array(z.string().min(1)).optional(),
+  why: z.array(z.string().min(1)).optional(),
+  prereqs: z.array(z.string().min(1)).optional(),
+  videoUrl: z.string().url().nullable().optional(),
+  estimatedMinutes: z.number().int().positive().optional(),
+});
+export type ModuleMeta = z.infer<typeof ModuleMetaSchema>;
 
 export type SectionSeed = {
   slug: SectionSlug;
@@ -133,3 +142,18 @@ export type TopicMeta = {
 // and just ensure it is compatible with the fields above.
 // This is only here to show a “full” typed shape.
 export type TopicDefCompat = Omit<TopicDef, "meta"> & { meta: TopicMeta };
+
+
+// prisma/seed/data/subjects/_types.ts
+import { z } from "zod";
+
+// export const ModuleMetaSchema = z.object({
+//   outcomes: z.array(z.string().min(1)).optional(),
+//   why: z.array(z.string().min(1)).optional(),
+//   prereqs: z.array(z.string().min(1)).optional(),
+//
+//   videoUrl: z.string().url().nullable().optional(),
+//   estimatedMinutes: z.number().int().positive().optional(),
+// });
+//
+// export type ModuleMeta = z.infer<typeof ModuleMetaSchema>;

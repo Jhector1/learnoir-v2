@@ -14,6 +14,7 @@ import { Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 import Badge from "@/components/billing/Badge";
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
+import {ROUTES} from "@/utils";
 
 type NavItem = { href: string; label: string };
 
@@ -143,9 +144,9 @@ export default function HeaderSlick({
 
   const NAV: NavItem[] = useMemo(
       () => [
-        { href: "/", label: t("home") },
-        { href: "/subjects", label: t("subjects") },
-        { href: "/billing", label: t("billing") },
+        { href: ROUTES.home, label: t("home") },
+        { href:ROUTES.catalog, label: t("subjects") },
+        { href: ROUTES.pricing, label: t("billing") },
       ],
       [t],
   );

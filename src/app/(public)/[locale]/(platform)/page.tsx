@@ -6,21 +6,22 @@ import { getTranslations } from "next-intl/server";
 import MathMarkdown from "@/components/math/MathMarkdown";
 import VectorBasicsSketch from "@/components/review/sketches/linear_algebra/vectorpart1/VectorBasicsSketch";
 import { cn } from "@/lib/cn";
+import {ROUTES} from "@/utils";
 
 type Locale = "en" | "fr" | "ht";
 
-const ROUTES = {
-  start: "/subjects",
-  catalog: "/subjects",
-  linearAlgebra: "subjects/linear-algebra/modules",
-  python: "/subjects/python/modules",
-  review: "/review",
-  signIn: "/auth/signin",
-  pricing: "/billing",
-  contact: "/contact",
-  privacy: "/privacy",
-  terms: "/terms",
-};
+// const ROUTES = {
+//   start: "/subjects",
+//   catalog: "/subjects",
+//   linearAlgebra: "subjects/linear-algebra/modules",
+//   python: "/subjects/python/modules",
+//   review: "/review",
+//   signIn: "/auth/signin",
+//   pricing: "/billing",
+//   contact: "/contact",
+//   privacy: "/privacy",
+//   terms: "/terms",
+// };
 
 function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -136,8 +137,8 @@ export default async function HomePage({
   const year = new Date().getFullYear();
 
   const subjectsWithRoutes = [
-    { ...subjectCards[0], href: ROUTES.linearAlgebra },
-    { ...subjectCards[1], href: ROUTES.python },
+    { ...subjectCards[0], href: ROUTES.subjectModules("linear-algebra") },
+    { ...subjectCards[1], href: ROUTES.subjectModules("python") },
   ];
 
   return (
@@ -176,7 +177,7 @@ export default async function HomePage({
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <ButtonLink href={ROUTES.start} variant="primary">
+                <ButtonLink href={ROUTES.catalog} variant="primary">
                   {t("hero.ctaPrimary")}
                 </ButtonLink>
                 <ButtonLink href={ROUTES.catalog} variant="secondary">
@@ -290,7 +291,7 @@ print(dot([2, 1], [3, 4]))  # 10
               <ButtonLink href={ROUTES.review} variant="secondary">
                 {t("ui.tryReview")}
               </ButtonLink>
-              <ButtonLink href={ROUTES.start} variant="primary">
+              <ButtonLink href={ROUTES.catalog} variant="primary">
                 {t("hero.ctaPrimary")}
               </ButtonLink>
             </div>
@@ -517,7 +518,7 @@ print(dot([2, 1], [3, 4]))  # 10
                       tier.name === "Classe" ||
                       tier.name === "Classroom"
                         ? ROUTES.pricing
-                        : ROUTES.start
+                        : ROUTES.catalog
                     }
                     variant={tier.highlight ? "primary" : "secondary"}
                   >
@@ -574,7 +575,7 @@ print(dot([2, 1], [3, 4]))  # 10
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row lg:col-span-4 lg:justify-end">
-                <ButtonLink href={ROUTES.start} variant="primary">
+                <ButtonLink href={ROUTES.catalog} variant="primary">
                   {t("finalCta.primary")}
                 </ButtonLink>
                 <ButtonLink href={ROUTES.catalog} variant="secondary">

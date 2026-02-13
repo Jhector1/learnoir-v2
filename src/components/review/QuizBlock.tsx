@@ -378,6 +378,7 @@ async function resetThisQuiz() {
         const ok = getQuestionOk(q);
         // const excused = isExcused(q.id);
         return (
+
           <QuizLocalCard
           prereqsMet={prereqsMet}
             key={q.id}

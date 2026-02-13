@@ -1,5 +1,16 @@
 // prisma/seed/data/subjects/linear-algebra/sections.ts
-import { LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_PREFIX0, LA_PREFIX1, LA_PREFIX2, LA_PREFIX3 } from "./constants";
+import {
+  LA_MOD0,
+  LA_MOD1,
+  LA_MOD2,
+  LA_MOD3,
+  LA_MOD4,
+  LA_PREFIX0,
+  LA_PREFIX1,
+  LA_PREFIX2,
+  LA_PREFIX3,
+  LA_PREFIX4
+} from "./constants";
 import { LA_TOPICS } from "./topics";
 import type { SectionDef, TopicDef } from "../_types";
 
@@ -125,4 +136,46 @@ export const LA_SECTIONS: Array<SectionDef> = [
       },
     },
   },
+
+
+  // ✅ NEW (Module 4)
+  {
+    moduleSlug: LA_MOD4,
+    prefix: LA_PREFIX4,
+    genKey: "linear_algebra_mod4",
+    topics: LA_TOPICS[LA_MOD4],
+    section: {
+      slug: "linear-algebra-4-orthogonality",
+      order: 40,
+      title: "Linear Algebra 4 — Inner Products & Orthogonality",
+      description:
+          "Norms and inner products, orthogonality, projections, orthonormal bases, Gram–Schmidt.",
+      meta: {
+        module: 4,
+        weeks: "Weeks 6–7",
+        bullets: [
+          "Norm axioms + geometry of length",
+          "Inner products and angles",
+          "Orthogonality + orthogonal complement",
+          "Projection onto a line + projection matrices",
+          "Orthonormal bases and coordinates (Bᵀx)",
+          "Orthogonal matrices (QᵀQ = I) preserve lengths",
+          "Gram–Schmidt (orthonormalizing a basis)",
+          "SPD matrices and weighted inner products (xᵀAy)",
+        ],
+        skills: [
+          "Compute norms and dot products",
+          "Test orthogonality (aᵀb = 0)",
+          "Compute projections (scalar + vector form)",
+          "Build/recognize projection matrices (P² = P, Pᵀ = P)",
+          "Use orthonormal coordinates (λ = Bᵀx)",
+          "Recognize orthogonal matrices and length preservation",
+          "Run Gram–Schmidt on 2 vectors",
+          "Understand SPD requirement for xᵀAy as an inner product",
+        ],
+      },
+    },
+  },
+
+
 ];

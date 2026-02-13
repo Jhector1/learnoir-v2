@@ -18,19 +18,24 @@ datasource db {
 // -----------------------------
 // Practice / Learning Models
 // -----------------------------
+enum UserRole {
+  student
+  teacher
+  admin
+}
 
 model PracticeModule {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String           @id @default(cuid())
+  slug        String           @unique
   title       String
   description String?
-  order       Int      @default(0)
+  order       Int              @default(0)
   weekStart   Int?
   weekEnd     Int?
-
+  meta        Json? // ✅ ADD
   // NEW (optional)
-  subjectId String?
-  subject   PracticeSubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  subjectId   String?
+  subject     PracticeSubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,14 +48,13 @@ model PracticeModule {
   @@index([subjectId, order])
 }
 
-
 // ✅ Scalable topic table (replaces enum PracticeTopic)
 model PracticeTopic {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   titleKey    String
   description String?
-  order       Int      @default(0)
+  order       Int     @default(0)
   meta        Json?
   genKey      String?
 
@@ -73,12 +77,11 @@ model PracticeTopic {
   @@index([subjectId, order])
 }
 
-
 // Join table: Section <-> Topic
 model PracticeSectionTopic {
   sectionId String
   topicId   String
-  order     Int @default(0)
+  order     Int    @default(0)
 
   section PracticeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   topic   PracticeTopic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
@@ -92,7 +95,7 @@ model PracticeSectionTopic {
 model AssignmentTopic {
   assignmentId String
   topicId      String
-  order        Int @default(0)
+  order        Int    @default(0)
 
   assignment Assignment    @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   topic      PracticeTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
@@ -109,8 +112,8 @@ enum PracticeKind {
   vector_drag_target
   vector_drag_dot
   matrix_input
-    code_input // ✅ ADD
- text_input
+  code_input // ✅ ADD
+  text_input
   drag_reorder
   voice_input
 }
@@ -190,11 +193,11 @@ enum AssignmentStatus {
 }
 
 model PracticeSection {
-  id          String @id @default(cuid())
-  slug        String @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   title       String
   description String?
-  order       Int    @default(0)
+  order       Int     @default(0)
 
   // NEW (optional)
   subjectId String?
@@ -210,12 +213,11 @@ model PracticeSection {
   meta      Json?
 
   sessions    PracticeSession[]
-  assignments Assignment[] @relation("SectionAssignments")
+  assignments Assignment[]      @relation("SectionAssignments")
 
   @@index([moduleId])
   @@index([subjectId, order])
 }
-
 
 model PracticeSession {
   id     String                @id @default(cuid())
@@ -228,7 +230,7 @@ model PracticeSession {
   section   PracticeSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
 
   difficulty  PracticeDifficulty
-  targetCount Int @default(10)
+  targetCount Int                @default(10)
 
   total   Int @default(0)
   correct Int @default(0)
@@ -242,14 +244,14 @@ model PracticeSession {
   module   PracticeModule? @relation("ModuleSessions", fields: [moduleId], references: [id], onDelete: SetNull)
 
   assignmentId String?
-  assignment   Assignment? @relation("AssignmentSessions", fields: [assignmentId], references: [id], onDelete: SetNull)
-// ✅ NEW: where to go after completion
-  returnUrl String?
-  instances PracticeQuestionInstance[]
-  attempts  PracticeAttempt[]
+  assignment   Assignment?                @relation("AssignmentSessions", fields: [assignmentId], references: [id], onDelete: SetNull)
+  // ✅ NEW: where to go after completion
+  returnUrl    String?
+  instances    PracticeQuestionInstance[]
+  attempts     PracticeAttempt[]
 
   @@index([assignmentId])
-    @@index([moduleId])
+  @@index([moduleId])
   @@index([sectionId])
 }
 
@@ -267,7 +269,7 @@ model Assignment {
   topics AssignmentTopic[]
 
   difficulty    PracticeDifficulty
-  questionCount Int @default(10)
+  questionCount Int                @default(10)
 
   availableFrom DateTime?
   dueAt         DateTime?
@@ -290,14 +292,15 @@ model Assignment {
 // -----------------------------
 
 model User {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?  @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
+  roles         UserRole[] @default([student])
 
   // Stripe
-  stripeCustomerId String? @unique
+  stripeCustomerId String?   @unique
   trialUsedAt      DateTime?
 
   createdAt DateTime @default(now())
@@ -309,7 +312,7 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -372,7 +375,7 @@ model Subscription {
   priceId              String?
 
   currentPeriodEnd  DateTime?
-  cancelAtPeriodEnd Boolean @default(false)
+  cancelAtPeriodEnd Boolean   @default(false)
   trialEnd          DateTime?
 
   createdAt DateTime @default(now())
@@ -385,44 +388,42 @@ model Subscription {
   @@index([status])
 }
 
-
-
 model PracticeSubject {
-  id          String   @id @default(cuid())
-  slug        String   @unique // e.g. "linear-algebra", "python", "java", "ansible"
+  id          String  @id @default(cuid())
+  slug        String  @unique // e.g. "linear-algebra", "python", "java", "ansible"
   title       String
   description String?
-  order       Int      @default(0)
+  order       Int     @default(0)
   meta        Json?
 
-// ✅ NEW: Cloudinary image reference
+  // ✅ NEW: Cloudinary image reference
   imagePublicId String? // e.g. "learnoir/subjects/linear-algebra"
   imageAlt      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules PracticeModule[]
+  modules  PracticeModule[]
   sections PracticeSection[]
   topics   PracticeTopic[]
 
   @@index([order])
 }
 
-
 model ReviewProgress {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  actorKey    String   // "user:<id>" or "guest:<id>"
+  actorKey    String // "user:<id>" or "guest:<id>"
   subjectSlug String
   moduleId    String
   locale      String
 
-  state       Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  state     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([actorKey, subjectSlug, moduleId, locale])
+  @@index([actorKey]) // ✅ add
   @@index([subjectSlug, moduleId, locale])
 }
 
@@ -439,14 +440,13 @@ model ReviewQuizInstance {
   @@index([actorKey])
 }
 
-
 model StripeEvent {
   // Stripe event id: "evt_..."
-  id        String   @id
+  id String @id
 
-  type      String
-  livemode  Boolean
-  created   Int      // unix seconds from Stripe
+  type     String
+  livemode Boolean
+  created  Int // unix seconds from Stripe
 
   receivedAt DateTime @default(now())
 }

@@ -1,5 +1,5 @@
 // prisma/seed/data/subjects/linear-algebra/topics.ts
-import { LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3 } from "./constants";
+import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4} from "./constants";
 import type { TopicDef, TopicDefCompat } from "../_types";
 
 export const LA_TOPICS = {
@@ -464,4 +464,183 @@ export const LA_TOPICS = {
       },
     },
   ],
+
+  // ============================================================
+  // ✅ Module 4 — Inner Products & Orthogonality
+  // ============================================================
+  // ============================================================
+// ✅ Module 4 — Inner Products & Orthogonality
+// ============================================================
+  [LA_MOD4]: [
+    {
+      id: "norms2",
+      meta: {
+        label: "Vector norms (length)",
+        minutes: 0,
+        pool: [
+          { key: "norm_l2_compute", w: 5, kind: "numeric" },
+          { key: "norm_l1_compute", w: 3, kind: "numeric" },
+          { key: "norm_compare_two_vectors", w: 3, kind: "single_choice" },
+          { key: "norm_unit_vector_concept", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "inner_products",
+      meta: {
+        label: "Inner product (dot product) meaning",
+        minutes: 0,
+        pool: [
+          { key: "inner_basic_compute", w: 5, kind: "numeric" },
+          { key: "inner_sign_angle_relation", w: 4, kind: "single_choice" },
+          { key: "inner_bilinear_distribute", w: 2, kind: "single_choice" },
+          { key: "inner_symmetry_property", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "angles_orthogonality",
+      meta: {
+        label: "Angles + orthogonality",
+        minutes: 0,
+        pool: [
+          { key: "ortho_test_dot_zero", w: 5, kind: "single_choice" },
+          { key: "ortho_find_missing_value_make_zero", w: 4, kind: "numeric" },
+          { key: "ortho_angle_special_case_90", w: 3, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "projection_line",
+      meta: {
+        label: "Projection onto a line (onto span(b))",
+        minutes: 0,
+        pool: [
+          { key: "proj_scalar_component_compute", w: 4, kind: "numeric" },
+          { key: "proj_vector_compute_2d", w: 5, kind: "matrix_input" },
+          { key: "proj_residual_is_orthogonal", w: 3, kind: "single_choice" },
+          { key: "proj_geometry_interpret", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "projection_matrix",
+      meta: {
+        label: "Projection matrix P (onto span(b))",
+        minutes: 0,
+        pool: [
+          { key: "projmat_build_from_b", w: 5, kind: "matrix_input" },
+          { key: "projmat_apply_to_vector", w: 4, kind: "matrix_input" },
+          { key: "projmat_idempotent_p2_equals_p", w: 3, kind: "single_choice" },
+          { key: "projmat_symmetric_pt_equals_p", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "onb",
+      meta: {
+        label: "Orthonormal basis coordinates",
+        minutes: 0,
+        pool: [
+          { key: "onb_coords_equal_bt_x", w: 5, kind: "matrix_input" },
+          { key: "onb_reconstruct_x_from_coords", w: 4, kind: "matrix_input" },
+          { key: "onb_why_bt_b_equals_i", w: 3, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "orthogonal_matrices",
+      meta: {
+        label: "Orthogonal matrices (QᵀQ = I)",
+        minutes: 0,
+        pool: [
+          { key: "orthmat_check_qtq_identity", w: 5, kind: "single_choice" },
+          { key: "orthmat_preserves_norm", w: 4, kind: "single_choice" },
+          { key: "orthmat_preserves_dot_product", w: 3, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "gram_schmidt",
+      meta: {
+        label: "Gram–Schmidt (2 vectors)",
+        minutes: 0,
+        pool: [
+          { key: "gs_compute_u2_remove_projection", w: 5, kind: "matrix_input" },
+          { key: "gs_normalize_to_get_e1_e2", w: 4, kind: "matrix_input" },
+          { key: "gs_why_result_is_orthogonal", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "weighted_inner_product",
+      meta: {
+        label: "Weighted inner product ⟨x,y⟩ = xᵀAy",
+        minutes: 0,
+        pool: [
+          { key: "wip_compute_xT_A_y", w: 5, kind: "numeric" },
+          { key: "wip_symmetry_requirement", w: 4, kind: "single_choice" },
+          { key: "wip_positive_definite_requirement", w: 4, kind: "single_choice" },
+        ],
+      },
+    },
+
+    {
+      id: "spd",
+      meta: {
+        label: "SPD matrices (when xᵀAy is a real inner product)",
+        minutes: 0,
+        pool: [
+          { key: "spd_2x2_check_conditions", w: 5, kind: "single_choice" },
+          { key: "spd_2x2_det_and_a11_test", w: 4, kind: "single_choice" },
+          { key: "spd_shift_by_alphaI_makes_spd", w: 3, kind: "single_choice" },
+        ],
+      },
+    },
+
+    // ------------------------------------------------------------
+    // ✅ Review-only topics (no dedicated pool yet)
+    // Put them in the section so they won't throw "not part of section".
+    // Generator will fall back to SAFE_MIXED_POOL if pool is empty.
+    // ------------------------------------------------------------
+    {
+      id: "lengths_distances",
+      meta: {
+        label: "Lengths + distances (‖x−y‖)",
+        minutes: 0,
+        pool: [
+          { key: "dist_l2_compute_2d", w: 5, kind: "numeric" },
+          { key: "dist_l2_compute_3d", w: 4, kind: "numeric" },
+          { key: "dist_is_norm_of_difference", w: 4, kind: "single_choice" },
+          { key: "dist_squared_distance", w: 3, kind: "numeric" },
+          { key: "dist_translation_invariant", w: 2, kind: "single_choice" },
+        ],
+      },
+    },
+    { id: "orthogonal_complement", variant: null, meta: { label: "Orthogonal complement", minutes: 0 } },
+    { id: "inner_product_functions", variant: null, meta: { label: "Inner products of functions", minutes: 0 } },
+    { id: "projection_subspace", variant: null, meta: { label: "Projection onto a subspace", minutes: 0 } },
+    { id: "projection_affine", variant: null, meta: { label: "Projection onto affine spaces", minutes: 0 } },
+    { id: "rotations", variant: null, meta: { label: "Rotations", minutes: 0 } },
+
+    // Keep your mixed topic too if you want it explicitly selectable
+    {
+      id: "mod4_mix",
+      variant: null,
+      meta: {
+        label: "Inner Products — Mixed",
+        minutes: 0,
+        // pool intentionally omitted
+      },
+    },
+  ],
+
 } satisfies Record<string, TopicDefCompat[]>;

@@ -62,6 +62,8 @@ export async function runSeed() {
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
+            meta: m.meta ?? undefined, // ✅ ADD
+
           },
           create: {
             slug: m.slug,
@@ -71,6 +73,8 @@ export async function runSeed() {
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
+            meta: m.meta ?? undefined, // ✅ ADD
+
           },
         });
 

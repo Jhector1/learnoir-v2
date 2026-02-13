@@ -1,6 +1,6 @@
 // prisma/seed/data/subjects/linear-algebra/modules.ts
 
-import { LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_SUBJECT_SLUG } from "./constants";
+import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4, LA_SUBJECT_SLUG} from "./constants";
 import { ModuleSeed } from "../_types";
 
 export const LA_MODULES: ModuleSeed[] = [
@@ -40,5 +40,16 @@ export const LA_MODULES: ModuleSeed[] = [
     description: "Norms, rank, column/null spaces, determinant, and det(A−λI).",
     weekStart: 3,
     weekEnd: 5,
+  },
+  // ✅ NEW
+  {
+    slug: LA_MOD4,
+    subjectSlug: LA_SUBJECT_SLUG,
+    order: 40,
+    title: "Module 4 — Inner Products & Orthogonality",
+    description:
+        "Norms, inner products, orthogonality, projections, orthonormal bases, Gram–Schmidt.",
+    weekStart: 5,
+    weekEnd: 7,
   },
 ];

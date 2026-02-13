@@ -1,5 +1,6 @@
 // prisma/seed/data/subjects/_builder.ts
 import type { ModuleSeed, SectionDef, SectionSeed, SubjectSeed, TopicSeed } from "./_types";
+import {ModuleMetaSchema} from "./_types";
 
 function assertNonEmptyString(v: unknown, label: string) {
 
@@ -30,7 +31,16 @@ export function defineSubject(input: {
   assertNonEmptyString(input.subject.slug, "subject.slug");
   assertUnique(input.modules.map((m) => m.slug), "modules[].slug");
   assertUnique(input.topicGroups.map((g) => g.section.slug), "topicGroups[].section.slug");
-
+  for (const m of input.modules) {
+    if (m.meta !== undefined) {
+      const parsed = ModuleMetaSchema.safeParse(m.meta);
+      if (!parsed.success) {
+        throw new Error(
+            `Invalid module meta for module "${m.slug}": ${parsed.error.message}`,
+        );
+      }
+    }
+  }
   const allTopics: TopicSeed[] = [];
   const allSections: SectionSeed[] = [];
 

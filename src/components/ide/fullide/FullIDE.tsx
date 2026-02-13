@@ -199,7 +199,7 @@ export default function FullIDE(props: FullIDEProps) {
                 <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-black/20">
                     <div
                         ref={splitRef}
-                        className="grid min-h-0 w-full"
+                        className="grid min-h-0 w-full h-screen"
                         style={{
                             // ✅ KEY FIX: editor column is minmax(0,1fr) so it shrinks instead of pushing
                             gridTemplateColumns: `${leftPct}% 8px minmax(0, 1fr)`,

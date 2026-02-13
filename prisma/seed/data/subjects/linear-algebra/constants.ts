@@ -8,3 +8,8 @@ export const LA_MOD2 = "linear-algebra-2";
 export const LA_PREFIX2 = "la2";
 export const LA_MOD3 = "linear-algebra-3";
 export const LA_PREFIX3 = "la3";
+
+
+// ✅ NEW
+export const LA_MOD4 = "linear-algebra-4";
+export const LA_PREFIX4 = "la4";

@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { useReviewProgressMany } from "@/components/review/module/hooks/useReviewProgressMany";
+import { ROUTES } from "@/utils";
 
 type ModuleRow = {
   id: string; // db id
@@ -38,9 +39,15 @@ type Props = {
   // If they are DB ids but progress uses genKey/slug, counts will mismatch.
   topicIdsByModuleDbId: Record<string, string[]>;
   topicIdsBySectionId: Record<string, string[]>;
+
+  // ✅ NEW: server-controlled unlock (teacher/admin)
+  canUnlockAll?: boolean;
 };
 
-function sortByOrderThenSlug<T extends { order: number | null; slug: string }>(a: T, b: T) {
+function sortByOrderThenSlug<T extends { order: number | null; slug: string }>(
+    a: T,
+    b: T,
+) {
   const ao = a.order ?? 0;
   const bo = b.order ?? 0;
   return ao - bo || a.slug.localeCompare(b.slug);
@@ -50,13 +57,7 @@ function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
-function ProgressBar({
-                       pct,
-                       label,
-                     }: {
-  pct: number;
-  label?: React.ReactNode;
-}) {
+function ProgressBar({ pct, label }: { pct: number; label?: React.ReactNode }) {
   const w = `${Math.round(clamp01(pct) * 100)}%`;
 
   return (
@@ -64,7 +65,9 @@ function ProgressBar({
         {label ? (
             <div className="flex items-center justify-between text-[11px] font-extrabold tracking-wide text-neutral-600 dark:text-white/60">
               {label}
-              <span className="tabular-nums text-neutral-500 dark:text-white/45">{w}</span>
+              <span className="tabular-nums text-neutral-500 dark:text-white/45">
+            {w}
+          </span>
             </div>
         ) : null}
 
@@ -72,7 +75,6 @@ function ProgressBar({
           <div
               className={cn(
                   "h-full rounded-full",
-                  // slightly nicer “glow” via gradients + subtle shadow
                   "bg-gradient-to-r from-emerald-400/80 via-emerald-500/70 to-teal-400/70",
                   "dark:from-emerald-200/40 dark:via-emerald-300/30 dark:to-teal-200/30",
                   "shadow-[0_0_0_1px_rgba(16,185,129,0.15)] dark:shadow-[0_0_0_1px_rgba(110,231,183,0.12)]",
@@ -151,10 +153,16 @@ export default function SubjectModulesClient(props: Props) {
     modules,
     sections,
     topicIdsByModuleDbId,
-    topicIdsBySectionId,
+    // topicIdsBySectionId, // (not used here yet, keep prop for future)
+    canUnlockAll = false,
   } = props;
 
-  const sortedModules = useMemo(() => modules.slice().sort(sortByOrderThenSlug), [modules]);
+  const unlockAll = Boolean(canUnlockAll);
+
+  const sortedModules = useMemo(
+      () => modules.slice().sort(sortByOrderThenSlug),
+      [modules],
+  );
 
   const sectionsByModuleDbId = useMemo(() => {
     const m = new Map<string, SectionRow[]>();
@@ -171,17 +179,24 @@ export default function SubjectModulesClient(props: Props) {
 
   const moduleIds = useMemo(() => sortedModules.map((m) => m.slug), [sortedModules]);
 
-  const { loading: progressLoading, byModuleId: progByModuleSlug } = useReviewProgressMany({
-    subjectSlug,
-    locale,
-    moduleIds,
-    enabled: moduleIds.length > 0,
-    refreshMs: 4000,
-  });
+  const { loading: progressLoading, byModuleId: progByModuleSlug } =
+      useReviewProgressMany({
+        subjectSlug,
+        locale,
+        moduleIds,
+        enabled: moduleIds.length > 0,
+        refreshMs: 4000,
+      });
 
-  // lock module i unless previous module is completed
+  // ✅ lock module i unless previous module is completed (unless unlockAll)
   const unlockedBySlug = useMemo(() => {
     const set = new Set<string>();
+
+    if (unlockAll) {
+      for (const m of sortedModules) set.add(m.slug);
+      return set;
+    }
+
     for (let i = 0; i < sortedModules.length; i++) {
       const cur = sortedModules[i];
       if (i === 0) {
@@ -193,7 +208,7 @@ export default function SubjectModulesClient(props: Props) {
       if (prevDone) set.add(cur.slug);
     }
     return set;
-  }, [sortedModules, progByModuleSlug]);
+  }, [sortedModules, progByModuleSlug, unlockAll]);
 
   const subjectStats = useMemo(() => {
     let totalTopics = 0;
@@ -220,7 +235,8 @@ export default function SubjectModulesClient(props: Props) {
       doneTopics += fallback;
     }
 
-    const pct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completedModules ? 1 : 0;
+    const pct =
+        totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completedModules ? 1 : 0;
 
     return {
       totalTopics,
@@ -237,12 +253,10 @@ export default function SubjectModulesClient(props: Props) {
       <div
           className={cn(
               "min-h-screen text-neutral-900 dark:text-white/90",
-              // nicer, softer theme-aware background
               "bg-[radial-gradient(1200px_700px_at_20%_0%,#eafff5_0%,#ffffff_52%,#f6f7ff_100%)]",
               "dark:bg-[radial-gradient(1200px_700px_at_20%_0%,#151a2c_0%,#0b0d12_52%)]",
           )}
       >
-        {/* top subtle shine */}
         <div
             className={cn(
                 "pointer-events-none absolute inset-x-0 top-0 h-48",
@@ -265,10 +279,15 @@ export default function SubjectModulesClient(props: Props) {
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div className="min-w-0">
-                <Kicker>Subject</Kicker>
+                <div className="flex items-center gap-2">
+                  <Kicker>Subject</Kicker>
+                  {unlockAll ? <Pill variant="warn">UNLOCK ENABLED</Pill> : null}
+                </div>
+
                 <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">
                   {subjectTitle}
                 </div>
+
                 {subjectDescription ? (
                     <div className="mt-2 text-sm md:text-base text-neutral-600 dark:text-white/70">
                       {subjectDescription}
@@ -321,7 +340,7 @@ export default function SubjectModulesClient(props: Props) {
                   const mp = progByModuleSlug[m.slug];
 
                   const unlocked = unlockedBySlug.has(m.slug);
-                  const locked = !unlocked && idx !== 0;
+                  const locked = !unlockAll && !unlocked && idx !== 0;
 
                   const completed = Boolean(mp?.moduleCompleted);
 
@@ -337,15 +356,21 @@ export default function SubjectModulesClient(props: Props) {
                           ? Math.min(totalTopics, mp!.completedTopicKeys.size)
                           : directDone;
 
-                  const modulePct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
+                  const modulePct =
+                      totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
 
-                  // ✅ “Continue” if any progress exists, otherwise “Start”
-                  const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
-                  const ctaLabel = completed ? "Review module →" : hasAnyProgress ? "Continue →" : "Start module →";
+                  const hasAnyProgress =
+                      (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
+                  const ctaLabel = completed
+                      ? "Review module →"
+                      : hasAnyProgress
+                          ? "Continue →"
+                          : "Start module →";
 
-                  const moduleHref =
-                      `/${encodeURIComponent(locale)}/subjects/${encodeURIComponent(subjectSlug)}` +
-                      `/review/${encodeURIComponent(m.slug)}`;
+                  const moduleHref = `/${encodeURIComponent(locale)}/${ROUTES.moduleIntro(
+                      encodeURIComponent(subjectSlug),
+                      encodeURIComponent(m.slug),
+                  )}`;
 
                   return (
                       <div
@@ -355,12 +380,10 @@ export default function SubjectModulesClient(props: Props) {
                               "bg-white/70 ring-1 ring-black/5 shadow-[0_16px_55px_-26px_rgba(0,0,0,0.25)]",
                               "backdrop-blur-xl",
                               "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-                              // hover polish
                               "transition-transform duration-200",
                               !locked && "hover:-translate-y-[2px]",
                           )}
                       >
-                        {/* hover accent */}
                         <div
                             className={cn(
                                 "pointer-events-none absolute -inset-24 opacity-0 group-hover:opacity-100 transition-opacity",
@@ -371,7 +394,6 @@ export default function SubjectModulesClient(props: Props) {
                         />
 
                         <div className="relative p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          {/* left */}
                           <div className="min-w-0 flex gap-3">
                             <IconCircle idx={idx} />
 
@@ -402,7 +424,6 @@ export default function SubjectModulesClient(props: Props) {
                                   </div>
                               ) : null}
 
-                              {/* meta row */}
                               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-neutral-500 dark:text-white/45">
                                 {m.weekStart != null || m.weekEnd != null ? (
                                     <span className="inline-flex items-center gap-1">
@@ -435,7 +456,6 @@ export default function SubjectModulesClient(props: Props) {
                                 <span className="font-mono text-[11px] opacity-70">{m.slug}</span>
                               </div>
 
-                              {/* progress */}
                               <div className="mt-3">
                                 <ProgressBar
                                     pct={modulePct}
@@ -455,7 +475,6 @@ export default function SubjectModulesClient(props: Props) {
                             </div>
                           </div>
 
-                          {/* right CTA */}
                           <div className="flex items-center gap-2 md:pl-4">
                             {locked ? (
                                 <span
@@ -484,11 +503,7 @@ export default function SubjectModulesClient(props: Props) {
                           </div>
                         </div>
 
-                        {/* subtle bottom divider */}
-                        <div
-                            className="h-px w-full bg-black/5 dark:bg-white/10"
-                            aria-hidden
-                        />
+                        <div className="h-px w-full bg-black/5 dark:bg-white/10" aria-hidden />
                       </div>
                   );
                 })}

@@ -41,7 +41,7 @@ export default function SandboxIdePage() {
                 {/* Body */}
                 <div className="min-h-0 px-4 pb-4">
                     <div className="h-full min-h-0 ui-container !max-w-none">
-                        <div className="h-full min-h-0 flex gap-4">
+                        <div className="h-screen min-h-0 flex gap-4">
                             <LangRail lang={lang} setLang={setLang} />
 
                             <section className="min-h-0 flex-1">

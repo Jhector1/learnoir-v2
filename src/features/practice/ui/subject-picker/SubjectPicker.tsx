@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import SubjectTile from "./SubjectTile";
 import Pill from "./Pill";
+import {ROUTES} from "@/utils";
 
 export type SubjectCard = {
   slug: string;
@@ -37,7 +38,7 @@ export default function SubjectPicker({
 
   function pickSubject(s: SubjectCard) {
     if (!s.defaultModuleSlug) return;
-    router.push(`/subjects/${encodeURIComponent(s.slug)}/modules`);
+    router.push(ROUTES.subjectModules(encodeURIComponent(s.slug)));
   }
 
   return (

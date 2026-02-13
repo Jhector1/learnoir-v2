@@ -4,6 +4,7 @@
 import React from "react";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/cn";
+import {ROUTES} from "@/utils";
 
 export default function ReviewModuleNavBar({
   locale,
@@ -21,7 +22,7 @@ export default function ReviewModuleNavBar({
   const router = useRouter();
 
   const go = (mid: string) => {
-    router.push(`/subjects/${encodeURIComponent(subjectSlug)}/review/${encodeURIComponent(mid)}`);
+    router.push(ROUTES.moduleIntro(encodeURIComponent(subjectSlug),encodeURIComponent(mid)));
     router.refresh();
   };
 

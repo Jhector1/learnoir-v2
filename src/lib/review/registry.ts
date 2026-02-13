@@ -1,6 +1,6 @@
 import type { ReviewModule } from "@/lib/review/types";
 
-import { LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3 } from "../../../prisma/seed/data/subjects/linear-algebra/constants";
+import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4} from "../../../prisma/seed/data/subjects/linear-algebra/constants";
 import {  PY_MOD0 } from "../../../prisma/seed/data/subjects/python/constants";
 
 import { vectorsModule } from "@/lib/review/modules/linear_algebra/vectors";
@@ -12,6 +12,8 @@ import { PY_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/python/const
 import { LA_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/linear-algebra/constants";
 import { HC_MOD0, HC_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/haitian-creole/constants";
 import { haitianCreolePart1Module } from "./modules/haitian-creole/haitianCreolePart1Module";
+// import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
+import {analyticGeometryModule} from "@/lib/review/modules/linear_algebra/vectorsMatricesPart3Module";
 
 export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
   [LA_SUBJECT_SLUG]: {
@@ -19,6 +21,7 @@ export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
     [LA_MOD1]: vectorsPart2Module,   // ⚠️ mismatch if LA_MOD1 is “Linear Systems” in DB
     [LA_MOD2]: matricesPart1Module,
     [LA_MOD3]: matricesPart2Module,
+    [LA_MOD4]: analyticGeometryModule,
   },
   [PY_SUBJECT_SLUG]: {
     [PY_MOD0]: pythonPart1Module,

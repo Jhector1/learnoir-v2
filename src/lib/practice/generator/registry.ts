@@ -25,6 +25,7 @@ import { makeGenMatricesPart1 } from "./engines/linear_algebra/matricesPart1";
 import { makeGenMatricesPart2 } from "./engines/linear_algebra/matricesPart2";
 import { makeGenPythonStatementsPart1 } from "./engines/python/python_part1";
 import { makeGenHaitianCreolePart1 } from "./engines/haitian-creole/hc_part1";
+import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
 
 export type GenFn = (
   rng: RNG,
@@ -78,6 +79,7 @@ export const TOPIC_GENERATORS: Record<GenKey, TopicGeneratorFactory> = {
   // ✅ true ctx factories (so matrices generators can read ctx.variant/subjectSlug if desired)
   linear_algebra_mod2: (ctx) => makeGenMatricesPart1(ctx),
   linear_algebra_mod3: (ctx) => makeGenMatricesPart2(ctx),
+  linear_algebra_mod4: (ctx) => makeGenAnalyticGeometry(ctx),
 
   // ✅ already ctx-first
   python_part1: (ctx) => makeGenPythonStatementsPart1(ctx),

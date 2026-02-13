@@ -142,6 +142,52 @@ export const GENERATED_CATALOG = {
           "charpoly": "la3.charpoly",
           "matrices_part2_mix": "la3.matrices_part2_mix"
         }
+      },
+      "linear-algebra-4": {
+        "moduleSlug": "linear-algebra-4",
+        "sectionSlug": "linear-algebra-4-orthogonality",
+        "sectionTitle": "Linear Algebra 4 — Inner Products & Orthogonality",
+        "sectionOrder": 40,
+        "genKey": "linear_algebra_mod4",
+        "prefix": "la4",
+        "topicIds": [
+          "norms2",
+          "inner_products",
+          "angles_orthogonality",
+          "projection_line",
+          "projection_matrix",
+          "onb",
+          "orthogonal_matrices",
+          "gram_schmidt",
+          "weighted_inner_product",
+          "spd",
+          "lengths_distances",
+          "orthogonal_complement",
+          "inner_product_functions",
+          "projection_subspace",
+          "projection_affine",
+          "rotations",
+          "mod4_mix"
+        ],
+        "topics": {
+          "norms2": "la4.norms2",
+          "inner_products": "la4.inner_products",
+          "angles_orthogonality": "la4.angles_orthogonality",
+          "projection_line": "la4.projection_line",
+          "projection_matrix": "la4.projection_matrix",
+          "onb": "la4.onb",
+          "orthogonal_matrices": "la4.orthogonal_matrices",
+          "gram_schmidt": "la4.gram_schmidt",
+          "weighted_inner_product": "la4.weighted_inner_product",
+          "spd": "la4.spd",
+          "lengths_distances": "la4.lengths_distances",
+          "orthogonal_complement": "la4.orthogonal_complement",
+          "inner_product_functions": "la4.inner_product_functions",
+          "projection_subspace": "la4.projection_subspace",
+          "projection_affine": "la4.projection_affine",
+          "rotations": "la4.rotations",
+          "mod4_mix": "la4.mod4_mix"
+        }
       }
     }
   },

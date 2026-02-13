@@ -42,7 +42,7 @@ export function LangRail(props: {
     return (
         <aside
             className={cn(
-                "min-h-0 ui-navcard overflow-hidden",
+                "min-h-0 ui-navcard-unround overflow-hidden",
                 "transition-[width] duration-300 ease-out",
                 collapsed ? "w-[72px]" : "w-[260px]",
             )}

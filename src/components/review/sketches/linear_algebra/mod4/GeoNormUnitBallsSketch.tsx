@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import type p5 from "p5";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import { COLORS, type Mode, type Vec3 } from "@/lib/math/vec3";

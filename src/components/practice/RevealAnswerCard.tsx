@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import type { Exercise } from "@/lib/practice/types";
 import type { QItem } from "./practiceType";
 
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import MatrixInputPanel from "./MatrixInputPanel";
 
 function cn(...cls: Array<string | false | undefined | null>) {

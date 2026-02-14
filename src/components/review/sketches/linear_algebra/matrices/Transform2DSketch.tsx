@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import type { Vec3 } from "@/lib/math/vec3";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 
 type Vec2 = { x: number; y: number };
 type Mat2 = [[number, number], [number, number]];

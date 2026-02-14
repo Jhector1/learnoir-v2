@@ -2,6 +2,9 @@
 
 import React from "react";
 import type { Exercise } from "@/lib/practice/types";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {normalizeMath} from "@/lib/markdown/normalizeMath";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 export default function NumericExerciseUI({
   exercise,
@@ -39,7 +42,10 @@ export default function NumericExerciseUI({
 
   return (
     <div className="grid gap-2">
-      <div className="ui-sketch-label">Your answer</div>
+        {/*<>{JSON.stringify(exercise)}</>*/}
+        <ExercisePrompt exercise={exercise} />
+
+        <div className="ui-sketch-label">Your answer</div>
 
       <input
         className={[

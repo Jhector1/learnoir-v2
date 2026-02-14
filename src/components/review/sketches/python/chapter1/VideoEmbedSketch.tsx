@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 
 export type VideoProvider = "auto" | "youtube" | "vimeo" | "iframe" | "file";
 

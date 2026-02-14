@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import ExerciseRenderer from "../ExerciseRenderer";
 import type { PracticeShellProps } from "../PracticeShell";
 

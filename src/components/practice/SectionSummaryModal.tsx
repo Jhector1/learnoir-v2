@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import PrettyValue from "./PrettyValue";
-import MathMarkdown from "../math/MathMarkdown";
+import MathMarkdown from "../markdown/MathMarkdown";
 
 export type MissedItem = {
   title?: string;

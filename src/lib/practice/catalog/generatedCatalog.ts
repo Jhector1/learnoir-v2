@@ -225,26 +225,32 @@ export const GENERATED_CATALOG = {
     "modulesBySlug": {
       "ai-0": {
         "moduleSlug": "ai-0",
-        "sectionSlug": "ai-0-foundations",
-        "sectionTitle": "AI 0 — Foundations",
+        "sectionSlug": "ai-0-kickstart-genai-foundations",
+        "sectionTitle": "Module 0 — Setup + Safety Gate",
         "sectionOrder": 0,
         "genKey": "ai_mod0",
         "prefix": "ai0",
         "topicIds": [
-          "ai_basics",
-          "clear_prompts",
-          "accuracy_checking",
-          "privacy_safety",
-          "simple_workflow",
-          "foundations"
+          "capabilities",
+          "workflow",
+          "asking_format",
+          "dont_paste",
+          "redaction",
+          "data_controls",
+          "lab_ui",
+          "lab_prompt",
+          "lab_submit"
         ],
         "topics": {
-          "ai_basics": "ai0.ai_basics",
-          "clear_prompts": "ai0.clear_prompts",
-          "accuracy_checking": "ai0.accuracy_checking",
-          "privacy_safety": "ai0.privacy_safety",
-          "simple_workflow": "ai0.simple_workflow",
-          "foundations": "ai0.foundations"
+          "capabilities": "ai0.capabilities",
+          "workflow": "ai0.workflow",
+          "asking_format": "ai0.asking_format",
+          "dont_paste": "ai0.dont_paste",
+          "redaction": "ai0.redaction",
+          "data_controls": "ai0.data_controls",
+          "lab_ui": "ai0.lab_ui",
+          "lab_prompt": "ai0.lab_prompt",
+          "lab_submit": "ai0.lab_submit"
         }
       }
     }

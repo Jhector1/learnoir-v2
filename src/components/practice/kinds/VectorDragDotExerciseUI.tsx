@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise, Vec3 } from "@/lib/practice/types";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import VectorPad from "@/components/vectorpad/VectorPad";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 function fmt(v: Vec3) {
   const z = v.z ?? 0;
@@ -88,6 +89,8 @@ export default function VectorDragDotExerciseUI({
 
   return (
     <div className="grid gap-3">
+      <ExercisePrompt exercise={exercise} />
+
       <div className="ui-soft p-3 text-xs text-neutral-700 dark:text-white/70">
         Drag <span className="font-extrabold">A</span>.{" "}
         <span className="font-extrabold">B</span> stays fixed as the reference

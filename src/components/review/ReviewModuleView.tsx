@@ -516,6 +516,8 @@ export default function ReviewModuleView({
         cardsDone: {},
         quizzesDone: {},
         quizState: {},
+        // ✅ NEW
+        sketchState: {},
         completed: false,
         completedAt: undefined,
       };
@@ -790,9 +792,10 @@ export default function ReviewModuleView({
                           ? Boolean(tp?.quizzesDone?.[card.id])
                           : Boolean(tp?.cardsDone?.[card.id]);
 
-                  const savedQuiz = (tp?.quizState?.[card.id] ?? null) as
-                      | SavedQuizState
-                      | null;
+                  const savedQuiz = (tp?.quizState?.[card.id] ?? null) as SavedQuizState | null;
+
+                  // ✅ NEW: sketch saved state
+                  const savedSketch = tp?.sketchState?.[card.id] ?? null;
 
                   const prereqsMet =
                       unlockAll
@@ -810,14 +813,34 @@ export default function ReviewModuleView({
                           progressHydrated={progressHydrated}
                           savedQuiz={progressHydrated ? savedQuiz : null}
                           versionStr={versionStr}
+
+                          // ✅ NEW
+                          savedSketch={progressHydrated ? savedSketch : null}
+                          onSketchStateChange={(sketchCardId, s) => {
+                            setProgress((p: any) => {
+                              const tid = viewTid;
+                              const tp0: any = p.topics?.[tid] ?? {};
+                              return {
+                                ...p,
+                                topics: {
+                                  ...(p.topics ?? {}),
+                                  [tid]: {
+                                    ...tp0,
+                                    sketchState: {
+                                      ...(tp0.sketchState ?? {}),
+                                      [sketchCardId]: s,
+                                    },
+                                  },
+                                },
+                              };
+                            });
+                          }}
+
                           onMarkDone={() => {
                             setProgress((p: any) => {
                               const tid = viewTid;
                               const tp0: any = p.topics?.[tid] ?? {};
-                              const cardsDone = {
-                                ...(tp0.cardsDone ?? {}),
-                                [card.id]: true,
-                              };
+                              const cardsDone = { ...(tp0.cardsDone ?? {}), [card.id]: true };
                               return {
                                 ...p,
                                 topics: {
@@ -827,14 +850,12 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
+
                           onQuizPass={(quizId) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
                               const tp0: any = p.topics?.[tid] ?? {};
-                              const quizzesDone = {
-                                ...(tp0.quizzesDone ?? {}),
-                                [quizId]: true,
-                              };
+                              const quizzesDone = { ...(tp0.quizzesDone ?? {}), [quizId]: true };
                               return {
                                 ...p,
                                 topics: {
@@ -844,14 +865,12 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
+
                           onQuizStateChange={(quizCardId, s) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
                               const tp0: any = p.topics?.[tid] ?? {};
-                              const quizState = {
-                                ...(tp0.quizState ?? {}),
-                                [quizCardId]: s,
-                              };
+                              const quizState = { ...(tp0.quizState ?? {}), [quizCardId]: s };
                               return {
                                 ...p,
                                 topics: {
@@ -861,6 +880,7 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
+
                           onQuizReset={(quizCardId) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
@@ -888,6 +908,7 @@ export default function ReviewModuleView({
                       />
                   );
                 })}
+
               </div>
 
               {/* ✅ Outro AFTER topic content (only when complete) */}

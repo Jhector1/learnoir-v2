@@ -5,7 +5,7 @@ import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import type { Mode, Vec3 } from "@/lib/math/vec3";
 import { fmtNum, fmtVec2Latex } from "@/lib/review/latex";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { type Overlay2DArgs, unit2 } from "../../_vec2";
 
 type Props = {

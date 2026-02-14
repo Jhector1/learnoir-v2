@@ -14,7 +14,7 @@ import { HC_MOD0, HC_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/hai
 import { haitianCreolePart1Module } from "./modules/haitian-creole/haitianCreolePart1Module";
 // import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
 import {analyticGeometryModule} from "@/lib/review/modules/linear_algebra/vectorsMatricesPart3Module";
-import {aiBasicsPart1Module} from "@/lib/review/modules/ai/aiPart1";
+import {aiKickstartMod0} from "@/lib/review/modules/ai/aiKickstartMod0";
 import {AI_MOD0, AI_SUBJECT_SLUG} from "../../../prisma/seed/data/subjects/ai";
 
 
@@ -34,7 +34,7 @@ export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
 
   },
   [AI_SUBJECT_SLUG]: {
-    [AI_MOD0]:aiBasicsPart1Module
+    [AI_MOD0]:aiKickstartMod0
 
   },
 };

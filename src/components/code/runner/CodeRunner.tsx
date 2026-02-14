@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import type { Lang } from "@/lib/code/runCode";
 
 import { DEFAULT_CODE, DEFAULT_LANGS } from "./constants";

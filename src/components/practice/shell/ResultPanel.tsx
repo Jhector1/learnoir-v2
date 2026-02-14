@@ -4,7 +4,7 @@ import React from "react";
 import type { Exercise } from "@/lib/practice/types";
 import type { QItem } from "../practiceType";
 import RevealAnswerCard from "../RevealAnswerCard";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import type { UseConceptExplainResult } from "../hooks/useConceptExplain";
 
 export default function ResultPanel({

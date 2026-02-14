@@ -6,7 +6,7 @@ import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import type { Mode, Vec3 } from "@/lib/math/vec3";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { seededGrid } from "@/lib/math/seededRng";
 import { CARD, PANEL, cn, useSideBySide } from "./_mod4Ui";
 

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
 import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";

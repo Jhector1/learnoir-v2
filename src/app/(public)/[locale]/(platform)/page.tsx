@@ -3,7 +3,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import VectorBasicsSketch from "@/components/review/sketches/linear_algebra/vectorpart1/VectorBasicsSketch";
 import { cn } from "@/lib/cn";
 import {ROUTES} from "@/utils";

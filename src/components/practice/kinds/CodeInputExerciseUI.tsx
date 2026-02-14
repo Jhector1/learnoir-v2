@@ -5,6 +5,9 @@ import React from "react";
 import type { Exercise } from "@/lib/practice/types";
 import { type Lang, type RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {normalizeMath} from "@/lib/markdown/normalizeMath";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 type CodeInputExercise = Extract<Exercise, { kind: "code_input" }>;
 
@@ -51,6 +54,14 @@ export default function CodeInputExerciseUI({
 
   return (
     <div className="grid gap-3">
+      <ExercisePrompt exercise={exercise} />
+
+
+      {/*{exercise.title ? (*/}
+      {/*    <div className="mt-1 text-xs font-black text-neutral-600 dark:text-white/60">*/}
+      {/*      {String(exercise.title)}*/}
+      {/*    </div>*/}
+      {/*) : null}*/}
       <CodeRunner
         title={exercise.title}
         hintMarkdown={exercise.hint}

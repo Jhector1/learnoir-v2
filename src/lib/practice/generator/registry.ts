@@ -26,7 +26,8 @@ import { makeGenMatricesPart2 } from "./engines/linear_algebra/matricesPart2";
 import { makeGenPythonStatementsPart1 } from "./engines/python/python_part1";
 import { makeGenHaitianCreolePart1 } from "./engines/haitian-creole/hc_part1";
 import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
-import {makeGenAiMod0} from "@/lib/practice/generator/engines/ai/genAiMod0";
+import {makeGenAiMod0} from "@/lib/practice/generator/engines/ai/intro_ai/mod0";
+// import {makeGenAiMod0} from "@/lib/practice/generator/engines/ai/genAiMod0";
 
 export type GenFn = (
   rng: RNG,
@@ -86,6 +87,7 @@ export const TOPIC_GENERATORS: Record<GenKey, TopicGeneratorFactory> = {
   python_part1: (ctx) => makeGenPythonStatementsPart1(ctx),
   haitian_creole_part1: (ctx) => makeGenHaitianCreolePart1(ctx),
 
+  // ai_mod0: (ctx) => makeGenAiMod0(ctx),
   ai_mod0: (ctx) => makeGenAiMod0(ctx),
 
 };

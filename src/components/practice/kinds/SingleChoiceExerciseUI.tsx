@@ -3,7 +3,9 @@
 
 import React, { useMemo } from "react";
 import type { Exercise } from "@/lib/practice/types";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {normalizeMath} from "@/lib/markdown/normalizeMath";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 type Opt = { id: string; text: string };
 
@@ -48,6 +50,8 @@ export default function SingleChoiceExerciseUI({
 
   return (
     <div className="grid gap-2">
+      <ExercisePrompt exercise={exercise} />
+
       <div className="ui-sketch-label">Choose one</div>
 
       <div className="grid gap-2">

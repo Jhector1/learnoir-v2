@@ -6,7 +6,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { gridToMat, rank, type Mat } from "@/lib/math/matrixLite";
 
 function defaultA(): string[][] {

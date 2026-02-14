@@ -3,6 +3,9 @@
 import React, { useMemo, useState } from "react";
 import type { Exercise } from "@/lib/practice/types";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {normalizeMath} from "@/lib/markdown/normalizeMath";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 function resizeGrid(prev: string[][], rows: number, cols: number) {
   const r = Math.max(1, Math.floor(rows));
@@ -58,6 +61,8 @@ export default function MatrixInputExerciseUI({
 
   return (
     <div className="grid gap-3">
+      <ExercisePrompt exercise={exercise} />
+
       {allowDimEdit ? (
         <div className="flex flex-wrap items-end gap-2">
           <div>

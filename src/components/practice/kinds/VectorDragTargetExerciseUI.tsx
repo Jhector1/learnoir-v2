@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise, Vec3 } from "@/lib/practice/types";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import VectorPad from "@/components/vectorpad/VectorPad";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 function fmt(v: Vec3) {
   const z = v.z ?? 0;
@@ -95,6 +96,8 @@ export default function VectorDragTargetExerciseUI({
 
   return (
     <div className="grid gap-3">
+      <ExercisePrompt exercise={exercise} />
+
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/70">
         Drag vectors on the pad. Submitting uses the live vectors.
       </div>

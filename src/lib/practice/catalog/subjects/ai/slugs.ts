@@ -1,4 +1,3 @@
-// src/lib/practice/catalog/subjects/ai/slugs.ts
 import { getModuleSlugs } from "@/lib/practice/catalog/slugs";
 
 import {

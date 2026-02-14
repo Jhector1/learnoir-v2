@@ -209,7 +209,7 @@ export default function PracticeSummary({
 }
 
 // import type { TopicSlug } from "@/lib/practice/types";
-import MathMarkdown from "../math/MathMarkdown";
+import MathMarkdown from "../markdown/MathMarkdown";
 import { VectorPadState } from "../vectorpad/types";
 import ExerciseRenderer from "./ExerciseRenderer";
 import MissedPracticeCard from "./MissedPracticeCard";

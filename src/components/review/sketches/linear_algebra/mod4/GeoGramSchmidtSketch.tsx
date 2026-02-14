@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import GeoPlane, { SvgPoint, SvgSegment } from "./_GeoPlane";
 import { dot2, fmt, safeDiv, scale2, sub2, norm2, type Vec2 } from "./_geoMath";
 

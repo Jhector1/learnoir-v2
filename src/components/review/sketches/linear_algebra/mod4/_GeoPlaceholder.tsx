@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 
 export default function GeoPlaceholder(props: {
     title: string;

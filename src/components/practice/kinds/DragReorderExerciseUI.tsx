@@ -3,7 +3,8 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 type Token = { id: string; text: string };
 
@@ -126,15 +127,16 @@ export default function DragReorderExerciseUI({
   }
 
   return (
-    <div className={`rounded-2xl border ${border} ${bg} p-4`}>
+    <div >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-black text-neutral-900 dark:text-white/90">{exercise.title}</div>
-          <MathMarkdown
-            className="mt-2 text-sm text-neutral-700 dark:text-white/80 [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90"
-            content={String(exercise.prompt ?? "")}
-          />
-        </div>
+        {/*<div>*/}
+        {/*  <div className="text-sm font-black text-neutral-900 dark:text-white/90">{exercise.title}</div>*/}
+        {/*  <MathMarkdown*/}
+        {/*    className="mt-2 text-sm text-neutral-700 dark:text-white/80 [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90"*/}
+        {/*    content={String(exercise.prompt ?? "")}*/}
+        {/*  />*/}
+        {/*</div>*/}
+        <ExercisePrompt exercise={exercise} />
 
         {checked ? (
           <div

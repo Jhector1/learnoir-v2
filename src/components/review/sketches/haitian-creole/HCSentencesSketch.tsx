@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 
 type Subject = "Mwen" | "Ou" | "Li" | "Nou" | "Yo";
 type PredType = "adjective" | "noun" | "location";

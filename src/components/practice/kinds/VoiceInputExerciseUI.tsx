@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 function getSpeechRecognition(): any | null {
   if (typeof window === "undefined") return null;
@@ -374,15 +375,8 @@ export default function VoiceInputExerciseUI({
       <div className={shell}>
         {/* Header */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className={`text-base font-semibold sm:text-sm ${text}`}>
-              {exercise.title}
-            </div>
-            <MathMarkdown
-                className={`mt-1.5 text-sm ${muted} [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90`}
-                content={String(exercise.prompt ?? "")}
-            />
-          </div>
+          <ExercisePrompt exercise={exercise} />
+
 
           {checked ? (
               <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>

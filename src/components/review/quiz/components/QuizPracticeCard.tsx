@@ -7,7 +7,7 @@ import type { PracticeState } from "@/components/review/quiz/hooks/useQuizPracti
 import { isEmptyPracticeAnswer } from "@/components/review/quiz/hooks/useQuizPracticeBank";
 import type { VectorPadState } from "@/components/vectorpad/types";
 
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import ExerciseRenderer from "@/components/practice/ExerciseRenderer";
 import RevealAnswerCard from "@/components/practice/RevealAnswerCard";
 
@@ -142,23 +142,23 @@ export default function QuizPracticeCard(props: {
         </div>
       ) : ps?.exercise && ps?.item ? (
         <div className="mt-1">
-          {ps.exercise.prompt ? (
-            <MathMarkdown
-              className="
-                text-sm text-neutral-800 dark:text-white/80
-                [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90
-                [&_.katex-display]:overflow-x-auto
-                [&_.katex-display]:py-2
-              "
-              content={normalizeMath(String(ps.exercise.prompt))}
-            />
-          ) : null}
+          {/*{ps.exercise.prompt ? (*/}
+          {/*  <MathMarkdown*/}
+          {/*    className="*/}
+          {/*      text-sm text-neutral-800 dark:text-white/80*/}
+          {/*      [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90*/}
+          {/*      [&_.katex-display]:overflow-x-auto*/}
+          {/*      [&_.katex-display]:py-2*/}
+          {/*    "*/}
+          {/*    content={normalizeMath(String(ps.exercise.prompt))}*/}
+          {/*  />*/}
+          {/*) : null}*/}
 
-          {ps.exercise.title ? (
-            <div className="mt-1 text-xs font-black text-neutral-600 dark:text-white/60">
-              {String(ps.exercise.title)}
-            </div>
-          ) : null}
+          {/*{ps.exercise.title ? (*/}
+          {/*  <div className="mt-1 text-xs font-black text-neutral-600 dark:text-white/60">*/}
+          {/*    {String(ps.exercise.title)}*/}
+          {/*  </div>*/}
+          {/*) : null}*/}
 
           <div className="mt-2">
             <ExerciseRenderer

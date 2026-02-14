@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import CodeRunner from "@/components/code/CodeRunner";
 
 type ExprKey = "expr1" | "expr2" | "expr3";

@@ -359,7 +359,7 @@ const SAFE_MIXED_POOL: PoolItem[] = Object.keys(HANDLERS)
     .filter((k) => k !== "fallback")
     .map((k) => ({ key: k, w: 1 }));
 
-export function makeGenAiMod0(ctx: TopicContext) {
+export function makeGenAiThumbsTon(ctx: TopicContext) {
     return (rng: RNG, diff: Difficulty, id: string): GenOut<ExerciseKind> => {
         const R: RNG = (ctx as any).rng ?? rng;
         const topic = String(ctx.topicSlug);

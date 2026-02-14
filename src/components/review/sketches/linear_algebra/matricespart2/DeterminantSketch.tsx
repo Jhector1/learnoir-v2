@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import VectorPad from "@/components/vectorpad/VectorPad";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import type { Vec3 } from "@/lib/math/vec3";

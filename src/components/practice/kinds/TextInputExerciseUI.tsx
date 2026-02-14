@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 export default function TextInputExerciseUI({
   exercise,
@@ -55,19 +56,11 @@ export default function TextInputExerciseUI({
     : "focus:border-sky-300/60";
 
   return (
-    <div className={`rounded-2xl border ${cardBorder} ${cardBg} p-4`}>
-      <div className="min-w-0">
-        <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-          {exercise.title}
-        </div>
+    <div>
+        <ExercisePrompt exercise={exercise} />
 
-        <MathMarkdown
-          className="mt-2 text-sm text-neutral-700 dark:text-white/80 [&_.katex]:text-neutral-900 dark:[&_.katex]:text-white/90"
-          content={String(exercise.prompt ?? "")}
-        />
-      </div>
 
-      <div className="mt-4">
+        <div className="mt-4">
         <div className="text-xs font-extrabold text-neutral-600 dark:text-white/70">
           Your answer
         </div>

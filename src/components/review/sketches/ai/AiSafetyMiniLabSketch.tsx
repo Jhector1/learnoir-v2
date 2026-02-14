@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { CARD, PANEL, TITLE, SUB, LABEL, MUTED, CHOICE_IDLE, CHOICE_SELECTED, PILL_GOOD, PILL_WARN, PILL, TRACK, FILL, cn } from "./_shared/aiUi";
 
 type Risk = "low" | "medium" | "high";

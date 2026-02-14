@@ -233,11 +233,14 @@ const questions = Array.from({ length: n }, (_v, i) => {
       difficulty: spec.difficulty ?? "easy",
       allowReveal: Boolean(spec.allowReveal),
       preferKind: spec.preferKind ?? null,
-      salt: `${quizKey}|q=${i + 1}`,
+      salt: `${quizKey}|topic=${pickedTopic}|slot=${i + 1}|q=${i + 1}`,
     },
     maxAttempts,
   };
 });
+
+
+
 
   // const pickedTopics = pickTopicsForQuizPreferUnique(rng, allowedTopicSlugs, n);
   // const qk = shortHash(quizKey);
@@ -316,7 +319,21 @@ const questions = Array.from({ length: n }, (_v, i) => {
     select: { questions: true },
   });
 
-  return json({ questions: saved?.questions ?? questions, quizKey }, 200, setGuestId);
+  // return json({ questions: saved?.questions ?? questions, quizKey }, 200, setGuestId);
+console.log(questions)
+  return json(
+      {
+        questions: saved?.questions ?? questions,
+        quizKey,
+        requested: n,
+        generated: (saved?.questions ?? questions).length,
+        truncated: (saved?.questions ?? questions).length < n,
+      },
+      200,
+      setGuestId
+  );
+
+
 }
 
 export async function DELETE(req: Request) {

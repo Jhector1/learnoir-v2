@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from "react";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { frob, matmul, sub, transpose } from "@/lib/math/matrixLite";
 import { seededGrid } from "@/lib/math/seededRng";
 import { CARD, PANEL, cn } from "./_mod4Ui";

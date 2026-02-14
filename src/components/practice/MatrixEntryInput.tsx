@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 
 type Props = {
   labelLatex?: string; // e.g. \mathbf{A}=

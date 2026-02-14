@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import type { Exercise } from "@/lib/practice/types";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import { defaultVectorPadState } from "@/components/vectorpad/defaultState";

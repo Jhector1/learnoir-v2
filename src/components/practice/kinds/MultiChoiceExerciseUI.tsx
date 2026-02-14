@@ -3,7 +3,8 @@
 
 import React, { useMemo } from "react";
 import type { Exercise } from "@/lib/practice/types";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
+import {ExercisePrompt} from "@/components/practice/kinds/KindHelper";
 
 type Opt = { id: string; text: string };
 
@@ -134,6 +135,8 @@ let boxTone =
 
   return (
     <div className="grid gap-2">
+      <ExercisePrompt exercise={exercise} />
+
       <div className="text-xs font-extrabold text-neutral-600 dark:text-white/70">
         Choose all that apply
       </div>

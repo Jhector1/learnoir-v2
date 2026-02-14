@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from "react";
 import MatrixEntryInput from "@/components/practice/MatrixEntryInput";
-import MathMarkdown from "@/components/math/MathMarkdown";
+import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { det2, gridToMat, matmul, rank, type Mat } from "@/lib/math/matrixLite";
 import { seededGrid } from "@/lib/math/seededRng";
 

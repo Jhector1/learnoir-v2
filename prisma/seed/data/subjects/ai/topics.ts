@@ -1,4 +1,3 @@
-// prisma/seed/data/subjects/ai/topics.ts
 import { PracticeKind } from "@prisma/client";
 import type { TopicDefCompat } from "../_types";
 import { AI_MOD0 } from "./constants";
@@ -6,84 +5,108 @@ import { AI_MOD0 } from "./constants";
 export const AI_TOPICS = {
     [AI_MOD0]: [
         {
-            id: "ai_basics",
+            id: "capabilities",
             meta: {
-                label: "AI basics: what it is (and isn’t)",
+                label: "What ChatGPT is good at (drafting, explaining, organizing)",
                 minutes: 10,
                 pool: [
-                    { key: "ai0_what_is_ai_mcq", w: 5, kind: PracticeKind.single_choice },
-                    { key: "ai0_best_for_mcq", w: 4, kind: PracticeKind.single_choice },
-                    { key: "ai0_always_correct_mcq", w: 4, kind: PracticeKind.single_choice },
+                    { key: "ai_capabilities_best_for_mcq", w: 4, kind: PracticeKind.single_choice },
+                    { key: "ai_capabilities_examples_multi", w: 3, kind: PracticeKind.multi_choice },
+                    { key: "ai_capabilities_limits_mcq", w: 3, kind: PracticeKind.single_choice },
                 ],
             },
         },
 
         {
-            id: "clear_prompts",
+            id: "workflow",
             meta: {
-                label: "Clear prompts: goal, context, constraints",
-                minutes: 12,
+                label: "Ask → Refine → Finalize workflow",
+                minutes: 8,
                 pool: [
-                    { key: "ai0_best_prompt_mcq", w: 5, kind: PracticeKind.single_choice },
-                    { key: "ai0_prompt_recipe_drag", w: 4, kind: PracticeKind.drag_reorder },
-                    { key: "ai0_followup_mcq", w: 4, kind: PracticeKind.single_choice },
+                    { key: "ai_workflow_order_drag", w: 4 }, // can be drag_reorder exercise
+                    { key: "ai_workflow_refine_best_mcq", w: 3, kind: PracticeKind.single_choice },
+                    { key: "ai_workflow_finalize_prompt_text", w: 3 },
                 ],
             },
         },
 
         {
-            id: "accuracy_checking",
+            id: "asking_format",
             meta: {
-                label: "Checking answers: verify important facts",
-                minutes: 12,
+                label: "Asking for format (bullets / steps) at a basic level",
+                minutes: 7,
                 pool: [
-                    { key: "ai0_verify_text", w: 5, kind: PracticeKind.text_input },
-                    { key: "ai0_making_up_mcq", w: 4, kind: PracticeKind.single_choice },
-                    { key: "ai0_always_correct_mcq", w: 3, kind: PracticeKind.single_choice },
+                    { key: "ai_format_choose_mcq", w: 3, kind: PracticeKind.single_choice },
+                    { key: "ai_format_bullets_text", w: 4 },
+                    { key: "ai_format_steps_text", w: 3 },
                 ],
             },
         },
 
         {
-            id: "privacy_safety",
+            id: "dont_paste",
             meta: {
-                label: "Privacy & safety: what not to share",
-                minutes: 10,
+                label: "What not to paste (PII / PHI / secrets)",
+                minutes: 8,
                 pool: [
-                    { key: "ai0_privacy_mcq", w: 5, kind: PracticeKind.single_choice },
-                    { key: "ai0_yes_no_private_text", w: 4, kind: PracticeKind.text_input },
+                    { key: "ai_dontpaste_identify_multi", w: 4, kind: PracticeKind.multi_choice },
+                    { key: "ai_dontpaste_scenario_mcq", w: 4, kind: PracticeKind.single_choice },
+                    { key: "ai_dontpaste_safe_alt_text", w: 2 },
                 ],
             },
         },
 
         {
-            id: "simple_workflow",
+            id: "redaction",
             meta: {
-                label: "Simple workflow: ask → read → check → improve",
-                minutes: 10,
+                label: "Redaction basics (replace names with roles, remove IDs)",
+                minutes: 6,
                 pool: [
-                    { key: "ai0_workflow_drag", w: 5, kind: PracticeKind.drag_reorder },
-                    { key: "ai0_followup_mcq", w: 4, kind: PracticeKind.single_choice },
-                    { key: "ai0_best_for_mcq", w: 2, kind: PracticeKind.single_choice },
+                    { key: "ai_redaction_replace_text", w: 5 },
+                    { key: "ai_redaction_best_practice_mcq", w: 3, kind: PracticeKind.single_choice },
+                    { key: "ai_redaction_remove_multi", w: 2, kind: PracticeKind.multi_choice },
                 ],
             },
         },
 
         {
-            id: "foundations",
-            variant: null, // ✅ mixed
+            id: "data_controls",
             meta: {
-                label: "AI foundations (mixed)",
+                label: "Data Controls: what it is and why it matters",
+                minutes: 6,
+                pool: [
+                    { key: "ai_datacontrols_where_mcq", w: 4, kind: PracticeKind.single_choice },
+                    { key: "ai_datacontrols_why_mcq", w: 3, kind: PracticeKind.single_choice },
+                    { key: "ai_datacontrols_terms_multi", w: 3, kind: PracticeKind.multi_choice },
+                ],
+            },
+        },
+
+        {
+            id: "lab_ui",
+            meta: {
+                label: "Lab (UI): Find Data Controls in settings",
                 minutes: 0,
-                pool: [
-                    { key: "ai0_what_is_ai_mcq", w: 2, kind: PracticeKind.single_choice },
-                    { key: "ai0_best_prompt_mcq", w: 2, kind: PracticeKind.single_choice },
-                    { key: "ai0_verify_text", w: 2, kind: PracticeKind.text_input },
-                    { key: "ai0_privacy_mcq", w: 2, kind: PracticeKind.single_choice },
-                    { key: "ai0_prompt_recipe_drag", w: 1, kind: PracticeKind.drag_reorder },
-                    { key: "ai0_workflow_drag", w: 1, kind: PracticeKind.drag_reorder },
-                    { key: "ai0_making_up_mcq", w: 1, kind: PracticeKind.single_choice },
-                ],
+                pool: [{ key: "ai_lab_ui_check_mcq", w: 1, kind: PracticeKind.single_choice }],
+            },
+        },
+
+        {
+            id: "lab_prompt",
+            meta: {
+                label: `Lab (Prompt): "Explain what you can help me with in 5 bullets..."`,
+                minutes: 0,
+                pool: [{ key: "ai_lab_prompt_text", w: 1 }],
+            },
+        },
+
+        {
+            id: "lab_submit",
+            variant: null,
+            meta: {
+                label: "Lab (Submit): paste bullets + answers",
+                minutes: 0,
+                pool: [{ key: "ai_lab_submit_text", w: 1 }],
             },
         },
     ],

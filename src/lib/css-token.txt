@@ -1,0 +1,479 @@
+@layer components {
+  /* =========================
+   * Buttons (home page ButtonLink)
+   * ========================= */
+  .ui-btn {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300/50 focus:ring-offset-0;
+  }
+
+  .ui-btn-primary {
+    @apply bg-emerald-400 text-neutral-950 hover:bg-emerald-300;
+  }
+
+  .ui-btn-secondary {
+    @apply border border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50;
+  }
+
+  .dark .ui-btn-secondary {
+    @apply border-white/10 bg-white/10 text-white hover:bg-white/[0.15];
+  }
+
+  .ui-btn-ghost {
+    @apply text-neutral-700 hover:text-neutral-950;
+  }
+
+  .dark .ui-btn-ghost {
+    @apply text-white/80 hover:text-white;
+  }
+}
+@layer components {
+  /* =========================
+   * Drag Reorder tokens (final)
+   * ========================= */
+  .ui-drag-zone {
+    @apply relative;
+  }
+
+  .ui-drag-chip {
+    @apply relative inline-flex items-center gap-2 rounded-xl border px-3 py-2;
+    @apply text-xs font-extrabold select-none transform-gpu;
+    @apply transition duration-150;
+    @apply border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50;
+    @apply shadow-sm;
+
+    transition-property: background-color, border-color, box-shadow, transform, opacity;
+  }
+
+  .dark .ui-drag-chip {
+    @apply border-white/10 bg-white/[0.07] text-white/90 hover:bg-white/[0.11];
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .ui-drag-chip--disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  .ui-drag-chip--dragging {
+    @apply cursor-grabbing;
+  }
+
+  .ui-drag-chip--over {
+    @apply ring-2 ring-emerald-300/40;
+  }
+
+  .dark .ui-drag-chip--over {
+    @apply ring-emerald-300/25;
+  }
+
+  .ui-drag-handle {
+    @apply text-neutral-500;
+  }
+
+  .dark .ui-drag-handle {
+    @apply text-white/60;
+  }
+
+  .ui-drag-indicator {
+    @apply pointer-events-none absolute top-1 bottom-1 w-1 rounded-full;
+    @apply bg-emerald-500/70;
+  }
+
+  .dark .ui-drag-indicator {
+    @apply bg-emerald-300/40;
+  }
+
+  .ui-drag-indicator--before { @apply left-1; }
+  .ui-drag-indicator--after  { @apply right-1; }
+
+  .ui-drag-actions {
+    @apply inline-flex items-center gap-1;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ui-drag-actions {
+      opacity: 0;
+      transition: opacity 150ms;
+    }
+    .ui-drag-chip:hover .ui-drag-actions,
+    .ui-drag-chip:focus-within .ui-drag-actions {
+      opacity: 1;
+    }
+  }
+
+  .ui-drag-actionbtn {
+    @apply rounded-md border px-2 py-1 text-[10px] font-black transition;
+    @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-40;
+  }
+
+  .dark .ui-drag-actionbtn {
+    @apply border-white/10 bg-white/[0.07] text-white/80 hover:bg-white/[0.11];
+  }
+}
+@layer components {
+  /* =========================
+   * Header tokens (HeaderSlick)
+   * ========================= */
+  .ui-header-shell {
+    @apply border-b border-neutral-200 bg-white/40 backdrop-blur-md;
+  }
+
+  .dark .ui-header-shell {
+    @apply border-white/10 bg-black/20;
+  }
+
+  .ui-header-shell--elevated {
+    @apply bg-white/70 backdrop-blur-xl;
+  }
+
+  .dark .ui-header-shell--elevated {
+    @apply bg-black/55;
+  }
+
+  .ui-navcard {
+    @apply relative rounded-2xl border p-1 border-neutral-200 bg-white shadow-sm;
+  }
+
+  .ui-navcard-unround {
+    @apply relative  border p-1 border-neutral-200 bg-white shadow-sm;
+  }
+  .dark .ui-navcard, .dark .ui-navcard-unround  {
+    @apply border-white/10 bg-white/[0.06];
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .ui-navglow {
+    @apply absolute inset-0 rounded-2xl;
+    background-image: radial-gradient(
+      900px 280px at 50% 0%,
+      rgba(0, 0, 0, 0.06) 0%,
+      transparent 60%
+    );
+  }
+
+  .dark .ui-navglow {
+    background-image: radial-gradient(
+      900px 280px at 50% 0%,
+      rgba(255, 255, 255, 0.10) 0%,
+      transparent 60%
+    );
+  }
+
+  /* ✅ FIX: no spaces inside [] in @apply */
+  .ui-navmarker {
+    @apply pointer-events-none absolute top-1 bottom-1 rounded-xl border transition-all duration-300 border-neutral-200 bg-neutral-100/80;
+    transition-property: transform, width;
+  }
+
+  .dark .ui-navmarker {
+    @apply border-white/10 bg-white/10;
+  }
+
+  .ui-navlink {
+    @apply relative z-10 rounded-xl px-3 py-2 text-xs font-extrabold transition;
+  }
+
+  .ui-navlink--inactive {
+    @apply text-neutral-600 hover:text-neutral-900;
+  }
+
+  .dark .ui-navlink--inactive {
+    @apply text-white/70 hover:text-white/90;
+  }
+
+  .ui-navlink--active {
+    @apply text-neutral-900;
+  }
+
+  .dark .ui-navlink--active {
+    @apply text-white/95;
+  }
+
+  .ui-cta {
+    @apply rounded-2xl border px-3 py-2 text-xs font-extrabold active:translate-y-[1px] transition border-emerald-600/25 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/15;
+  }
+
+  .dark .ui-cta {
+    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90 hover:bg-emerald-300/15;
+  }
+
+  .ui-authbtn {
+    @apply rounded-2xl border px-3 py-2 text-xs font-extrabold transition border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50;
+  }
+
+  .dark .ui-authbtn {
+    @apply border-white/10 bg-white/[0.06] text-white/85 hover:bg-white/[0.10];
+  }
+
+  .ui-mobilebtn {
+    @apply md:hidden rounded-2xl border px-3 py-2 text-xs font-extrabold transition border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
+  }
+
+  .dark .ui-mobilebtn {
+    @apply border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10];
+  }
+
+  .ui-mobileitem {
+    @apply rounded-2xl border px-3 py-3 text-sm font-extrabold transition;
+  }
+
+  .ui-mobileitem--active {
+    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
+  }
+
+  .dark .ui-mobileitem--active {
+    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
+  }
+
+  .ui-mobileitem--idle {
+    @apply border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50;
+  }
+
+  .dark .ui-mobileitem--idle {
+    @apply border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08];
+  }
+
+  .ui-bottomline {
+    @apply h-px w-full;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(16, 185, 129, 0.45),
+      rgba(99, 102, 241, 0.35),
+      transparent
+    );
+  }
+
+  .dark .ui-bottomline {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(122, 162, 255, 0.45),
+      rgba(255, 107, 214, 0.35),
+      transparent
+    );
+  }
+}
+@layer components {
+  /* =========================
+   * Layout
+   * ========================= */
+  .ui-container {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+}
+@layer components {
+  /* =========================
+   * Sketch tokens (review sketches)
+   * ========================= */
+  .ui-sketch-grid {
+    @apply grid gap-3;
+  }
+
+  .ui-sketch-panel {
+    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm p-4;
+  }
+
+  .dark .ui-sketch-panel {
+    @apply border-white/10 bg-white/[0.03];
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .ui-sketch-label {
+    @apply text-xs font-extrabold text-neutral-600;
+  }
+
+  .dark .ui-sketch-label {
+    @apply text-white/60;
+  }
+
+  .ui-sketch-chip {
+    @apply rounded-xl border px-3 py-1 text-xs font-extrabold transition;
+  }
+
+  .ui-sketch-chip--idle {
+    @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
+  }
+
+  .dark .ui-sketch-chip--idle {
+    @apply border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10];
+  }
+
+  .ui-sketch-chip--active-sky {
+    @apply border-sky-300/60 bg-sky-50 text-sky-950;
+  }
+
+  .dark .ui-sketch-chip--active-sky {
+    @apply border-sky-300/30 bg-sky-300/10 text-white/90;
+  }
+
+  .ui-sketch-chip--active-rose {
+    @apply border-rose-300/60 bg-rose-50 text-rose-950;
+  }
+
+  .dark .ui-sketch-chip--active-rose {
+    @apply border-rose-300/30 bg-rose-300/10 text-white/90;
+  }
+
+  .ui-sketch-chip--active-emerald {
+    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
+  }
+
+  .dark .ui-sketch-chip--active-emerald {
+    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
+  }
+
+  .ui-sketch-input {
+    @apply mt-1 w-full rounded-xl border px-3 py-2 text-xs font-extrabold outline-none transition border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300;
+  }
+
+  .dark .ui-sketch-input {
+    @apply border-white/10 bg-white/[0.06] text-white/90 placeholder:text-white/35 focus:border-white/20;
+  }
+
+  .ui-sketch-codeblock {
+    @apply rounded-2xl border p-3 border-neutral-200 bg-neutral-50;
+  }
+
+  .dark .ui-sketch-codeblock {
+    @apply border-white/10 bg-black/30;
+  }
+
+  .ui-sketch-code {
+    @apply mt-2 whitespace-pre-wrap text-xs text-neutral-800;
+  }
+
+  .dark .ui-sketch-code {
+    @apply text-white/85;
+  }
+
+  .ui-sketch-muted {
+    @apply text-xs text-neutral-500;
+  }
+
+  .dark .ui-sketch-muted {
+    @apply text-white/50;
+  }
+
+  /* MathMarkdown default */
+  .ui-math {
+    @apply text-sm text-neutral-700;
+  }
+
+  .dark .ui-math {
+    @apply text-white/80;
+  }
+
+  .dark .ui-math .katex {
+    @apply text-white/90;
+  }
+}
+@layer components {
+  /* =========================
+   * SubjectPicker + SubjectTile tokens
+   * ========================= */
+  .ui-surface {
+    @apply relative overflow-hidden rounded-3xl border border-neutral-200/70 bg-white shadow-sm;
+  }
+
+  .dark .ui-surface {
+    @apply border-white/10 bg-neutral-950/60;
+  }
+
+  .ui-surface-head {
+    @apply relative border-b border-neutral-200/70 bg-white/70 p-6 backdrop-blur-xl;
+  }
+
+  .dark .ui-surface-head {
+    @apply border-white/10 bg-black/20;
+  }
+
+  .ui-search-overlay {
+    @apply pointer-events-none absolute inset-0 rounded-2xl;
+  }
+
+  .ui-search-input {
+    @apply relative w-full rounded-2xl border px-4 py-3 text-sm font-extrabold outline-none transition border-neutral-200/80 bg-white/80 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:bg-white;
+  }
+
+  .dark .ui-search-input {
+    @apply border-white/10 bg-black/30 text-white/90 placeholder:text-white/35 focus:border-white/20 focus:bg-black/40;
+  }
+
+  .ui-tile {
+    @apply text-left overflow-hidden rounded-3xl border transition border-neutral-200/70 bg-white/80 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0;
+  }
+
+  .dark .ui-tile {
+    @apply border-white/10 bg-white/[0.04] shadow-none hover:bg-white/[0.06];
+  }
+
+  .ui-tile--disabled {
+    @apply opacity-60 cursor-not-allowed hover:translate-y-0;
+  }
+
+  .ui-tile-chip {
+    @apply mt-0.5 h-8 w-8 rounded-2xl border border-neutral-200/70 bg-white/70 shadow-sm;
+  }
+
+  .dark .ui-tile-chip {
+    @apply border-white/10 bg-white/[0.06];
+  }
+}
+@layer components {
+  /* =========================
+   * Surfaces
+   * ========================= */
+  .ui-card {
+    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
+  }
+
+  .dark .ui-card {
+    @apply border-white/10 bg-white/[0.03];
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .ui-soft {
+    @apply rounded-xl border border-neutral-200 bg-neutral-50;
+  }
+
+  .dark .ui-soft {
+    @apply border-white/10 bg-neutral-900/40;
+  }
+
+  /* Home pills */
+  .ui-home-pill {
+    @apply inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700;
+  }
+
+  .dark .ui-home-pill {
+    @apply border-white/10 bg-white/5 text-white/80;
+  }
+}
+@layer components {
+  /* =========================
+   * Section text
+   * ========================= */
+  .ui-section-kicker {
+    @apply mb-2 text-xs font-semibold tracking-wider text-emerald-700;
+  }
+
+  .dark .ui-section-kicker {
+    @apply text-emerald-300/90;
+  }
+
+  .ui-section-title {
+    @apply text-2xl font-semibold text-neutral-900 sm:text-3xl;
+  }
+
+  .dark .ui-section-title {
+    @apply text-white;
+  }
+
+  .ui-section-subtitle {
+    @apply mt-3 max-w-2xl text-sm leading-6 text-neutral-600 sm:text-base;
+  }
+
+  .dark .ui-section-subtitle {
+    @apply text-white/70;
+  }
+}

@@ -49,9 +49,9 @@ export function useBillingStatus() {
     const headlineBadge = useMemo(() => {
         if (!status) return null;
 
-        if (!status.isAuthenticated) {
-            return { tone: "warn" as const, text: "Sign in required" };
-        }
+        // if (!status.isAuthenticated) {
+        //     return { tone: "warn" as const, text: "Sign in required" };
+        // }
 
         if (status.stripeStatus === "trialing") {
             return {

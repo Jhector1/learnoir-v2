@@ -1,15 +1,12 @@
 // src/components/review/module/ReviewModuleView.tsx
 "use client";
 
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 
 import type { ReviewModule, ReviewCard } from "@/lib/review/types";
-import type {
-  SavedQuizState,
-  ReviewProgressState,
-} from "@/lib/review/progressTypes";
+import type { SavedQuizState, ReviewProgressState } from "@/lib/review/progressTypes";
 
 import CardRenderer from "@/components/review/module/CardRenderer";
 import RingButton from "@/components/review/module/RingButton";
@@ -40,8 +37,7 @@ function isTopicComplete(topicCards: ReviewCard[], tstate: any) {
 
 function prereqsMetForQuiz(cards: ReviewCard[], tp: any, quizCardId: string) {
   const idx = cards.findIndex((c) => c.id === quizCardId);
-  const prereqCards =
-      idx >= 0 ? cards.slice(0, idx).filter((c) => c.type !== "quiz") : [];
+  const prereqCards = idx >= 0 ? cards.slice(0, idx).filter((c) => c.type !== "quiz") : [];
   return prereqCards.every((c) => Boolean(tp?.cardsDone?.[c.id]));
 }
 
@@ -49,9 +45,7 @@ function countAnswered(cards: ReviewCard[], tstate: any) {
   let answered = 0;
   for (const c of cards) {
     const done =
-        c.type === "quiz"
-            ? Boolean(tstate?.quizzesDone?.[c.id])
-            : Boolean(tstate?.cardsDone?.[c.id]);
+        c.type === "quiz" ? Boolean(tstate?.quizzesDone?.[c.id]) : Boolean(tstate?.cardsDone?.[c.id]);
     if (done) answered++;
   }
   return { answeredCount: answered, sessionSize: cards.length };
@@ -76,21 +70,13 @@ function TopicShell({
       <div className="ui-card p-4 md:p-5">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-black text-neutral-600 dark:text-white/60">
-              Topic
-            </div>
-            <div className="text-xl font-black text-neutral-900 dark:text-white truncate">
-              {title}
-            </div>
+            <div className="text-sm font-black text-neutral-600 dark:text-white/60">Topic</div>
+            <div className="text-xl font-black text-neutral-900 dark:text-white truncate">{title}</div>
             {subtitle ? (
-                <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">
-                  {subtitle}
-                </div>
+                <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">{subtitle}</div>
             ) : null}
           </div>
-          {right ? (
-              <div className="shrink-0 flex items-center gap-2">{right}</div>
-          ) : null}
+          {right ? <div className="shrink-0 flex items-center gap-2">{right}</div> : null}
         </div>
 
         <div className="mt-4 grid gap-3">{children}</div>
@@ -118,13 +104,9 @@ function BannerCard({
       <div className={cn("rounded-2xl border p-4 md:p-5", toneCls)}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <div className="text-sm font-black text-neutral-900 dark:text-white">
-              {title}
-            </div>
+            <div className="text-sm font-black text-neutral-900 dark:text-white">{title}</div>
             {body ? (
-                <div className="mt-1 text-sm text-neutral-700 dark:text-white/70">
-                  {body}
-                </div>
+                <div className="mt-1 text-sm text-neutral-700 dark:text-white/70">{body}</div>
             ) : null}
           </div>
           {actions ? <div className="shrink-0">{actions}</div> : null}
@@ -134,7 +116,7 @@ function BannerCard({
 }
 
 // -----------------------------
-// NEW: topic intro/outro meta
+// topic intro/outro meta
 // -----------------------------
 function TopicIntro({ topic }: { topic: any }) {
   const intro = topic?.intro ?? null;
@@ -162,13 +144,7 @@ function TopicIntro({ topic }: { topic: any }) {
   );
 }
 
-function TopicOutro({
-                      topic,
-                      onContinue,
-                    }: {
-  topic: any;
-  onContinue?: () => void;
-}) {
+function TopicOutro({ topic, onContinue }: { topic: any; onContinue?: () => void }) {
   const outro = topic?.outro ?? null;
   const bullets: string[] = outro?.bullets ?? [];
 
@@ -231,7 +207,6 @@ export default function ReviewModuleView({
   const subjectSlug = params?.subjectSlug ?? "";
   const moduleId = params?.moduleSlug ?? "";
 
-  // ✅ no env, no URL param; server decides
   const unlockAll = Boolean(canUnlockAll);
 
   const topics = Array.isArray(mod?.topics) ? mod.topics : [];
@@ -255,6 +230,95 @@ export default function ReviewModuleView({
   const viewCards = Array.isArray(viewTopic?.cards) ? viewTopic!.cards : [];
   const viewTid = viewTopic?.id ?? firstTopicId ?? "";
 
+  // -----------------------------
+  // ✅ Debounced sketch persistence (prevents progress spam)
+  // -----------------------------
+  const sketchTimersRef = useRef<Map<string, number>>(new Map());
+  const sketchLastHashRef = useRef<Map<string, string>>(new Map());
+  const sketchLatestStateRef = useRef<Map<string, any>>(new Map());
+
+  const commitSketchNow = useCallback(
+      (topicId: string, sketchCardId: string) => {
+        const key = `${topicId}:${sketchCardId}`;
+        const s = sketchLatestStateRef.current.get(key);
+
+        setProgress((p: any) => {
+          const tp0: any = p.topics?.[topicId] ?? {};
+          return {
+            ...p,
+            topics: {
+              ...(p.topics ?? {}),
+              [topicId]: {
+                ...tp0,
+                sketchState: {
+                  ...(tp0.sketchState ?? {}),
+                  [sketchCardId]: s,
+                },
+              },
+            },
+          };
+        });
+      },
+      [setProgress],
+  );
+
+  const saveSketchDebounced = useCallback(
+      (topicId: string, sketchCardId: string, s: any) => {
+        const key = `${topicId}:${sketchCardId}`;
+        const nextHash = JSON.stringify(s ?? null);
+
+        // dedupe identical states
+        if (sketchLastHashRef.current.get(key) === nextHash) return;
+        sketchLastHashRef.current.set(key, nextHash);
+
+        // always keep latest for flush/commit
+        sketchLatestStateRef.current.set(key, s);
+
+        // debounce per sketch
+        const prev = sketchTimersRef.current.get(key);
+        if (prev) window.clearTimeout(prev);
+
+        const t = window.setTimeout(() => {
+          commitSketchNow(topicId, sketchCardId);
+        }, 900);
+
+        sketchTimersRef.current.set(key, t);
+      },
+      [commitSketchNow],
+  );
+
+  // flush pending sketch commits when switching topics
+  useEffect(() => {
+    for (const [key, t] of sketchTimersRef.current.entries()) {
+      window.clearTimeout(t);
+      const parts = key.split(":");
+      const topicId = parts[0];
+      const sketchCardId = parts.slice(1).join(":"); // just in case
+      if (topicId && sketchCardId) commitSketchNow(topicId, sketchCardId);
+    }
+    sketchTimersRef.current.clear();
+  }, [viewTid, commitSketchNow]);
+
+  // flush pending sketches on pagehide (extra safety)
+  useEffect(() => {
+    const flushSketches = () => {
+      for (const [key, t] of sketchTimersRef.current.entries()) {
+        window.clearTimeout(t);
+        const parts = key.split(":");
+        const topicId = parts[0];
+        const sketchCardId = parts.slice(1).join(":");
+        if (topicId && sketchCardId) commitSketchNow(topicId, sketchCardId);
+      }
+      sketchTimersRef.current.clear();
+    };
+
+    window.addEventListener("pagehide", flushSketches);
+    return () => window.removeEventListener("pagehide", flushSketches);
+  }, [commitSketchNow]);
+
+  // -----------------------------
+  // topic version keying
+  // -----------------------------
   const viewProg: any = (progress as any)?.topics?.[viewTid] ?? {};
 
   const moduleV = (progress as any)?.quizVersion ?? 0;
@@ -288,9 +352,7 @@ export default function ReviewModuleView({
   }, [topics, progress]);
 
   useEffect(() => {
-    onModuleCompleteChange?.(
-        moduleComplete || Boolean((progress as any)?.moduleCompleted),
-    );
+    onModuleCompleteChange?.(moduleComplete || Boolean((progress as any)?.moduleCompleted));
   }, [moduleComplete, progress, onModuleCompleteChange]);
 
   // ✅ mark module complete once
@@ -316,10 +378,7 @@ export default function ReviewModuleView({
     if (!progressHydrated) return;
     if (!viewTid) return;
 
-    const doneNow = isTopicComplete(
-        viewCards,
-        (progress as any)?.topics?.[viewTid],
-    );
+    const doneNow = isTopicComplete(viewCards, (progress as any)?.topics?.[viewTid]);
     if (!doneNow) return;
 
     const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
@@ -350,14 +409,11 @@ export default function ReviewModuleView({
       ? String((progress as any).assignmentSessionId)
       : null;
 
-  const {
-    status: assignmentStatus,
-    complete: assignmentDone,
-    pct: assignmentPct,
-  } = useAssignmentStatus({
-    sessionId: assignmentSessionId,
-    enabled: progressHydrated,
-  });
+  const { status: assignmentStatus, complete: assignmentDone, pct: assignmentPct } =
+      useAssignmentStatus({
+        sessionId: assignmentSessionId,
+        enabled: progressHydrated,
+      });
 
   const assignmentLabel =
       assignmentStatus.phase === "complete"
@@ -378,8 +434,9 @@ export default function ReviewModuleView({
 
   const canGoNextModule =
       unlockAll ||
-      ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) &&
-          assignmentDone);
+      ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) && assignmentDone);
+  const isLastModule = !nav?.nextModuleId;
+  const canGetCertificate = isLastModule && (unlockAll || ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) && assignmentDone));
 
   async function handleAssignmentClick() {
     const returnToCurrentModule = `/${ROUTES.learningPath(
@@ -389,10 +446,7 @@ export default function ReviewModuleView({
 
     if (assignmentSessionId && assignmentStatus.phase !== "idle") {
       router.push(
-          `/${ROUTES.practicePath(
-              encodeURIComponent(subjectSlug),
-              encodeURIComponent(moduleId),
-          )}` +
+          `/${ROUTES.practicePath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}` +
           `?sessionId=${encodeURIComponent(assignmentSessionId)}` +
           `&returnTo=${encodeURIComponent(returnToCurrentModule)}`,
       );
@@ -401,14 +455,11 @@ export default function ReviewModuleView({
 
     const moduleSlug = (mod as any).practiceSectionSlug ?? moduleId;
 
-    const r = await fetch(
-        `/api/modules/${encodeURIComponent(moduleSlug)}/practice/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ returnUrl: returnToCurrentModule }),
-        },
-    );
+    const r = await fetch(`/api/modules/${encodeURIComponent(moduleSlug)}/practice/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnUrl: returnToCurrentModule }),
+    });
 
     const data = await r.json().catch(() => null);
 
@@ -516,7 +567,6 @@ export default function ReviewModuleView({
         cardsDone: {},
         quizzesDone: {},
         quizState: {},
-        // ✅ NEW
         sketchState: {},
         completed: false,
         completedAt: undefined,
@@ -542,30 +592,36 @@ export default function ReviewModuleView({
   }
 
   if (!topics.length) {
-    return (
-        <div className="p-6 text-sm text-neutral-600 dark:text-white/70">
-          This module has no topics yet.
-        </div>
-    );
+    return <div className="p-6 text-sm text-neutral-600 dark:text-white/70">This module has no topics yet.</div>;
   }
 
   // -----------------------------
   // topic completion + next target
   // -----------------------------
-  const viewIsComplete = isTopicComplete(
-      viewCards,
-      (progress as any)?.topics?.[viewTid],
-  );
+  // const viewIsComplete = isTopicComplete(viewCards, (progress as any)?.topics?.[viewTid]);
+  // const viewIdx = topics.findIndex((t) => t.id === viewTid);
+  // const nextTopic = viewIdx >= 0 ? topics[viewIdx + 1] : null;
+  const viewIsComplete = isTopicComplete(viewCards, (progress as any)?.topics?.[viewTid]);
   const viewIdx = topics.findIndex((t) => t.id === viewTid);
+
+  const prevTopic = viewIdx > 0 ? topics[viewIdx - 1] : null;
   const nextTopic = viewIdx >= 0 ? topics[viewIdx + 1] : null;
 
+  function goPrevTopic() {
+    if (!prevTopic?.id) return;
+    goToTopic(prevTopic.id);
+  }
+
+  // function goNextTopic() {
+  //   if (!nextTopic?.id) return;
+  //   goToTopic(nextTopic.id);
+  // }
   function goToTopic(tid: string) {
     if (!tid) return;
     const idx = topics.findIndex((x) => x.id === tid);
     if (idx < 0) return;
 
     if (!unlockAll) {
-      // allow going back freely; forward only if unlocked
       const isEarlierOrActive = idx <= activeIdx;
       const canGoForward = topicUnlocked(tid);
       if (!isEarlierOrActive && !canGoForward) return;
@@ -615,9 +671,7 @@ export default function ReviewModuleView({
                   {mod.title}
                 </div>
                 {mod.subtitle ? (
-                    <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">
-                      {mod.subtitle}
-                    </div>
+                    <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">{mod.subtitle}</div>
                 ) : null}
 
                 <div className="mt-3 flex items-center gap-2">
@@ -662,12 +716,9 @@ export default function ReviewModuleView({
                 const idx = topics.findIndex((x) => x.id === t.id);
                 const isEarlierOrActive = idx <= activeIdx;
                 const canGoForward = topicUnlocked(t.id);
-                const disabled = unlockAll ? false : (!isEarlierOrActive && !canGoForward);
+                const disabled = unlockAll ? false : !isEarlierOrActive && !canGoForward;
 
-                const doneTopic = isTopicComplete(
-                    t.cards ?? [],
-                    (progress as any)?.topics?.[t.id],
-                );
+                const doneTopic = isTopicComplete(t.cards ?? [], (progress as any)?.topics?.[t.id]);
                 const isViewing = viewTopicId === t.id;
                 const isActive = activeTopicId === t.id;
 
@@ -687,9 +738,7 @@ export default function ReviewModuleView({
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-extrabold">{t.label}</div>
                         <div className="flex items-center gap-2">
-                          {isActive ? (
-                              <span className="ui-pill ui-pill--neutral">CURRENT</span>
-                          ) : null}
+                          {isActive ? <span className="ui-pill ui-pill--neutral">CURRENT</span> : null}
                           {doneTopic ? (
                               <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300/80">
                           ✓
@@ -699,9 +748,7 @@ export default function ReviewModuleView({
                       </div>
 
                       {t.summary ? (
-                          <div className="mt-1 text-xs text-neutral-600 dark:text-white/55">
-                            {t.summary}
-                          </div>
+                          <div className="mt-1 text-xs text-neutral-600 dark:text-white/55">{t.summary}</div>
                       ) : null}
                     </button>
                 );
@@ -720,9 +767,7 @@ export default function ReviewModuleView({
 
             {nav?.nextModuleId ? (
                 <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
-                  <div className="font-extrabold text-neutral-700 dark:text-white/70">
-                    Next module
-                  </div>
+                  <div className="font-extrabold text-neutral-700 dark:text-white/70">Next module</div>
                   <div className="mt-1 text-neutral-600 dark:text-white/55">
                     {canGoNextModule
                         ? unlockAll
@@ -751,13 +796,10 @@ export default function ReviewModuleView({
 
                     <button
                         type="button"
-                        onClick={() => {
-                          const prevId = (nav as any)?.prevTopicId ?? null;
-                          if (prevId) goToTopic(prevId);
-                        }}
+                        onClick={goPrevTopic}
                         className="ui-btn ui-btn-secondary text-xs font-extrabold"
-                        disabled={!(nav as any)?.prevTopicId}
-                        title="Previous topic"
+                        disabled={!prevTopic?.id}
+                        title={!prevTopic?.id ? "No previous topic" : "Previous topic"}
                     >
                       ←
                     </button>
@@ -777,6 +819,7 @@ export default function ReviewModuleView({
                     >
                       →
                     </button>
+
                   </>
                 }
             >
@@ -793,16 +836,13 @@ export default function ReviewModuleView({
                           : Boolean(tp?.cardsDone?.[card.id]);
 
                   const savedQuiz = (tp?.quizState?.[card.id] ?? null) as SavedQuizState | null;
-
-                  // ✅ NEW: sketch saved state
                   const savedSketch = tp?.sketchState?.[card.id] ?? null;
 
-                  const prereqsMet =
-                      unlockAll
-                          ? true
-                          : card.type === "quiz"
-                              ? prereqsMetForQuiz(viewCards, tp, card.id)
-                              : true;
+                  const prereqsMet = unlockAll
+                      ? true
+                      : card.type === "quiz"
+                          ? prereqsMetForQuiz(viewCards, tp, card.id)
+                          : true;
 
                   return (
                       <CardRenderer
@@ -813,29 +853,11 @@ export default function ReviewModuleView({
                           progressHydrated={progressHydrated}
                           savedQuiz={progressHydrated ? savedQuiz : null}
                           versionStr={versionStr}
-
-                          // ✅ NEW
                           savedSketch={progressHydrated ? savedSketch : null}
                           onSketchStateChange={(sketchCardId, s) => {
-                            setProgress((p: any) => {
-                              const tid = viewTid;
-                              const tp0: any = p.topics?.[tid] ?? {};
-                              return {
-                                ...p,
-                                topics: {
-                                  ...(p.topics ?? {}),
-                                  [tid]: {
-                                    ...tp0,
-                                    sketchState: {
-                                      ...(tp0.sketchState ?? {}),
-                                      [sketchCardId]: s,
-                                    },
-                                  },
-                                },
-                              };
-                            });
+                            // ✅ debounce sketch writes (prevents nonstop progress updates + PUT spam)
+                            saveSketchDebounced(viewTid, sketchCardId, s);
                           }}
-
                           onMarkDone={() => {
                             setProgress((p: any) => {
                               const tid = viewTid;
@@ -850,7 +872,6 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
-
                           onQuizPass={(quizId) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
@@ -865,7 +886,6 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
-
                           onQuizStateChange={(quizCardId, s) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
@@ -880,7 +900,6 @@ export default function ReviewModuleView({
                               };
                             });
                           }}
-
                           onQuizReset={(quizCardId) => {
                             setProgress((p: any) => {
                               const tid = viewTid;
@@ -908,17 +927,30 @@ export default function ReviewModuleView({
                       />
                   );
                 })}
-
               </div>
 
               {/* ✅ Outro AFTER topic content (only when complete) */}
               {viewIsComplete ? (
-                  <TopicOutro
-                      topic={viewTopic}
-                      onContinue={nextTopic?.id ? goNextTopic : undefined}
-                  />
+                  <TopicOutro topic={viewTopic} onContinue={nextTopic?.id ? goNextTopic : undefined} />
               ) : null}
             </TopicShell>
+            {isLastModule ? (
+                <div className="mt-3 rounded-xl border border-emerald-600/25 bg-emerald-500/10 p-3 text-xs dark:border-emerald-300/30 dark:bg-emerald-300/10">
+                  <div className="font-black text-emerald-900 dark:text-emerald-100">Course complete</div>
+                  <div className="mt-1 text-emerald-900/80 dark:text-emerald-100/80">
+                    Download your certificate when ready.
+                  </div>
+
+                  <button
+                      className={cn("mt-3 ui-btn ui-btn-primary w-full", !canGetCertificate && "opacity-60 cursor-not-allowed")}
+                      disabled={!canGetCertificate}
+                      onClick={() => router.push(`/subjects/${encodeURIComponent(subjectSlug)}/certificate`)}
+                  >
+                    Get certificate →
+                  </button>
+                </div>
+            ) : null}
+
           </main>
         </div>
       </div>

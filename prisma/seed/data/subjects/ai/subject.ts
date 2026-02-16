@@ -9,7 +9,8 @@ export const AI_SUBJECT = defineSubject({
         order: 5,
         title: "AI Literacy",
         description: "Beginner-friendly AI and ChatGPT fundamentals with safe-use habits.",
-    },
+        imagePublicId: "Fi_pddzlv",
+        imageAlt: "AI subject cover",},
     modules: AI_MODULES,
     topicGroups: AI_SECTIONS,
 });

@@ -15,6 +15,8 @@ export const LINEAR_ALGEBRA = defineSubject({
     order: 10,
     title: "Linear Algebra",
     description: "Linear algebra practice.",
+    imagePublicId: "Screenshot_2026-02-03_at_1.19.33_AM_cbhr1y",
+    imageAlt: "Linear algebra subject cover",
   },
 
   modules: LA_MODULES,

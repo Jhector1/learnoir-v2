@@ -16,7 +16,7 @@ export function useReviewProgressMany(args: {
   enabled?: boolean;
   refreshMs?: number;
 }) {
-  const { subjectSlug, locale, moduleIds, enabled = true, refreshMs = 4000 } =
+  const { subjectSlug, locale, moduleIds, enabled = true, refreshMs = 0 } =
     args;
 
   // ✅ stable key based on VALUES, not array identity

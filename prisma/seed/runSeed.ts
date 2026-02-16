@@ -33,6 +33,9 @@ export async function runSeed() {
             title: s.title,
             description: s.description,
             meta: s.meta ?? undefined,
+            imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
+            imageAlt: (s as any).imageAlt ?? null,           // ✅ ADD
+
           },
           create: {
             slug: s.slug,
@@ -40,6 +43,9 @@ export async function runSeed() {
             title: s.title,
             description: s.description,
             meta: s.meta ?? undefined,
+            imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
+            imageAlt: (s as any).imageAlt ?? null,           // ✅ ADD
+
           },
         });
         subjectIdBySlug.set(s.slug, row.id);

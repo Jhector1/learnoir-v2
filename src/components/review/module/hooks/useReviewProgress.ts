@@ -14,6 +14,10 @@ function emptyProgress(): ReviewProgressState {
   };
 }
 
+function stableJson(x: unknown) {
+  return JSON.stringify(x);
+}
+
 export function useReviewProgress(args: {
   subjectSlug: string;
   moduleId: string;
@@ -38,98 +42,159 @@ export function useReviewProgress(args: {
     activeTopicIdRef.current = activeTopicId;
   }, [activeTopicId]);
 
+  // ---- dedupe + debounce + abort ----
+  const lastSentHashRef = useRef<string>("");
+  const putAbortRef = useRef<AbortController | null>(null);
+  const putTimerRef = useRef<number | null>(null);
+
   const putProgressNow = useCallback(
-    async (state: ReviewProgressState) => {
-      if (!subjectSlug || !moduleId) return;
+      async (state: ReviewProgressState) => {
+        if (!subjectSlug || !moduleId) return;
 
-      const payload = {
-        subjectSlug,
-        moduleId,
-        locale,
-        state: { ...state, activeTopicId: activeTopicIdRef.current },
-      };
+        const payload = {
+          subjectSlug,
+          moduleId,
+          locale,
+          state: { ...state, activeTopicId: activeTopicIdRef.current },
+        };
 
-      const body = JSON.stringify(payload);
+        const body = stableJson(payload);
 
-      // best-effort reliable on refresh/navigation
-      if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
-        try {
-          const blob = new Blob([body], { type: "application/json" });
-          (navigator as any).sendBeacon("/api/review/progress", blob);
-          return;
-        } catch {
-          // fall through
+        // mark as latest (prevents immediate duplicate sends)
+        lastSentHashRef.current = body;
+
+        // best-effort reliable on refresh/navigation
+        if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+          try {
+            const blob = new Blob([body], { type: "application/json" });
+            (navigator as any).sendBeacon("/api/review/progress", blob);
+            return;
+          } catch {
+            // fall through
+          }
         }
-      }
 
-      fetch("/api/review/progress", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-        cache: "no-store",
-      }).catch(() => {});
-    },
-    [subjectSlug, moduleId, locale],
+        // abort any previous in-flight PUT
+        putAbortRef.current?.abort();
+        const ctrl = new AbortController();
+        putAbortRef.current = ctrl;
+
+        fetch("/api/review/progress", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: true,
+          cache: "no-store",
+          signal: ctrl.signal,
+        }).catch((e) => {
+          if (e?.name !== "AbortError") {
+            // optional: allow retry later
+            // lastSentHashRef.current = "";
+          }
+        });
+      },
+      [subjectSlug, moduleId, locale],
   );
 
-  // load progress
- useEffect(() => {
-  if (!subjectSlug || !moduleId) return;
+  // ---- load progress ----
+  useEffect(() => {
+    if (!subjectSlug || !moduleId) return;
 
-  const ctrl = new AbortController();
-  setHydrated(false);
+    const ctrl = new AbortController();
+    setHydrated(false);
 
-  (async () => {
-    try {
-      const p = await fetchReviewProgressGET({
-        subjectSlug,
-        moduleId,
-        locale,
-        signal: ctrl.signal,
-      });
+    (async () => {
+      try {
+        const p = await fetchReviewProgressGET({
+          subjectSlug,
+          moduleId,
+          locale,
+          signal: ctrl.signal,
+        });
 
-      setProgress(p);
+        setProgress(p);
 
-      const nextActive = (p as any).activeTopicId || firstTopicId;
-      setActiveTopicId(nextActive);
-      setViewTopicId(nextActive);
-    } catch {
-      setProgress(emptyReviewProgress());
-      setActiveTopicId(firstTopicId);
-      setViewTopicId(firstTopicId);
-    } finally {
-      setHydrated(true);
-    }
-  })();
+        const nextActive = (p as any).activeTopicId || firstTopicId;
+        setActiveTopicId(nextActive);
+        setViewTopicId(nextActive);
 
-  return () => ctrl.abort();
-}, [subjectSlug, moduleId, locale, firstTopicId]);
+        // seed hash so we don't immediately PUT what we just loaded
+        lastSentHashRef.current = stableJson({
+          subjectSlug,
+          moduleId,
+          locale,
+          state: { ...p, activeTopicId: nextActive },
+        });
+      } catch {
+        const ep = emptyReviewProgress();
+        setProgress(ep);
+        setActiveTopicId(firstTopicId);
+        setViewTopicId(firstTopicId);
 
-  // save progress (debounced)
+        lastSentHashRef.current = stableJson({
+          subjectSlug,
+          moduleId,
+          locale,
+          state: { ...ep, activeTopicId: firstTopicId },
+        });
+      } finally {
+        setHydrated(true);
+      }
+    })();
+
+    return () => ctrl.abort();
+  }, [subjectSlug, moduleId, locale, firstTopicId]);
+
+  // ---- save progress (debounced + deduped) ----
   useEffect(() => {
     if (!subjectSlug || !moduleId) return;
     if (!hydrated) return;
 
-    const t = setTimeout(() => {
+    const payload = {
+      subjectSlug,
+      moduleId,
+      locale,
+      state: { ...progress, activeTopicId },
+    };
+
+    const nextHash = stableJson(payload);
+
+    // ✅ no change => no network
+    if (nextHash === lastSentHashRef.current) return;
+
+    // debounce
+    if (putTimerRef.current) window.clearTimeout(putTimerRef.current);
+
+    putTimerRef.current = window.setTimeout(() => {
+      // abort previous in-flight
+      putAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      putAbortRef.current = ctrl;
+
+      // mark latest to dedupe
+      lastSentHashRef.current = nextHash;
+
       fetch("/api/review/progress", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjectSlug,
-          moduleId,
-          locale,
-          state: { ...progress, activeTopicId },
-        }),
+        body: nextHash,
         keepalive: true,
         cache: "no-store",
-      }).catch(() => {});
-    }, 600);
+        signal: ctrl.signal,
+      }).catch((e) => {
+        if (e?.name !== "AbortError") {
+          // optional: allow retry by clearing hash
+          // lastSentHashRef.current = "";
+        }
+      });
+    }, 900);
 
-    return () => clearTimeout(t);
+    return () => {
+      if (putTimerRef.current) window.clearTimeout(putTimerRef.current);
+    };
   }, [progress, activeTopicId, subjectSlug, moduleId, locale, hydrated]);
 
-  // flush on refresh/tab-close/navigation-away
+  // ---- flush on refresh/tab-close/navigation-away ----
   useEffect(() => {
     if (!hydrated) return;
 
@@ -149,6 +214,14 @@ export function useReviewProgress(args: {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [hydrated, putProgressNow]);
+
+  // cleanup
+  useEffect(() => {
+    return () => {
+      if (putTimerRef.current) window.clearTimeout(putTimerRef.current);
+      putAbortRef.current?.abort();
+    };
+  }, []);
 
   return {
     hydrated,

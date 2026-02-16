@@ -1,4 +1,4 @@
-import type { SketchEntry } from "../../registryTypes";
+import type {SketchEntry} from "../../registryTypes";
 
 export const AI_MOD0_SKETCHES: Record<string, SketchEntry> = {
     "ai.intro": {
@@ -8,16 +8,18 @@ export const AI_MOD0_SKETCHES: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "AI basics",
             bodyMarkdown: String.raw`
-Before we do anything, learn these 4 words in plain English:
+Generative AI is quickly becoming an everyday tool—like spellcheck, search, and calculators did in earlier eras—except it works with language and ideas. It can help you write, plan, summarize, brainstorm, and organize information in seconds.
 
-- **AI**: software that can generate useful outputs (text, plans, answers)
-- **Model**: the engine that generates outputs from patterns in data
-- **Prompt**: your instruction (task + context + format)
-- **ChatGPT**: the app where you talk to a model
+To get real value (and stay safe), you only need a few core skills:
 
-If you understand these, the rest of the module will feel smooth.
+1) **Ask clearly** for what you want (task + context + format)  
+2) **Iterate** to improve results (refine, constrain, try again)  
+3) **Verify** important claims (sources, cross-checks, calculations)  
+4) **Protect privacy** when working with real information (redaction + data controls)
 
-**Tip:** Treat outputs as drafts unless verified.
+We’ll focus on ChatGPT because it’s a flexible, general-purpose assistant for everyday tasks: drafting messages, explaining concepts, generating options, and turning messy notes into clean outlines. And we won’t treat it as the only tool—you’ll also learn how to choose between major AI tools based on what you’re trying to do.
+
+**By the end of this module, you’ll be able to prompt confidently, refine outputs quickly, verify what matters, and use AI responsibly.**
 `.trim(),
         },
     },

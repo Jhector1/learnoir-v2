@@ -185,7 +185,7 @@ export default function SubjectModulesClient(props: Props) {
         locale,
         moduleIds,
         enabled: moduleIds.length > 0,
-        refreshMs: 4000,
+        refreshMs: 0,
       });
 
   // ✅ lock module i unless previous module is completed (unless unlockAll)

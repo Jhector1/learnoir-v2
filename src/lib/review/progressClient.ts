@@ -49,8 +49,7 @@ export async function fetchReviewProgressGET(args: {
   const url =
     `/api/review/progress?subjectSlug=${encodeURIComponent(subjectSlug)}` +
     `&moduleId=${encodeURIComponent(moduleId)}` +
-    `&locale=${encodeURIComponent(locale)}` +
-    `&_=${Date.now()}`;
+    `&locale=${encodeURIComponent(locale)}`;
 
   const res = await fetch(url, { signal, cache: "no-store" });
   if (!res.ok) return emptyReviewProgress();

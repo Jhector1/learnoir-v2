@@ -46,6 +46,12 @@ export async function GET(req: Request) {
   return attachGuestCookie(res, setGuestId);
 }
 
+
+export async function POST(req: Request) {
+  return PUT(req);
+}
+
+
 export async function PUT(req: Request) {
   let body: any;
   try {

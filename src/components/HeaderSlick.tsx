@@ -15,6 +15,7 @@ import { cn } from "@/lib/cn";
 import Badge from "@/components/billing/Badge";
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
 import {ROUTES} from "@/utils";
+import {useSearchParams} from "next/navigation";
 
 type NavItem = { href: string; label: string };
 
@@ -25,6 +26,14 @@ type HeaderSlotCtx = {
   status: SessionStatus;
   user?: Session["user"];
 };
+async function hardLogout(locale: string) {
+  // 1) clear app session cookies
+  await signOut({ redirect: false });
+
+  // 2) clear Keycloak SSO session
+  window.location.href =
+      `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
+}
 
 function SettingsMenu({ title = "Settings" }: { title?: string }) {
   const [open, setOpen] = useState(false);
@@ -237,6 +246,22 @@ export default function HeaderSlick({
       );
 
   const { headlineBadge } = useBillingStatus();
+  const searchParams = useSearchParams();
+
+  const callbackUrl = useMemo(() => {
+    const qs = searchParams?.toString();
+    const path = pathname || "/";
+    // ensure locale-prefixed callback
+    return `/${locale}${path === "/" ? "" : path}${qs ? `?${qs}` : ""}`;
+  }, [locale, pathname, searchParams]);
+
+  const authHref = useMemo(() => {
+    // next-intl Link usually supports object hrefs
+    return {
+      pathname: "/authenticate",
+      query: { callbackUrl },
+    } as const;
+  }, [callbackUrl]);
 
   return (
       <header className="sticky top-0 z-50">
@@ -332,12 +357,15 @@ export default function HeaderSlick({
                             email={user?.email}
                             image={user?.image}
                             profileHref="/profile"
-                            onSignOut={() => signOut({ callbackUrl: `/${locale}` })}
+                            onSignOut={() => hardLogout(locale)}
+
+                            // onSignOut={() => signOut({ callbackUrl: `/${locale}` })}
                         />
                     ) : (
-                        <button type="button" onClick={() => signIn()} className="ui-authbtn">
+                        <Link href={authHref} className="ui-authbtn">
                           {t("signIn")}
-                        </button>
+                        </Link>
+
                     ))}
               </nav>
 
@@ -397,20 +425,18 @@ export default function HeaderSlick({
                                 </Link>
                                 <button
                                     type="button"
-                                    onClick={() => signOut({ callbackUrl: `/${locale}` })}
+                                    onClick={() => hardLogout(locale)}
                                     className={mobileItem(false)}
                                 >
                                   {t("logout")}
                                 </button>
+
                               </>
                           ) : (
-                              <button
-                                  type="button"
-                                  onClick={() => signIn()}
-                                  className={mobileItem(false)}
-                              >
+                              <Link href={authHref} className={mobileItem(false)}>
                                 {t("signIn")}
-                              </button>
+                              </Link>
+
                           ))}
 
                       {(isNav || isUser) && (

@@ -6,8 +6,6 @@ import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-
-  // Recommended for App Router unless you explicitly want DB sessions
   session: { strategy: "jwt" },
 
   providers: [
@@ -15,24 +13,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       issuer: process.env.KEYCLOAK_ISSUER!,
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "openid profile email", // add offline_access if needed
-        },
-      },
+      authorization: { params: { scope: "openid profile email" } },
     }),
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
-      // user exists on initial sign-in
+    async jwt({ token, user, account }) {
       if (user?.id) token.uid = user.id;
+
+      // ✅ Save Keycloak id_token so we can call Keycloak end-session correctly
+      if (account?.provider === "keycloak" && account?.id_token) {
+        (token as any).kc_id_token = account.id_token;
+      }
+
       return token;
     },
+
     async session({ session, token }) {
-      if (session.user && token.uid) {
-        // attach your internal DB user id
-        (session.user as any).id = token.uid as string;
+      if (session.user && (token as any).uid) {
+        (session.user as any).id = (token as any).uid as string;
       }
       return session;
     },

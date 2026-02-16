@@ -450,3 +450,18 @@ model StripeEvent {
 
   receivedAt DateTime @default(now())
 }
+
+
+model CourseCertificate {
+  id          String   @id @default(cuid())
+  actorKey    String
+  subjectSlug String
+  locale      String
+  issuedAt    DateTime @default(now())
+  completedAt DateTime?
+  meta        Json?
+
+  @@unique([actorKey, subjectSlug, locale])
+  @@index([actorKey])
+  @@index([subjectSlug, locale])
+}

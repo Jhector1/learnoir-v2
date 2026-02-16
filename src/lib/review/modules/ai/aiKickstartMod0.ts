@@ -36,7 +36,14 @@ export const aiKickstartMod0: ReviewModule = {
             cards: [
                 {
                     type: "sketch",
-                    id: "ai0_intro_s1",
+                    id: "ai_get_started_s1",
+                    title: "Get started (quick checklist)",
+                    sketchId: "ai.getstarted",
+                    height: 560,
+                },
+                {
+                    type: "sketch",
+                    id: "ai_get_started_s2",
                     title: "Get started (quick checklist)",
                     sketchId: "ai.getstarted",
                     height: 560,

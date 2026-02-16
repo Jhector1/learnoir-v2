@@ -202,7 +202,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
         locale,
         moduleIds: [module.slug],
         enabled: true,
-        refreshMs: 4000,
+        refreshMs: 0,
     });
 
     const mp = byModuleId[module.slug];

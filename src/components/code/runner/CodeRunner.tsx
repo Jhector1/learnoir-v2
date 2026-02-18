@@ -1,3 +1,4 @@
+// src/components/code/runner/CodeRunner.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +16,7 @@ import { useTerminalRunner } from "./hooks/useTerminalRunner";
 
 export default function CodeRunner(props: CodeRunnerProps) {
     const {
+        frame = "card", // "card" | "plain" (safe even if your type doesn’t include it)
         title = "Try it",
         height = 320,
         hintMarkdown,
@@ -68,9 +70,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
     // ---------- state ----------
     const [uLang, setULang] = useState<Lang>(initialLang);
-    const [uCode, setUCode] = useState<string>(
-        (props as any).initialCode ?? DEFAULT_CODE[initialLang],
-    );
+    const [uCode, setUCode] = useState<string>((props as any).initialCode ?? DEFAULT_CODE[initialLang]);
 
     const lang: Lang = fixedLanguage ? fixedLanguage : controlled ? (props as any).language : uLang;
     const code: string = controlled ? (props as any).code : uCode;
@@ -109,7 +109,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
     const mainRef = useRef<HTMLDivElement | null>(null);
 
     const split = useSplitSizing({
-        height,
+        height, // ✅ fixed region height
         showEditor,
         showTerminal,
         dock,
@@ -131,7 +131,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
     useEffect(() => {
         requestLayout();
-    }, [dock, split.termH, split.termW, split.bottomTotalH]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const onSwitchLang = (next: Lang) => {
         if (fixedLanguage) return;
@@ -142,18 +142,17 @@ export default function CodeRunner(props: CodeRunnerProps) {
     };
 
     const showPickerUI = showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
-
     const showEditorThemeToggleUI = showEditorThemeToggle && showHeaderBar;
     const showDockToggleUI =
-        showTerminalDockToggle &&
-        !fixedTerminalDock &&
-        showHeaderBar &&
-        showEditor &&
-        showTerminal;
+        showTerminalDockToggle && !fixedTerminalDock && showHeaderBar && showEditor && showTerminal;
+
+    const outerCls =
+        frame === "plain" ? "w-full" : "ui-card w-full p-4";
 
     return (
-        <div className="ui-card w-full p-4">
+        <div className={outerCls}>
             {showHeaderBar ? (
+                <div className="relative z-20 overflow-visible">
                 <HeaderBar
                     title={title}
                     disabled={disabled}
@@ -176,10 +175,11 @@ export default function CodeRunner(props: CodeRunnerProps) {
                     allowRun={allowRun}
                     onRun={term.startRun}
                 />
+                </div>
             ) : null}
 
             {showHint && hintMarkdown ? (
-                <div className="ui-soft mt-3 p-3">
+                <div className={frame === "plain" ? "mt-3" : "ui-soft mt-3 p-3"}>
                     <MathMarkdown className="ui-math" content={hintMarkdown} />
                 </div>
             ) : null}
@@ -187,11 +187,20 @@ export default function CodeRunner(props: CodeRunnerProps) {
             {showEditor || showTerminal ? (
                 <div
                     ref={mainRef}
-                    className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50/60 dark:border-white/10 dark:bg-black/20"
+                    // ✅ FIX: the split region height is fixed, so dragging doesn’t change total height
+                    style={{ height }}
+                    className={[
+                        "relative z-0",              // ✅ add
+
+                        "mt-3 overflow-hidden rounded-2xl border",
+                        "border-neutral-200 bg-neutral-50/60",
+                        "dark:border-white/10 dark:bg-black/20",
+                        "min-h-0",
+                    ].join(" ")}
                 >
                     {/* Editor only */}
                     {showEditor && !showTerminal ? (
-                        <div className="bg-white/70 dark:bg-black/10">
+                        <div className="h-full bg-white/70 dark:bg-black/10">
                             <EditorPane
                                 lang={lang}
                                 code={code}
@@ -209,7 +218,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
                     {/* Terminal only */}
                     {!showEditor && showTerminal ? (
-                        <div style={{ height }} className="p-3">
+                        <div className="h-full p-3">
                             <TerminalPane
                                 terminal={term.terminal}
                                 stdinBuffer={term.stdinBuffer}
@@ -222,6 +231,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                 disabled={disabled}
                                 lastResult={term.lastResult}
                                 onSubmitInput={term.submitInput}
+                                typedLines={term.typedLines}   // ✅ add
+
                             />
                         </div>
                     ) : null}
@@ -229,7 +240,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                     {/* Editor + Terminal */}
                     {showEditor && showTerminal ? (
                         dock === "bottom" ? (
-                            <div className="flex flex-col" style={{ height: split.bottomTotalH }}>
+                            <div className="flex h-full flex-col min-h-0">
                                 <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
@@ -264,11 +275,13 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                         disabled={disabled}
                                         lastResult={term.lastResult}
                                         onSubmitInput={term.submitInput}
+                                        typedLines={term.typedLines}   // ✅ add
+
                                     />
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex" style={{ height: split.rightTotalH }}>
+                            <div className="flex h-full min-h-0">
                                 <div className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
@@ -303,6 +316,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                         disabled={disabled}
                                         lastResult={term.lastResult}
                                         onSubmitInput={term.submitInput}
+                                        typedLines={term.typedLines}   // ✅ add
+
                                     />
                                 </div>
                             </div>

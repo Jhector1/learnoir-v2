@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import SketchBlock from "@/components/review/sketches/SketchBlock";
-import type { SavedSketchState } from "@/components/review/sketches/types";
+import SketchBlock from "@/components/sketches/subjects/SketchBlock";
+import type { SavedSketchState } from "@/components/sketches/subjects/types";
 
 export default function SketchHost(props: {
   cardId: string;

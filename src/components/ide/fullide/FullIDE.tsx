@@ -41,7 +41,7 @@ type FullIDEProps = {
 export default function FullIDE(props: FullIDEProps) {
     const {
         title = "IDE",
-        height = 420,
+        height = 720,
         className,
         fullHeight = false,
         storageKey = "learnoir.ide.workspace.v2",
@@ -283,6 +283,7 @@ export default function FullIDE(props: FullIDEProps) {
                             <div className="mt-3 min-w-0 flex-1 overflow-hidden">
                                 {activeFile ? (
                                     <CodeRunner
+                                        frame="plain"
                                         title={pathOf(nodes, activeFile.id)}
                                         height={height}
                                         language={language}

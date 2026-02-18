@@ -1,8 +1,8 @@
 import type { LandingPageConfig } from "../../types";
-import type { ReviewModule } from "@/lib/review/types";
+import type { ReviewModule } from "@/lib/subjects/types";
 
 import { pythonBasicsLanding } from "./basics/landing";
-import { pythonPart1Module } from "@/lib/review/modules/python/pythonPart1Module";
+import { pythonPart1Module } from "@/lib/subjects/python/modules/module0/pythonPart1Module";
 
 // ✅ Practice landing configs (for /practice UI)
 export const pythonLandings: LandingPageConfig[] = [pythonBasicsLanding];

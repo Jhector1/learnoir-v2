@@ -5,7 +5,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 
-import { hasReviewModule } from "@/lib/review/registry";
+import { hasReviewModule } from "@/lib/subjects/registry";
 import { getActor, ensureGuestId, attachGuestCookie, actorKeyOf } from "@/lib/practice/actor";
 
 export const runtime = "nodejs";

@@ -1,7 +1,7 @@
 // src/components/review/quiz/hooks/useReviewQuizQuestions.ts
 import { useEffect, useState } from "react";
-import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/review/types";
-import { fetchReviewQuiz } from "@/lib/review/clientApi";
+import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/subjects/types";
+import { fetchReviewQuiz } from "@/lib/subjects/clientApi";
 
 export function useReviewQuizQuestions(args: {
   quizId: string;

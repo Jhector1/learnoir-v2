@@ -1,6 +1,6 @@
 // src/components/review/quiz/hooks/useQuizPracticeBank.ts
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/review/types";
+import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/subjects/types";
 
 import type { Exercise } from "@/lib/practice/types";
 import type { QItem } from "@/components/practice/practiceType";
@@ -17,7 +17,7 @@ import {
   cloneVec,
   initItemFromExercise,
 } from "@/lib/practice/uiHelpers";
-import type { SavedQuizState } from "@/lib/review/progressTypes";
+import type { SavedQuizState } from "@/lib/subjects/progressTypes";
 
 export type PracticeState = {
   loading: boolean;

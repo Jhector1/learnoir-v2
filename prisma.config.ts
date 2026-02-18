@@ -1,4 +1,4 @@
-// prisma.config.ts
+// prisma.index.ts
 import { defineConfig } from "prisma/config";
 import { config } from "dotenv";
 

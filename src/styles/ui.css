@@ -14,6 +14,7 @@
 @import "./ui/sketch.css";
 @import "./ui/drag.css";
 @import "./ui/ide.css";
+@import "./ui/codeRunner.css";
 .ui-tile--active {
     @apply ring-2 ring-emerald-300/40;
 }

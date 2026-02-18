@@ -32,11 +32,13 @@ export type UncontrolledProps = {
     initialTerminalDock?: TerminalDock;
     initialTerminalSize?: number;
 };
+export type CodeRunnerFrame = "card" | "plain";
 
 export type CommonProps = {
     title?: string;
-    height?: number;
-
+    height?: number | "auto";
+    frame?: CodeRunnerFrame;
+    className?: string;
     hintMarkdown?: string;
 
     showHeaderBar?: boolean;
@@ -67,5 +69,5 @@ export type CodeRunnerProps =
     | (CommonProps & UncontrolledProps);
 
 export function isControlled(p: CodeRunnerProps): p is CommonProps & ControlledProps {
-    return (p as any).language !== undefined && typeof (p as any).onChangeLanguage === "function";
+    return (p as any).code !== undefined && typeof (p as any).onChangeCode === "function";
 }

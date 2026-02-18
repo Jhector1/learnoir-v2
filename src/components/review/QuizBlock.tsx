@@ -9,9 +9,9 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/review/types";
-import type { SavedQuizState } from "@/lib/review/progressTypes";
-import { buildReviewQuizKey } from "@/lib/review/quizClient";
+import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/subjects/types";
+import type { SavedQuizState } from "@/lib/subjects/progressTypes";
+import { buildReviewQuizKey } from "@/lib/subjects/quizClient";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 import { useQuizLocalAnswers } from "./quiz/hooks/useQuizLocalAnswers";

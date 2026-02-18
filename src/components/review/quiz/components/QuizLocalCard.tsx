@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import type { ReviewQuestion } from "@/lib/review/types";
+import type { ReviewQuestion } from "@/lib/subjects/types";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import { normalizeMath } from "@/lib/markdown/normalizeMath";
 import { cn } from "@/lib/cn";

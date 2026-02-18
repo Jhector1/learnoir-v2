@@ -1,5 +1,5 @@
-import type { ReviewCard } from "@/lib/review/types";
-import type { ReviewProgressState } from "@/lib/review/progressTypes";
+import type { ReviewCard } from "@/lib/subjects/types";
+import type { ReviewProgressState } from "@/lib/subjects/progressTypes";
 
 export function emptyProgress(): ReviewProgressState {
   return {

@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { ReviewProgressState } from "@/lib/review/progressTypes";
-import { emptyReviewProgress, fetchReviewProgressGET } from "@/lib/review/progressClient";
+import type { ReviewProgressState } from "@/lib/subjects/progressTypes";
+import { emptyReviewProgress, fetchReviewProgressGET } from "@/lib/subjects/progressClient";
 
 function emptyProgress(): ReviewProgressState {
   return {

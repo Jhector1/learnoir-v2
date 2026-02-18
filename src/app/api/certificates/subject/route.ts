@@ -1,7 +1,7 @@
 // src/app/api/certificates/subject/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hasReviewModule } from "@/lib/review/registry";
+import { hasReviewModule } from "@/lib/subjects/registry";
 import {
     getActor,
     ensureGuestId,

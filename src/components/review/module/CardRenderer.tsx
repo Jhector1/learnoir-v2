@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import type { ReviewCard, ReviewQuizSpec } from "@/lib/review/types";
-import type { SavedQuizState } from "@/lib/review/progressTypes";
+import type { ReviewCard, ReviewQuizSpec } from "@/lib/subjects/types";
+import type { SavedQuizState } from "@/lib/subjects/progressTypes";
 
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import QuizBlock from "@/components/review/QuizBlock";
-import { buildReviewQuizKey } from "@/lib/review/quizClient";
+import { buildReviewQuizKey } from "@/lib/subjects/quizClient";
 import { cn } from "@/lib/cn";
 
 // ✅ NEW: your sketch system
-import SketchBlock from "@/components/review/sketches/SketchBlock";
+import SketchBlock from "@/components/sketches/subjects/SketchBlock";
 
 type SavedSketchState = any; // ✅ keep flexible; you can type later per archetype
 

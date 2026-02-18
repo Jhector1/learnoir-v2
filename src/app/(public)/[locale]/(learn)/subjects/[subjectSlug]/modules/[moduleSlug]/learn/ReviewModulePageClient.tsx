@@ -1,13 +1,13 @@
+// src/app/(public)/[locale]/subjects/[subjectSlug]/modules/[moduleSlug]/ReviewModulePageClient.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-// import ReviewModuleView from "@/components/review/module/ReviewModuleView";
 import ReviewModuleNavBar from "@/components/review/ReviewModuleNavBar";
 
-import type { ReviewModule } from "@/lib/review/types";
-import { getReviewModule } from "@/lib/review/registry";
-import ReviewModuleView from "@/components/review/ReviewModuleView";
+import type { ReviewModule } from "@/lib/subjects/types";
+import { getReviewModule } from "@/lib/subjects/registry";
+import ReviewModuleView from "@/components/review/module/ReviewModuleView";
 
 type NavInfo = {
     prevModuleId: string | null;
@@ -16,11 +16,7 @@ type NavInfo = {
     total: number;
 };
 
-export default function ReviewModulePageClient({
-                                                   canUnlockAll,
-                                               }: {
-    canUnlockAll: boolean;
-}) {
+export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll: boolean }) {
     const params = useParams<{
         locale: string;
         subjectSlug: string;
@@ -43,9 +39,7 @@ export default function ReviewModulePageClient({
         if (!subjectSlug || !moduleId) return;
 
         fetch(
-            `/api/review/module-nav?subjectSlug=${encodeURIComponent(
-                subjectSlug,
-            )}&moduleId=${encodeURIComponent(moduleId)}`,
+            `/api/review/module-nav?subjectSlug=${encodeURIComponent(subjectSlug)}&moduleId=${encodeURIComponent(moduleId)}`,
             { cache: "no-store" },
         )
             .then((r) => (r.ok ? r.json() : null))
@@ -72,21 +66,24 @@ export default function ReviewModulePageClient({
     }
 
     return (
-        <div className="min-h-screen">
-            <ReviewModuleView
-                key={`${locale}:${subjectSlug}:${moduleId}`}
-                mod={mod}
-                canUnlockAll={canUnlockAll} // ✅ THIS is the unlock
-                onModuleCompleteChange={setModuleComplete}
-            />
+        <div className="h-screen w-screen overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0">
+                <ReviewModuleView
+                    key={`${locale}:${subjectSlug}:${moduleId}`}
+                    mod={mod}
+                    canUnlockAll={canUnlockAll}
+                    onModuleCompleteChange={setModuleComplete}
+                />
+            </div>
 
             <ReviewModuleNavBar
                 locale={locale}
                 subjectSlug={subjectSlug}
                 prevModuleId={nav?.prevModuleId ?? null}
                 nextModuleId={nav?.nextModuleId ?? null}
-                canGoNext={canUnlockAll ? true : moduleComplete} // ✅ admins can always go next
+                canGoNext={canUnlockAll ? true : moduleComplete}
             />
         </div>
     );
+
 }

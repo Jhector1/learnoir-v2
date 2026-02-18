@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hasReviewModule } from "@/lib/review/registry";
+import { hasReviewModule } from "@/lib/subjects/registry";
 
 function jsonOk(data: any) {
   return NextResponse.json(data, { status: 200 });

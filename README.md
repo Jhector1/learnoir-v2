@@ -238,7 +238,7 @@ export default function DifficultyPicker() {
 }
 EOF
 
-cat > src/components/practice/ExerciseRenderer/index.tsx << "EOF"
+cat > src/components/practice/ExerciseRenderer/index.ts << "EOF"
 export default function ExerciseRenderer() {
   return <div>ExerciseRenderer</div>;
 }

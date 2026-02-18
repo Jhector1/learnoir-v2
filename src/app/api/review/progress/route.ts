@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { attachGuestCookie, actorKeyOf, ensureGuestId, getActor } from "@/lib/practice/actor";
-import type { ReviewProgressState } from "@/lib/review/progressTypes";
+import type { ReviewProgressState } from "@/lib/subjects/progressTypes";
 
 function jsonOk(data: any) {
   return NextResponse.json(data, { status: 200 });

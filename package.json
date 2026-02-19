@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@prisma/adapter-pg": "^7.4.0",
+    "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/p5": "^1.7.7",

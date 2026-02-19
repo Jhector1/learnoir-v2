@@ -50,11 +50,11 @@ export const PY_WORKSPACE_SECTION: Record<string, SketchEntry> = {
             bodyMarkdown: String.raw`
 Before we go further, I want to take some time to make you familiar with your workspace.
 
-Let’s start on the **left side**: there is your **module sidebar**. You can navigate between sections there by clicking those div-shaped buttons.
+Let’s start on the **left side**: there is your **module sidebar**. You can navigate between sections there by selecting one of the tiles.
 
-On the **right**, you have your **code editor**. Some people call this an IDE, but I prefer calling this web version a **code editor** because it’s not a full IDE—still, it’s enough to help you learn Python with all the necessary tools you need.
+On the **right**, you have your **code editor**. Some people call this an IDE(Integrated Development Environment), but I prefer calling this web version a **code editor** because it’s not a full IDE—still, it’s enough to help you learn Python with all the necessary tools you need.
 
-Now take a look at the layout. Click the **Run** button on the **top right corner** of your screen and confirm the text **"Hello from Python!"** is printed on the console.
+Now take a look at the layout. Click the **Run** button on the **top right corner** of your screen and confirm the text **"Hello from Python!"** is printed on the terminal.
 
 Congratulations — you just learned how to execute your code and display the output on the terminal.
 

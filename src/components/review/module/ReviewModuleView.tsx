@@ -311,7 +311,7 @@ export default function ReviewModuleView({
         if (!tid) return cancelPendingChange();
 
         setProgress((p: any) => {
-            const nextTopics = { ...(p.topics ?? {}) };
+            const nextTopics = {...(p.topics ?? {})};
             const cur = nextTopics[tid] ?? {};
             const nextTopicV = (cur.quizVersion ?? 0) + 1;
 
@@ -326,7 +326,7 @@ export default function ReviewModuleView({
                 completedAt: undefined,
             };
 
-            const next = { ...p, topics: nextTopics };
+            const next = {...p, topics: nextTopics};
             flushNow(next);
             return next;
         });
@@ -411,8 +411,8 @@ export default function ReviewModuleView({
             ensureVisible={() => {
                 if (panels.rightCollapsed) panels.setRightCollapsed(false);
             }}
-            onBindToToolsPanel={({ id, lang, code, stdin, onPatch }) => {
-                tool.bindCodeInput({ id, lang, code, stdin, onPatch });
+            onBindToToolsPanel={({id, lang, code, stdin, onPatch}) => {
+                tool.bindCodeInput({id, lang, code, stdin, onPatch});
             }}
             onUnbindFromToolsPanel={() => tool.unbindCodeInput()}
         >
@@ -631,9 +631,11 @@ export default function ReviewModuleView({
                                     })}
                                 </div>
 
-                                {/*{viewIsComplete ? (*/}
-                                {/*    <TopicOutro topic={viewTopic} onContinue={nextTopic?.id ? goNextTopic : undefined}/>*/}
-                                {/*) : null}*/}
+                                {viewIsComplete ? (
+                                    <div   className={"mt-3"}>
+                                        <TopicOutro topic={viewTopic}
+                                                    onContinue={nextTopic?.id ? goNextTopic : undefined}/>
+                                    </div>) : null}
                             </TopicShell>
 
                             {isLastModule ? (
@@ -692,7 +694,6 @@ export default function ReviewModuleView({
                                     tool.saveDebounced(tool.toolLang, tool.toolCode, s);
                                 }}
                             />
-
 
 
                         </aside>

@@ -64,14 +64,14 @@ export default function ToolsPanel({
                         )}
                     </div>
 
-                    <button
-                        type="button"
-                        className="ui-btn ui-btn-secondary px-3 py-2 text-[11px] font-extrabold"
-                        onClick={onCollapse}
-                        title="Collapse tools"
-                    >
-                        ▶
-                    </button>
+                    {/*<button*/}
+                    {/*    type="button"*/}
+                    {/*    className="ui-btn ui-btn-secondary px-3 py-2 text-[11px] font-extrabold"*/}
+                    {/*    onClick={onCollapse}*/}
+                    {/*    title="Collapse tools"*/}
+                    {/*>*/}
+                    {/*    ▶*/}
+                    {/*</button>*/}
                 </div>
             </div>
 

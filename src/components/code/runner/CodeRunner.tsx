@@ -1,18 +1,18 @@
 // src/components/code/runner/CodeRunner.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useTheme } from "next-themes";
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import {useTheme} from "next-themes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
-import type { Lang } from "@/lib/code/runCode";
+import type {Lang} from "@/lib/code/runCode";
 
-import { DEFAULT_CODE, DEFAULT_LANGS } from "./constants";
-import { isControlled, type CodeRunnerProps, type TerminalDock } from "./types";
+import {DEFAULT_CODE, DEFAULT_LANGS} from "./constants";
+import {isControlled, type CodeRunnerProps, type TerminalDock} from "./types";
 import HeaderBar from "./components/HeaderBar";
 import EditorPane from "./components/EditorPane";
 import TerminalPane from "./components/TerminalPane";
-import { useSplitSizing } from "./hooks/useSplitSizing";
-import { useTerminalRunner } from "./hooks/useTerminalRunner";
+import {useSplitSizing} from "./hooks/useSplitSizing";
+import {useTerminalRunner} from "./hooks/useTerminalRunner";
 
 export default function CodeRunner(props: CodeRunnerProps) {
     const {
@@ -46,7 +46,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
     const controlled = isControlled(props);
 
     // ---------- theme aware Monaco ----------
-    const { resolvedTheme } = useTheme();
+    const {resolvedTheme} = useTheme();
     const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
 
     useEffect(() => {
@@ -101,7 +101,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
         requestAnimationFrame(() => {
             try {
                 ed.layout?.();
-            } catch {}
+            } catch {
+            }
         });
     };
 
@@ -152,35 +153,35 @@ export default function CodeRunner(props: CodeRunnerProps) {
     return (
         <div className={outerCls}>
             {showHeaderBar ? (
-                <div className="relative z-20 overflow-visible">
-                <HeaderBar
-                    title={title}
-                    disabled={disabled}
-                    busy={term.busy}
-                    editorTheme={editorTheme}
-                    onToggleTheme={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
-                    showEditorThemeToggle={showEditorThemeToggleUI}
-                    dock={dock}
-                    onToggleDock={() => setDock(dock === "bottom" ? "right" : "bottom")}
-                    showDockToggle={showDockToggleUI}
-                    showPicker={showPickerUI}
-                    allowedLangs={allowedLangs}
-                    lang={lang}
-                    onSwitchLang={onSwitchLang}
-                    allowReset={allowReset}
-                    onReset={() => {
-                        setCode(DEFAULT_CODE[lang]);
-                        term.resetTerminal();
-                    }}
-                    allowRun={allowRun}
-                    onRun={term.startRun}
-                />
+                <div className="relative z-20 overflow-visible @container">
+                    <HeaderBar
+                        title={title}
+                        disabled={disabled}
+                        busy={term.busy}
+                        editorTheme={editorTheme}
+                        onToggleTheme={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
+                        showEditorThemeToggle={showEditorThemeToggleUI}
+                        dock={dock}
+                        onToggleDock={() => setDock(dock === "bottom" ? "right" : "bottom")}
+                        showDockToggle={showDockToggleUI}
+                        showPicker={showPickerUI}
+                        allowedLangs={allowedLangs}
+                        lang={lang}
+                        onSwitchLang={onSwitchLang}
+                        allowReset={allowReset}
+                        onReset={() => {
+                            setCode(DEFAULT_CODE[lang]);
+                            term.resetTerminal();
+                        }}
+                        allowRun={allowRun}
+                        onRun={term.startRun}
+                    />
                 </div>
             ) : null}
 
             {showHint && hintMarkdown ? (
                 <div className={frame === "plain" ? "mt-3" : "ui-soft mt-3 p-3"}>
-                    <MathMarkdown className="ui-math" content={hintMarkdown} />
+                    <MathMarkdown className="ui-math" content={hintMarkdown}/>
                 </div>
             ) : null}
 
@@ -188,7 +189,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                 <div
                     ref={mainRef}
                     // ✅ FIX: the split region height is fixed, so dragging doesn’t change total height
-                    style={{ height }}
+                    style={{height}}
                     className={[
                         "relative z-0",              // ✅ add
 
@@ -241,7 +242,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                     {showEditor && showTerminal ? (
                         dock === "bottom" ? (
                             <div className="flex h-full flex-col min-h-0">
-                                <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                                <div
+                                    className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
                                         code={code}
@@ -262,7 +264,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                     title="Drag to resize terminal"
                                 />
 
-                                <div className="min-h-0 p-3" style={{ height: split.bottomTermH }}>
+                                <div className="min-h-0 p-3" style={{height: split.bottomTermH}}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}
@@ -282,7 +284,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                             </div>
                         ) : (
                             <div className="flex h-full min-h-0">
-                                <div className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                                <div
+                                    className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
                                         code={code}
@@ -303,7 +306,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                     title="Drag to resize terminal"
                                 />
 
-                                <div className="min-w-0 p-3" style={{ width: split.termW, height: split.rightTotalH }}>
+                                <div className="min-w-0 p-3" style={{width: split.termW, height: split.rightTotalH}}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}

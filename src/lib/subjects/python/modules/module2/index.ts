@@ -41,14 +41,7 @@ export const pythonPart1Module: ReviewModule = {
 
         PY_WORKSPACE_TOPICS,
 
-        PY_VARIABLES_TYPES_TOPICS,
-        PY_OPERATORS_EXPRESSIONS_TOPICS,
 
-        PY_STRING_BASICS_TOPICS,
-        PY_INPUT_OUTPUT_PATTERNS_TOPICS,
-        PY_CONDITIONALS_TOPICS,
-        PY_LOOPS_TOPICS,
-        PY_LISTS_TOPICS,
 
 
 

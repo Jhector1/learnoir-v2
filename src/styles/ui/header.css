@@ -148,7 +148,7 @@
 
   /* Wrap any button/content that should show a tooltip on hover/focus */
   .ui-tipwrap {
-    @apply relative overflow-visible group;
+    @apply relative overflow-visible;
   }
 
   /* Tooltip bubble (ONLY on xs; hidden on sm+) */

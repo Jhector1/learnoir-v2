@@ -252,7 +252,44 @@
       transparent
     );
   }
+
+  /* =========================
+     * Tooltips (icon-only on xs)
+     * ========================= */
+
+  /* Wrap any button/content that should show a tooltip on hover/focus */
+  .ui-tipwrap {
+    @apply relative overflow-visible group;
+  }
+
+  /* Tooltip bubble (ONLY on xs; hidden on sm+) */
+  .ui-tip {
+    @apply pointer-events-none absolute left-1/2 top-full z-50 mt-2;
+    @apply -translate-x-1/2 whitespace-nowrap;
+    @apply rounded-2xl border px-2 py-1 text-[11px] font-extrabold shadow-lg;
+    @apply opacity-0 translate-y-1 transition;
+    @apply border-neutral-200 bg-white text-neutral-800;
+    @apply dark:border-white/10 dark:bg-black/80 dark:text-white/90;
+    @apply sm:hidden; /* ✅ only show tooltip in icon-only breakpoint */
+  }
+
+  /* Show on hover/focus */
+  .ui-tipwrap:hover .ui-tip,
+  .ui-tipwrap:focus-within .ui-tip,
+  .ui-tipwrap:focus-visible .ui-tip {
+    @apply opacity-100 translate-y-0;
+  }
+
+  /* Optional: don't show tooltips on touch-only devices */
+  @media (hover: none) {
+    .ui-tip {
+      display: none;
+    }
+  }
+
+
 }
+
 @layer components {
   /* =========================
    * Layout
@@ -476,4 +513,32 @@
   .dark .ui-section-subtitle {
     @apply text-white/70;
   }
-}
+}@layer components {
+   /* =========================
+    * Portal Tooltip (theme-aware)
+    * ========================= */
+   .ui-tooltip {
+     @apply pointer-events-none fixed z-[9999];
+     @apply rounded-2xl border px-2 py-1;
+     @apply text-[11px] font-extrabold shadow-lg;
+     @apply border-neutral-200 bg-white text-neutral-800;
+   }
+
+   .dark .ui-tooltip {
+     @apply border-white/10 bg-black/80 text-white/90;
+   }
+
+   .ui-tooltip-arrow {
+     @apply absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45;
+     @apply border border-neutral-200 bg-white;
+   }
+
+   .dark .ui-tooltip-arrow {
+     @apply border-white/10 bg-black/80;
+   }
+
+   .ui-tooltip--xs-only {
+     @apply sm:hidden; /* optional: only show tooltip on xs */
+   }
+ }
+

@@ -31,7 +31,7 @@ You’ll often see \`print(...)\`.
 For now, don’t worry about what it “is” officially.
 Just treat \`print(...)\` like a **screen display**:
 
-> Whatever you put inside gets shown in the terminal output.
+> Whatever you put inside and clicked the run button, gets shown in the terminal output.
 
 (We’ll explain these “tools with parentheses” later.)
 
@@ -194,9 +194,9 @@ nickname = None
 
 ---
 
-## Tiny heads-up: checking the type
+## Heads-up: checking the type
 
-You might see \`type(...)\`.
+When you see the function \`type(...)\`.
 
 For now, treat it like a **label-checker**:
 it looks in the box and tells you what kind of value is inside.
@@ -244,7 +244,7 @@ b = "5"
 print(a + b)  # "105"
 ~~~
 
-That’s not math — it’s **string joining**.
+That’s not math — it’s **string joining** or precisely **string concatenation**.
 
 ---
 
@@ -274,7 +274,7 @@ Here’s a classic beginner surprise.
 
 ---
 
-## Tiny heads-up: \`input(...)\` asks the user a question
+## Heads-up: \`input(...)\` asks the user a question
 
 You’ll see \`input("...")\`.
 

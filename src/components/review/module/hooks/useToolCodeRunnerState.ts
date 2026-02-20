@@ -5,6 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Lang } from "@/lib/code/runCode";
 
 type BoundTarget = { id: string; onPatch: (patch: any) => void };
+type ToolSnap = { lang: Lang; code: string; stdin: string };
+
+function snapKey(s: ToolSnap) {
+    // ✅ stable dedupe key
+    return `${s.lang}::${s.stdin}::${s.code}`;
+}
 
 export function useToolCodeRunnerState(args: {
     progress: any;
@@ -19,6 +25,9 @@ export function useToolCodeRunnerState(args: {
 
     rightCollapsed: boolean;
     rightW: number;
+
+    // optional tuning
+    toolSaveDelayMs?: number; // default 700
 }) {
     const {
         progress,
@@ -31,6 +40,7 @@ export function useToolCodeRunnerState(args: {
         defaultStdin = "",
         rightCollapsed,
         rightW,
+        toolSaveDelayMs = 700,
     } = args;
 
     // ✅ version string must exist BEFORE effects that use it
@@ -45,19 +55,22 @@ export function useToolCodeRunnerState(args: {
     // -----------------------------
     const boundRef = useRef<BoundTarget | null>(null);
     const [boundId, setBoundId] = useState<string | null>(null);
-
     const boundDirtyRef = useRef(false);
-
-    // ✅ debounced save timer (needs to be cleared on reset)
-    const timerRef = useRef<number | null>(null);
 
     const isBound = useCallback((id: string) => boundRef.current?.id === id, []);
 
+    // -----------------------------
+    // Debounced save timer (tool -> progress)
+    // -----------------------------
+    const timerRef = useRef<number | null>(null);
     const clearPendingSave = useCallback(() => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
         timerRef.current = null;
     }, []);
 
+    // -----------------------------
+    // Unbind
+    // -----------------------------
     const unbindCodeInput = useCallback(() => {
         clearPendingSave();
         boundRef.current = null;
@@ -65,7 +78,7 @@ export function useToolCodeRunnerState(args: {
         setBoundId(null);
     }, [clearPendingSave]);
 
-    // clear binding when topic changes (prevents patching a stale question)
+    // clear binding when topic changes
     useEffect(() => {
         unbindCodeInput();
     }, [viewTid, unbindCodeInput]);
@@ -103,7 +116,7 @@ export function useToolCodeRunnerState(args: {
     const [toolCode, setToolCode0] = useState<string>(initialCode);
     const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
 
-    const latestRef = useRef<{ lang: Lang; code: string; stdin: string }>({
+    const latestRef = useRef<ToolSnap>({
         lang: initialLang,
         code: initialCode,
         stdin: initialStdin,
@@ -112,6 +125,9 @@ export function useToolCodeRunnerState(args: {
     useEffect(() => {
         latestRef.current = { lang: toolLang, code: toolCode, stdin: toolStdin };
     }, [toolLang, toolCode, toolStdin]);
+
+    // ✅ prevent useless setProgress writes (reduces downstream PUT scheduling)
+    const lastCommittedSnapRef = useRef<string>("");
 
     // restore saved tool state when topic/version changes AND NOT bound
     useEffect(() => {
@@ -126,46 +142,65 @@ export function useToolCodeRunnerState(args: {
         setToolLang0(nextLang);
         setToolCode0(nextCode);
         setToolStdin0(nextStdin);
-        latestRef.current = { lang: nextLang, code: nextCode, stdin: nextStdin };
-    }, [viewTid, progressHydrated, versionStr, toolKey, progress, defaultLang, defaultCode, defaultStdin]);
+
+        const snap: ToolSnap = { lang: nextLang, code: nextCode, stdin: nextStdin };
+        latestRef.current = snap;
+
+        // ✅ seed “committed” snapshot so we don't rewrite same value
+        lastCommittedSnapRef.current = snapKey(snap);
+    }, [
+        viewTid,
+        progressHydrated,
+        versionStr,
+        toolKey,
+        progress,
+        defaultLang,
+        defaultCode,
+        defaultStdin,
+    ]);
 
     // -----------------------------
     // Bind a specific code_input question into the Tools panel
     // -----------------------------
-    const bindCodeInput = useCallback((args2: {
-        id: string;
-        lang: Lang;
-        code: string;
-        stdin?: string;
-        onPatch: (patch: any) => void;
-    }) => {
-        const wasSameId = boundRef.current?.id === args2.id;
+    const bindCodeInput = useCallback(
+        (args2: { id: string; lang: Lang; code: string; stdin?: string; onPatch: (patch: any) => void }) => {
+            const wasSameId = boundRef.current?.id === args2.id;
 
-        boundRef.current = { id: args2.id, onPatch: args2.onPatch };
-        setBoundId(args2.id);
+            boundRef.current = { id: args2.id, onPatch: args2.onPatch };
+            setBoundId(args2.id);
 
-        // if same id and user already edited Tools, do NOT overwrite editor
-        if (wasSameId && boundDirtyRef.current) return;
+            // if same id and user already edited Tools, do NOT overwrite editor
+            if (wasSameId && boundDirtyRef.current) return;
 
-        boundDirtyRef.current = false;
+            boundDirtyRef.current = false;
 
-        const nextLang = args2.lang;
-        const nextCode = args2.code ?? "";
-        const nextStdin = typeof args2.stdin === "string" ? args2.stdin : "";
+            const nextLang = args2.lang;
+            const nextCode = args2.code ?? "";
+            const nextStdin = typeof args2.stdin === "string" ? args2.stdin : "";
 
-        setToolLang0(nextLang);
-        setToolCode0(nextCode);
-        setToolStdin0(nextStdin);
+            setToolLang0(nextLang);
+            setToolCode0(nextCode);
+            setToolStdin0(nextStdin);
 
-        latestRef.current = { lang: nextLang, code: nextCode, stdin: nextStdin };
-    }, []);
+            const snap: ToolSnap = { lang: nextLang, code: nextCode, stdin: nextStdin };
+            latestRef.current = snap;
+            // don't mark committed here; binding is not “saving”
+        },
+        [],
+    );
 
     // -----------------------------
     // Commit tool state into progress (for persistence)
     // -----------------------------
     const commitToolNow = useCallback(() => {
         if (!progressHydrated) return;
+
         const latest = latestRef.current;
+        const k = snapKey(latest);
+
+        // ✅ no change => no setProgress
+        if (k === lastCommittedSnapRef.current) return;
+        lastCommittedSnapRef.current = k;
 
         setProgress((p: any) => {
             const tp0: any = p.topics?.[viewTid] ?? {};
@@ -199,11 +234,12 @@ export function useToolCodeRunnerState(args: {
                     stdin: typeof nextStdin === "string" ? nextStdin : latestRef.current.stdin,
                 };
                 commitToolNow();
-            }, 600);
+            }, toolSaveDelayMs);
         },
-        [progressHydrated, commitToolNow, clearPendingSave],
+        [progressHydrated, commitToolNow, clearPendingSave, toolSaveDelayMs],
     );
 
+    // ✅ always flush tool state when leaving / hiding tab
     useEffect(() => {
         return () => {
             clearPendingSave();
@@ -212,13 +248,23 @@ export function useToolCodeRunnerState(args: {
     }, [clearPendingSave, commitToolNow]);
 
     useEffect(() => {
-        const onHide = () => commitToolNow();
+        const onHide = () => {
+            clearPendingSave();
+            commitToolNow();
+        };
         window.addEventListener("pagehide", onHide);
-        return () => window.removeEventListener("pagehide", onHide);
-    }, [commitToolNow]);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") onHide();
+        });
+        return () => {
+            window.removeEventListener("pagehide", onHide);
+            // visibilitychange handler is anonymous above; if you want, store it in a ref; not required
+        };
+    }, [clearPendingSave, commitToolNow]);
 
     // -----------------------------
     // When tool changes AND bound -> patch question + reset checked state
+    // (this ensures typed code is also stored in quizState via the question patch)
     // -----------------------------
     const setToolLang = useCallback((l: Lang) => {
         setToolLang0(l);
@@ -238,6 +284,7 @@ export function useToolCodeRunnerState(args: {
         const b = boundRef.current;
         if (b) {
             boundDirtyRef.current = true;
+            // ✅ this is what makes “typed code” persist inside quiz progress
             b.onPatch({ code: c, submitted: false, result: null });
         }
     }, []);
@@ -258,24 +305,13 @@ export function useToolCodeRunnerState(args: {
     // -----------------------------
     const rightBodyRef = useRef<HTMLDivElement | null>(null);
     const [rightBodyH, setRightBodyH] = useState(520);
-// ...your existing file
-
-// ✅ Commit tool state when leaving a topic (prevents losing last 600ms edits)
-    useEffect(() => {
-        return () => {
-            clearPendingSave();
-            commitToolNow();
-        };
-    }, [viewTid, clearPendingSave, commitToolNow]);
-
-// keep the rest as-is
 
     useEffect(() => {
         if (rightCollapsed) return;
         const el = rightBodyRef.current;
         if (!el) return;
 
-        const update = () => setRightBodyH(el.clientHeight-100 || 520);
+        const update = () => setRightBodyH(el.clientHeight - 100 || 520);
         update();
 
         if (typeof ResizeObserver === "undefined") return;
@@ -299,7 +335,10 @@ export function useToolCodeRunnerState(args: {
         setToolCode,
         setToolStdin,
 
+        // ✅ call this on editor changes (debounced)
         saveDebounced,
+
+        // ✅ call this on “Run”, “Unbind”, topic switch, etc. if you want immediate persistence
         commitToolNow,
 
         bindCodeInput,

@@ -1,6 +1,7 @@
+// src/components/review/quiz/quiz/components/QuizPracticeCard.tsx
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import type { ReviewQuestion } from "@/lib/subjects/types";
 import type { PracticeState } from "@/components/review/quiz/hooks/useQuizPracticeBank";
 import { isEmptyPracticeAnswer } from "@/components/review/quiz/hooks/useQuizPracticeBank";
@@ -13,14 +14,21 @@ import { useReviewTools } from "@/components/review/module/context/ReviewToolsCo
 export default function QuizPracticeCard(props: {
   q: Extract<ReviewQuestion, { kind: "practice" }>;
   ps?: PracticeState;
+
   unlocked: boolean;
   isCompleted: boolean;
   locked: boolean;
   unlimitedAttempts: boolean;
+  strictSequential: boolean;
+
+  /** Global deterministic order across topic page */
+  seqOrder: number;
+
   padRef: React.MutableRefObject<VectorPadState>;
   onUpdateItem: (patch: any) => void;
   onSubmit: () => void;
   onReveal: () => void;
+
   excused?: boolean;
   onExcused?: () => void;
 }) {
@@ -31,6 +39,8 @@ export default function QuizPracticeCard(props: {
     isCompleted,
     locked,
     unlimitedAttempts,
+    strictSequential,
+    seqOrder,
     padRef,
     onUpdateItem,
     onSubmit,
@@ -59,44 +69,45 @@ export default function QuizPracticeCard(props: {
   }, [ps?.exercise, ps?.item, padRef]);
 
   const revealed = Boolean(ps?.item?.revealed);
+  const excused = Boolean(props.excused);
 
-  /**
-   * ✅ Auto-bind NEXT code_input only when ok transitions -> true
-   * - avoids auto-next on mount when ps.ok already true (saved progress)
-   * - works after reset because ok will transition again
-   * - only advances when tools are currently bound to THIS question
-   */
-  const prevOkRef = useRef<boolean | null>(null);
-  const initOkRef = useRef(false);
-
-  useEffect(() => {
-    prevOkRef.current = null;
-    initOkRef.current = false;
-  }, [q.id]);
-
+  // ✅ Deterministic binding: report status to provider
   useEffect(() => {
     if (!tools) return;
     if (!ps?.exercise) return;
     if (ps.exercise.kind !== "code_input") return;
 
-    const curOk = ps.ok === true ? true : ps.ok === false ? false : null;
+    // "done" for binding:
+    // - ok === true: completed
+    // - excused: skip
+    // - non-strict + outOfAttempts: you are allowed to proceed -> treat as flow-done
+    const doneForFlow =
+        ps.ok === true || excused || (!strictSequential && outOfAttempts);
 
-    // baseline first observation (prevents mount auto-next)
-    if (!initOkRef.current) {
-      prevOkRef.current = curOk;
-      initOkRef.current = true;
-      return;
-    }
+    const eligible =
+        unlocked &&
+        !locked &&
+        !isCompleted &&
+        !excused; // (even if outOfAttempts, we treat doneForFlow above)
 
-    const prevOk = prevOkRef.current;
-    prevOkRef.current = curOk;
-
-    // transition into correct
-    if (prevOk !== true && curOk === true) {
-      if (tools.boundId !== q.id) return; // only if bound to THIS
-      tools.requestBindNext(q.id);
-    }
-  }, [tools, ps?.exercise, ps?.ok, q.id]);
+    tools.setCodeInputMeta(q.id, {
+      order: seqOrder,
+      eligible,
+      done: doneForFlow,
+    });
+  }, [
+    tools,
+    q.id,
+    ps?.exercise,
+    ps?.ok,
+    unlocked,
+    locked,
+    isCompleted,
+    excused,
+    strictSequential,
+    outOfAttempts,
+    seqOrder,
+  ]);
 
   const disableCheck =
       !unlocked ||
@@ -106,7 +117,7 @@ export default function QuizPracticeCard(props: {
       outOfAttempts ||
       ps?.ok === true ||
       !hasInput ||
-      Boolean(props.excused);
+      excused;
 
   const disableReveal =
       !unlocked ||
@@ -114,10 +125,9 @@ export default function QuizPracticeCard(props: {
       locked ||
       ps?.ok === true ||
       (ps?.busy ?? false) ||
-      Boolean(props.excused);
+      excused;
 
-  const disableSkip =
-      !unlocked || isCompleted || locked || Boolean(props.excused) || ps?.ok === true;
+  const disableSkip = !unlocked || isCompleted || locked || excused || ps?.ok === true;
 
   const btnLabel = ps?.busy ? (
       <span className="inline-flex items-center gap-2">

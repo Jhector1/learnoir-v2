@@ -47,6 +47,13 @@ export function useReviewProgress(args: {
   const putAbortRef = useRef<AbortController | null>(null);
   const putTimerRef = useRef<number | null>(null);
 
+  const cancelPendingPut = useCallback(() => {
+    if (putTimerRef.current) window.clearTimeout(putTimerRef.current);
+    putTimerRef.current = null;
+    putAbortRef.current?.abort();
+    putAbortRef.current = null;
+  }, []);
+
   const putProgressNow = useCallback(
       async (state: ReviewProgressState) => {
         if (!subjectSlug || !moduleId) return;
@@ -60,10 +67,11 @@ export function useReviewProgress(args: {
 
         const body = stableJson(payload);
 
-        // mark as latest (prevents immediate duplicate sends)
+        // ✅ hard dedupe (prevents multiple exit signals spamming)
+        if (body === lastSentHashRef.current) return;
         lastSentHashRef.current = body;
 
-        // best-effort reliable on refresh/navigation
+        // try beacon first
         if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
           try {
             const blob = new Blob([body], { type: "application/json" });
@@ -118,7 +126,7 @@ export function useReviewProgress(args: {
         setActiveTopicId(nextActive);
         setViewTopicId(nextActive);
 
-        // seed hash so we don't immediately PUT what we just loaded
+        // seed hash to avoid immediate PUT of loaded state
         lastSentHashRef.current = stableJson({
           subjectSlug,
           moduleId,
@@ -194,34 +202,41 @@ export function useReviewProgress(args: {
     };
   }, [progress, activeTopicId, subjectSlug, moduleId, locale, hydrated]);
 
-  // ---- flush on refresh/tab-close/navigation-away ----
+  // ---- flush on exit (ONLY ONCE) ----
   useEffect(() => {
     if (!hydrated) return;
 
-    const flush = () => putProgressNow(progressRef.current);
+    const flushedRef = { current: false };
 
-    const onVis = () => {
-      if (document.visibilityState === "hidden") flush();
+    const flushOnce = () => {
+      if (flushedRef.current) return;
+      flushedRef.current = true;
+
+      // prevent trailing debounced PUT
+      cancelPendingPut();
+
+      void putProgressNow(progressRef.current);
     };
 
-    window.addEventListener("pagehide", flush);
-    window.addEventListener("beforeunload", flush);
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flushOnce();
+    };
+
+    window.addEventListener("pagehide", flushOnce);
     document.addEventListener("visibilitychange", onVis);
 
     return () => {
-      window.removeEventListener("pagehide", flush);
-      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flushOnce);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [hydrated, putProgressNow]);
+  }, [hydrated, putProgressNow, cancelPendingPut]);
 
   // cleanup
   useEffect(() => {
     return () => {
-      if (putTimerRef.current) window.clearTimeout(putTimerRef.current);
-      putAbortRef.current?.abort();
+      cancelPendingPut();
     };
-  }, []);
+  }, [cancelPendingPut]);
 
   return {
     hydrated,

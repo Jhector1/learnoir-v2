@@ -405,6 +405,8 @@ export default function ReviewModuleView({
     return (
         <ReviewToolsProvider
             autoBindFirst
+            mode="first_unanswered"          // ✅ IMPORTANT
+
             resetKey={`${viewTid}:${versionStr}`}   // ✅ NEW
 
             externalBoundId={tool.boundId}
@@ -536,7 +538,7 @@ export default function ReviewModuleView({
                                 {/*<TopicIntro topic={viewTopic}/>*/}
 
                                 <div key={topicRenderKey} className="grid gap-3">
-                                    {viewCards.map((card) => {
+                                    {viewCards.map((card, cardIndex) => {
                                         const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
                                         const done =
                                             card.type === "quiz" ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
@@ -555,6 +557,8 @@ export default function ReviewModuleView({
                                                 key={card.id}
                                                 card={card}
                                                 done={done}
+                                                cardIndex={cardIndex} // ✅ NEW
+
                                                 prereqsMet={prereqsMet}
                                                 progressHydrated={progressHydrated}
                                                 savedQuiz={progressHydrated ? savedQuiz : null}

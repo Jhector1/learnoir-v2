@@ -24,24 +24,25 @@ import QuizLocalCard from "./quiz/components/QuizLocalCard";
 import QuizFooter from "./quiz/components/QuizFooter";
 
 export default function QuizBlock({
-  prereqsMet = true,
-  quizId,
-  spec,
-  quizKey,
-  passScore,
-  onPass,
-  sequential = true,
-  unlimitedAttempts = true,
+                                    prereqsMet = true,
+                                    quizId,
+                                    spec,
+                                    quizKey,
+                                    passScore,
+                                    onPass,
+                                    sequential = true,
+                                    unlimitedAttempts = true,
+                                    initialState,
+                                    onStateChange,
+                                    isCompleted = false,
+                                    quizCardId,
+                                    locked = false,
+                                    strictSequential = false,
+                                    onReset,
 
-  initialState,
-  onStateChange,
-
-  isCompleted = false,
-  quizCardId,
-  locked = false,
-                                    strictSequential=false,
-  onReset,
-}: {
+                                    /** NEW: deterministic ordering across topic page */
+                                    orderBase = 0,
+                                  }: {
   prereqsMet?: boolean;
   quizId: string;
   spec: ReviewQuizSpec;
@@ -57,50 +58,33 @@ export default function QuizBlock({
   isCompleted?: boolean;
   quizCardId?: string;
   locked?: boolean;
-  strictSequential?: boolean; // default false
+  strictSequential?: boolean;
 
   onReset?: () => void;
+
+  orderBase?: number;
 }) {
   const initState = initialState ?? null;
 
-  // const stableQuizKey = useMemo(() => {
-  //   if (quizKey?.trim()) return quizKey.trim();
-  //   return buildReviewQuizKey(spec, quizCardId ?? quizId, 0);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [
-  //   quizKey,
-  //   quizId,
-  //   quizCardId,
-  //   spec.subject,
-  //   spec.module,
-  //   spec.section,
-  //   spec.topic,
-  //   spec.difficulty,
-  //   spec.n,
-  //   (spec as any).allowReveal,
-  //   (spec as any).preferKind,
-  //   (spec as any).maxAttempts,
-  // ]);
-const stableQuizKeyRef = useRef<string>("");
+  const stableQuizKeyRef = useRef<string>("");
+  if (!stableQuizKeyRef.current) {
+    stableQuizKeyRef.current = quizKey?.trim()
+        ? quizKey.trim()
+        : buildReviewQuizKey(spec, quizCardId ?? quizId, 0);
+  }
+  const stableKey = stableQuizKeyRef.current;
 
-if (!stableQuizKeyRef.current) {
-  stableQuizKeyRef.current = quizKey?.trim()
-    ? quizKey.trim()
-    : buildReviewQuizKey(spec, quizCardId ?? quizId, 0); // or 1 if you prefer
-}
-
-const stableKey = stableQuizKeyRef.current;
-
-const [reloadNonce, setReloadNonce] = useState(0);
-const resetKey = `${stableKey}:${reloadNonce}`;
+  const [reloadNonce, setReloadNonce] = useState(0);
+  const resetKey = `${stableKey}:${reloadNonce}`;
 
   const { quizLoading, quizError, questions, serverQuizKey } =
-    useReviewQuizQuestions({
-      quizId,
-      spec,
-      stableQuizKey:stableKey,
-      reloadNonce,
-    });
+      useReviewQuizQuestions({
+        quizId,
+        spec,
+        stableQuizKey: stableKey,
+        reloadNonce,
+      });
+
   const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -108,13 +92,9 @@ const resetKey = `${stableKey}:${reloadNonce}`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  // useEffect(() => {
-  //   // reset when quiz resets
-  //   setExcusedById({});
-  // }, [resetKey]);
   const isExcused = useCallback(
-    (qid: string) => Boolean(excusedById[qid]),
-    [excusedById],
+      (qid: string) => Boolean(excusedById[qid]),
+      [excusedById],
   );
 
   const local = useQuizLocalAnswers();
@@ -154,20 +134,17 @@ const resetKey = `${stableKey}:${reloadNonce}`;
   }
 
   function isQuestionChecked(q: ReviewQuestion): boolean {
-    // ✅ excused bypass (system error)
     if (isExcused(q.id)) return true;
     if (q.kind === "practice") return practiceBank.isPracticeChecked(q);
     return Boolean(local.checkedById[q.id]);
   }
 
   function isUnlocked(index: number): boolean {
-
     if (!prereqsMet) return false;
     if (!sequential) return true;
     if (index === 0) return true;
 
     const prev = questions[index - 1];
-    // ✅ excused bypass (system error)
     if (isExcused(prev.id)) return true;
 
     const ok = getQuestionOk(prev) === true;
@@ -175,7 +152,6 @@ const resetKey = `${stableKey}:${reloadNonce}`;
     if (!ok) {
       if (strictSequential) return false;
 
-      // old quiz behavior (optional)
       if (prev.kind === "practice") {
         const ps = practiceBank.practice[prev.id];
         const outOfAttempts =
@@ -184,7 +160,6 @@ const resetKey = `${stableKey}:${reloadNonce}`;
       }
     }
     return ok;
-
   }
 
   const summary = useMemo(() => {
@@ -198,7 +173,7 @@ const resetKey = `${stableKey}:${reloadNonce}`;
 
       if (isExcused(q.id)) {
         excusedCount++;
-        continue; // ✅ excused questions do not affect score
+        continue;
       }
 
       denom++;
@@ -206,9 +181,7 @@ const resetKey = `${stableKey}:${reloadNonce}`;
     }
 
     const allChecked = checkedCount >= questions.length && questions.length > 0;
-
-    const score = denom === 0 ? 1 : correctCount / denom; // ✅ if everything excused, treat as passable
-
+    const score = denom === 0 ? 1 : correctCount / denom;
     const passed = allChecked && (denom === 0 ? true : score >= passScore);
 
     return {
@@ -261,7 +234,7 @@ const resetKey = `${stableKey}:${reloadNonce}`;
       checkedById: local.checkedById,
       practiceItemPatch,
       practiceMeta,
-      excusedById, // ✅ NEW
+      excusedById,
     };
   }, [
     questions,
@@ -273,8 +246,8 @@ const resetKey = `${stableKey}:${reloadNonce}`;
   ]);
 
   const emitState = useCallback(
-    (s: SavedQuizState) => onStateChange?.(s),
-    [onStateChange],
+      (s: SavedQuizState) => onStateChange?.(s),
+      [onStateChange],
   );
 
   const emitter = useDebouncedEmit(nextState, emitState, {
@@ -282,183 +255,172 @@ const resetKey = `${stableKey}:${reloadNonce}`;
     enabled: Boolean(onStateChange && questions.length),
   });
 
-  // useLayoutEffect(() => {
-  //   emitter.prime({
-  //     answers: initState?.answers ?? {},
-  //     checkedById: initState?.checkedById ?? {},
-  //     practiceItemPatch: initState?.practiceItemPatch ?? {},
-  //     practiceMeta: initState?.practiceMeta ?? {},
-  //   } as SavedQuizState);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [resetKey]);
   useLayoutEffect(() => {
     emitter.prime({
       answers: initState?.answers ?? {},
       checkedById: initState?.checkedById ?? {},
       practiceItemPatch: initState?.practiceItemPatch ?? {},
       practiceMeta: initState?.practiceMeta ?? {},
-      excusedById: initState?.excusedById ?? {}, // ✅
+      excusedById: initState?.excusedById ?? {},
     } as SavedQuizState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
   const [confirmResetQuiz, setConfirmResetQuiz] = useState(false);
-async function resetThisQuiz() {
-  const key = (serverQuizKey || stableKey).trim();
-  if (!key) return;
 
-  await fetch(`/api/review/quiz?quizKey=${encodeURIComponent(key)}`, {
-    method: "DELETE",
-    cache: "no-store",
-  });
+  async function resetThisQuiz() {
+    const key = (serverQuizKey || stableKey).trim();
+    if (!key) return;
 
-  onReset?.();
-  local.reset();
-  practiceBank.setPractice({});
-  setExcusedById({});
-  setReloadNonce((n) => n + 1);
-}
+    await fetch(`/api/review/quiz?quizKey=${encodeURIComponent(key)}`, {
+      method: "DELETE",
+      cache: "no-store",
+    });
+
+    onReset?.();
+    local.reset();
+    practiceBank.setPractice({});
+    setExcusedById({});
+    setReloadNonce((n) => n + 1);
+  }
 
   if (quizLoading) {
     return (
-      <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-        Loading quiz…
-      </div>
+        <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
+          Loading quiz…
+        </div>
     );
   }
 
   if (quizError) {
     return (
-      <div className="mt-2 rounded-lg border border-rose-300/20 bg-rose-300/10 p-2 text-xs text-rose-700 dark:text-rose-200/90">
-        {quizError}
-      </div>
+        <div className="mt-2 rounded-lg border border-rose-300/20 bg-rose-300/10 p-2 text-xs text-rose-700 dark:text-rose-200/90">
+          {quizError}
+        </div>
     );
   }
 
   if (!questions.length) {
     return (
-      <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-        No questions.
-      </div>
+        <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
+          No questions.
+        </div>
     );
   }
 
   return (
-    <div className="mt-3 grid gap-3">
-      {questions.map((q, idx) => {
-        const unlocked = isUnlocked(idx);
+      <div className="mt-3 grid gap-3">
+        {questions.map((q, idx) => {
+          const unlocked = isUnlocked(idx);
 
-        if (q.kind === "practice") {
-          const ps = practiceBank.practice[q.id];
-          const pr = practiceBank.getPadRef(q.id);
-          const excused = isExcused(q.id);
+          if (q.kind === "practice") {
+            const ps = practiceBank.practice[q.id];
+            const pr = practiceBank.getPadRef(q.id);
+            const excused = isExcused(q.id);
+
+            return (
+                <QuizPracticeCard
+                    key={q.id}
+                    q={q}
+                    ps={ps}
+                    unlocked={unlocked}
+                    isCompleted={isCompleted}
+                    locked={locked}
+                    unlimitedAttempts={unlimitedAttempts}
+                    strictSequential={strictSequential}
+                    seqOrder={orderBase + idx}
+                    padRef={pr as any}
+                    excused={excused}
+                    onExcused={() => {
+                      const ps0 = practiceBank.practice[q.id];
+                      if (!unlocked) return;
+                      if (!ps0?.error) return;
+                      setExcusedById((prev) => ({ ...prev, [q.id]: true }));
+                    }}
+                    onUpdateItem={(patch) => practiceBank.updatePracticeItem(q.id, patch)}
+                    onSubmit={() => void practiceBank.submitPractice(q)}
+                    onReveal={() => void practiceBank.revealPractice(q)}
+                />
+            );
+          }
+
+          const checked = Boolean(local.checkedById[q.id]);
+          const ok = getQuestionOk(q);
 
           return (
-            <QuizPracticeCard
-              key={q.id}
-              q={q}
-              excused={excused}
-              onExcused={() => {
-                const ps = practiceBank.practice[q.id];
-                if (!unlocked) return;
-                if (!ps?.error) return; // ✅ error-only
-
-                setExcusedById((prev) => ({ ...prev, [q.id]: true }));
-              }}
-              ps={ps}
-              unlocked={unlocked}
-              isCompleted={isCompleted}
-              locked={locked}
-              unlimitedAttempts={unlimitedAttempts}
-              padRef={pr as any}
-              onUpdateItem={(patch) =>
-                practiceBank.updatePracticeItem(q.id, patch)
-              }
-              onSubmit={() => void practiceBank.submitPractice(q)}
-              onReveal={() => void practiceBank.revealPractice(q)}
-            />
+              <QuizLocalCard
+                  prereqsMet={prereqsMet}
+                  key={q.id}
+                  q={q}
+                  unlocked={unlocked}
+                  isCompleted={isCompleted}
+                  locked={locked}
+                  value={local.answers[q.id]}
+                  checked={checked}
+                  ok={ok}
+                  onPick={(val) => local.setAnswer(q.id, val)}
+                  onCheck={() => {
+                    if (isCompleted || locked) return;
+                    local.check(q.id);
+                  }}
+              />
           );
-        }
+        })}
 
-        const checked = Boolean(local.checkedById[q.id]);
-        const ok = getQuestionOk(q);
-        // const excused = isExcused(q.id);
-        return (
-
-          <QuizLocalCard
-          prereqsMet={prereqsMet}
-            key={q.id}
-            q={q}
-            unlocked={unlocked}
+        <QuizFooter
+            checkedCount={summary.checkedCount}
+            correctCount={summary.correctCount}
+            total={summary.total}
+            scorePct={Math.round(summary.score * 100)}
             isCompleted={isCompleted}
-            locked={locked}
-            value={local.answers[q.id]}
-            checked={checked}
-            ok={ok}
-            onPick={(val) => local.setAnswer(q.id, val)}
-            onCheck={() => {
-              if (isCompleted || locked) return;
-              local.check(q.id);
-            }}
-          />
-        );
-      })}
+            passed={summary.passed}
+            sequential={sequential}
+            onResetClick={() => setConfirmResetQuiz(true)}
+        />
 
-      <QuizFooter
-        checkedCount={summary.checkedCount}
-        correctCount={summary.correctCount}
-        total={summary.total}
-        scorePct={Math.round(summary.score * 100)}
-        isCompleted={isCompleted}
-        passed={summary.passed}
-        sequential={sequential}
-        onResetClick={() => setConfirmResetQuiz(true)}
-      />
-
-      {isCompleted ? (
-        <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">
-          ✓ Completed
-        </div>
-      ) : prereqsMet && summary.passed ? (
-        <button
-          type="button"
-          onClick={onPass}
-          className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-500/15 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"
-        >
-          Mark complete
-        </button>
-      ) : null}
-
-     {!isCompleted && summary.allChecked && !prereqsMet ? (
-  <div>Finish “Mark as read” items in this topic first.</div>
-) : null}
-
-
-      <ConfirmDialog
-        open={confirmResetQuiz}
-        onOpenChange={setConfirmResetQuiz}
-        danger
-        title="Reset this quiz?"
-        confirmLabel="Reset quiz"
-        description={
-          <div className="grid gap-2">
-            <div>This will:</div>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Clear your selected answers and checked status.</li>
-              <li>Clear practice attempts and local state for this quiz.</li>
-              <li>
-                Reload the <span className="font-black">same</span> question set
-                (it does <span className="font-black">not</span> generate a new
-                set).
-              </li>
-            </ul>
-            <div className="text-neutral-500 dark:text-white/60 text-xs font-extrabold">
-              This can’t be undone.
+        {isCompleted ? (
+            <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">
+              ✓ Completed
             </div>
-          </div>
-        }
-        onConfirm={resetThisQuiz}
-      />
-    </div>
+        ) : prereqsMet && summary.passed ? (
+            <button
+                type="button"
+                onClick={onPass}
+                className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-500/15 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"
+            >
+              Mark complete
+            </button>
+        ) : null}
+
+        {!isCompleted && summary.allChecked && !prereqsMet ? (
+            <div>Finish “Mark as read” items in this topic first.</div>
+        ) : null}
+
+        <ConfirmDialog
+            open={confirmResetQuiz}
+            onOpenChange={setConfirmResetQuiz}
+            danger
+            title="Reset this quiz?"
+            confirmLabel="Reset quiz"
+            description={
+              <div className="grid gap-2">
+                <div>This will:</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Clear your selected answers and checked status.</li>
+                  <li>Clear practice attempts and local state for this quiz.</li>
+                  <li>
+                    Reload the <span className="font-black">same</span> question set
+                    (it does <span className="font-black">not</span> generate a new
+                    set).
+                  </li>
+                </ul>
+                <div className="text-neutral-500 dark:text-white/60 text-xs font-extrabold">
+                  This can’t be undone.
+                </div>
+              </div>
+            }
+            onConfirm={resetThisQuiz}
+        />
+      </div>
   );
 }

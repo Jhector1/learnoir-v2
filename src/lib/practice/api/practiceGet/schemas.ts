@@ -32,6 +32,9 @@ includeMissed: z.enum(["true", "false"]).optional(),
     .optional(),
 
   salt: z.string().optional(),
+    exerciseKey: z.string().optional(),
+    seedPolicy: z.enum(["actor", "global"]).optional(),
+
 });
 
 export type GetParams = z.infer<typeof GetParamsSchema>;

@@ -226,6 +226,34 @@ export default function CardRenderer(props: {
         </div>
     );
   }
+  if (card.type === "project") {
+    const projectKey = buildReviewQuizKey(card.spec, card.id, versionStr);
+
+    return (
+        <div className={wrapCls}>
+          {card.title ? <div className="text-sm font-black">{card.title}</div> : null}
+
+          <QuizBlock
+              key={projectKey}
+              quizId={card.id}
+              quizCardId={card.id}
+              spec={card.spec as any}
+              quizKey={projectKey}
+              passScore={1.0}
+              prereqsMet={prereqsMet}
+              locked={locked}
+              isCompleted={Boolean(done)}
+              initialState={savedQuiz ?? null}
+              onPass={() => onQuizPass(card.id)}
+              onStateChange={(s) => onQuizStateChange(card.id, s)}
+              onReset={() => onQuizReset(card.id)}
+              sequential
+              strictSequential // ✅ must pass to unlock
+              unlimitedAttempts={false} // usually
+          />
+        </div>
+    );
+  }
 
   // safety
   return null;

@@ -1,4 +1,4 @@
-import { SketchEntry } from "../../../../.";
+import { SketchEntry } from "../../../../../index";
 
 export const PY_OPERATORS_EXPRESSIONS_SECTION: Record<string, SketchEntry> = {
     "py.ops.expressions": {

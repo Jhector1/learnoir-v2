@@ -1,4 +1,4 @@
-import { SketchEntry } from "../../../../.";
+import { SketchEntry } from "../../../../../index";
 
 export const PY_INPUT_OUTPUT_PATTERNS_SECTION: Record<string, SketchEntry> = {
     "py.io.patterns": {

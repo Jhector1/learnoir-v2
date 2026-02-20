@@ -39,7 +39,7 @@ export default function QuizBlock({
   isCompleted = false,
   quizCardId,
   locked = false,
-
+                                    strictSequential=false,
   onReset,
 }: {
   prereqsMet?: boolean;
@@ -57,6 +57,7 @@ export default function QuizBlock({
   isCompleted?: boolean;
   quizCardId?: string;
   locked?: boolean;
+  strictSequential?: boolean; // default false
 
   onReset?: () => void;
 }) {
@@ -171,14 +172,19 @@ const resetKey = `${stableKey}:${reloadNonce}`;
 
     const ok = getQuestionOk(prev) === true;
 
-    if (!ok && prev.kind === "practice") {
-      const ps = practiceBank.practice[prev.id];
-      const outOfAttempts =
-        ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
-      if (outOfAttempts) return true;
-    }
+    if (!ok) {
+      if (strictSequential) return false;
 
+      // old quiz behavior (optional)
+      if (prev.kind === "practice") {
+        const ps = practiceBank.practice[prev.id];
+        const outOfAttempts =
+            ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+        if (outOfAttempts) return true;
+      }
+    }
     return ok;
+
   }
 
   const summary = useMemo(() => {

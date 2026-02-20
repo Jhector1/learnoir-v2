@@ -90,17 +90,24 @@ export type ReviewVideoCard = {
 // then include it in ReviewCard
 
 
+// export type ReviewCard =
+//   | { type: "text"; id: string; title?: string; markdown: string }
+//   | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
+//   | {
+//       type: "quiz";
+//       id: string;
+//       title?: string;
+//       passScore?: number;
+//       spec: ReviewQuizSpec; // ✅ spec, not questions
+//     }
+//   | ReviewVideoCard;
 export type ReviewCard =
-  | { type: "text"; id: string; title?: string; markdown: string }
-  | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
-  | {
-      type: "quiz";
-      id: string;
-      title?: string;
-      passScore?: number;
-      spec: ReviewQuizSpec; // ✅ spec, not questions
-    }
-  | ReviewVideoCard;
+    | { type: "text"; id: string; title?: string; markdown: string }
+    | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
+    | { type: "quiz"; id: string; title?: string; passScore?: number; spec: ReviewQuizSpec }
+    | { type: "project"; id: string; title?: string; spec: ReviewProjectSpec }
+    | ReviewVideoCard;
+
 
 export type ReviewModule = {
   id: string;

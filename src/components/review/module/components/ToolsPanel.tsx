@@ -3,6 +3,7 @@
 import React from "react";
 import type { Lang } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/runner/CodeRunner";
+import {ListIcon} from "lucide-react";
 
 export default function ToolsPanel({
                                        onCollapse,
@@ -64,14 +65,15 @@ export default function ToolsPanel({
                         )}
                     </div>
 
-                    {/*<button*/}
-                    {/*    type="button"*/}
-                    {/*    className="ui-btn ui-btn-secondary px-3 py-2 text-[11px] font-extrabold"*/}
-                    {/*    onClick={onCollapse}*/}
-                    {/*    title="Collapse tools"*/}
-                    {/*>*/}
-                    {/*    ▶*/}
-                    {/*</button>*/}
+                    <button
+                        type="button"
+                        className="ui-btn disabled:opacity-60 disabled:cursor-not-allowed ui-btn-secondary px-3 py-2 text-[11px] font-extrabold"
+                        // onClick={onCollapse}
+                        title="Collapse tools"
+                        disabled={true}
+                    >
+                        <ListIcon/>
+                    </button>
                 </div>
             </div>
 

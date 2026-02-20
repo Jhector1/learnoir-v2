@@ -11,6 +11,64 @@ async function readJsonSafe(res: Response) {
   }
 }
 
+type SeedPolicy = "actor" | "global";
+
+function buildPracticeUrl(args: {
+  subject?: string;
+  module?: string;
+  topic?: string;
+  difficulty?: string;
+  section?: string;
+  allowReveal?: boolean;
+  sessionId?: string;
+  preferKind?: string;
+
+  // determinism knobs
+  salt?: string;
+  exerciseKey?: string;
+  seedPolicy?: SeedPolicy;
+
+  // optional extras you may use elsewhere
+  statusOnly?: boolean;
+  includeMissed?: boolean;
+  includeHistory?: boolean;
+}) {
+  const sp = new URLSearchParams();
+
+  const set = (k: string, v: any) => {
+    if (v === undefined || v === null) return;
+    const s = String(v).trim();
+    if (!s) return;
+    sp.set(k, s);
+  };
+
+  set("subject", args.subject);
+  set("module", args.module);
+  set("section", args.section);
+  set("topic", args.topic);
+  set("difficulty", args.difficulty);
+
+  if (args.allowReveal !== undefined) {
+    sp.set("allowReveal", args.allowReveal ? "true" : "false");
+  }
+
+  set("sessionId", args.sessionId);
+  set("preferKind", args.preferKind);
+
+  // ✅ REQUIRED FOR PROJECT DETERMINISM (your server uses these)
+  set("salt", args.salt);
+  set("exerciseKey", args.exerciseKey);
+  set("seedPolicy", args.seedPolicy);
+
+  // optional extras
+  if (args.statusOnly !== undefined) sp.set("statusOnly", args.statusOnly ? "true" : "false");
+  if (args.includeMissed !== undefined) sp.set("includeMissed", args.includeMissed ? "true" : "false");
+  if (args.includeHistory !== undefined) sp.set("includeHistory", args.includeHistory ? "true" : "false");
+
+  const qs = sp.toString();
+  return `/api/practice${qs ? `?${qs}` : ""}`;
+}
+
 export async function fetchPracticeExercise(args: {
   subject?: string;
   module?: string;
@@ -21,33 +79,26 @@ export async function fetchPracticeExercise(args: {
   sessionId?: string;
   signal?: AbortSignal;
   preferKind?: string;
-  genKey?: string;
 
-  // ✅ IMPORTANT: keep this
+  // ✅ determinism
   salt?: string;
+  exerciseKey?: string;
+  seedPolicy?: SeedPolicy;
+
+  // optional extras
+  statusOnly?: boolean;
+  includeMissed?: boolean;
+  includeHistory?: boolean;
 }) {
-  const qs = new URLSearchParams();
-  if (args.subject) qs.set("subject", args.subject);
-  if (args.module) qs.set("module", args.module);
-  if (args.topic) qs.set("topic", args.topic);
-  if (args.difficulty) qs.set("difficulty", args.difficulty);
-  if (args.section) qs.set("section", args.section);
-  if (args.allowReveal) qs.set("allowReveal", "true");
-  if (args.sessionId) qs.set("sessionId", args.sessionId);
-  if (args.preferKind) qs.set("preferKind", args.preferKind);
-  if (args.genKey) qs.set("genKey", args.genKey);
+  const url = buildPracticeUrl(args);
 
-  // ✅ THIS is what makes refresh deterministic
-  if (args.salt) qs.set("salt", args.salt);
-
-  const res = await fetch(`/api/practice?${qs.toString()}`, {
+  const res = await fetch(url, {
     method: "GET",
     cache: "no-store",
     signal: args.signal,
   });
 
   const data = await readJsonSafe(res);
-
   if (!res.ok) throw new Error(data?.explanation ?? data?.message ?? `Failed (${res.status})`);
   return data as PracticeGetResponse;
 }

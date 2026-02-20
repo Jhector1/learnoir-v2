@@ -1,46 +1,49 @@
-import { Exercise, TopicSlug, ValidateResponse, Vec3 } from "@/lib/practice/types";
+// import { Exercise, TopicSlug, ValidateResponse, Vec3 } from "@/lib/practice/types";
 
 export type TopicValue = TopicSlug | "all";
+
+import type { CodeLanguage, Exercise, TopicSlug, ValidateResponse, Vec3 } from "@/lib/practice/types";
 
 export type QItem = {
   key: string;
   exercise: Exercise;
+
   single: string;
   multi: string[];
   num: string;
+
   dragA: Vec3;
   dragB: Vec3;
+
   matRows: number;
   matCols: number;
   mat: string[][];
+
   result: ValidateResponse | null;
   submitted: boolean;
   revealed?: boolean;
   attempts?: number;
 
+  // ✅ code_input
   code: string;
-  // optional: stdout/stderr or run output panel
-  codeRunOutput?: string;
-   
+  codeLang: CodeLanguage | "python" | "java"; // keep old allowed values
+  codeStdin: string;
+
+  // ✅ (optional legacy alias; ok to keep)
   stdin?: string;
 
+  // ✅ text_input / reorder / voice_input
+  text: string;
 
-  codeStdin: string;
-  codeLang: "python" | "java";
+  // drag_reorder: you currently use reorderIds; keep both but be consistent
+  reorderIds: string[];       // token ids (base set)
+  reorder: string[];          // current order (ids)
 
+  voiceTranscript: string;
+  voiceAudioId?: string;
 
-   // ✅ NEW
-  text: string;                 // text_input
-  reorder: string[];            // drag_reorder current order (same length as tokens)
-  reorderIds: string[];
-  voiceTranscript: string;       // voice_input transcript
-  voiceAudioId?: string;         // optional if you upload audio
-
-  // meta
-  // result: any;
-  // submitted: boolean;
-  // revealed: boolean;
-  // attempts: number;
+  // optional UI outputs
+  codeRunOutput?: string;
 };
 
 // export type MissedItem = {

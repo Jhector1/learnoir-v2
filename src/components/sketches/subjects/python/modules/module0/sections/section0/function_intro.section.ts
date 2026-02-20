@@ -1,4 +1,4 @@
-import {SketchEntry} from "../../../../.";
+import {SketchEntry} from "@/components/sketches/subjects";
 
 export const PY_FUNCTION_INTRO_SECTION: Record<string, SketchEntry> = {
     // ---------- SECTION I - Topic { print() complete } ----------

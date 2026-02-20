@@ -1,5 +1,6 @@
+// src/lib/subjects/python/sections.ts
 import type { SectionDef } from "../_types";
-import { PY_MOD0, PY_PREFIX0 } from "./constants";
+import { PY_MOD0, PY_MOD1, PY_PREFIX0, PY_PREFIX1 } from "./constants";
 import { PY_TOPICS } from "./topics";
 
 export const PY_SECTIONS = [
@@ -12,16 +13,38 @@ export const PY_SECTIONS = [
       slug: "python-0-foundations",
       order: 0,
       title: "Python 0 — Foundations",
-      description: "Print/input, variables, strings, arithmetic, and common errors.",
+      description: "Workspace + programming basics: IPO model, syntax, and comments.",
       meta: {
         module: 0,
         weeks: "Weeks 0–2",
         bullets: [
-          "print() formatting (sep/end)",
-          "input() and variables",
-          "Strings and len()",
-          "Arithmetic + precedence",
-          "Comments/docstrings + reading tracebacks",
+          "Workspace tour (editor, run, terminal)",
+          "Input → Processing → Output",
+          "Syntax rules + SyntaxError",
+          "Comments as notes to humans",
+        ],
+      },
+    },
+  },
+
+  {
+    moduleSlug: PY_MOD1,
+    prefix: PY_PREFIX1,
+    genKey: "python_part1", // keep if you want the same generator entry
+    topics: PY_TOPICS[PY_MOD1],
+    section: {
+      slug: "python-1-core-building-blocks",
+      order: 1,
+      title: "Python 1 — Core Building Blocks",
+      description: "Variables/types, operators/expressions, strings, and mini-program patterns.",
+      meta: {
+        module: 1,
+        weeks: "Weeks 3–5",
+        bullets: [
+          "Variables + data types",
+          "Operators + expressions",
+          "String basics + clean output",
+          "Ask → Convert → Compute → Show mini-programs",
         ],
       },
     },

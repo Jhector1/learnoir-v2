@@ -1,4 +1,4 @@
-import { SketchEntry } from "../../../../.";
+import { SketchEntry } from "../../../../../index";
 
 export const PY_STRING_BASICS_SECTION: Record<string, SketchEntry> = {
     "py.strings.basics": {

@@ -2,13 +2,13 @@ import type { LandingPageConfig } from "../../types";
 import type { ReviewModule } from "@/lib/subjects/types";
 
 import { pythonBasicsLanding } from "./basics/landing";
-import { pythonPart1Module } from "@/lib/subjects/python/modules/module0/pythonPart1Module";
+import { pythonModule0 } from "@/lib/subjects/python/modules/module0/pythonModule0";
 
 // ✅ Practice landing configs (for /practice UI)
 export const pythonLandings: LandingPageConfig[] = [pythonBasicsLanding];
 
 // ✅ Review modules (for /practice/review/*)
-export const pythonReviewModules: ReviewModule[] = [pythonPart1Module];
+export const pythonReviewModules: ReviewModule[] = [pythonModule0];
 
 
 import type { SubjectConfig } from "../../types";

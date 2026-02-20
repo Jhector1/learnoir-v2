@@ -25,6 +25,8 @@ export type TopicContext = {
   meta?: any;
   preferKind?: PracticeKind | null;
    salt?: string | null;
+  exerciseKey?: string | null;   // ✅ ADD THIS
+
   rng?: RNG | null; // ✅ not any
 };
 

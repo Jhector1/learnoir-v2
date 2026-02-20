@@ -550,35 +550,51 @@ export async function handlePracticeGet(args: {
       ? `guest:${actor.guestId}`
       : "anon";
 
+  const seedPolicy = (params as any).seedPolicy === "global" ? "global" : "actor";
+
+  const rngArgs =
+      seedPolicy === "global"
+          ? { userId: null, guestId: null, sessionId: null }
+          : { userId: actor.userId, guestId: actor.guestId, sessionId: session?.id ?? null };
+
   const exerciseRng = rngFromActor({
-    userId: actor.userId,
-    guestId: actor.guestId,
-    sessionId: session?.id ?? null,
+    ...rngArgs,
     salt: [
       "practice-ex",
-      actorPart,
+      `seedPolicy=${seedPolicy}`,
       `genKey=${genKey}`,
       `topic=${topicSlug}`,
       `diff=${diff}`,
       `preferKind=${preferKindEnum ?? ""}`,
+      `exerciseKey=${(params as any).exerciseKey ?? ""}`,
       `salt=${reqSalt ?? ""}`,
     ].join("|"),
   });
+
 
   // ------------------------------------------------------------
   // 7) generate exercise (+ expected)
   // ------------------------------------------------------------
   let out: any;
+  const meta2 = {
+    ...(resolved.meta ?? {}),
+    forceKey: (params as any).exerciseKey ?? undefined,
+  };
+
   try {
     out = await getExerciseWithExpected(genKey as GenKey, diff, {
       topicSlug,
       variant: resolved.variant ?? null,
-      meta: resolved.meta ?? null,
+      meta: meta2,
       subjectSlug: subject ?? null,
       moduleSlug: module ?? null,
       preferKind: preferKindEnum ?? null,
       rng: exerciseRng as any,
+
+
       salt: reqSalt ?? null,
+      exerciseKey: ((params as any).exerciseKey ?? null) as any,
+
     } as TopicContext);
   } catch (e: any) {
     return {

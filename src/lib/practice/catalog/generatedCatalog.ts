@@ -14,20 +14,38 @@ export const GENERATED_CATALOG = {
         "genKey": "python_part1",
         "prefix": "py0",
         "topicIds": [
-          "print",
-          "io_vars",
-          "strings",
-          "math_precedence",
-          "comments_errors",
-          "foundations"
+          "computer_intro",
+          "programming_intro",
+          "syntax_intro",
+          "editor_workspace_overview",
+          "comments_intro"
         ],
         "topics": {
-          "print": "py0.print",
-          "io_vars": "py0.io_vars",
-          "strings": "py0.strings",
-          "math_precedence": "py0.math_precedence",
-          "comments_errors": "py0.comments_errors",
-          "foundations": "py0.foundations"
+          "computer_intro": "py0.computer_intro",
+          "programming_intro": "py0.programming_intro",
+          "syntax_intro": "py0.syntax_intro",
+          "editor_workspace_overview": "py0.editor_workspace_overview",
+          "comments_intro": "py0.comments_intro"
+        }
+      },
+      "python-1": {
+        "moduleSlug": "python-1",
+        "sectionSlug": "python-1-core-building-blocks",
+        "sectionTitle": "Python 1 — Core Building Blocks",
+        "sectionOrder": 1,
+        "genKey": "python_part1",
+        "prefix": "py1",
+        "topicIds": [
+          "variables_types_intro",
+          "operators_expressions",
+          "string_basics",
+          "input_output_patterns"
+        ],
+        "topics": {
+          "variables_types_intro": "py1.variables_types_intro",
+          "operators_expressions": "py1.operators_expressions",
+          "string_basics": "py1.string_basics",
+          "input_output_patterns": "py1.input_output_patterns"
         }
       }
     }

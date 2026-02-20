@@ -231,7 +231,7 @@ export default function ReviewModuleView({
         flushNow(next);
 
         router.push(
-            `/${encodeURIComponent(locale)}/${ROUTES.practicePath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}` +
+            `/${ROUTES.practicePath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}` +
             `?sessionId=${encodeURIComponent(newSid)}` +
             `&returnTo=${encodeURIComponent(returnToCurrentModule)}`,
         );

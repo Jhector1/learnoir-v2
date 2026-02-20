@@ -1,17 +1,86 @@
-export const PY_STRING_BASICS_TOPICS =
-    {
-        id: "string_basics",
-        label: "String Basics: Working With Text Like a Pro",
-        minutes: 12,
+// src/components/sketches/subjects/python/modules/module1/topics/string_basics.ts
+import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
+import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
+import {PY_SECTION_PART1, PY_TOPIC_MOD1} from "@/lib/practice/catalog/subjects/python/slugs";
+import { PracticeKind } from "@prisma/client";
+
+const ID = "string_basics" as const;
+const LABEL = "String Basics: Working With Text Like a Pro" as const;
+const MINUTES = 12 as const;
+
+export const PY_STRING_BASICS = {
+    topic: {
+        id: ID,
+        label: LABEL,
+        minutes: MINUTES,
         summary:
-            "Learn core string tools: printing text, concatenation vs commas, f-strings, indexing/slicing, and common methods like lower(), strip(), and replace().",
+            "Learn strings: concatenation vs commas, f-strings, indexing/slicing, and common methods like lower(), strip(), replace().",
         cards: [
+            { type: "sketch", id: `${ID}_s0`, title: "Strings (Concatenation, f-strings, Indexing, Methods)", sketchId: "py.strings.basics", height: 600 },
+
             {
-                type: "sketch",
-                id: "string_basics_s0",
-                title: "Strings (Concatenation, f-strings, Indexing, Methods)",
-                sketchId: "py.strings.basics",
-                height: 600,
+                type: "project",
+                id: `${ID}_p0`,
+                title: "Project: Clean + human output",
+                passScore: 0.75,
+                spec: {
+                    subject: "python",
+                    module: PY_MOD1,
+                    section: PY_SECTION_PART1,
+                    topic: PY_TOPIC_MOD1.string_basics,
+                    difficulty: "easy",
+                    allowReveal: true,
+                    preferKind: null,
+                    maxAttempts: 10,
+
+                    mode: "project",
+                    steps: [
+                        {
+                            id: "concat_vs_comma",
+                            title: "Concatenation vs commas (what prints?)",
+                            topic: PY_TOPIC_MOD1.string_basics,
+                            difficulty: "easy",
+                            preferKind: PracticeKind.single_choice,
+                            exerciseKey: "m1_str_concat_vs_comma_sc",
+                            seedPolicy: "global",
+                            maxAttempts: 3,
+                        },
+                        {
+                            id: "fstring_greeting",
+                            title: "Use an f-string to print a clean sentence",
+                            topic: PY_TOPIC_MOD1.string_basics,
+                            difficulty: "easy",
+                            preferKind: PracticeKind.code_input,
+                            exerciseKey: "m1_str_fstring_greeting_code",
+                            seedPolicy: "global",
+                            maxAttempts: 10,
+                        },
+                        {
+                            id: "username_generator",
+                            title: "Build a username generator (strip + lower + indexing)",
+                            topic: PY_TOPIC_MOD1.string_basics,
+                            difficulty: "easy",
+                            preferKind: PracticeKind.code_input,
+                            exerciseKey: "m1_str_username_code",
+                            seedPolicy: "global",
+                            maxAttempts: 10,
+                        },
+                    ],
+                },
             },
         ],
-    } as const;
+    } as const,
+
+    def: {
+        id: ID,
+        meta: {
+            label: LABEL,
+            minutes: MINUTES,
+            pool: [
+                { key: "m1_str_concat_vs_comma_sc", w: 1, kind: PracticeKind.single_choice },
+                { key: "m1_str_fstring_greeting_code", w: 1, kind: PracticeKind.code_input },
+                { key: "m1_str_username_code", w: 1, kind: PracticeKind.code_input },
+            ],
+        },
+    } as const satisfies TopicDefCompat,
+} as const;

@@ -1,60 +1,38 @@
 // src/app/api/review/quiz/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
+
 import {
   getActor,
   ensureGuestId,
   attachGuestCookie,
   actorKeyOf,
 } from "@/lib/practice/actor";
+
 import { rngFromActor } from "@/lib/practice/catalog";
 import { toDbTopicSlug } from "@/lib/practice/topicSlugs";
 import { PracticeKind } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// src/app/api/review/quiz/route.ts
-import { createHash } from "crypto";
 
-function shortHash(s: string) {
-  return createHash("sha1").update(s).digest("hex").slice(0, 10);
-}
-
-const SpecSchema = z.object({
-  subject: z.string().min(1),
-  module: z.string().optional(),
-  section: z.string().optional(),
-  topic: z.string().optional(), // "py0.io_vars" | "all" | ""
-  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
-  n: z.number().int().min(1).max(20).optional(),
-  allowReveal: z.boolean().optional(),
-  preferKind: z.nativeEnum(PracticeKind).nullable().optional(),
-  maxAttempts: z.number().int().min(1).max(10).optional(),
-  quizKey: z.string().optional(),
-});
+/* -------------------------------- helpers -------------------------------- */
 
 function json(body: any, status = 200, setGuestId?: string) {
   const res = NextResponse.json(body, { status });
   return attachGuestCookie(res, setGuestId);
 }
 
-// Stable quiz identity for “same user + same spec”
-function buildQuizKey(spec: z.infer<typeof SpecSchema>) {
-  return [
-    "review-quiz",
-    `subject=${spec.subject}`,
-    `module=${spec.module ?? ""}`,
-    `section=${spec.section ?? ""}`,
-    `topic=${spec.topic ?? ""}`,
-    `difficulty=${spec.difficulty ?? ""}`,
-    `n=${spec.n ?? 4}`,
-    `allowReveal=${spec.allowReveal ? 1 : 0}`,
-    `preferKind=${spec.preferKind ?? ""}`,
-    `maxAttempts=${spec.maxAttempts ?? 1}`,
-  ].join("|");
+function shortHash(s: string) {
+  return createHash("sha1").update(s).digest("hex").slice(0, 10);
 }
-// src/app/api/review/quiz/route.ts
+
+function stableJsonHash(v: any) {
+  // best-effort stable hash (keep it small)
+  return shortHash(JSON.stringify(v ?? null));
+}
 
 function shuffleInPlace<T>(rng: any, arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -64,43 +42,116 @@ function shuffleInPlace<T>(rng: any, arr: T[]) {
   return arr;
 }
 
-function pickTopicsForQuiz(rng: any, slugs: string[], n: number) {
-  if (!slugs.length) return [];
-  if (slugs.length === 1) return Array.from({ length: n }, () => slugs[0]); // can’t avoid repeats
-
-  const pool = shuffleInPlace(rng, [...slugs]);
-  if (pool.length >= n) return pool.slice(0, n);
-
-  // not enough unique topics — still avoid 4 identical by cycling
-  const out = [...pool];
-  let k = 0;
-  while (out.length < n) out.push(pool[k++ % pool.length]);
-  return out;
-}
-
-function pickTopicsForQuizUnique(rng: any, slugs: string[], n: number) {
-  const unique = Array.from(new Set(slugs));
-  if (!unique.length) return [];
-
-  shuffleInPlace(rng, unique);
-  return unique.slice(0, Math.min(n, unique.length)); // ✅ never repeats
-}
-
+// Prefer unique topics first; repeat only if unavoidable
 function pickTopicsForQuizPreferUnique(rng: any, slugs: string[], n: number) {
   const unique = Array.from(new Set(slugs));
   if (!unique.length) return [];
 
   shuffleInPlace(rng, unique);
 
-  // ✅ use each topic at most once until we run out
   const out = unique.slice(0, Math.min(n, unique.length));
-
-  // ✅ if not enough unique topics, repeat (unavoidable)
   let k = 0;
   while (out.length < n) out.push(unique[k++ % unique.length]);
-
   return out;
 }
+
+/* -------------------------------- schemas -------------------------------- */
+
+const StepSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().optional(),
+  topic: z.string().min(1), // can be genKey-like or slug; we normalize via toDbTopicSlug()
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  preferKind: z.nativeEnum(PracticeKind).nullable().optional(),
+
+  // forwarded to /api/practice (if you support these)
+  exerciseKey: z.string().optional(),
+  seedPolicy: z.enum(["actor", "global"]).optional(),
+
+  maxAttempts: z.number().int().min(1).max(20).optional(),
+  carryFromPrev: z.boolean().optional(),
+});
+
+const SpecSchemaBase = z.object({
+  subject: z.string().min(1),
+  module: z.string().optional(),
+  section: z.string().optional(),
+
+  // quiz-mode "topic selector"
+  topic: z.string().optional(), // "py0.io_vars" | "all" | ""
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  n: z.number().int().min(1).max(20).optional(),
+
+  allowReveal: z.boolean().optional(),
+  preferKind: z.nativeEnum(PracticeKind).nullable().optional(),
+  maxAttempts: z.number().int().min(1).max(10).optional(),
+
+  // client can override
+  quizKey: z.string().optional(),
+
+  // ✅ new
+  mode: z.enum(["quiz", "project"]).optional(),
+  steps: z.array(StepSchema).optional(),
+});
+
+const SpecSchema = SpecSchemaBase.superRefine((val, ctx) => {
+  const mode = val.mode ?? "quiz";
+  if (mode === "project") {
+    if (!val.steps || val.steps.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["steps"],
+        message: "steps[] is required when mode='project'.",
+      });
+    }
+  }
+});
+
+/* -------------------------- quizKey (server side) -------------------------- */
+/**
+ * NOTE:
+ * - If your client sends spec.quizKey (recommended), server honors it.
+ * - Otherwise we build a stable quizKey from the spec.
+ * - We include mode; for project we include a steps signature to avoid collisions.
+ */
+function buildQuizKey(spec: z.infer<typeof SpecSchema>) {
+  const mode = spec.mode ?? "quiz";
+
+  const base = [
+    "review-quiz",
+    `mode=${mode}`,
+    `subject=${spec.subject}`,
+    `module=${spec.module ?? ""}`,
+    `section=${spec.section ?? ""}`,
+    `difficulty=${spec.difficulty ?? ""}`,
+    `allowReveal=${spec.allowReveal ? 1 : 0}`,
+    `preferKind=${spec.preferKind ?? ""}`,
+    `maxAttempts=${spec.maxAttempts ?? 1}`,
+  ];
+
+  if (mode === "project") {
+    const stepsSig = stableJsonHash(
+        (spec.steps ?? []).map((s) => ({
+          id: s.id,
+          topic: s.topic,
+          difficulty: s.difficulty ?? "",
+          preferKind: s.preferKind ?? "",
+          exerciseKey: s.exerciseKey ?? "",
+          seedPolicy: s.seedPolicy ?? "",
+          maxAttempts: s.maxAttempts ?? "",
+          carryFromPrev: s.carryFromPrev ? 1 : 0,
+        })),
+    );
+    base.push(`steps=${stepsSig}`);
+  } else {
+    base.push(`topic=${spec.topic ?? ""}`);
+    base.push(`n=${spec.n ?? 4}`);
+  }
+
+  return base.join("|");
+}
+
+/* --------------------------------- handler -------------------------------- */
 
 export async function POST(req: Request) {
   const actor0 = await getActor();
@@ -117,36 +168,45 @@ export async function POST(req: Request) {
 
   const parsed = SpecSchema.safeParse(payload);
   if (!parsed.success) {
-    return json({ message: "Invalid quiz spec", issues: parsed.error.issues }, 400, setGuestId);
+    return json(
+        { message: "Invalid quiz spec", issues: parsed.error.issues },
+        400,
+        setGuestId,
+    );
   }
 
   const spec = parsed.data;
+  const mode = spec.mode ?? "quiz";
   const n = spec.n ?? 4;
-  const maxAttempts = spec.maxAttempts ?? 1;
+  const defaultMaxAttempts = spec.maxAttempts ?? 1;
 
   const actorKey = actorKeyOf(actor);
 
   // ✅ IMPORTANT: honor client-provided quizKey (if sent)
   const quizKey = (spec.quizKey?.trim() || buildQuizKey(spec)).trim();
 
-  // 1) If exists, return it
+  // 1) If exists, return it (frozen quiz/project instance)
   const existing = await prisma.reviewQuizInstance.findUnique({
     where: { actorKey_quizKey: { actorKey, quizKey } },
     select: { questions: true },
   });
 
   if (existing?.questions) {
-    return json({ questions: existing.questions, quizKey }, 200, setGuestId);
+    return json(
+        {
+          questions: existing.questions,
+          quizKey,
+          requested: mode === "project" ? (spec.steps?.length ?? 0) : n,
+          generated: Array.isArray(existing.questions) ? existing.questions.length : undefined,
+          frozen: true,
+        },
+        200,
+        setGuestId,
+    );
   }
 
   // 2) Otherwise generate it
-  const rng = rngFromActor({
-    userId: actor.userId,
-    guestId: actor.guestId,
-    sessionId: null,
-    salt: `review-quiz-instance:${quizKey}`,
-  });
-
+  // We will resolve the *allowed topic pool* once (for validation + quiz picking).
   const wantsAll = !spec.topic || spec.topic === "all";
   let allowedTopicSlugs: string[] = [];
 
@@ -164,27 +224,48 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!section) return json({ message: `Section "${spec.section}" not found.` }, 404, setGuestId);
+    if (!section) {
+      return json({ message: `Section "${spec.section}" not found.` }, 404, setGuestId);
+    }
     if (section.subject?.slug !== spec.subject) {
-      return json({ message: `Section "${spec.section}" is not in subject "${spec.subject}".` }, 400, setGuestId);
+      return json(
+          { message: `Section "${spec.section}" is not in subject "${spec.subject}".` },
+          400,
+          setGuestId,
+      );
     }
     if (spec.module && section.module?.slug !== spec.module) {
-      return json({ message: `Section "${spec.section}" is not in module "${spec.module}".` }, 400, setGuestId);
+      return json(
+          { message: `Section "${spec.section}" is not in module "${spec.module}".` },
+          400,
+          setGuestId,
+      );
     }
 
     const pool = section.topics
-      .map((x) => x.topic)
-      .filter((t) => t?.genKey)
-      .map((t) => t.slug);
+        .map((x) => x.topic)
+        .filter((t) => t?.genKey) // keep your "genKey required" rule
+        .map((t) => t.slug);
 
-    if (!pool.length) return json({ message: `Section "${spec.section}" has no topics with genKey.` }, 400, setGuestId);
+    if (!pool.length) {
+      return json(
+          { message: `Section "${spec.section}" has no topics with genKey.` },
+          400,
+          setGuestId,
+      );
+    }
 
-    if (wantsAll) {
-      allowedTopicSlugs = pool;
-    } else {
-      const dbSlug = toDbTopicSlug(spec.topic);
+    allowedTopicSlugs = pool;
+
+    // quiz-mode topic narrowing (project mode ignores spec.topic)
+    if (mode === "quiz" && !wantsAll) {
+      const dbSlug = toDbTopicSlug(spec.topic!);
       if (!pool.includes(dbSlug)) {
-        return json({ message: `Topic "${dbSlug}" is not part of section "${spec.section}".` }, 400, setGuestId);
+        return json(
+            { message: `Topic "${dbSlug}" is not part of section "${spec.section}".` },
+            400,
+            setGuestId,
+        );
       }
       allowedTopicSlugs = [dbSlug];
     }
@@ -202,104 +283,113 @@ export async function POST(req: Request) {
 
     if (!rows.length) {
       return json(
-        { message: `No topics found for subject="${spec.subject}" module="${spec.module ?? ""}" (with genKey).` },
-        404,
-        setGuestId,
+          {
+            message: `No topics found for subject="${spec.subject}" module="${spec.module ?? ""}" (with genKey).`,
+          },
+          404,
+          setGuestId,
       );
     }
 
-    if (wantsAll) {
-      allowedTopicSlugs = rows.map((r) => r.slug);
-    } else {
-      const dbSlug = toDbTopicSlug(spec.topic);
+    allowedTopicSlugs = rows.map((r) => r.slug);
+
+    // quiz-mode topic narrowing (project mode ignores spec.topic)
+    if (mode === "quiz" && !wantsAll) {
+      const dbSlug = toDbTopicSlug(spec.topic!);
       const ok = rows.some((r) => r.slug === dbSlug);
-      if (!ok) return json({ message: `Topic "${dbSlug}" is not in this subject/module.` }, 400, setGuestId);
+      if (!ok) {
+        return json({ message: `Topic "${dbSlug}" is not in this subject/module.` }, 400, setGuestId);
+      }
       allowedTopicSlugs = [dbSlug];
     }
   }
-const pickedTopics = pickTopicsForQuiz(rng, allowedTopicSlugs, n);
-const qk = shortHash(quizKey);
 
-const questions = Array.from({ length: n }, (_v, i) => {
-  const pickedTopic = pickedTopics[i];
-  return {
-    kind: "practice" as const,
-    id: `p${i + 1}:${qk}`, // ✅ unique per quiz instance
-    fetch: {
-      subject: spec.subject,
-      module: spec.module,
-      section: spec.section,
-      topic: pickedTopic,
-      difficulty: spec.difficulty ?? "easy",
-      allowReveal: Boolean(spec.allowReveal),
-      preferKind: spec.preferKind ?? null,
-      salt: `${quizKey}|topic=${pickedTopic}|slot=${i + 1}|q=${i + 1}`,
-    },
-    maxAttempts,
-  };
-});
+  let questions: any[] = [];
 
+  if (mode === "project") {
+    const steps = spec.steps ?? [];
+    // schema already enforces non-empty, but keep guard
+    if (!steps.length) return json({ message: "Project spec requires steps[]." }, 400, setGuestId);
 
+    const qk = shortHash(quizKey);
 
+    // Validate each step topic is allowed (when we have an allowed pool)
+    for (const st of steps) {
+      const dbSlug = toDbTopicSlug(st.topic);
+      if (!allowedTopicSlugs.includes(dbSlug)) {
+        return json(
+            {
+              message: `Project step topic "${dbSlug}" is not allowed by this subject/module/section.`,
+              detail: { stepId: st.id, stepTopic: st.topic, normalized: dbSlug },
+            },
+            400,
+            setGuestId,
+        );
+      }
+    }
 
-  // const pickedTopics = pickTopicsForQuizPreferUnique(rng, allowedTopicSlugs, n);
-  // const qk = shortHash(quizKey);
-  //
-  // const questions = pickedTopics.map((pickedTopic, i) => ({
-  //   kind: "practice" as const,
-  //   id: `p${i + 1}:${qk}`,
-  //   fetch: {
-  //     subject: spec.subject,
-  //     module: spec.module,
-  //     section: spec.section,
-  //     topic: pickedTopic,
-  //     difficulty: spec.difficulty ?? "easy",
-  //     allowReveal: Boolean(spec.allowReveal),
-  //     preferKind: spec.preferKind ?? null,
-  //     salt: `${quizKey}|topic=${pickedTopic}|q=${i + 1}`, // ✅ different per slot
-  //   },
-  //   maxAttempts,
-  // }));
+    questions = steps.map((st, i) => {
+      const dbSlug = toDbTopicSlug(st.topic);
 
-//   const pickedTopics = pickTopicsForQuizUnique(rng, allowedTopicSlugs, n);
-//   const qk = shortHash(quizKey);
-//
-//   const questions = pickedTopics.map((pickedTopic, i) => ({
-//     kind: "practice" as const,
-//     id: `p${i + 1}:${qk}`, // ✅ unique per quiz instance
-//     fetch: {
-//       subject: spec.subject,
-//       module: spec.module,
-//       section: spec.section,
-//       topic: pickedTopic,
-//       difficulty: spec.difficulty ?? "easy",
-//       allowReveal: Boolean(spec.allowReveal),
-//       preferKind: spec.preferKind ?? null,
-//       salt: `${quizKey}|topic=${pickedTopic}|q=${i + 1}`, // ✅ extra explicit
-//     },
-//     maxAttempts,
-//   }));
-// const questions = Array.from({ length: n }, (_v, i) => {
-//   const pickedTopic = pickedTopics[i];
-//   return {
-//     kind: "practice" as const,
-//     id: `p${i + 1}`,
-//     fetch: {
-//       subject: spec.subject,
-//       module: spec.module,
-//       section: spec.section,
-//       topic: pickedTopic,
-//       difficulty: spec.difficulty ?? "easy",
-//       allowReveal: Boolean(spec.allowReveal),
-//       preferKind: spec.preferKind ?? null,
-//       salt: `${quizKey}|q=${i + 1}`, // keep this
-//     },
-//     maxAttempts,
-//   };
-// });
+      return {
+        kind: "practice" as const,
+        id: `proj:${st.id}:${qk}`,
+        title: st.title ?? `Step ${i + 1}`,
+        carryFromPrev: Boolean(st.carryFromPrev),
+        fetch: {
+          subject: spec.subject,
+          module: spec.module,
+          section: spec.section,
+          topic: dbSlug,
 
-  // ✅ Handle StrictMode / double POST race:
-  // create may throw unique violation; if so, re-read and return.
+          difficulty: st.difficulty ?? spec.difficulty ?? "easy",
+          allowReveal: Boolean(spec.allowReveal),
+          preferKind: st.preferKind ?? spec.preferKind ?? null,
+
+          // forwarded to /api/practice (if supported)
+          exerciseKey: st.exerciseKey ?? undefined,
+          seedPolicy: st.seedPolicy ?? "global",
+
+          // stable salt per step
+          salt: `${quizKey}|step=${st.id}|slot=${i + 1}`,
+        },
+        maxAttempts: st.maxAttempts ?? (spec.maxAttempts ?? 10),
+      };
+    });
+  } else {
+    // ✅ quiz mode: random-from-pool, frozen by quizKey
+    const rng = rngFromActor({
+      userId: actor.userId,
+      guestId: actor.guestId,
+      sessionId: null,
+      salt: `review-quiz-instance:${quizKey}`,
+    });
+
+    const pickedTopics = pickTopicsForQuizPreferUnique(rng, allowedTopicSlugs, n);
+    const qk = shortHash(quizKey);
+
+    questions = Array.from({ length: n }, (_v, i) => {
+      const pickedTopic = pickedTopics[i];
+      return {
+        kind: "practice" as const,
+        id: `p${i + 1}:${qk}`, // unique per quiz instance
+        fetch: {
+          subject: spec.subject,
+          module: spec.module,
+          section: spec.section,
+          topic: pickedTopic,
+          difficulty: spec.difficulty ?? "easy",
+          allowReveal: Boolean(spec.allowReveal),
+          preferKind: spec.preferKind ?? null,
+          // stable salt per slot
+          salt: `${quizKey}|topic=${pickedTopic}|slot=${i + 1}|q=${i + 1}`,
+        },
+        maxAttempts: defaultMaxAttempts,
+      };
+    });
+  }
+
+  // 3) Persist (handle StrictMode/double POST race)
   try {
     await prisma.reviewQuizInstance.create({
       data: {
@@ -319,21 +409,21 @@ const questions = Array.from({ length: n }, (_v, i) => {
     select: { questions: true },
   });
 
-  // return json({ questions: saved?.questions ?? questions, quizKey }, 200, setGuestId);
-console.log(questions)
+  const outQuestions = (saved?.questions ?? questions) as any[];
+
   return json(
       {
-        questions: saved?.questions ?? questions,
+        questions: outQuestions,
         quizKey,
-        requested: n,
-        generated: (saved?.questions ?? questions).length,
-        truncated: (saved?.questions ?? questions).length < n,
+        mode,
+        requested: mode === "project" ? (spec.steps?.length ?? 0) : n,
+        generated: Array.isArray(outQuestions) ? outQuestions.length : undefined,
+        truncated: mode === "quiz" ? Array.isArray(outQuestions) && outQuestions.length < n : false,
+        frozen: true,
       },
       200,
-      setGuestId
+      setGuestId,
   );
-
-
 }
 
 export async function DELETE(req: Request) {

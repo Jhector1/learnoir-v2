@@ -177,11 +177,14 @@ export async function POST(req: Request) {
   }
 
   // --- 9) Grade
+  const showDebug = Boolean(sess?.assignment?.showDebug);
+
   const graded = await gradeInstance({
     instance,
     expectedCanon,
     answer: isReveal ? null : (answer ?? null),
     isReveal,
+    showDebug,
   });
 
   // --- 10) Finalization + persist attempt + session updates

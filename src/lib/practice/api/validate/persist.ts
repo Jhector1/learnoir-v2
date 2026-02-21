@@ -3,15 +3,15 @@ import type { PrismaClient, Prisma } from "@prisma/client";
 import type { LoadedInstance } from "./load";
 
 export async function persistAttemptAndFinalize(
-  prisma: PrismaClient,
-  args: {
-    instance: LoadedInstance;
-    actor: { userId?: string | null; guestId?: string | null };
-    isReveal: boolean;
-    answerPayload: Prisma.InputJsonValue;
-    ok: boolean;
-    finalized: boolean;
-  },
+    prisma: PrismaClient,
+    args: {
+      instance: LoadedInstance;
+      actor: { userId?: string | null; guestId?: string | null };
+      isReveal: boolean;
+      answerPayload: Prisma.InputJsonValue;
+      ok: boolean;
+      finalized: boolean;
+    },
 ) {
   const instance = args.instance;
 
@@ -41,7 +41,7 @@ export async function persistAttemptAndFinalize(
 
     // 3) only count toward session totals once, when first finalized
     const shouldCountTowardSession =
-      Boolean(instance.sessionId) && args.finalized && !instance.answeredAt;
+        Boolean(instance.sessionId) && args.finalized && !instance.answeredAt;
 
     let sessionComplete = false;
     let sessionSummary: null | {
@@ -53,14 +53,20 @@ export async function persistAttemptAndFinalize(
     } = null;
 
     if (shouldCountTowardSession && instance.sessionId) {
-      // increment totals (these are “nice to have” counters for UI)
+      // increment totals (nice-to-have counters)
       const updated = await tx.practiceSession.update({
         where: { id: instance.sessionId },
         data: {
           total: { increment: 1 },
           correct: { increment: args.ok ? 1 : 0 },
         },
-        select: { id: true, total: true, correct: true, targetCount: true, status: true },
+        select: {
+          id: true,
+          total: true,
+          correct: true,
+          targetCount: true,
+          status: true,
+        },
       });
 
       // ✅ canonical: count finalized questions by answeredAt
@@ -78,20 +84,50 @@ export async function persistAttemptAndFinalize(
 
         sessionComplete = true;
 
-        // missed summary (NO expected leakage)
-        const missedAttempts = await tx.practiceAttempt.findMany({
-          where: { sessionId: updated.id, ok: false, revealUsed: false },
-          distinct: ["instanceId"],
-          include: { instance: true },
-          orderBy: { createdAt: "asc" },
+        // ✅ CORRECT missed list:
+        // take ONLY the LAST non-reveal attempt per instance,
+        // then keep those whose LAST attempt is ok=false
+        const lastByInstance = await tx.practiceAttempt.groupBy({
+          by: ["instanceId"],
+          where: { sessionId: updated.id, revealUsed: false },
+          _max: { createdAt: true },
         });
+
+        const or = lastByInstance
+            .map((r) => {
+              const createdAt = r._max.createdAt;
+              if (!createdAt) return null;
+              return { instanceId: r.instanceId, createdAt };
+            })
+            .filter(Boolean) as Array<{ instanceId: string; createdAt: Date }>;
+
+        const lastAttempts =
+            or.length === 0
+                ? []
+                : await tx.practiceAttempt.findMany({
+                  where: {
+                    sessionId: updated.id,
+                    revealUsed: false,
+                    OR: or,
+                  },
+                  include: { instance: true },
+                });
+
+        const missed = lastAttempts
+            .filter((a) => a.ok === false)
+            .sort(
+                (a, b) =>
+                    a.createdAt.getTime() - b.createdAt.getTime(), // stable order
+            );
 
         sessionSummary = {
           correct: updated.correct,
           total: updated.total,
           answeredCount,
           targetCount: updated.targetCount,
-          missed: missedAttempts.map((a) => ({
+          missed: missed.map((a) => ({
+            instanceId: a.instanceId,
+            kind: a.instance.kind,
             title: a.instance.title,
             prompt: a.instance.prompt,
             yourAnswer: a.answerPayload,

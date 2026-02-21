@@ -3,8 +3,8 @@ import { runSeed } from "./runSeed";
 import { genPracticeCatalog } from "./_genPracticeCatalog";
 export async function main() {
   // ✅ generate catalog every time you seed
-    runSeed();
-  genPracticeCatalog();
+    await runSeed();
+  await genPracticeCatalog();
 
 
   // ... your existing seeding logic ...

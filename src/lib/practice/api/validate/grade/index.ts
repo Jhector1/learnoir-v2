@@ -1,4 +1,4 @@
-// src/lib/practice/validate/grade/index.ts
+// src/lib/practice/api/validate/grade/index.ts
 import type { LoadedInstance } from "../load";
 import type { SubmitAnswer } from "../schemas";
 
@@ -24,36 +24,39 @@ export async function gradeInstance(args: {
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;
+  showDebug: boolean;
 }): Promise<GradeResult> {
   switch (args.instance.kind) {
     case "numeric":
-      return gradeNumeric(args);
+      return gradeNumeric(args as any);
 
     case "single_choice":
-      return gradeSingleChoice(args);
+      return gradeSingleChoice(args as any);
 
     case "multi_choice":
-      return gradeMultiChoice(args);
+      return gradeMultiChoice(args as any);
 
     case "matrix_input":
-      return gradeMatrixInput(args);
+      return gradeMatrixInput(args as any);
 
     case "vector_drag_target":
-      return gradeVectorDragTarget(args);
+      return gradeVectorDragTarget(args as any);
 
     case "vector_drag_dot":
-      return gradeVectorDragDot(args);
+      return gradeVectorDragDot(args as any);
 
     case "code_input":
-      return gradeCodeInput(args);
+      return gradeCodeInput(args as any);
+
     case "text_input":
-      return gradeTextInput(args);
+      return gradeTextInput(args as any);
 
     case "drag_reorder":
-      return gradeDragReorder(args);
+      return gradeDragReorder(args as any);
 
     case "voice_input":
-      return gradeVoiceInput(args);
+      return gradeVoiceInput(args as any);
+
     default:
       return {
         ok: false,

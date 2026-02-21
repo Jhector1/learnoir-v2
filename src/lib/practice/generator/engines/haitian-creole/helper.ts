@@ -45,9 +45,14 @@ export function validateAnswer(expected: any, answer: any): { ok: boolean; detai
     }
 
     case "drag_reorder": {
-      const exp = expected as DragExpected;
-      const ids = Array.isArray(answer?.tokenIds) ? answer.tokenIds.map(String) : [];
-      return { ok: arrayEq(ids, exp.tokenIds.map(String)) };
+      const exp = expected as DragExpected; // exp.tokenIds OR exp.order depending on your type
+      const got = Array.isArray(answer?.order) ? answer.order.map(String) : [];
+      const want = Array.isArray((exp as any).order)
+          ? (exp as any).order.map(String)
+          : Array.isArray((exp as any).tokenIds)
+              ? (exp as any).tokenIds.map(String)
+              : [];
+      return { ok: arrayEq(got, want) };
     }
 
     case "voice_input": {

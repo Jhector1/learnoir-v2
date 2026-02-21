@@ -1,22 +1,23 @@
 import type { ReviewModule } from "@/lib/subjects/types";
 
-import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4} from "../../../prisma/seed/data/subjects/linear-algebra/constants";
-import {PY_MOD0, PY_MOD1} from "../../../prisma/seed/data/subjects/python/constants";
+import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4} from "@/seed/data/subjects/linear-algebra/constants";
+import {PY_MOD0, PY_MOD1, PY_MOD2} from "@/seed/data/subjects/python/constants";
 
 import { vectorsModule } from "@/lib/subjects/modules/linear_algebra/vectors";
 import { vectorsPart2Module } from "@/lib/subjects/modules/linear_algebra/vectorsPart2Module";
 import { matricesPart1Module } from "@/lib/subjects/modules/linear_algebra/matricesPart1Module";
 import { matricesPart2Module } from "@/lib/subjects/modules/linear_algebra/matricesPart2Module";
 import { pythonModule0 } from "@/lib/subjects/python/modules/module0/pythonModule0";
-import { PY_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/python/constants";
-import { LA_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/linear-algebra/constants";
-import { HC_MOD0, HC_SUBJECT_SLUG } from "../../../prisma/seed/data/subjects/haitian-creole/constants";
+import { PY_SUBJECT_SLUG } from "@/seed/data/subjects/python/constants";
+import { LA_SUBJECT_SLUG } from "@/seed/data/subjects/linear-algebra/constants";
+import { HC_MOD0, HC_SUBJECT_SLUG } from "@/seed/data/subjects/haitian-creole/constants";
 import { haitianCreolePart1Module } from "./modules/haitian-creole/haitianCreolePart1Module";
 // import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
 import {analyticGeometryModule} from "@/lib/subjects/modules/linear_algebra/vectorsMatricesPart3Module";
 import {aiKickstartMod0} from "@/lib/subjects/modules/ai/aiKickstartMod0";
-import {AI_MOD0, AI_SUBJECT_SLUG} from "../../../prisma/seed/data/subjects/ai";
+import {AI_MOD0, AI_SUBJECT_SLUG} from "@/seed/data/subjects/ai";
 import {pythonModule1} from "@/lib/subjects/python/modules/module1/pythonModule1";
+import {pythonModule2} from "@/lib/subjects/python/modules/module2";
 
 
 export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
@@ -29,7 +30,8 @@ export const REVIEW_REGISTRY: Record<string, Record<string, ReviewModule>> = {
   },
   [PY_SUBJECT_SLUG]: {
     [PY_MOD0]: pythonModule0,
-    [PY_MOD1]: pythonModule1
+    [PY_MOD1]: pythonModule1,
+    [PY_MOD2]: pythonModule2,
   },
   [HC_SUBJECT_SLUG]: {
     [HC_MOD0]:haitianCreolePart1Module

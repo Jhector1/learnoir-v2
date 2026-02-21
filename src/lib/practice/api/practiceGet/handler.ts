@@ -102,19 +102,82 @@ function canRevealExpectedForStatusOnly(session: any): boolean {
   return true;
 }
 
-function pickExpectedPayload(secretPayload: any) {
-  const sp = secretPayload ?? null;
-  if (!sp || typeof sp !== "object") return null;
-  return (
-    (sp as any).expectedAnswerPayload ??
-    (sp as any).expected ??
-    (sp as any).answer ??
-    (sp as any).correct ??
-    null
-  );
+// function pickExpectedPayload(secretPayload: any) {
+//   const sp = secretPayload ?? null;
+//   if (!sp || typeof sp !== "object") return null;
+//   return (
+//     (sp as any).expectedAnswerPayload ??
+//     (sp as any).expected ??
+//     (sp as any).answer ??
+//     (sp as any).correct ??
+//     null
+//   );
+// }
+
+// function pickExplanation(secretPayload: any) {
+//   const sp = secretPayload ?? null;
+//   if (!sp || typeof sp !== "object") return null;
+//   return (sp as any).explanation ?? (sp as any).rationale ?? null;
+// }
+function sanitizeExpectedForHistory(kind: string, raw: any) {
+  const k = String(kind);
+
+  if (k === "single_choice") {
+    const optionId =
+        raw?.optionId ?? raw?.correctOptionId ?? raw?.correct ?? raw;
+    return optionId ? { kind: "single_choice", optionId: String(optionId) } : null;
+  }
+
+  if (k === "multi_choice") {
+    const ids = raw?.optionIds ?? raw?.correctOptionIds ?? raw?.correct ?? raw;
+    return Array.isArray(ids) && ids.length
+        ? { kind: "multi_choice", optionIds: ids.map((x) => String(x)) }
+        : null;
+  }
+
+  if (k === "drag_reorder") {
+    const order = raw?.order ?? raw;
+    return Array.isArray(order) && order.length
+        ? { kind: "drag_reorder", order: order.map((x) => String(x)) }
+        : null;
+  }
+
+  // ✅ everything else: do NOT include expected via statusOnly/history
+  return null;
 }
 
-function pickExplanation(secretPayload: any) {
+function pickExpectedPayload(kind: string, secretPayload: any) {
+  const k = String(kind);
+
+  // 🚫 hard block
+  if (k === "code_input") return null;
+
+  const sp = secretPayload ?? null;
+  if (!sp || typeof sp !== "object") return null;
+
+  // ✅ preferred: explicit safe payload you store
+  const safe = (sp as any).expectedAnswerPayload ?? null;
+  if (safe != null) return sanitizeExpectedForHistory(k, safe);
+
+  // legacy fallback (sanitized + safe kinds only)
+  const legacy =
+      (sp as any).expected ??
+      (sp as any).answer ??
+      (sp as any).correct ??
+      null;
+
+  return sanitizeExpectedForHistory(k, legacy);
+}
+
+function pickExplanation(kind: string, secretPayload: any) {
+  const k = String(kind);
+
+  // 🚫 don’t ship explanations for code_input via statusOnly
+  if (k === "code_input") return null;
+
+  // ✅ optionally restrict to safe kinds
+  if (k !== "single_choice" && k !== "multi_choice" && k !== "drag_reorder") return null;
+
   const sp = secretPayload ?? null;
   if (!sp || typeof sp !== "object") return null;
   return (sp as any).explanation ?? (sp as any).rationale ?? null;
@@ -288,9 +351,8 @@ export async function handlePracticeGet(args: {
         const topicSlug = String(row?.topic?.slug ?? "all");
 
         // ✅ Only include expected/explanation when allowed
-        const expected = canRevealExpected ? pickExpectedPayload(row.secretPayload) : null;
-        const explanation = canRevealExpected ? pickExplanation(row.secretPayload) : null;
-
+        const expected = canRevealExpected ? pickExpectedPayload(row.kind, row.secretPayload) : null;
+        const explanation = canRevealExpected ? pickExplanation(row.kind, row.secretPayload) : null;
         return {
           id: `${row.id}-missed`,
           at: last?.createdAt
@@ -385,12 +447,12 @@ export async function handlePracticeGet(args: {
         const last = lastNonReveal.get(row.id) ?? null;
 
         const expectedAnswerPayload = canRevealExpected
-          ? pickExpectedPayload(row.secretPayload)
-          : null;
+            ? pickExpectedPayload(row.kind, row.secretPayload)
+            : null;
 
         const explanation = canRevealExpected
-          ? pickExplanation(row.secretPayload)
-          : null;
+            ? pickExplanation(row.kind, row.secretPayload)
+            : null;
 
         return {
           instanceId: row.id,

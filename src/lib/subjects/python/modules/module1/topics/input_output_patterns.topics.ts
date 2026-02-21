@@ -2,11 +2,19 @@
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
 import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
 import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects/python/slugs";
-import { PracticeKind } from "@prisma/client";
+import type { PracticeKind } from "@prisma/client";
+
+// ✅ pool source of truth
+import { M1_IO_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/input_output_patterns";
 
 const ID = "input_output_patterns" as const;
 const LABEL = "Input + Output Patterns: Real Mini-Programs" as const;
 const MINUTES = 14 as const;
+
+// ✅ avoid runtime Prisma import: use string literals typed as PracticeKind
+const PK = {
+    code_input: "code_input" as PracticeKind,
+} as const;
 
 export const PY_INPUT_OUTPUT_PATTERNS = {
     topic: {
@@ -16,7 +24,13 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
         summary:
             "Combine input(), casting, operators, and f-strings into real mini-programs like age-next-year, a tip calculator, and a temperature converter.",
         cards: [
-            { type: "sketch", id: `${ID}_s0`, title: "Input + Output Patterns (Ask → Convert → Compute → Show)", sketchId: "py.io.patterns", height: 640 },
+            {
+                type: "sketch",
+                id: `${ID}_s0`,
+                title: "Input + Output Patterns (Ask → Convert → Compute → Show)",
+                sketchId: "py.io.patterns",
+                height: 640,
+            },
 
             {
                 type: "project",
@@ -40,8 +54,8 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                             title: "Age next year",
                             topic: PY_TOPIC_MOD1.input_output_patterns,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
-                            exerciseKey: "m1_io_age_next_year",   // ✅ was m1_io_age_next_year_code
+                            preferKind: PK.code_input,
+                            exerciseKey: "m1_io_age_next_year",
                             seedPolicy: "global",
                             maxAttempts: 10,
                         },
@@ -50,8 +64,8 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                             title: "Tip calculator",
                             topic: PY_TOPIC_MOD1.input_output_patterns,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
-                            exerciseKey: "m1_io_tip_total",       // ✅ was m1_io_tip_calc_code
+                            preferKind: PK.code_input,
+                            exerciseKey: "m1_io_tip_total",
                             seedPolicy: "global",
                             maxAttempts: 10,
                         },
@@ -60,8 +74,8 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                             title: "Temperature converter (C → F)",
                             topic: PY_TOPIC_MOD1.input_output_patterns,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
-                            exerciseKey: "m1_io_c_to_f",          // ✅ was m1_io_temp_convert_code
+                            preferKind: PK.code_input,
+                            exerciseKey: "m1_io_c_to_f",
                             seedPolicy: "global",
                             maxAttempts: 10,
                         },
@@ -76,11 +90,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [
-                { key: "m1_io_age_next_year", w: 1, kind: PracticeKind.code_input },
-                { key: "m1_io_tip_total", w: 1, kind: PracticeKind.code_input },
-                { key: "m1_io_c_to_f", w: 1, kind: PracticeKind.code_input },
-            ],
+            pool: M1_IO_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

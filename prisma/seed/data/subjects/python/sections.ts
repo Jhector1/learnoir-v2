@@ -1,6 +1,6 @@
 // src/lib/subjects/python/sections.ts
 import type { SectionDef } from "../_types";
-import { PY_MOD0, PY_MOD1, PY_PREFIX0, PY_PREFIX1 } from "./constants";
+import { PY_MOD0, PY_MOD1, PY_MOD2, PY_PREFIX0, PY_PREFIX1, PY_PREFIX2 } from "./constants";
 import { PY_TOPICS } from "./topics";
 
 export const PY_SECTIONS = [
@@ -30,7 +30,7 @@ export const PY_SECTIONS = [
   {
     moduleSlug: PY_MOD1,
     prefix: PY_PREFIX1,
-    genKey: "python_part1", // keep if you want the same generator entry
+    genKey: "python_part1",
     topics: PY_TOPICS[PY_MOD1],
     section: {
       slug: "python-1-core-building-blocks",
@@ -45,6 +45,29 @@ export const PY_SECTIONS = [
           "Operators + expressions",
           "String basics + clean output",
           "Ask → Convert → Compute → Show mini-programs",
+        ],
+      },
+    },
+  },
+
+  {
+    moduleSlug: PY_MOD2,
+    prefix: PY_PREFIX2, // ✅ should be "py2"
+    genKey: "python_part1",
+    topics: PY_TOPICS[PY_MOD2],
+    section: {
+      slug: "python-2-control-flow-collections",
+      order: 2,
+      title: "Python 2 — Control Flow + Collections",
+      description: "Conditionals, loops, lists, and functions — stitched into story-based mini-projects.",
+      meta: {
+        module: 2,
+        weeks: "Weeks 6–8",
+        bullets: [
+          "Conditionals (if / elif / else + boolean logic)",
+          "Loops (while / for / break / continue)",
+          "Lists (store many values + iterate)",
+          "Functions (parameters, return, reuse)",
         ],
       },
     },

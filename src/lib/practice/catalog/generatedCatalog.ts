@@ -47,6 +47,26 @@ export const GENERATED_CATALOG = {
           "string_basics": "py1.string_basics",
           "input_output_patterns": "py1.input_output_patterns"
         }
+      },
+      "python-2": {
+        "moduleSlug": "python-2",
+        "sectionSlug": "python-2-control-flow-collections",
+        "sectionTitle": "Python 2 — Control Flow + Collections",
+        "sectionOrder": 2,
+        "genKey": "python_part1",
+        "prefix": "py2",
+        "topicIds": [
+          "conditionals_basics",
+          "loops_basics",
+          "lists_basics",
+          "functions_basics"
+        ],
+        "topics": {
+          "conditionals_basics": "py2.conditionals_basics",
+          "loops_basics": "py2.loops_basics",
+          "lists_basics": "py2.lists_basics",
+          "functions_basics": "py2.functions_basics"
+        }
       }
     }
   },

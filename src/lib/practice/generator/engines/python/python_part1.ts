@@ -7,6 +7,7 @@ import type { TopicContext } from "../../generatorTypes";
 import { parseTopicSlug } from "./python_shared/_shared";
 import { makeGenPythonStatementsPart1Mod0 } from "./python_part1_mod0/handlers";
 import { makeGenPythonStatementsPart1Mod1 } from "./python_part1_mod1/handlers";
+import { makeGenPythonStatementsPart1Mod2 } from "./python_part1_mod2/handlers";
 
 // Base slugs (no prefix)
 const MOD0_BASE = new Set<string>([
@@ -24,9 +25,18 @@ const MOD1_BASE = new Set<string>([
   "input_output_patterns",
 ]);
 
+// ✅ Module 2 base slugs (no prefix)
+const MOD2_BASE = new Set<string>([
+  "conditionals_basics",
+  "loops_basics",
+  "lists_basics",
+  "functions_basics",
+]);
+
 // Prefixes your app uses
 const MOD0_PREFIX = "py0";
 const MOD1_PREFIX = "py1";
+const MOD2_PREFIX = "py2";
 
 export function makeGenPythonStatementsPart1(ctx: TopicContext) {
   const { raw, base, prefix } = parseTopicSlug(String(ctx.topicSlug));
@@ -34,12 +44,13 @@ export function makeGenPythonStatementsPart1(ctx: TopicContext) {
   // Prefer explicit prefix routing if present
   if (prefix === MOD0_PREFIX) return makeGenPythonStatementsPart1Mod0(ctx);
   if (prefix === MOD1_PREFIX) return makeGenPythonStatementsPart1Mod1(ctx);
+  if (prefix === MOD2_PREFIX) return makeGenPythonStatementsPart1Mod2(ctx);
 
   // Fallback: route by base
   if (MOD0_BASE.has(base)) return makeGenPythonStatementsPart1Mod0(ctx);
   if (MOD1_BASE.has(base)) return makeGenPythonStatementsPart1Mod1(ctx);
+  if (MOD2_BASE.has(base)) return makeGenPythonStatementsPart1Mod2(ctx);
 
-  // Hard stop: prevents accidental generation outside allowed topics
   return (_rng: RNG, _diff: Difficulty, id: string): GenOut<ExerciseKind> => {
     throw new Error(`python_part1: no generator registered for topicSlug="${raw}" (exercise id=${id})`);
   };

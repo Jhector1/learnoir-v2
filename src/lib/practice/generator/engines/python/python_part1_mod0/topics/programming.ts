@@ -1,20 +1,26 @@
 // src/lib/practice/generator/engines/python/python_part1_mod0/topics/programming.ts
-import type { SingleChoiceExercise } from "../../../../../types";
 import type { Handler } from "../../python_shared/_shared";
+import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
-export const M0_PROGRAMMING_VALID_KEYS = [
-    "m0_prog_language_definition",
-    "m0_prog_python_is_language",
-    "m0_prog_instructions_precise",
+// ✅ Source of truth: key + weight + kind
+export const M0_PROGRAMMING_POOL = [
+    { key: "m0_prog_language_definition", w: 1, kind: "single_choice" },
+    { key: "m0_prog_python_is_language", w: 1, kind: "single_choice" },
+    { key: "m0_prog_instructions_precise", w: 1, kind: "single_choice" },
 ] as const;
 
-export const M0_PROGRAMMING_HANDLERS: Record<(typeof M0_PROGRAMMING_VALID_KEYS)[number], Handler> = {
-    m0_prog_language_definition: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+// ✅ Derive keys from pool
+export type M0ProgrammingKey = (typeof M0_PROGRAMMING_POOL)[number]["key"];
+export const M0_PROGRAMMING_VALID_KEYS = M0_PROGRAMMING_POOL.map((p) => p.key) as M0ProgrammingKey[];
+
+// ✅ Handlers keyed by derived union
+export const M0_PROGRAMMING_HANDLERS: Record<M0ProgrammingKey, Handler> = {
+    m0_prog_language_definition: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_prog_language_definition",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "Programming language",
             prompt: "A **programming language** is best described as:",
             options: [
@@ -22,17 +28,16 @@ export const M0_PROGRAMMING_HANDLERS: Record<(typeof M0_PROGRAMMING_VALID_KEYS)[
                 { id: "b", text: "A type of internet browser" },
                 { id: "c", text: "A folder on your desktop" },
             ],
+            answerOptionId: "a",
             hint: "We use programming languages to give computers instructions.",
-        };
-        return { archetype: "m0_prog_language_definition", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+        }),
 
-    m0_prog_python_is_language: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_prog_python_is_language: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_prog_python_is_language",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "Python",
             prompt: "Python is a:",
             options: [
@@ -40,26 +45,24 @@ export const M0_PROGRAMMING_HANDLERS: Record<(typeof M0_PROGRAMMING_VALID_KEYS)[
                 { id: "b", text: "Computer brand" },
                 { id: "c", text: "Keyboard shortcut" },
             ],
+            answerOptionId: "a",
             hint: "Python is a language used to write programs.",
-        };
-        return { archetype: "m0_prog_python_is_language", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+        }),
 
-    m0_prog_instructions_precise: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_prog_instructions_precise: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_prog_instructions_precise",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Precision",
+            diff,
+            title: "Precision matters",
             prompt: "Computers usually need instructions that are:",
             options: [
                 { id: "a", text: "Vague so they can guess what you mean" },
                 { id: "b", text: "Clear and precise (step-by-step)" },
                 { id: "c", text: "Written only in emojis" },
             ],
+            answerOptionId: "b",
             hint: "Computers follow exact instructions.",
-        };
-        return { archetype: "m0_prog_instructions_precise", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+        }),
 };

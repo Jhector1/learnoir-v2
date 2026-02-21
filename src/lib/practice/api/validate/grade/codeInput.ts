@@ -1,126 +1,154 @@
-// src/lib/practice/validate/grade/codeInput.ts
-import type { GradeResult } from ".";
+// src/lib/practice/api/validate/grade/codeInput.ts
+import { runCode } from "@/lib/code/runCode";
 import type { LoadedInstance } from "../load";
 import type { SubmitAnswer } from "../schemas";
 import { CodeExpectedSchema } from "../schemas";
-import { normOut } from "../utils/output";
 
-// ✅ recommended: move runner to lib (server-safe)
-import { runCode } from "@/lib/code/runCode";
-import type { CodeLanguage } from "@/lib/practice/types";
+type GradeResult = {
+  ok: boolean;
+  explanation: string;
+  revealAnswer: any | null;
+};
+
+const DEFAULT_LIMITS = {
+  cpu_time_limit: 2,
+  wall_time_limit: 6,
+  memory_limit: 256000,
+} as const;
+
+function normOut(s: string) {
+  return String(s ?? "")
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .trimEnd();
+}
+
+function matches(got: string, want: string, mode: "exact" | "includes" = "exact") {
+  const G = normOut(got);
+  const W = normOut(want);
+  return mode === "includes" ? G.includes(W.trim()) : G === W;
+}
+
+function pickRunError(run: any) {
+  return (
+      String(run?.error ?? "").trim() ||
+      String(run?.message ?? "").trim() ||
+      String(run?.compile_output ?? "").trim() ||
+      String(run?.stderr ?? "").trim() ||
+      "Run failed."
+  );
+}
 
 export async function gradeCodeInput(args: {
   instance: LoadedInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;
+  showDebug: boolean;
 }): Promise<GradeResult> {
-  const expParsed = CodeExpectedSchema.safeParse(args.expectedCanon);
-  if (!expParsed.success) {
+  const { expectedCanon, answer, isReveal, showDebug } = args;
+
+  // ✅ Parse/normalize expectedCanon into { tests[] } (supports legacy stdin/stdout too)
+  const parsed = CodeExpectedSchema.safeParse(expectedCanon);
+  if (!parsed.success) {
     return {
       ok: false,
       revealAnswer: null,
-      explanation: "Server bug: code_input missing tests/stdout.",
+      explanation: "Server bug: invalid code_input expected payload.",
     };
   }
+  const expected = parsed.data; // transformed output: { kind, language, tests, solutionCode }
 
-  const exp = expParsed.data;
-  const expLang = exp.language ?? "python";
-
-  const normLinewise = (s: string) =>
-    String(s ?? "")
-      .replace(/\r\n/g, "\n")
-      .replace(/[ \t]+\n/g, "\n");
-
-  const matchOutput = (
-    got: string,
-    want: string,
-    mode: "exact" | "includes" = "exact",
-  ) => {
-    const G = normLinewise(normOut(got));
-    const W = normLinewise(normOut(want));
-    return mode === "includes" ? G.includes(W.trim()) : G === W;
-  };
-
-  if (args.isReveal) {
+  // ✅ Reveal: do NOT grade, only show solution (if any)
+  if (isReveal) {
     return {
       ok: false,
       revealAnswer: {
         kind: "code_input",
-        language: expLang,
-        solutionCode: exp.solutionCode ?? "",
-        stdin: exp.stdin ?? "",
-        stdout: exp.stdout ?? undefined,
-        tests: exp.tests ?? undefined,
+        language: expected.language ?? "python",
+        solutionCode: expected.solutionCode ?? "",
       },
       explanation: "Solution shown.",
     };
   }
 
-  const gotLang = String((args.answer as any)?.language ?? expLang) as CodeLanguage;
-  const gotCode = String((args.answer as any)?.code ?? "");
-  if (!gotCode.trim()) {
+  const ans: any = answer ?? {};
+  const code = String(ans.code ?? ans.source ?? "").trimEnd();
+  if (!code.trim()) {
     return { ok: false, revealAnswer: null, explanation: "Missing code." };
   }
 
-  // grade by tests[] first
-  if (exp.tests?.length) {
-    const results: any[] = [];
-    let allPass = true;
+  const language = String(ans.language ?? expected.language ?? "python");
 
-    for (const [i, tc] of exp.tests.entries()) {
-      const run = await runCode({
-        language: gotLang,
-        code: gotCode,
-        stdin: tc.stdin ?? "",
-      });
+  const tests = Array.isArray(expected.tests) ? expected.tests : [];
+  if (!tests.length) {
+    return { ok: false, revealAnswer: null, explanation: "Server bug: missing tests." };
+  }
 
-      const pass =
-        Boolean(run?.ok) &&
-        matchOutput(run.stdout ?? "", tc.stdout, tc.match ?? "exact");
+  const MAX_TESTS = 12;
+  const trimmed = tests.slice(0, MAX_TESTS);
 
-      results.push({
-        i,
-        ok: Boolean(run?.ok),
-        pass,
+  let firstFail: any = null;
+
+  for (let i = 0; i < trimmed.length; i++) {
+    const tc = trimmed[i];
+
+    // ✅ IMPORTANT: ignore user stdin; use test stdin only
+    const run = await runCode({
+      language: language as any,
+      code,
+      stdin: tc.stdin ?? "",
+      limits: DEFAULT_LIMITS,
+    } as any);
+
+    if (!run?.ok) {
+      firstFail ??= {
+        idx: i,
+        why: pickRunError(run),
         stdout: run?.stdout ?? "",
         stderr: run?.stderr ?? "",
-        compile_output: run?.compile_output ?? "",
-      });
-
-      if (!pass) allPass = false;
+        compile: run?.compile_output ?? "",
+      };
+      if (!showDebug) break;
+      continue;
     }
 
-    return {
-      ok: allPass,
-      revealAnswer: null,
-      explanation: allPass ? "Correct." : "Some tests failed.",
-    };
+    const pass = matches(run.stdout ?? "", tc.stdout ?? "", tc.match ?? "exact");
+    if (!pass) {
+      firstFail ??= {
+        idx: i,
+        why: "Output did not match.",
+        stdout: run.stdout ?? "",
+        stderr: run.stderr ?? "",
+        compile: run.compile_output ?? "",
+        want: tc.stdout ?? "",
+      };
+      if (!showDebug) break;
+    }
   }
 
-  // stdout-only grading
-  const run = await runCode({
-    language: gotLang,
-    code: gotCode,
-    stdin: exp.stdin ?? "",
-  });
-
-  if (!run?.ok) {
-    const err =
-      (run?.error ??
-        run?.message ??
-        String(run?.compile_output ?? "").trim()) ||
-      String(run?.stderr ?? "").trim() ||
-      "Run failed.";
-
-    return { ok: false, revealAnswer: null, explanation: err };
+  if (!firstFail) {
+    return { ok: true, revealAnswer: null, explanation: "Correct." };
   }
 
-  const ok = matchOutput(run.stdout ?? "", exp.stdout ?? "", "exact");
+  // ✅ No debug: do not leak expected output
+  if (!showDebug) {
+    return { ok: false, revealAnswer: null, explanation: "Some tests failed." };
+  }
 
-  return {
-    ok,
-    revealAnswer: null,
-    explanation: ok ? "Correct." : "Output didn't match expected.",
-  };
+  // ✅ Debug allowed: show details
+  const parts: string[] = [];
+  parts.push(`Test #${firstFail.idx + 1} failed.`);
+  parts.push(firstFail.why);
+
+  if (String(firstFail.compile ?? "").trim())
+    parts.push(`Compile:\n${String(firstFail.compile).slice(0, 1200)}`);
+  if (String(firstFail.stderr ?? "").trim())
+    parts.push(`Stderr:\n${String(firstFail.stderr).slice(0, 1200)}`);
+  if (String(firstFail.stdout ?? "").trim())
+    parts.push(`Stdout:\n${String(firstFail.stdout).slice(0, 1200)}`);
+  if (String(firstFail.want ?? "").trim())
+    parts.push(`Expected:\n${String(firstFail.want).slice(0, 1200)}`);
+
+  return { ok: false, revealAnswer: null, explanation: parts.join("\n\n") };
 }

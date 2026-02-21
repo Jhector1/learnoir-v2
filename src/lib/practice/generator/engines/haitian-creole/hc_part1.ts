@@ -40,14 +40,15 @@ function weightedKey(rng: RNG, pool: PoolItem[]): string {
 // Expected helpers (new kinds)
 // ------------------------------------------------------------
 type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
-type DragExpected = { kind: "drag_reorder"; tokenIds: string[] };
+type DragExpected = { kind: "drag_reorder"; order: string[] };
 type VoiceExpected = { kind: "voice_input"; answers: string[]; match?: "exact" | "includes" };
 
 function makeTextExpected(answers: string[], match: "exact" | "includes" = "exact"): TextExpected {
   return { kind: "text_input", answers, match };
 }
-function makeDragExpected(tokenIds: string[]): DragExpected {
-  return { kind: "drag_reorder", tokenIds };
+
+function makeDragExpected(order: string[]): DragExpected {
+  return { kind: "drag_reorder", order };
 }
 function makeVoiceExpected(answers: string[], match: "exact" | "includes" = "exact"): VoiceExpected {
   return { kind: "voice_input", answers, match };

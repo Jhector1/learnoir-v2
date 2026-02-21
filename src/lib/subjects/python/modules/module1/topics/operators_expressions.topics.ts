@@ -1,13 +1,18 @@
 // src/components/sketches/subjects/python/modules/module1/topics/operators_expressions.ts
-
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
 import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
 import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects/python/slugs";
-import { PracticeKind } from "@prisma/client";
+import type { PracticeKind } from "@prisma/client";
+
+import { M1_OPERATORS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/operators_expressions";
 
 const ID = "operators_expressions" as const;
 const LABEL = "Operators + Expressions: The Calculator Inside Your Code" as const;
 const MINUTES = 10 as const;
+
+const PK = {
+    code_input: "code_input" as PracticeKind,
+} as const;
 
 export const PY_OPERATORS_EXPRESSIONS = {
     topic: {
@@ -47,8 +52,8 @@ export const PY_OPERATORS_EXPRESSIONS = {
                             title: "Operator precedence (compute the result)",
                             topic: PY_TOPIC_MOD1.operators_expressions,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input, // ✅ now code
-                            exerciseKey: "m1_ops_precedence_sc", // keep key to match DB/pool
+                            preferKind: PK.code_input,
+                            exerciseKey: "m1_ops_precedence_sc",
                             seedPolicy: "global",
                             maxAttempts: 10,
                         },
@@ -57,8 +62,8 @@ export const PY_OPERATORS_EXPRESSIONS = {
                             title: "Modulo (even/odd detector)",
                             topic: PY_TOPIC_MOD1.operators_expressions,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input, // ✅ now code
-                            exerciseKey: "m1_ops_mod_evenodd_sc", // keep key
+                            preferKind: PK.code_input,
+                            exerciseKey: "m1_ops_mod_evenodd_sc",
                             seedPolicy: "global",
                             maxAttempts: 10,
                         },
@@ -67,7 +72,7 @@ export const PY_OPERATORS_EXPRESSIONS = {
                             title: "Build a mini checkout line (subtotal, tax, total)",
                             topic: PY_TOPIC_MOD1.operators_expressions,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
+                            preferKind: PK.code_input,
                             exerciseKey: "m1_ops_checkout_code",
                             seedPolicy: "global",
                             maxAttempts: 10,
@@ -83,11 +88,7 @@ export const PY_OPERATORS_EXPRESSIONS = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [
-                { key: "m1_ops_precedence_sc", w: 1, kind: PracticeKind.code_input },     // ✅ now code
-                { key: "m1_ops_mod_evenodd_sc", w: 1, kind: PracticeKind.code_input },   // ✅ now code
-                { key: "m1_ops_checkout_code", w: 1, kind: PracticeKind.code_input },
-            ],
+            pool: M1_OPERATORS_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

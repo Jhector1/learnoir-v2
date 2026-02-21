@@ -47,24 +47,44 @@ function applyAnswerPayloadToItem(item: QItem, payload: any) {
       (item as any).single = payload.optionId ?? null;
       break;
     case "multi_choice":
-      (item as any).multi = Array.isArray(payload.optionIds)
-        ? payload.optionIds
-        : [];
+      (item as any).multi = Array.isArray(payload.optionIds) ? payload.optionIds : [];
       break;
     case "numeric":
       (item as any).num =
-        payload.value === null || payload.value === undefined
-          ? ""
-          : String(payload.value);
+          payload.value === null || payload.value === undefined ? "" : String(payload.value);
       break;
     case "matrix_input":
       if (Array.isArray(payload.raw)) (item as any).mat = payload.raw;
       break;
-    case "code_input":
-      (item as any).codeLang = payload.language ?? (item as any).codeLang;
-      (item as any).code = payload.code ?? "";
-      (item as any).codeStdin = payload.stdin ?? "";
+
+    case "code_input": {
+      // ✅ accept both `code` and legacy `source`
+      const code = typeof payload.code === "string"
+          ? payload.code
+          : typeof payload.source === "string"
+              ? payload.source
+              : "";
+
+      // ✅ accept both `stdin` and legacy `codeStdin`
+      const stdin = typeof payload.stdin === "string"
+          ? payload.stdin
+          : typeof payload.codeStdin === "string"
+              ? payload.codeStdin
+              : "";
+
+      const lang =
+          typeof payload.language === "string"
+              ? payload.language
+              : typeof payload.codeLang === "string"
+                  ? payload.codeLang
+                  : null;
+
+      if (lang) (item as any).codeLang = lang;
+      (item as any).code = code;
+      (item as any).codeStdin = stdin;
       break;
+    }
+
     case "vector_drag_dot":
       (item as any).dragA = payload.a ?? (item as any).dragA;
       break;

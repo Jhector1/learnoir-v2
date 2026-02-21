@@ -18,18 +18,13 @@ function nodeToText(node: React.ReactNode): string {
     if (node == null) return "";
     if (typeof node === "string" || typeof node === "number") return String(node);
     if (Array.isArray(node)) return node.map(nodeToText).join("");
-    if (React.isValidElement(node)) return nodeToText(node.props.children);
+    if (React.isValidElement(node)) return nodeToText((node.props as any).children);
     return "";
 }
 
 function CopyIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-            {...props}
-        >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
             <path
                 d="M9 9h10v10H9V9Z"
                 stroke="currentColor"
@@ -68,16 +63,14 @@ function PreWithCopy({
     className?: string;
 }) {
     const [copied, setCopied] = React.useState(false);
-
     const textToCopy = React.useMemo(() => nodeToText(children), [children]);
 
     async function onCopy() {
-        const text = textToCopy.replace(/\n$/, ""); // common trailing newline
+        const text = textToCopy.replace(/\n$/, "");
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(text);
             } else {
-                // Fallback for older browsers / non-secure contexts
                 const ta = document.createElement("textarea");
                 ta.value = text;
                 ta.style.position = "fixed";
@@ -93,7 +86,7 @@ function PreWithCopy({
             setCopied(true);
             window.setTimeout(() => setCopied(false), 900);
         } catch {
-            // If copy fails, do nothing (silently).
+            // silent
         }
     }
 
@@ -105,12 +98,12 @@ function PreWithCopy({
         .join(" ");
 
     return (
-        <div className="relative  z-0 my-3 w-full">
+        <div className="relative z-0 my-3 w-full">
             <button
                 type="button"
                 onClick={onCopy}
                 className="absolute z-10 top-2 !right-2 !left-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/50"
-                style={{ right: 8, left: "auto", top: 8 }} // hard guarantee
+                style={{ right: 8, left: "auto", top: 8 }}
                 aria-label="Copy code"
                 title={copied ? "Copied" : "Copy"}
             >
@@ -120,16 +113,106 @@ function PreWithCopy({
             <pre className={`${preClass} w-full pt-10`}>{children}</pre>
         </div>
     );
-
 }
 
+// ------------------------------------------------------------
+// ✅ Terminal-style markdown block renderer (~~~terminal)
+// ------------------------------------------------------------
+function TerminalExample({ raw }: { raw: string }) {
+    const lines0 = String(raw ?? "").replace(/\n$/, "").split("\n");
+
+    let meta = "Idle • Example";
+    let lines = lines0;
+
+    if (lines0[0]?.startsWith("@meta")) {
+        const m = lines0[0].slice(5).trim();
+        meta = m ? m.replace(/\s*\|\s*/g, " • ") : meta;
+        lines = lines0.slice(1);
+    }
+
+    const metaLower = meta.toLowerCase();
+    const isAccepted = metaLower.includes("accepted") || metaLower.includes("ok");
+    const isError = metaLower.includes("error") || metaLower.includes("failed");
+
+    const outerBorder = isError
+        ? "border-rose-300/30"
+        : isAccepted
+            ? "border-emerald-300/30"
+            : "border-neutral-200 dark:border-white/10";
+
+    const innerBorder = isError
+        ? "border-rose-300/20"
+        : isAccepted
+            ? "border-emerald-300/20"
+            : "border-neutral-200 dark:border-white/10";
+
+    const sysCls = "text-neutral-500 dark:text-white/60";
+    const errCls = "font-semibold text-rose-600 dark:text-rose-300";
+    const outCls = "text-neutral-900 dark:text-white/85";
+
+    return (
+        <div
+            className={[
+                // ✅ narrower + centered, no stretching
+                "relative z-0 my-3 w-full max-w-[760px] mx-auto",
+                "rounded-2xl border p-3",
+                "bg-white/80 dark:bg-black/40",
+                outerBorder,
+            ].join(" ")}
+        >
+            <div className="flex items-center justify-between">
+                <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
+                    Terminal
+                </div>
+                <div className="text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
+                    {meta}
+                </div>
+            </div>
+
+            <div
+                className={[
+                    // ✅ content height, capped, scrolls instead of pushing/overlapping
+                    "mt-2 rounded-xl border p-2",
+                    "bg-white/60 dark:bg-black/30",
+                    "max-h-48 overflow-auto",
+                    innerBorder,
+                ].join(" ")}
+            >
+                <div className="font-mono text-xs leading-5 whitespace-pre-wrap px-2 break-words">
+                    {lines.map((l, i) => {
+                        const line = String(l ?? "");
+
+                        const isSys =
+                            line.startsWith("$") ||
+                            line.startsWith(">") ||
+                            line.toLowerCase().startsWith("input") ||
+                            line.toLowerCase().startsWith("output");
+
+                        const looksErr =
+                            line.toLowerCase().includes("traceback") ||
+                            line.toLowerCase().includes("error") ||
+                            line.toLowerCase().includes("exception");
+
+                        const cls = looksErr ? errCls : isSys ? sysCls : outCls;
+
+                        return (
+                            <React.Fragment key={i}>
+                                <span className={cls}>{line}</span>
+                                {i < lines.length - 1 ? "\n" : null}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
 export default function MathMarkdown({ content, className, inline = false }: Props) {
     const Wrapper: React.ElementType = inline ? "span" : "div";
 
     return (
         <Wrapper className={className}>
             <ReactMarkdown
-                // ✅ remarkGfm enables ~~~ fenced code blocks + tables + strikethrough, etc.
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[
                     rehypeKatex,
@@ -188,7 +271,6 @@ export default function MathMarkdown({ content, className, inline = false }: Pro
                             );
                         }
 
-                        // Keep highlighted output intact (rehype-highlight may inject <span> nodes).
                         return (
                             <code className={className} {...props}>
                                 {children}
@@ -196,8 +278,32 @@ export default function MathMarkdown({ content, className, inline = false }: Pro
                         );
                     },
 
-                    pre: ({ children, className }) =>
-                        inline ? <>{children}</> : <PreWithCopy className={className}>{children}</PreWithCopy>,
+                    pre: ({ children, className }) => {
+                        if (inline) return <>{children}</>;
+
+                        // Detect language from inner <code class="language-...">
+                        let lang = "";
+                        let codeNode: any = null;
+
+                        if (React.isValidElement(children)) codeNode = children;
+                        else if (Array.isArray(children) && React.isValidElement(children[0])) codeNode = children[0];
+
+                        if (codeNode && React.isValidElement(codeNode)) {
+                            lang = String((codeNode.props as any)?.className ?? "");
+                        }
+
+                        const isTerminal =
+                            lang.includes("language-terminal") ||
+                            lang.includes("language-learnoir-term") ||
+                            lang.includes("language-console");
+
+                        if (isTerminal) {
+                            const raw = nodeToText(children);
+                            return <TerminalExample raw={raw} />;
+                        }
+
+                        return <PreWithCopy className={className}>{children}</PreWithCopy>;
+                    },
 
                     blockquote: ({ children }) => (
                         <blockquote className="my-2 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/80">

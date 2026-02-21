@@ -38,21 +38,28 @@ export type PracticeState = {
  * - a live item (practice[qid].item)
  */
 function extractCodeLike(p: any) {
-  return {
-    code: typeof p?.code === "string" ? p.code : null,
-    stdin:
-        typeof p?.codeStdin === "string"
-            ? p.codeStdin
-            : typeof p?.stdin === "string"
-                ? p.stdin
-                : null,
-    language:
-        typeof p?.codeLang === "string"
-            ? p.codeLang
-            : typeof p?.language === "string"
-                ? p.language
-                : null,
-  };
+  const code =
+      typeof p?.code === "string"
+          ? p.code
+          : typeof p?.source === "string"
+              ? p.source
+              : null;
+
+  const stdin =
+      typeof p?.codeStdin === "string"
+          ? p.codeStdin
+          : typeof p?.stdin === "string"
+              ? p.stdin
+              : null;
+
+  const language =
+      typeof p?.codeLang === "string"
+          ? p.codeLang
+          : typeof p?.language === "string"
+              ? p.language
+              : null;
+
+  return { code, stdin, language };
 }
 
 /**
@@ -89,7 +96,7 @@ export function isEmptyPracticeAnswer(
   }
 
   if (ex.kind === "code_input") {
-    const code = (item as any).code;
+    const code = (item as any).code ?? (item as any).source;
     return !(code && String(code).trim().length > 0);
   }
 

@@ -1,7 +1,10 @@
 // src/components/sketches/subjects/python/modules/module0/topics/computer_intro.ts
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
-import {PY_MOD0} from "../../../../../../../prisma/seed/data/subjects/python/constants";
-import {PY_SECTION_PART0, PY_TOPIC_MOD0} from "@/lib/practice/catalog/subjects/python/slugs";
+import { PY_MOD0 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
+import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects/python/slugs";
+
+// ✅ import pool as source of truth
+import { M0_COMPUTER_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/computer";
 
 const ID = "computer_intro" as const;
 const LABEL = "The Input → Processing → Output Model" as const;
@@ -30,25 +33,6 @@ export const PY_COMPUTER_INTRO = {
                 height: 520,
             },
 
-
-            // {
-//                     type: "quiz",
-//                     id: "py1_q1",
-//                     title: "Quick check",
-//                     spec: {
-//                         subject: "python",
-//                         module: PY_MOD0,
-//                         section: PY_SECTION_PART0,
-//                         topic: PY_TOPIC_MOD0.print,
-//                         difficulty: "easy",
-//                         n: 4,
-//                         allowReveal: true,
-//                     },
-//                 },
-
-
-
-
             // ✅ QUIZ
             {
                 type: "quiz",
@@ -59,10 +43,12 @@ export const PY_COMPUTER_INTRO = {
                     subject: "python",
                     module: PY_MOD0,
                     section: PY_SECTION_PART0,
-
                     topic: PY_TOPIC_MOD0.computer_intro,
                     difficulty: "easy",
-                    n: 4,
+
+                    // ✅ align to pool length to avoid forced repeats
+                    n: M0_COMPUTER_POOL.length,
+
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 1,
@@ -76,7 +62,8 @@ export const PY_COMPUTER_INTRO = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [],
+            // ✅ populated; clone to avoid readonly friction
+            pool: M0_COMPUTER_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

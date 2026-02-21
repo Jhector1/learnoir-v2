@@ -287,16 +287,25 @@ export default function ExerciseRenderer({
     // drag_reorder ✅
     // -----------------------------
     if (exercise.kind === "drag_reorder") {
+        const curOrder =
+            Array.isArray((current as any).reorder)
+                ? (current as any).reorder.map(String)
+                : Array.isArray((current as any).reorderIds)
+                    ? (current as any).reorderIds.map(String) // legacy fallback
+                    : [];
+
         const reviewCorrectTokenIds =
-            reviewCorrectItem && Array.isArray((reviewCorrectItem as any).reorderIds)
-                ? (reviewCorrectItem as any).reorderIds.map((x: any) => String(x))
-                : null;
+            reviewCorrectItem && Array.isArray((reviewCorrectItem as any).reorder)
+                ? (reviewCorrectItem as any).reorder.map((x: any) => String(x))
+                : reviewCorrectItem && Array.isArray((reviewCorrectItem as any).reorderIds)
+                    ? (reviewCorrectItem as any).reorderIds.map((x: any) => String(x))
+                    : null;
 
         return (
             <DragReorderExerciseUI
                 exercise={exercise as any}
-                tokenIds={(current as any).reorderIds ?? []}
-                onChange={(tokenIds) => updateCurrent({reorderIds: tokenIds, ...resetCheckPatch()})}
+                tokenIds={curOrder}
+                onChange={(ids) => updateCurrent({ reorder: ids, ...resetCheckPatch() })}
                 disabled={lockInputs}
                 checked={checked}
                 ok={ok}
@@ -304,7 +313,6 @@ export default function ExerciseRenderer({
             />
         );
     }
-
     // -----------------------------
     // voice_input ✅
     // -----------------------------

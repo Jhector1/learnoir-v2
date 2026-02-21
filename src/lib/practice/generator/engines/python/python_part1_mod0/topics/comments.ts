@@ -1,38 +1,43 @@
 // src/lib/practice/generator/engines/python/python_part1_mod0/topics/comments.ts
-import type { SingleChoiceExercise } from "../../../../../types";
 import type { Handler } from "../../python_shared/_shared";
+import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
-export const M0_COMMENTS_VALID_KEYS = [
-    "m0_comments_symbol",
-    "m0_comments_ignored_by_python",
-    "m0_comments_best_reason",
+// ✅ Source of truth: includes key + weight + kind
+export const M0_COMMENTS_POOL = [
+    { key: "m0_comments_symbol", w: 1, kind: "single_choice" },
+    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice" },
+    { key: "m0_comments_best_reason", w: 1, kind: "single_choice" },
 ] as const;
 
-export const M0_COMMENTS_HANDLERS: Record<(typeof M0_COMMENTS_VALID_KEYS)[number], Handler> = {
-    m0_comments_symbol: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+// ✅ Derive keys from pool (for routing + validation)
+export type M0CommentsKey = (typeof M0_COMMENTS_POOL)[number]["key"];
+export const M0_COMMENTS_VALID_KEYS = M0_COMMENTS_POOL.map((p) => p.key) as M0CommentsKey[];
+
+// ✅ Handlers keyed by the derived key union
+export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
+    m0_comments_symbol: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_comments_symbol",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Comment symbol",
+            diff,
+            title: "Comment symbol (#)",
             prompt: "Which symbol starts a single-line comment in Python?",
             options: [
-                { id: "a", text: "//" },
-                { id: "b", text: "#" },
-                { id: "c", text: "/* */" },
+                { id: "a", text: "`//`" },
+                { id: "b", text: "`#`" },
+                { id: "c", text: "`/* */`" },
             ],
+            answerOptionId: "b",
             hint: "Python uses # for single-line comments.",
-        };
-        return { archetype: "m0_comments_symbol", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+        }),
 
-    m0_comments_ignored_by_python: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_comments_ignored_by_python: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_comments_ignored_by_python",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "Python ignores comments",
             prompt: "Comments are mainly for:",
             options: [
@@ -40,26 +45,24 @@ export const M0_COMMENTS_HANDLERS: Record<(typeof M0_COMMENTS_VALID_KEYS)[number
                 { id: "b", text: "Making Python run faster" },
                 { id: "c", text: "Changing the output automatically" },
             ],
-            hint: "Python ignores comments; they help humans.",
-        };
-        return { archetype: "m0_comments_ignored_by_python", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+            answerOptionId: "a",
+            hint: "Python ignores comments; they help humans understand the code.",
+        }),
 
-    m0_comments_best_reason: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_comments_best_reason: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_comments_best_reason",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Best comments",
+            diff,
+            title: "Best reason to comment",
             prompt: "Which is the best reason to write a comment?",
             options: [
                 { id: "a", text: "To repeat exactly what the code already says" },
                 { id: "b", text: "To explain intent or a tricky step" },
                 { id: "c", text: "To make the file longer" },
             ],
-            hint: "Good comments explain why / intent.",
-        };
-        return { archetype: "m0_comments_best_reason", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+            answerOptionId: "b",
+            hint: "Good comments explain intent (the why), not obvious code (the what).",
+        }),
 };

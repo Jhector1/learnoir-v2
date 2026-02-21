@@ -1,7 +1,10 @@
 // src/components/sketches/subjects/python/modules/module0/topics/programming_intro.ts
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
-import {PY_SECTION_PART0, PY_TOPIC_MOD0} from "@/lib/practice/catalog/subjects/python/slugs";
-import {PY_MOD0} from "../../../../../../../prisma/seed/data/subjects/python/constants";
+import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects/python/slugs";
+import { PY_MOD0 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
+
+// ✅ import pool from generator (source of truth)
+import { M0_PROGRAMMING_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/programming";
 
 const ID = "programming_intro" as const;
 const LABEL = "Programming Languages: Talking to Computers" as const;
@@ -22,7 +25,6 @@ export const PY_PROGRAMMING_INTRO = {
                 height: 520,
             },
 
-            // ✅ QUIZ
             {
                 type: "quiz",
                 id: `${ID}_q0`,
@@ -32,11 +34,12 @@ export const PY_PROGRAMMING_INTRO = {
                     subject: "python",
                     module: PY_MOD0,
                     section: PY_SECTION_PART0,
-
                     topic: PY_TOPIC_MOD0.programming_intro,
-
                     difficulty: "easy",
-                    n: 2,
+
+                    // ✅ aligned with pool size
+                    n: M0_PROGRAMMING_POOL.length,
+
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 1,
@@ -50,7 +53,7 @@ export const PY_PROGRAMMING_INTRO = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [],
+            pool: M0_PROGRAMMING_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

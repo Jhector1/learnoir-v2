@@ -15,6 +15,58 @@ import { rngFromActor } from "@/lib/practice/catalog";
 import { toDbTopicSlug } from "@/lib/practice/topicSlugs";
 import { PracticeKind } from "@prisma/client";
 
+
+
+
+
+
+type PoolItem = { key: string; w: number; kind?: string | null };
+
+function readPoolFromTopicMeta(meta: any): PoolItem[] {
+  const raw = meta?.pool;
+  if (!Array.isArray(raw)) return [];
+  return raw
+      .map((p: any) => ({
+        key: String(p?.key ?? "").trim(),
+        w: Number(p?.w ?? 0),
+        kind: p?.kind ? String(p.kind).trim() : undefined,
+      }))
+      .filter((p) => p.key && Number.isFinite(p.w) && p.w > 0);
+}
+
+function filterPoolByPreferKind(pool: PoolItem[], preferKind: PracticeKind | null | undefined) {
+  if (!preferKind) return pool;
+  const pk = String(preferKind);
+  // keep items that either match kind OR have no kind (wildcards)
+  return pool.filter((p) => !p.kind || String(p.kind) === pk);
+}
+
+function weightedPickKey(rng: any, pool: PoolItem[]) {
+  // deterministic weighted pick using rng.int(lo, hi) inclusive
+  const total = pool.reduce((s, p) => s + p.w, 0);
+  if (total <= 0) return null;
+
+  let r = rng.int(1, total); // 1..total
+  for (const p of pool) {
+    r -= p.w;
+    if (r <= 0) return p.key;
+  }
+  return pool[pool.length - 1]?.key ?? null;
+}
+
+function pickUniqueExerciseKey(rng: any, pool: PoolItem[], used: Set<string>) {
+  const remaining = pool.filter((p) => !used.has(p.key));
+  if (!remaining.length) return null;
+  const key = weightedPickKey(rng, remaining);
+  if (!key) return null;
+  used.add(key);
+  return key;
+}
+
+
+
+
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -357,7 +409,7 @@ export async function POST(req: Request) {
       };
     });
   } else {
-    // ✅ quiz mode: random-from-pool, frozen by quizKey
+    // ✅ quiz mode: frozen by quizKey, AND no duplicate exercises within the quiz
     const rng = rngFromActor({
       userId: actor.userId,
       guestId: actor.guestId,
@@ -368,11 +420,53 @@ export async function POST(req: Request) {
     const pickedTopics = pickTopicsForQuizPreferUnique(rng, allowedTopicSlugs, n);
     const qk = shortHash(quizKey);
 
-    questions = Array.from({ length: n }, (_v, i) => {
+    // 1) Load each picked topic's meta.pool so we can force unique exerciseKey
+    const uniqPickedTopics = Array.from(new Set(pickedTopics));
+    const topicRows = await prisma.practiceTopic.findMany({
+      where: { slug: { in: uniqPickedTopics } },
+      // IMPORTANT: adjust if your column name isn't "meta"
+      select: { slug: true, meta: true },
+    });
+
+    const poolBySlug = new Map<string, PoolItem[]>();
+    for (const row of topicRows) {
+      const pool = readPoolFromTopicMeta((row as any).meta);
+      poolBySlug.set(row.slug, filterPoolByPreferKind(pool, spec.preferKind ?? null));
+    }
+
+    // 2) Validate pools exist (strict uniqueness guarantee)
+    const missingPool = uniqPickedTopics.filter((s) => (poolBySlug.get(s)?.length ?? 0) === 0);
+    if (missingPool.length) {
+      return json(
+          {
+            message:
+                "Cannot generate a no-duplicate quiz because some topics have empty meta.pool (or preferKind filtered everything out).",
+            detail: { missingPool, preferKind: spec.preferKind ?? null },
+          },
+          400,
+          setGuestId
+      );
+    }
+
+    // 3) Build questions and force unique keys per topic
+    const usedByTopic = new Map<string, Set<string>>();
+    const out: any[] = [];
+
+    for (let i = 0; i < n; i++) {
       const pickedTopic = pickedTopics[i];
-      return {
+      const pool = poolBySlug.get(pickedTopic)!;
+
+      const used = usedByTopic.get(pickedTopic) ?? new Set<string>();
+      const exerciseKey = pickUniqueExerciseKey(rng, pool, used);
+
+      // If we run out of unique keys for a repeated topic, truncate the quiz
+      if (!exerciseKey) break;
+
+      usedByTopic.set(pickedTopic, used);
+
+      out.push({
         kind: "practice" as const,
-        id: `p${i + 1}:${qk}`, // unique per quiz instance
+        id: `p${i + 1}:${qk}`,
         fetch: {
           subject: spec.subject,
           module: spec.module,
@@ -381,14 +475,19 @@ export async function POST(req: Request) {
           difficulty: spec.difficulty ?? "easy",
           allowReveal: Boolean(spec.allowReveal),
           preferKind: spec.preferKind ?? null,
+
+          // ✅ THIS is the guarantee: /api/practice is now forced and cannot repeat
+          exerciseKey,
+
           // stable salt per slot
-          salt: `${quizKey}|topic=${pickedTopic}|slot=${i + 1}|q=${i + 1}`,
+          salt: `${quizKey}|topic=${pickedTopic}|slot=${i + 1}|q=${i + 1}|k=${exerciseKey}`,
         },
         maxAttempts: defaultMaxAttempts,
-      };
-    });
-  }
+      });
+    }
 
+    questions = out;
+  }
   // 3) Persist (handle StrictMode/double POST race)
   try {
     await prisma.reviewQuizInstance.create({

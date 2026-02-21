@@ -169,3 +169,44 @@ export type Handler = (args: HandlerArgs) => GenOut<ExerciseKind>;
 
 // Re-export types that topic files often use
 export type { SingleChoiceExercise, CodeInputExercise, CodeLanguage };
+// Pool helper (UI-safe): use string literal kinds like "code_input", "single_choice", etc.
+export function poolFromKeys(
+    keys: readonly string[],
+    kind?: string,
+    w = 1
+): Array<{ key: string; w: number; kind?: string }> {
+    return keys.map((key) => (kind ? { key, w, kind } : { key, w }));
+}
+
+
+
+
+// ✅ Shared “single_choice” builder so topic handlers stay consistent
+export function makeSingleChoiceOut(args: {
+    archetype: string;
+    id: string;
+    topic: string;
+    diff: Difficulty;
+    title: string;
+    prompt: string;
+    options: Array<{ id: string; text: string }>;
+    answerOptionId: string;
+    hint?: string;
+}): GenOut<ExerciseKind> {
+    const exercise: SingleChoiceExercise = {
+        id: args.id,
+        topic: args.topic,
+        difficulty: args.diff,
+        kind: "single_choice",
+        title: args.title,
+        prompt: args.prompt,
+        options: args.options,
+        hint: args.hint,
+    };
+
+    return {
+        archetype: args.archetype,
+        exercise,
+        expected: { kind: "single_choice", optionId: args.answerOptionId },
+    };
+}

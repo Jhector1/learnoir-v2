@@ -2,11 +2,18 @@
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
 import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
 import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects/python/slugs";
-import { PracticeKind } from "@prisma/client";
+import type { PracticeKind } from "@prisma/client";
+
+import { M1_VARIABLES_TYPES_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables_types";
 
 const ID = "variables_types_intro" as const;
 const LABEL = "Variables + Data Types: Boxes That Hold Real Values" as const;
 const MINUTES = 12 as const;
+
+const PK = {
+    code_input: "code_input" as PracticeKind,
+    single_choice: "single_choice" as PracticeKind,
+} as const;
 
 export const PY_VARIABLES_TYPES = {
     topic: {
@@ -21,7 +28,6 @@ export const PY_VARIABLES_TYPES = {
             { type: "sketch", id: `${ID}_s2`, title: "Type Conversion: Turning Strings into Numbers", sketchId: "py.types.convert", height: 560 },
             { type: "sketch", id: `${ID}_s3`, title: "Common Errors: NameError, TypeError, and Debug Tricks", sketchId: "py.types.errors", height: 560 },
 
-            // ✅ PROJECT (3 steps max)
             {
                 type: "project",
                 id: `${ID}_p0`,
@@ -44,7 +50,7 @@ export const PY_VARIABLES_TYPES = {
                             title: "Create variables and print them cleanly",
                             topic: PY_TOPIC_MOD1.variables_types_intro,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
+                            preferKind: PK.code_input,
                             exerciseKey: "m1_vars_boxes_print_code",
                             seedPolicy: "global",
                             maxAttempts: 10,
@@ -54,7 +60,7 @@ export const PY_VARIABLES_TYPES = {
                             title: "Convert input to int and compute next year",
                             topic: PY_TOPIC_MOD1.variables_types_intro,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
+                            preferKind: PK.code_input,
                             exerciseKey: "m1_types_convert_next_year_code",
                             seedPolicy: "global",
                             maxAttempts: 10,
@@ -64,7 +70,7 @@ export const PY_VARIABLES_TYPES = {
                             title: "Read errors (NameError vs TypeError vs ValueError)",
                             topic: PY_TOPIC_MOD1.variables_types_intro,
                             difficulty: "easy",
-                            preferKind: PracticeKind.single_choice,
+                            preferKind: PK.single_choice,
                             exerciseKey: "m1_types_errors_sc",
                             seedPolicy: "global",
                             maxAttempts: 3,
@@ -80,11 +86,7 @@ export const PY_VARIABLES_TYPES = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [
-                { key: "m1_vars_boxes_print_code", w: 1, kind: PracticeKind.code_input },
-                { key: "m1_types_convert_next_year_code", w: 1, kind: PracticeKind.code_input },
-                { key: "m1_types_errors_sc", w: 1, kind: PracticeKind.single_choice },
-            ],
+            pool: M1_VARIABLES_TYPES_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

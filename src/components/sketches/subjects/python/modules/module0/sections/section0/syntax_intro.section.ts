@@ -1,9 +1,6 @@
-import {SketchEntry} from "@/components/sketches/subjects";
+import { SketchEntry } from "@/components/sketches/subjects";
 
 export const PY_SYNTAX_SECTION: Record<string, SketchEntry> = {
-    // ---------- SECTION I - Topic { print() complete } ----------
-
-//
     "py.syntax.intro": {
         kind: "archetype",
         spec: {
@@ -20,10 +17,7 @@ Every programming language has a set of rules for how instructions must be writt
 If you break the syntax rules, Python will produce a **SyntaxError**, and your program will stop because the computer can’t understand what you wrote.
 
 In this module, you’ll start getting comfortable with Python syntax, so you can write instructions clearly and confidently.
-
-By the end of this module, you’ll be able to write small programs—like a basic calculator in Python.
-`.trim(),
+      `.trim(),
         },
     },
-
-    }
+};

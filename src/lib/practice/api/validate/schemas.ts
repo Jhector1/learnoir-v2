@@ -1,4 +1,3 @@
-// src/lib/practice/validate/schemas.ts
 import { z } from "zod";
 
 const Vec3Schema = z.object({
@@ -10,30 +9,70 @@ const Vec3Schema = z.object({
 const CodeTestSchema = z.object({
   stdin: z.string().optional().default(""),
   stdout: z.string().optional().default(""),
-  match: z.enum(["exact", "includes"]).optional(),
+  match: z.enum(["exact", "includes"]).optional().default("exact"),
 });
 
-// expected schema used only inside the grader (code_input)
+/**
+ * ✅ Expected schema used only inside the grader (code_input)
+ * We accept:
+ * - canonical: { tests: [...] }
+ * - legacy: { stdin, stdout, match }
+ * Then we coerce to tests[] in transform().
+ */
 export const CodeExpectedSchema = z
-  .object({
-    kind: z.literal("code_input"),
-    language: z.enum(["python", "java"]).optional(),
-    stdout: z.string().optional(),
-    stdin: z.string().optional(),
-    tests: z.array(CodeTestSchema).optional(),
-    solutionCode: z.string().optional(),
-  })
-  .superRefine((v, ctx) => {
-    const hasStdout = typeof v.stdout === "string" && v.stdout.length > 0;
-    const hasTests = Array.isArray(v.tests) && v.tests.length > 0;
-    if (!hasStdout && !hasTests) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["stdout"],
-        message: "code_input expected must include stdout or tests[]",
-      });
-    }
-  });
+    .object({
+      kind: z.literal("code_input"),
+      language: z.enum(["python", "java", "javascript", "c", "cpp"]).optional(),
+
+      tests: z.array(CodeTestSchema).optional(),
+
+      // legacy support:
+      stdin: z.string().optional(),
+      stdout: z.string().optional(),
+      match: z.enum(["exact", "includes"]).optional(),
+
+      solutionCode: z.string().optional(),
+    })
+    .transform((v) => {
+      const tests =
+          Array.isArray(v.tests) && v.tests.length
+              ? v.tests
+              : [
+                {
+                  stdin: typeof v.stdin === "string" ? v.stdin : "",
+                  stdout: typeof v.stdout === "string" ? v.stdout : "",
+                  match: v.match ?? "exact",
+                },
+              ];
+
+      return {
+        kind: "code_input" as const,
+        language: v.language,
+        tests,
+        solutionCode: v.solutionCode,
+      };
+    })
+    .superRefine((v, ctx) => {
+      if (!Array.isArray(v.tests) || v.tests.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["tests"],
+          message: "code_input expected must include tests[]",
+        });
+        return;
+      }
+      // Strong: every test must define stdout (empty string allowed, but field must exist)
+      for (let i = 0; i < v.tests.length; i++) {
+        const t = v.tests[i];
+        if (typeof t.stdout !== "string") {
+          ctx.addIssue({
+            code: "custom",
+            path: ["tests", i, "stdout"],
+            message: "Missing stdout for test case.",
+          });
+        }
+      }
+    });
 
 // accept key as string OR wrapped object (token/key/value)
 const KeySchema = z.union([
@@ -78,47 +117,46 @@ const SubmitAnswerSchema = z.discriminatedUnion("kind", [
     values: z.array(z.array(z.number())),
   }),
 
-  // code input: accept code or source
+  // code input: accept code or source (we validate on tests, not code equality)
   z
-    .object({
-      kind: z.literal("code_input"),
-      language: z.enum(["python", "java"]).optional(),
-      code: z.string().optional(),
-      source: z.string().optional(),
-      stdin: z.string().optional(),
-    })
-    .superRefine((v, ctx) => {
-      const code = (v.code ?? v.source ?? "").trim();
-      if (!code) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["code"],
-          message: "Missing code.",
-        });
-      }
-    }),
+      .object({
+        kind: z.literal("code_input"),
+        language: z.enum(["python", "java", "javascript", "c", "cpp"]).optional(),
+        code: z.string().optional(),
+        source: z.string().optional(),
+        stdin: z.string().optional(), // optional UI field; grader uses test stdin, not this
+      })
+      .superRefine((v, ctx) => {
+        const code = (v.code ?? v.source ?? "").trim();
+        if (!code) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["code"],
+            message: "Missing code.",
+          });
+        }
+      }),
 
-  // ✅ add them to the union
   TextInputAnswerSchema,
   DragReorderAnswerSchema,
   VoiceInputAnswerSchema,
 ]);
 
 export const BodySchema = z
-  .object({
-    key: KeySchema,
-    reveal: z.boolean().optional(),
-    answer: SubmitAnswerSchema.optional(),
-  })
-  .superRefine((val, ctx) => {
-    if (!val.reveal && !val.answer) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["answer"],
-        message: "Missing answer.",
-      });
-    }
-  });
+    .object({
+      key: KeySchema,
+      reveal: z.boolean().optional(),
+      answer: SubmitAnswerSchema.optional(),
+    })
+    .superRefine((val, ctx) => {
+      if (!val.reveal && !val.answer) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["answer"],
+          message: "Missing answer.",
+        });
+      }
+    });
 
 export type ValidateBody = z.infer<typeof BodySchema>;
 export type SubmitAnswer = z.infer<typeof SubmitAnswerSchema>;

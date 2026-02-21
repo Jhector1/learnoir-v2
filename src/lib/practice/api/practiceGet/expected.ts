@@ -1,13 +1,9 @@
-// src/lib/practice/api/practiceGet/expected.ts
 import { PracticeKind } from "@prisma/client";
 
 function toNumberGrid(x: any): number[][] | null {
   if (!x) return null;
 
-  // mathjs Matrix
   if (typeof x?.toArray === "function") x = x.toArray();
-
-  // common wrapper { data: [[...]] }
   if (x && Array.isArray(x.data) && Array.isArray(x.data[0])) x = x.data;
 
   if (!Array.isArray(x) || !Array.isArray(x[0])) return null;
@@ -21,32 +17,134 @@ function toNumberGrid(x: any): number[][] | null {
   return grid;
 }
 
-export function normalizeExpectedForSave(kind: PracticeKind, expected: any) {
-  if (kind !== PracticeKind.matrix_input) return expected;
+type CodeTest = { stdin?: string; stdout: string; match?: "exact" | "includes" };
+type CodeExpected = {
+  kind: "code_input";
+  language?: string;
+  tests: CodeTest[];
+  // legacy convenience fields
+  stdin?: string;
+  stdout?: string;
+  solutionCode?: string; // keep if you want reveal support
+};
 
-  // accept a few possible generator shapes, but SAVE canonically as { values: number[][] }
-  const raw =
-    expected?.values ??
-    expected?.value ??
-    expected?.matrix ??
-    expected?.A ??
-    expected?.grid;
+function toCodeTests(expected: any): CodeTest[] {
+  const rawTests =
+      Array.isArray(expected?.tests) && expected.tests.length ? expected.tests : null;
 
-  const grid = toNumberGrid(raw);
+  if (rawTests) {
+    return rawTests
+        .map((t: any) => ({
+          stdin: typeof t?.stdin === "string" ? t.stdin : "",
+          stdout: String(t?.stdout ?? ""),
+          match: t?.match === "includes" ? "includes" : "exact",
+        }))
+        .filter((t) => t.stdout.length > 0);
+  }
 
-  if (!grid) {
+  // fallback single-test shape
+  return [
+    {
+      stdin: typeof expected?.stdin === "string" ? expected.stdin : "",
+      stdout: String(expected?.stdout ?? ""),
+      match: expected?.match === "includes" ? "includes" : "exact",
+    },
+  ].filter((t) => t.stdout.length > 0);
+}
+
+function normalizeCodeExpectedForSave(expected: any): CodeExpected {
+  const lang = typeof expected?.language === "string" ? expected.language : "python";
+
+  const tests = toCodeTests(expected);
+
+  // ✅ keep it safe: cap tests to prevent huge DB payloads
+  const MAX_TESTS = 12;
+  const canonTests = tests.slice(0, MAX_TESTS);
+
+  if (!canonTests.length) {
     throw new Error(
-      `Generator bug: matrix_input expected is missing 2D values. expected=${JSON.stringify(
-        expected,
-        null,
-        2,
-      )}`,
+        `Generator bug: code_input expected is missing tests/stdout. expected=${JSON.stringify(
+            expected,
+            null,
+            2,
+        )}`,
     );
   }
 
   return {
     ...(expected ?? {}),
-    kind: "matrix_input",
-    values: grid,
+    kind: "code_input",
+    language: lang,
+    tests: canonTests,
+    // keep legacy convenience fields in sync
+    stdin: typeof expected?.stdin === "string" ? expected.stdin : canonTests[0]?.stdin ?? "",
+    stdout: typeof expected?.stdout === "string" ? expected.stdout : canonTests[0]?.stdout ?? "",
+    solutionCode: typeof expected?.solutionCode === "string" ? expected.solutionCode : undefined,
   };
+}
+
+export function normalizeExpectedForSave(kind: PracticeKind, expected: any) {
+  // ---------------- matrix_input ----------------
+  // ---------------- drag_reorder ----------------
+  if (kind === PracticeKind.drag_reorder) {
+    const orderRaw =
+        expected?.order ??
+        expected?.tokenIds ??
+        expected?.ids ??
+        expected?.correct ??
+        null;
+
+    const order =
+        Array.isArray(orderRaw) ? orderRaw.map((x: any) => String(x?.id ?? x)) : [];
+
+    if (!order.length) {
+      throw new Error(
+          `Generator bug: drag_reorder expected missing order/tokenIds. expected=${JSON.stringify(
+              expected,
+              null,
+              2,
+          )}`,
+      );
+    }
+
+    return {
+      ...(expected ?? {}),
+      kind: "drag_reorder",
+      order,
+    };
+  }
+  if (kind === PracticeKind.matrix_input) {
+    const raw =
+        expected?.values ??
+        expected?.value ??
+        expected?.matrix ??
+        expected?.A ??
+        expected?.grid;
+
+    const grid = toNumberGrid(raw);
+
+    if (!grid) {
+      throw new Error(
+          `Generator bug: matrix_input expected is missing 2D values. expected=${JSON.stringify(
+              expected,
+              null,
+              2,
+          )}`,
+      );
+    }
+
+    return {
+      ...(expected ?? {}),
+      kind: "matrix_input",
+      values: grid,
+    };
+  }
+
+  // ---------------- code_input ----------------
+  if (kind === PracticeKind.code_input) {
+    return normalizeCodeExpectedForSave(expected);
+  }
+
+  // everything else unchanged
+  return expected;
 }

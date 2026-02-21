@@ -6,3 +6,5 @@ export const PY_PREFIX0 = "py0";
 
 export const PY_MOD1 = "python-1";
 export const PY_PREFIX1 = "py1";
+export const PY_MOD2 = "python-2";
+export const PY_PREFIX2 = "py2";

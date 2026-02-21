@@ -75,7 +75,7 @@ function stableStringify(obj: any) {
  * Generates a tiny UI-safe catalog into:
  *   src/lib/practice/catalog/generatedCatalog.ts
  */
-export function genPracticeCatalog() {
+export async function genPracticeCatalog() {
   const catalog: GenCatalog = {
     [PY_SUBJECT]: buildSubject(PY_SUBJECT, PY_SECTIONS as any),
     [LA_SUBJECT]: buildSubject(LA_SUBJECT, LA_SECTIONS as any),

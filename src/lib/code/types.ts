@@ -1,3 +1,5 @@
+import {CodeLanguage} from "@/lib/practice/types";
+
 export type Lang = "python" | "java" | "javascript" | "c" | "cpp";
 
 export type FileEntry = { path: string; content: string };
@@ -5,12 +7,30 @@ export type FileEntry = { path: string; content: string };
 // Backward compatible:
 // - old: { language, code, stdin }
 // - new: { language, entry, files, stdin }
+// export type RunReq =
+export type RunLimits = {
+    cpu_time_limit?: number;   // seconds
+    wall_time_limit?: number;  // seconds
+    memory_limit?: number;     // KB
+};
 export type RunReq =
-    | { language: Lang; code: string; stdin?: string }
-    | { language: Lang; entry: string; files: FileEntry[]; stdin?: string };
+    | {
+    language: CodeLanguage;
+    code: string;
+    stdin?: string;
+    limits?: RunLimits;
+}
+    | {
+    language: CodeLanguage;
+    entry: string;
+    files: Record<string, string>;
+    stdin?: string;
+    limits?: RunLimits;
+};
 
 export type RunResult = {
     ok: boolean;
+    // error: string;
     status?: string;
     stdout?: string | null;
     stderr?: string | null;

@@ -1,12 +1,19 @@
 // src/components/sketches/subjects/python/modules/module1/topics/string_basics.ts
 import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
 import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
-import {PY_SECTION_PART1, PY_TOPIC_MOD1} from "@/lib/practice/catalog/subjects/python/slugs";
-import { PracticeKind } from "@prisma/client";
+import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects/python/slugs";
+import type { PracticeKind } from "@prisma/client";
+
+import { M1_STRINGS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/string_basics";
 
 const ID = "string_basics" as const;
 const LABEL = "String Basics: Working With Text Like a Pro" as const;
 const MINUTES = 12 as const;
+
+const PK = {
+    code_input: "code_input" as PracticeKind,
+    single_choice: "single_choice" as PracticeKind,
+} as const;
 
 export const PY_STRING_BASICS = {
     topic: {
@@ -40,7 +47,7 @@ export const PY_STRING_BASICS = {
                             title: "Concatenation vs commas (what prints?)",
                             topic: PY_TOPIC_MOD1.string_basics,
                             difficulty: "easy",
-                            preferKind: PracticeKind.single_choice,
+                            preferKind: PK.single_choice,
                             exerciseKey: "m1_str_concat_vs_comma_sc",
                             seedPolicy: "global",
                             maxAttempts: 3,
@@ -50,7 +57,7 @@ export const PY_STRING_BASICS = {
                             title: "Use an f-string to print a clean sentence",
                             topic: PY_TOPIC_MOD1.string_basics,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
+                            preferKind: PK.code_input,
                             exerciseKey: "m1_str_fstring_greeting_code",
                             seedPolicy: "global",
                             maxAttempts: 10,
@@ -60,7 +67,7 @@ export const PY_STRING_BASICS = {
                             title: "Build a username generator (strip + lower + indexing)",
                             topic: PY_TOPIC_MOD1.string_basics,
                             difficulty: "easy",
-                            preferKind: PracticeKind.code_input,
+                            preferKind: PK.code_input,
                             exerciseKey: "m1_str_username_code",
                             seedPolicy: "global",
                             maxAttempts: 10,
@@ -76,11 +83,7 @@ export const PY_STRING_BASICS = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: [
-                { key: "m1_str_concat_vs_comma_sc", w: 1, kind: PracticeKind.single_choice },
-                { key: "m1_str_fstring_greeting_code", w: 1, kind: PracticeKind.code_input },
-                { key: "m1_str_username_code", w: 1, kind: PracticeKind.code_input },
-            ],
+            pool: M1_STRINGS_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

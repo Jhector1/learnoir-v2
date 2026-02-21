@@ -152,21 +152,22 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
         return {kind: "matrix_input", values};
     }
 
-    if (ex.kind === "code_input") {
-        const code = String(item.code ?? "").trim();
-        if (!code) return undefined;
+    // inside buildSubmitAnswerFromItem()
 
-        // NOTE: your validate route currently accepts python|java
-        const langRaw = String(item.codeLang ?? (ex as any).language ?? "python");
-        const language: CodeLanguage = langRaw === "java" ? "java" : "python";
-        const stdin = String((item as any).codeStdin ?? (item as any).stdin ?? "");
+    if (ex.kind === "code_input") {
+        // ✅ accept both code + legacy source (for safety)
+        const code = String((item as any).code ?? (item as any).source ?? "").trimEnd();
+        if (!code.trim()) return undefined;
+
+        const language = String((item as any).codeLang ?? (ex as any).language ?? "python") as CodeLanguage;
+
+        const stdin = String((item as any).codeStdin ?? (item as any).stdin ?? "").trimEnd();
 
         return {
             kind: "code_input",
             language,
             code,
-            stdin
-                // : String(item.codeStdin ?? ""),
+            stdin,
         };
     }
 

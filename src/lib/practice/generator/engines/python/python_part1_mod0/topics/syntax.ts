@@ -1,20 +1,23 @@
 // src/lib/practice/generator/engines/python/python_part1_mod0/topics/syntax.ts
-import type { SingleChoiceExercise } from "../../../../../types";
 import type { Handler } from "../../python_shared/_shared";
+import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
-export const M0_SYNTAX_VALID_KEYS = [
-    "m0_syntax_definition",
-    "m0_syntax_syntaxerror",
-    "m0_syntax_indentation_rule",
+export const M0_SYNTAX_POOL = [
+    { key: "m0_syntax_definition", w: 1, kind: "single_choice" },
+    { key: "m0_syntax_syntaxerror", w: 1, kind: "single_choice" },
+    { key: "m0_syntax_indentation_rule", w: 1, kind: "single_choice" },
 ] as const;
 
-export const M0_SYNTAX_HANDLERS: Record<(typeof M0_SYNTAX_VALID_KEYS)[number], Handler> = {
-    m0_syntax_definition: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+export type M0SyntaxKey = (typeof M0_SYNTAX_POOL)[number]["key"];
+export const M0_SYNTAX_VALID_KEYS = M0_SYNTAX_POOL.map((p) => p.key) as M0SyntaxKey[];
+
+export const M0_SYNTAX_HANDLERS: Record<M0SyntaxKey, Handler> = {
+    m0_syntax_definition: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_syntax_definition",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "Syntax meaning",
             prompt: "In programming, what does **syntax** mean?",
             options: [
@@ -22,17 +25,16 @@ export const M0_SYNTAX_HANDLERS: Record<(typeof M0_SYNTAX_VALID_KEYS)[number], H
                 { id: "b", text: "The speed of your computer fan" },
                 { id: "c", text: "A type of keyboard" },
             ],
+            answerOptionId: "a",
             hint: "Syntax = writing rules the language requires.",
-        };
-        return { archetype: "m0_syntax_definition", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+        }),
 
-    m0_syntax_syntaxerror: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_syntax_syntaxerror: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_syntax_syntaxerror",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "SyntaxError",
             prompt: "If you break Python’s syntax rules, you often get:",
             options: [
@@ -40,17 +42,16 @@ export const M0_SYNTAX_HANDLERS: Record<(typeof M0_SYNTAX_VALID_KEYS)[number], H
                 { id: "b", text: "WiFiError" },
                 { id: "c", text: "KeyboardError" },
             ],
+            answerOptionId: "a",
             hint: "SyntaxError means Python couldn’t understand your code structure.",
-        };
-        return { archetype: "m0_syntax_syntaxerror", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+        }),
 
-    m0_syntax_indentation_rule: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+    m0_syntax_indentation_rule: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m0_syntax_indentation_rule",
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
+            diff,
             title: "Indentation matters",
             prompt: "Why is indentation important in Python?",
             options: [
@@ -58,8 +59,7 @@ export const M0_SYNTAX_HANDLERS: Record<(typeof M0_SYNTAX_VALID_KEYS)[number], H
                 { id: "b", text: "Python uses it as part of its syntax (structure)" },
                 { id: "c", text: "It changes your font size" },
             ],
+            answerOptionId: "b",
             hint: "Indentation is part of Python’s structure, not just style.",
-        };
-        return { archetype: "m0_syntax_indentation_rule", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+        }),
 };

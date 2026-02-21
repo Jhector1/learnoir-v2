@@ -101,7 +101,12 @@ export function ReviewToolsProvider({
         if (t) window.clearTimeout(t);
         unbindTimersRef.current.delete(id);
     }, []);
-
+    useEffect(() => {
+        return () => {
+            for (const t of unbindTimersRef.current.values()) window.clearTimeout(t);
+            unbindTimersRef.current.clear();
+        };
+    }, []);
     // ✅ reset registry/order/meta (topic switch / reset)
     const lastResetRef = useRef<string | null>(null);
     useEffect(() => {
@@ -116,6 +121,10 @@ export function ReviewToolsProvider({
             registryRef.current.clear();
             orderRef.current = [];
             metaRef.current.clear();
+            // setBoundId(null); // ✅ always clear locally
+
+            onUnbindFromToolsPanel?.();  // ✅ clears externalBoundId too
+
 
             setRequestedId(null);
             setBoundId(externalBoundId ?? null);
@@ -125,7 +134,7 @@ export function ReviewToolsProvider({
         }
 
         lastResetRef.current = resetKey;
-    }, [resetKey, externalBoundId]);
+    }, [resetKey, externalBoundId, onUnbindFromToolsPanel]);
 
     // ✅ keep provider boundId consistent with external tool state
     useEffect(() => {
@@ -236,7 +245,9 @@ export function ReviewToolsProvider({
         },
         [reconcileBinding],
     );
-
+    useEffect(() => {
+        reconcileBinding();
+    }, [reconcileBinding, externalBoundId]);
     // kept for compatibility, but deterministic behavior overrides target
     const requestBindNext = useCallback(
         (_afterId: string) => {

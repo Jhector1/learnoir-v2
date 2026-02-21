@@ -14,6 +14,31 @@ import SketchBlock from "@/components/sketches/subjects/SketchBlock";
 
 type SavedSketchState = any;
 
+function GateBanner({ kind }: { kind: "quiz" | "project" }) {
+    return (
+        <div className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
+            Complete the topic items above (readings, videos, sketches) to unlock this {kind}.
+        </div>
+    );
+}
+
+function CompletedBadge() {
+    return (
+        <div className="mt-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300/80">
+            ✓ Completed
+        </div>
+    );
+}
+
+function CardTitle({ title }: { title?: string | null }) {
+    if (!title) return null;
+    return (
+        <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+            {title}
+        </div>
+    );
+}
+
 export default function CardRenderer(props: {
     card: ReviewCard;
 
@@ -67,17 +92,78 @@ export default function CardRenderer(props: {
     // deterministic cross-page ordering: each card gets a huge block
     const orderBase = cardIndex * 10000;
 
+    function renderQuizLike(kind: "quiz" | "project") {
+        const key = buildReviewQuizKey(card.spec as any, card.id, versionStr);
+
+        // ✅ show banner ONLY when locked by prereqs and not already completed
+        const showGate = !done && !prereqsMet;
+
+        // ✅ avoid mounting QuizBlock (and fetching) until prereqs are met
+        // (but still allow rendering when already completed)
+        const canMountQuizBlock = progressHydrated && (prereqsMet || done);
+
+        const quizBlockProps =
+            kind === "quiz"
+                ? {
+                    passScore: (card as any).passScore ?? 1.0,
+                    sequential: undefined as boolean | undefined, // default in QuizBlock
+                    strictSequential: undefined as boolean | undefined,
+                    unlimitedAttempts: true,
+                }
+                : {
+                    passScore: 1.0,
+                    sequential: true,
+                    strictSequential: true,
+                    unlimitedAttempts: false,
+                };
+
+        return (
+            <div className={wrapCls}>
+                <CardTitle title={card.title} />
+
+                {showGate ? <GateBanner kind={kind} /> : null}
+
+                {!showGate ? (
+                    !canMountQuizBlock ? (
+                        // this covers: not hydrated yet (while prereqs met) OR other edge cases
+                        <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
+                            Loading saved {kind} state…
+                        </div>
+                    ) : (
+                        <QuizBlock
+                            key={key}
+                            quizId={card.id}
+                            quizCardId={card.id}
+                            spec={card.spec as any}
+                            quizKey={key}
+                            passScore={quizBlockProps.passScore}
+                            prereqsMet={prereqsMet}
+                            locked={locked}
+                            isCompleted={Boolean(done)}
+                            initialState={savedQuiz ?? null}
+                            onPass={() => onQuizPass(card.id)}
+                            onStateChange={(s: SavedQuizState) => onQuizStateChange(card.id, s)}
+                            onReset={() => onQuizReset(card.id)}
+                            // quiz/project behavior knobs
+                            sequential={quizBlockProps.sequential as any}
+                            strictSequential={quizBlockProps.strictSequential as any}
+                            unlimitedAttempts={quizBlockProps.unlimitedAttempts}
+                            // ✅ deterministic ordering across topic page
+                            orderBase={orderBase}
+                        />
+                    )
+                ) : null}
+
+                {done ? <CompletedBadge /> : null}
+            </div>
+        );
+    }
+
     if (card.type === "text") {
         return (
             <div className={wrapCls}>
-                {card.title ? (
-                    <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-                        {card.title}
-                    </div>
-                ) : null}
-
+                <CardTitle title={card.title} />
                 <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.markdown} />
-
                 <div className="mt-3 flex justify-end">
                     <button type="button" onClick={onMarkDone} className={actionBtn}>
                         {done ? "✓ Read" : "Mark as read"}
@@ -115,11 +201,7 @@ export default function CardRenderer(props: {
 
         return (
             <div className={wrapCls}>
-                {card.title ? (
-                    <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-                        {card.title}
-                    </div>
-                ) : null}
+                <CardTitle title={card.title} />
 
                 <div className="mt-3 ui-sketch-panel p-3">
                     {isFile ? (
@@ -153,85 +235,11 @@ export default function CardRenderer(props: {
     }
 
     if (card.type === "quiz") {
-        const quizKey = buildReviewQuizKey(card.spec as ReviewQuizSpec, card.id, versionStr);
-
-        return (
-            <div className={wrapCls}>
-                {card.title ? (
-                    <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-                        {card.title}
-                    </div>
-                ) : null}
-
-                {!prereqsMet ? (
-                    <div className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
-                        Read the topics and mark them as read to unlock this quiz.
-                    </div>
-                ) : null}
-
-                {!progressHydrated ? (
-                    <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
-                        Loading saved quiz state…
-                    </div>
-                ) : (
-                    <QuizBlock
-                        key={quizKey}
-                        quizId={card.id}
-                        quizCardId={card.id}
-                        spec={card.spec as ReviewQuizSpec}
-                        quizKey={quizKey}
-                        passScore={card.passScore ?? 1.0}
-                        unlimitedAttempts
-                        prereqsMet={prereqsMet}
-                        locked={locked}
-                        isCompleted={Boolean(done)}
-                        initialState={savedQuiz ?? null}
-                        onPass={() => onQuizPass(card.id)}
-                        onStateChange={(s: SavedQuizState) => onQuizStateChange(card.id, s)}
-                        onReset={() => onQuizReset(card.id)}
-                        // ✅ NEW
-                        orderBase={orderBase}
-                    />
-                )}
-
-                {done ? (
-                    <div className="mt-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300/80">
-                        ✓ Completed
-                    </div>
-                ) : null}
-            </div>
-        );
+        return renderQuizLike("quiz");
     }
 
     if (card.type === "project") {
-        const projectKey = buildReviewQuizKey(card.spec as any, card.id, versionStr);
-
-        return (
-            <div className={wrapCls}>
-                {card.title ? <div className="text-sm font-black">{card.title}</div> : null}
-
-                <QuizBlock
-                    key={projectKey}
-                    quizId={card.id}
-                    quizCardId={card.id}
-                    spec={card.spec as any}
-                    quizKey={projectKey}
-                    passScore={1.0}
-                    prereqsMet={prereqsMet}
-                    locked={locked}
-                    isCompleted={Boolean(done)}
-                    initialState={savedQuiz ?? null}
-                    onPass={() => onQuizPass(card.id)}
-                    onStateChange={(s) => onQuizStateChange(card.id, s)}
-                    onReset={() => onQuizReset(card.id)}
-                    sequential
-                    strictSequential
-                    unlimitedAttempts={false}
-                    // ✅ NEW
-                    orderBase={orderBase}
-                />
-            </div>
-        );
+        return renderQuizLike("project");
     }
 
     return null;

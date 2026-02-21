@@ -29,19 +29,25 @@ export function useReviewProgress(args: {
   const [progress, setProgress] = useState<ReviewProgressState>(emptyProgress());
   const [hydrated, setHydrated] = useState(false);
 
-  const [activeTopicId, setActiveTopicId] = useState(firstTopicId);
+  // const [activeTopicId, setActiveTopicId] = useState(firstTopicId);
   const [viewTopicId, setViewTopicId] = useState(firstTopicId);
+
+  const [activeTopicId, _setActiveTopicId] = useState(firstTopicId);
+  // const activeTopicIdRef = useRef(activeTopicId);
+
 
   const progressRef = useRef(progress);
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
 
-  const activeTopicIdRef = useRef(activeTopicId);
-  useEffect(() => {
-    activeTopicIdRef.current = activeTopicId;
-  }, [activeTopicId]);
+  // const [activeTopicId, _setActiveTopicId] = useState(firstTopicId);
+  const activeTopicIdRef = useRef(firstTopicId);
 
+  const setActiveTopicId = useCallback((id: string) => {
+    activeTopicIdRef.current = id;
+    _setActiveTopicId(id);
+  }, []);
   // ---- dedupe + debounce + abort ----
   const lastSentHashRef = useRef<string>("");
   const putAbortRef = useRef<AbortController | null>(null);
@@ -53,7 +59,13 @@ export function useReviewProgress(args: {
     putAbortRef.current?.abort();
     putAbortRef.current = null;
   }, []);
-
+  const setProgressSafe = useCallback((updater: any) => {
+    setProgress((prev: any) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      progressRef.current = next; // ✅ keep ref in sync immediately
+      return next;
+    });
+  }, []);
   const putProgressNow = useCallback(
       async (state: ReviewProgressState) => {
         if (!subjectSlug || !moduleId) return;
@@ -74,9 +86,11 @@ export function useReviewProgress(args: {
         // try beacon first
         if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
           try {
-            const blob = new Blob([body], { type: "application/json" });
-            (navigator as any).sendBeacon("/api/review/progress", blob);
-            return;
+            if (body.length < 60000) {
+              const blob = new Blob([body], { type: "application/json" });
+              const ok = (navigator as any).sendBeacon("/api/review/progress", blob);
+              if (ok) return; // ✅ only return if it succeeded
+            }
           } catch {
             // fall through
           }
@@ -120,7 +134,7 @@ export function useReviewProgress(args: {
           signal: ctrl.signal,
         });
 
-        setProgress(p);
+        setProgressSafe(p);
 
         const nextActive = (p as any).activeTopicId || firstTopicId;
         setActiveTopicId(nextActive);
@@ -135,7 +149,8 @@ export function useReviewProgress(args: {
         });
       } catch {
         const ep = emptyReviewProgress();
-        setProgress(ep);
+        setProgressSafe(ep);                // ✅ not setProgress
+
         setActiveTopicId(firstTopicId);
         setViewTopicId(firstTopicId);
 
@@ -242,7 +257,7 @@ export function useReviewProgress(args: {
     hydrated,
 
     progress,
-    setProgress,
+    setProgress: setProgressSafe,
 
     activeTopicId,
     setActiveTopicId,

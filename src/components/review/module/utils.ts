@@ -30,11 +30,20 @@ export function isTopicComplete(topicCards: ReviewCard[], tstate: any) {
  * Prereqs for a quiz: all earlier "read/watch/sketch" style items must be done.
  * (Quiz/project items should NOT be prereqs here.)
  */
-export function prereqsMetForQuiz(cards: ReviewCard[], tp: any, quizCardId: string) {
-    const idx = cards.findIndex((c) => c.id === quizCardId);
-    if (idx < 0) return true;
+// export function prereqsMetForQuiz(cards: ReviewCard[], tp: any, quizCardId: string) {
+//     const idx = cards.findIndex((c) => c.id === quizCardId);
+//     if (idx < 0) return true;
+//
+//     const prereqCards = cards.slice(0, idx).filter((c) => !isQuizLike(c));
+//     return prereqCards.every((c) => Boolean(tp?.cardsDone?.[c.id]));
+// }
 
-    const prereqCards = cards.slice(0, idx).filter((c) => !isQuizLike(c));
+/**
+ * Gate for ANY quiz/project in this topic:
+ * All non-quiz items (text/video/sketch/...) must be marked done first.
+ */
+export function prereqsMetForAnyQuizOrProject(cards: ReviewCard[], tp: any) {
+    const prereqCards = cards.filter((c) => !isQuizLike(c));
     return prereqCards.every((c) => Boolean(tp?.cardsDone?.[c.id]));
 }
 

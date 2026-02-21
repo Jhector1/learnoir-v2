@@ -87,6 +87,21 @@ export default function QuizBlock({
 
   const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
 
+
+
+
+
+  const onPassRef = useRef(onPass);
+  useEffect(() => { onPassRef.current = onPass; }, [onPass]);
+
+  const autoKeyRef = useRef<string>("");
+
+
+
+
+
+
+
   useEffect(() => {
     setExcusedById(initState?.excusedById ?? {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,6 +218,16 @@ export default function QuizBlock({
     passScore,
     excusedById,
   ]);
+  useEffect(() => {
+    if (!prereqsMet || locked || isCompleted) return;
+    if (!summary.passed) return;
+
+    // fire once per resetKey
+    if (autoKeyRef.current === resetKey) return;
+    autoKeyRef.current = resetKey;
+
+    onPassRef.current();
+  }, [prereqsMet, locked, isCompleted, summary.passed, resetKey]);
 
   const nextState = useMemo<SavedQuizState>(() => {
     const base = initState;
@@ -244,6 +269,16 @@ export default function QuizBlock({
     initState,
     excusedById,
   ]);
+
+
+
+
+
+
+
+
+
+
 
   const emitState = useCallback(
       (s: SavedQuizState) => onStateChange?.(s),
@@ -377,20 +412,24 @@ export default function QuizBlock({
             sequential={sequential}
             onResetClick={() => setConfirmResetQuiz(true)}
         />
-
         {isCompleted ? (
-            <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">
-              ✓ Completed
-            </div>
+            <div className="...">✓ Completed</div>
         ) : prereqsMet && summary.passed ? (
-            <button
-                type="button"
-                onClick={onPass}
-                className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-500/15 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"
-            >
-              Mark complete
-            </button>
+            <div className="...">✓ Passed — saving…</div>
         ) : null}
+        {/*{isCompleted ? (*/}
+        {/*    <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">*/}
+        {/*      ✓ Completed*/}
+        {/*    </div>*/}
+        {/*) : prereqsMet && summary.passed ? (*/}
+        {/*    <button*/}
+        {/*        type="button"*/}
+        {/*        onClick={onPass}*/}
+        {/*        className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-500/15 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"*/}
+        {/*    >*/}
+        {/*      Mark complete*/}
+        {/*    </button>*/}
+        {/*) : null}*/}
 
         {!isCompleted && summary.allChecked && !prereqsMet ? (
             <div>Finish “Mark as read” items in this topic first.</div>

@@ -24,7 +24,7 @@ import ToolsPanel from "./components/ToolsPanel";
 
 import CardRenderer from "@/components/review/module/CardRenderer";
 
-import {countAnswered, isTopicComplete, prereqsMetForQuiz, clamp01} from "./utils";
+import {countAnswered, isTopicComplete, clamp01, prereqsMetForAnyQuizOrProject} from "./utils";
 import {useResizablePanels} from "./hooks/useResizablePanels";
 import {useDebouncedSketchState} from "./hooks/useDebouncedSketchState";
 import {useToolCodeRunnerState} from "./hooks/useToolCodeRunnerState";
@@ -88,6 +88,8 @@ export default function ReviewModuleView({
         // defaultLang: subjectLang
     });
 
+
+
     // versions (for forcing rerender on reset)
     const viewProg: any = (progress as any)?.topics?.[viewTid] ?? {};
     const moduleV = (progress as any)?.quizVersion ?? 0;
@@ -95,8 +97,10 @@ export default function ReviewModuleView({
     const versionStr = `${moduleV}.${topicV}`;
     const topicRenderKey = `${viewTid}:${versionStr}`;
 
-    const activeIdx = useMemo(() => topics.findIndex((t) => t.id === activeTopicId), [topics, activeTopicId]);
-
+    const activeIdx = useMemo(() => {
+        const i = topics.findIndex((t) => t.id === activeTopicId);
+        return i < 0 ? 0 : i;
+    }, [topics, activeTopicId]);
     const topicUnlocked = useMemo(() => {
         return (tid: string) => {
             if (unlockAll) return true;
@@ -194,10 +198,22 @@ export default function ReviewModuleView({
     // nav
     const nav = useModuleNav({subjectSlug, moduleId});
     const canGoNextModule = unlockAll || ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) && assignmentDone);
-    const isLastModule = !nav?.nextModuleId;
-    const canGetCertificate =
-        isLastModule && (unlockAll || ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) && assignmentDone));
+    // const navReady = Boolean(nav);
+    // const isLastModule = navReady && !nav?.nextModuleId;
 
+
+    // const nav = useModuleNav({ subjectSlug, moduleId });
+
+    const navLoading = nav === undefined; // initial load
+    const navError = nav === null;        // fetch failed
+    const isLastModule = !!nav && !nav.nextModuleId;
+    const hasNextModule = !!nav && !!nav.nextModuleId;
+    // const hasNextModule = navReady && Boolean(nav?.nextModuleId);
+    // const canGetCertificate =
+    //     isLastModule && (unlockAll || ((moduleComplete || Boolean((progress as any)?.moduleCompleted)) && assignmentDone));
+    //
+    const moduleDone = moduleComplete || Boolean((progress as any)?.moduleCompleted);
+    const canGetCertificate = isLastModule && (unlockAll || moduleDone);
     async function handleAssignmentClick() {
         const returnToCurrentModule = `/${ROUTES.learningPath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}`;
 
@@ -379,7 +395,13 @@ export default function ReviewModuleView({
         if (!nextTopic?.id) return;
         goToTopic(nextTopic.id);
     }
-
+    const commitProgress = React.useCallback((updater: (p: any) => any) => {
+        setProgress((p: any) => {
+            const next = updater(p);
+            queueMicrotask(() => flushNow(next));
+            return next;
+        });
+    }, [setProgress, flushNow]);
     const toolsValue = useMemo(() => {
         return {
             bindCodeInput: tool.bindCodeInput,
@@ -401,6 +423,9 @@ export default function ReviewModuleView({
         }, 0);
         return {total, done, pct: total ? clamp01(done / total) : 0};
     }, [topics, progress]);
+    const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
+
+    const prereqsForAllQuizzes = unlockAll ? true : prereqsMetForAnyQuizOrProject(viewCards, tp);
 
     return (
         <ReviewToolsProvider
@@ -442,6 +467,7 @@ export default function ReviewModuleView({
                             style={{width: panels.leftCollapsed ? 0 : panels.leftW}}
                         >
                             <ModuleSidebar
+                                progressHydrated={progressHydrated}
                                 mod={mod}
                                 topics={topics}
                                 progress={progress}
@@ -458,7 +484,10 @@ export default function ReviewModuleView({
                                 assignmentLabel={assignmentLabel}
                                 assignmentSublabel={assignmentSublabel}
                                 onAssignmentClick={handleAssignmentClick}
-                                hasNextModule={Boolean(nav?.nextModuleId)}
+                                hasNextModule={hasNextModule}
+                                // navError3={navError}
+                                navLoading={navLoading}
+                                navError={navError}
                                 canGoNextModule={canGoNextModule}
                             />
                         </aside>
@@ -539,7 +568,6 @@ export default function ReviewModuleView({
 
                                 <div key={topicRenderKey} className="grid gap-3">
                                     {viewCards.map((card, cardIndex) => {
-                                        const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
                                         // const done =
                                         //     card.type === "quiz" ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
 
@@ -566,11 +594,17 @@ export default function ReviewModuleView({
                                             ? Boolean(tp?.quizzesDone?.[card.id])
                                             : Boolean(tp?.cardsDone?.[card.id]);
 
-                                        const prereqsMet = unlockAll
-                                            ? true
-                                            : isQuizLike
-                                                ? prereqsMetForQuiz(viewCards, tp, card.id)
-                                                : true;
+                                        // const prereqsMet = unlockAll
+                                        //     ? true
+                                        //     : isQuizLike
+                                        //         ? prereqsMetForAnyQuizOrProject(viewCards, tp)
+                                        //         : true;
+
+                                        // const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
+
+                                        const prereqsMet = isQuizLike ? prereqsForAllQuizzes : true;
+
+
 
                                         return (
                                             <CardRenderer
@@ -586,31 +620,22 @@ export default function ReviewModuleView({
                                                 savedSketch={progressHydrated ? savedSketch : null}
                                                 onSketchStateChange={(sketchCardId, s) => sketch.saveSketchDebounced(viewTid, sketchCardId, s)}
                                                 onMarkDone={() => {
-                                                    setProgress((p: any) => {
+                                                    commitProgress((p) => {
                                                         const tp0: any = p.topics?.[viewTid] ?? {};
-                                                        const cardsDone = {...(tp0.cardsDone ?? {}), [card.id]: true};
+                                                        const cardsDone = { ...(tp0.cardsDone ?? {}), [card.id]: true };
                                                         return {
                                                             ...p,
-                                                            topics: {
-                                                                ...(p.topics ?? {}),
-                                                                [viewTid]: {...tp0, cardsDone}
-                                                            },
+                                                            topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, cardsDone } },
                                                         };
                                                     });
                                                 }}
                                                 onQuizPass={(quizId) => {
-                                                    setProgress((p: any) => {
+                                                    commitProgress((p) => {
                                                         const tp0: any = p.topics?.[viewTid] ?? {};
-                                                        const quizzesDone = {
-                                                            ...(tp0.quizzesDone ?? {}),
-                                                            [quizId]: true
-                                                        };
+                                                        const quizzesDone = { ...(tp0.quizzesDone ?? {}), [quizId]: true };
                                                         return {
                                                             ...p,
-                                                            topics: {
-                                                                ...(p.topics ?? {}),
-                                                                [viewTid]: {...tp0, quizzesDone}
-                                                            },
+                                                            topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizzesDone } },
                                                         };
                                                     });
                                                 }}
@@ -628,24 +653,19 @@ export default function ReviewModuleView({
                                                     });
                                                 }}
                                                 onQuizReset={(quizCardId) => {
-                                                    setProgress((p: any) => {
+                                                    commitProgress((p) => {
                                                         const tp0: any = p.topics?.[viewTid] ?? {};
-
-                                                        const nextQuizState = {...(tp0.quizState ?? {})};
+                                                        const nextQuizState = { ...(tp0.quizState ?? {}) };
                                                         delete nextQuizState[quizCardId];
 
-                                                        const nextQuizzesDone = {...(tp0.quizzesDone ?? {})};
+                                                        const nextQuizzesDone = { ...(tp0.quizzesDone ?? {}) };
                                                         delete nextQuizzesDone[quizCardId];
 
                                                         return {
                                                             ...p,
                                                             topics: {
                                                                 ...(p.topics ?? {}),
-                                                                [viewTid]: {
-                                                                    ...tp0,
-                                                                    quizState: nextQuizState,
-                                                                    quizzesDone: nextQuizzesDone
-                                                                },
+                                                                [viewTid]: { ...tp0, quizState: nextQuizState, quizzesDone: nextQuizzesDone },
                                                             },
                                                         };
                                                     });
@@ -672,6 +692,8 @@ export default function ReviewModuleView({
                                     </div>
 
                                     <button
+                                        type="button"
+
                                         className={cn("mt-3 ui-btn ui-btn-primary w-full", !canGetCertificate && "opacity-60 cursor-not-allowed")}
                                         disabled={!canGetCertificate}
                                         onClick={() => router.push(`/subjects/${encodeURIComponent(subjectSlug)}/certificate`)}

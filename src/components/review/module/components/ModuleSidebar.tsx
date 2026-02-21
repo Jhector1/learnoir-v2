@@ -20,10 +20,13 @@ export default function ModuleSidebar({
                                           onResetModule,
                                           onCollapse,
                                           assignmentPct,
+                                          navLoading = false,
+                                          navError = false,
                                           assignmentLabel,
                                           assignmentSublabel,
                                           onAssignmentClick,
                                           hasNextModule,
+    progressHydrated,
                                           canGoNextModule,
                                       }: {
     mod: ReviewModule;
@@ -47,7 +50,9 @@ export default function ModuleSidebar({
     assignmentLabel: string;
     assignmentSublabel?: string;
     onAssignmentClick: () => void;
-
+    progressHydrated: boolean;
+    navLoading?: boolean;
+    navError?: boolean;
     hasNextModule: boolean;
     canGoNextModule: boolean;
 }) {
@@ -116,18 +121,30 @@ export default function ModuleSidebar({
             {/* scroll body */}
             <div className="flex-1 overflow-auto p-3">
                 <div className="grid gap-2">
-                    {topics.map((t) => {
-                        const idx = topics.findIndex((x) => x.id === t.id);
+                    {topics.map((t, idx) => {
+                        // const idx = topics.findIndex((x) => x.id === t.id);
+                        // const isEarlierOrActive = idx <= activeIdx;
+                        // const canGoForward = topicUnlocked(t.id);
+                        // const disabled = unlockAll ? false : !isEarlierOrActive && !canGoForward;
+                        //
+                        // const doneTopic = isTopicComplete((t.cards ?? []) as ReviewCard[], (progress as any)?.topics?.[t.id]);
                         const isEarlierOrActive = idx <= activeIdx;
                         const canGoForward = topicUnlocked(t.id);
                         const disabled = unlockAll ? false : !isEarlierOrActive && !canGoForward;
 
-                        const doneTopic = isTopicComplete((t.cards ?? []) as ReviewCard[], (progress as any)?.topics?.[t.id]);
+                        // const doneTopic = isTopicComplete(
+                        //     (t.cards ?? []) as ReviewCard[],
+                        //     (progress as any)?.topics?.[t.id]
+                        // );
+                        const doneTopic = progressHydrated
+                            ? isTopicComplete((t.cards ?? []) as ReviewCard[], (progress as any)?.topics?.[t.id])
+                            : false;
                         const isViewing = viewTopicId === t.id;
                         const isActive = activeTopicId === t.id;
 
                         return (
                             <button
+                                type="button"
                                 key={t.id}
                                 disabled={disabled}
                                 onClick={() => onGoToTopic(t.id)}
@@ -169,11 +186,23 @@ export default function ModuleSidebar({
                     />
                 </div>
 
-                {hasNextModule ? (
+                {navLoading ? (
+                    <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
+                        <div className="font-extrabold text-neutral-700 dark:text-white/70">Next module</div>
+                        <div className="mt-1 text-neutral-600 dark:text-white/55">Loading…</div>
+                    </div>
+                ) : navError ? (
+                    <div className="mt-3 rounded-xl border border-rose-300/30 bg-rose-300/10 p-3 text-xs dark:border-rose-300/20">
+                        <div className="font-extrabold text-rose-700 dark:text-rose-200">Next module</div>
+                        <div className="mt-1 text-rose-700/80 dark:text-rose-200/80">Couldn’t load navigation.</div>
+                    </div>
+                ) : hasNextModule ? (
                     <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
                         <div className="font-extrabold text-neutral-700 dark:text-white/70">Next module</div>
                         <div className="mt-1 text-neutral-600 dark:text-white/55">
-                            {canGoNextModule ? (unlockAll ? "Unlocked." : "Unlocked after assignment.") : "Finish topics + assignment to unlock."}
+                            {canGoNextModule
+                                ? (unlockAll ? "Unlocked." : "Unlocked after assignment.")
+                                : "Finish topics + assignment to unlock."}
                         </div>
                     </div>
                 ) : null}

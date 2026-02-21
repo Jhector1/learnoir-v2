@@ -23,6 +23,78 @@ import QuizPracticeCard from "./quiz/components/QuizPracticeCard";
 import QuizLocalCard from "./quiz/components/QuizLocalCard";
 import QuizFooter from "./quiz/components/QuizFooter";
 
+/* -------------------------------- settings -------------------------------- */
+
+const LS_AUTO_ADV = "learnoir.quiz.autoAdvance";
+
+function readAutoAdvance(defaultVal = true) {
+  try {
+    const v = window.localStorage.getItem(LS_AUTO_ADV);
+    if (v == null) return defaultVal;
+    return v === "1" || v === "true";
+  } catch {
+    return defaultVal;
+  }
+}
+
+/* -------------------------------- helpers -------------------------------- */
+
+function findScrollParent(el: HTMLElement): HTMLElement {
+  let p: HTMLElement | null = el.parentElement;
+  while (p) {
+    const st = window.getComputedStyle(p);
+    const oy = st.overflowY;
+    const canScroll =
+        (oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight + 2;
+    if (canScroll) return p;
+    p = p.parentElement;
+  }
+  return document.documentElement;
+}
+
+function visibleRatioWithin(el: HTMLElement, container: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  const c = container.getBoundingClientRect();
+
+  const top = Math.max(r.top, c.top);
+  const bot = Math.min(r.bottom, c.bottom);
+  const visPx = Math.max(0, bot - top);
+  const h = Math.max(1, r.height);
+
+  return visPx / h;
+}
+
+function userIsInteracting() {
+  // selection
+  const sel = window.getSelection?.();
+  if (sel && !sel.isCollapsed) return true;
+
+  // optional global pointer-down flag (set once in ReviewModuleView)
+  if ((window as any).__flowPointerDown) return true;
+
+  // active inputs
+  const ae = document.activeElement as HTMLElement | null;
+  if (!ae) return false;
+  const tag = ae.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (ae.isContentEditable) return true;
+
+  return false;
+}
+
+function focusPrimaryControl(root: HTMLElement) {
+  const preferred =
+      root.querySelector<HTMLElement>("[data-flow-focus]") ??
+      root.querySelector<HTMLElement>("button.ui-quiz-action--primary:not([disabled])") ??
+      root.querySelector<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+  preferred?.focus({ preventScroll: true } as any);
+}
+
+/* -------------------------------- component -------------------------------- */
+
 export default function QuizBlock({
                                     prereqsMet = true,
                                     quizId,
@@ -40,7 +112,7 @@ export default function QuizBlock({
                                     strictSequential = false,
                                     onReset,
 
-                                    /** NEW: deterministic ordering across topic page */
+                                    /** deterministic ordering across topic page */
                                     orderBase = 0,
                                   }: {
   prereqsMet?: boolean;
@@ -87,20 +159,12 @@ export default function QuizBlock({
 
   const [excusedById, setExcusedById] = useState<Record<string, boolean>>({});
 
-
-
-
-
   const onPassRef = useRef(onPass);
-  useEffect(() => { onPassRef.current = onPass; }, [onPass]);
+  useEffect(() => {
+    onPassRef.current = onPass;
+  }, [onPass]);
 
   const autoKeyRef = useRef<string>("");
-
-
-
-
-
-
 
   useEffect(() => {
     setExcusedById(initState?.excusedById ?? {});
@@ -169,8 +233,7 @@ export default function QuizBlock({
 
       if (prev.kind === "practice") {
         const ps = practiceBank.practice[prev.id];
-        const outOfAttempts =
-            ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+        const outOfAttempts = ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
         if (outOfAttempts) return true;
       }
     }
@@ -218,6 +281,7 @@ export default function QuizBlock({
     passScore,
     excusedById,
   ]);
+
   useEffect(() => {
     if (!prereqsMet || locked || isCompleted) return;
     if (!summary.passed) return;
@@ -270,8 +334,22 @@ export default function QuizBlock({
     excusedById,
   ]);
 
+  /* ---------------------------- auto-advance setting ---------------------------- */
 
+  const [autoAdvance, setAutoAdvance] = useState(true);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setAutoAdvance(readAutoAdvance(true));
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LS_AUTO_ADV, autoAdvance ? "1" : "0");
+    } catch {}
+  }, [autoAdvance]);
+
+  /* ------------------------ reduced motion + scroll refs ------------------------ */
 
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -281,7 +359,6 @@ export default function QuizBlock({
     const apply = () => setReduceMotion(Boolean(mq.matches));
     apply();
 
-    // Safari fallback
     if (mq.addEventListener) mq.addEventListener("change", apply);
     else (mq as any).addListener?.(apply);
 
@@ -297,6 +374,13 @@ export default function QuizBlock({
   const lastActionQidRef = useRef<string | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
 
+  // if the current question has explanation (or autoAdvance off), we show a “Next →” button
+  const [awaitNextQid, setAwaitNextQid] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAwaitNextQid(null);
+  }, [resetKey]);
+
   useEffect(() => {
     return () => {
       if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current);
@@ -307,20 +391,27 @@ export default function QuizBlock({
     return (el: HTMLElement | null) => qElRef.current.set(qid, el);
   }
 
-  function focusFirstControl(root: HTMLElement) {
-    const el = root.querySelector<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    el?.focus({ preventScroll: true } as any);
-  }
-
   function scrollToEl(root: HTMLElement) {
-    root.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
-      block: "start",
-    });
-    // focus after scroll starts (prevents jumpy behavior)
-    requestAnimationFrame(() => focusFirstControl(root));
+    if (userIsInteracting()) return;
+
+    const container = findScrollParent(root);
+    const ratio = visibleRatioWithin(root, container);
+    const needsScroll = ratio < 0.6;
+
+    if (needsScroll) {
+      root.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+
+      // focus after scroll starts
+      window.setTimeout(
+          () => focusPrimaryControl(root),
+          reduceMotion ? 0 : 220,
+      );
+    } else {
+      requestAnimationFrame(() => focusPrimaryControl(root));
+    }
   }
 
   function scrollToFooter() {
@@ -331,7 +422,6 @@ export default function QuizBlock({
       block: "start",
     });
   }
-
 
   function findNextUnlockedIndex(fromIdx: number) {
     for (let i = fromIdx + 1; i < questions.length; i++) {
@@ -346,7 +436,6 @@ export default function QuizBlock({
 
     const nextIdx = findNextUnlockedIndex(idx);
     if (nextIdx < 0) {
-      // nothing else to advance to; land on footer (nice UX)
       scrollToFooter();
       return;
     }
@@ -356,10 +445,7 @@ export default function QuizBlock({
     if (el) scrollToEl(el);
   }
 
-
-
   function isFlowDone(q: ReviewQuestion): boolean {
-    // excused counts as flow-done
     if (isExcused(q.id)) return true;
 
     if (q.kind === "practice") {
@@ -369,9 +455,7 @@ export default function QuizBlock({
       const outOfAttempts =
           ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
 
-      // non-strict: out-of-attempts allows progression (your rule)
       if (!strictSequential && outOfAttempts) return true;
-
       return false;
     }
 
@@ -384,6 +468,8 @@ export default function QuizBlock({
     return typeof ex === "string" && ex.trim().length > 0;
   }
 
+  /* ------------------------- auto-advance / next button ------------------------ */
+
   useEffect(() => {
     if (!prereqsMet || locked || isCompleted) return;
 
@@ -395,18 +481,21 @@ export default function QuizBlock({
 
     if (!isFlowDone(q)) return;
 
-    // Don’t auto-advance instantly if there’s an explanation
-    // (let user see it; still “smooth”)
-    const delay = hasExplain(q) ? 650 : 150;
+    // ✅ explanation OR user turned off autoAdvance => show Next button (no delay jump)
+    if (hasExplain(q) || !autoAdvance) {
+      setAwaitNextQid(qid);
+      lastActionQidRef.current = null;
+      return;
+    }
+
+    const delay = 150;
 
     if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current);
     advanceTimerRef.current = window.setTimeout(() => {
-
       advanceFrom(qid);
-      // ✅ prevent repeated auto-advance on later renders
-      lastActionQidRef.current = null;
 
-      // optional: clear ref
+      // prevent repeated auto-advance on later renders
+      lastActionQidRef.current = null;
       advanceTimerRef.current = null;
     }, delay);
 
@@ -422,11 +511,10 @@ export default function QuizBlock({
     excusedById,
     strictSequential,
     unlimitedAttempts,
+    autoAdvance,
   ]);
 
-
-
-
+  /* ------------------------------- state emitter ------------------------------ */
 
   const emitState = useCallback(
       (s: SavedQuizState) => onStateChange?.(s),
@@ -449,6 +537,8 @@ export default function QuizBlock({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
+  /* --------------------------------- reset ---------------------------------- */
+
   const [confirmResetQuiz, setConfirmResetQuiz] = useState(false);
 
   async function resetThisQuiz() {
@@ -466,6 +556,8 @@ export default function QuizBlock({
     setExcusedById({});
     setReloadNonce((n) => n + 1);
   }
+
+  /* --------------------------------- UI ------------------------------------- */
 
   if (quizLoading) {
     return (
@@ -496,6 +588,16 @@ export default function QuizBlock({
         {questions.map((q, idx) => {
           const unlocked = isUnlocked(idx);
 
+          const showNext =
+              awaitNextQid === q.id &&
+              prereqsMet &&
+              !locked &&
+              !isCompleted &&
+              isFlowDone(q);
+
+          const nextIdx = findNextUnlockedIndex(idx);
+          const isLast = nextIdx < 0;
+
           return (
               <div key={q.id} ref={setQuestionEl(q.id)} data-qid={q.id}>
                 {q.kind === "practice" ? (
@@ -514,8 +616,8 @@ export default function QuizBlock({
                           if (!unlocked) return;
                           const ps0 = practiceBank.practice[q.id];
                           if (!ps0?.error) return;
+
                           setExcusedById((prev) => ({ ...prev, [q.id]: true }));
-                          // treat “Continue” as last action so it can advance
                           lastActionQidRef.current = q.id;
                         }}
                         onUpdateItem={(patch) => practiceBank.updatePracticeItem(q.id, patch)}
@@ -543,10 +645,42 @@ export default function QuizBlock({
                         }}
                     />
                 )}
+
+                {showNext ? (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                          type="button"
+                          className="ui-quiz-action ui-quiz-action--primary"
+                          data-flow-focus="1"
+                          onClick={() => {
+                            setAwaitNextQid(null);
+                            if (isLast) scrollToFooter();
+                            else advanceFrom(q.id);
+                          }}
+                      >
+                        {isLast ? "Finish →" : "Next →"}
+                      </button>
+                    </div>
+                ) : null}
               </div>
           );
         })}
+
         <div ref={footerElRef}>
+          <div className="mb-2 flex items-center justify-end gap-2 text-xs font-extrabold text-neutral-600 dark:text-white/60">
+            <label className="inline-flex items-center gap-2 select-none">
+              <input
+                  type="checkbox"
+                  checked={autoAdvance}
+                  onChange={(e) => {
+                    setAwaitNextQid(null);
+                    setAutoAdvance(e.target.checked);
+                  }}
+              />
+              Auto-advance
+            </label>
+          </div>
+
           <QuizFooter
               checkedCount={summary.checkedCount}
               correctCount={summary.correctCount}
@@ -558,24 +692,12 @@ export default function QuizBlock({
               onResetClick={() => setConfirmResetQuiz(true)}
           />
         </div>
+
         {isCompleted ? (
             <div className="...">✓ Completed</div>
         ) : prereqsMet && summary.passed ? (
             <div className="...">✓ Passed — saving…</div>
         ) : null}
-        {/*{isCompleted ? (*/}
-        {/*    <div className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-900 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-100">*/}
-        {/*      ✓ Completed*/}
-        {/*    </div>*/}
-        {/*) : prereqsMet && summary.passed ? (*/}
-        {/*    <button*/}
-        {/*        type="button"*/}
-        {/*        onClick={onPass}*/}
-        {/*        className="rounded-xl border border-emerald-600/25 bg-emerald-500/10 px-3 py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-500/15 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"*/}
-        {/*    >*/}
-        {/*      Mark complete*/}
-        {/*    </button>*/}
-        {/*) : null}*/}
 
         {!isCompleted && summary.allChecked && !prereqsMet ? (
             <div>Finish “Mark as read” items in this topic first.</div>

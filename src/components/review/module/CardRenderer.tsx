@@ -2,21 +2,22 @@
 "use client";
 
 import React from "react";
-import type { ReviewCard, ReviewQuizSpec } from "@/lib/subjects/types";
-import type { SavedQuizState } from "@/lib/subjects/progressTypes";
+import type {ReviewCard, ReviewQuizSpec} from "@/lib/subjects/types";
+import type {SavedQuizState} from "@/lib/subjects/progressTypes";
 
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import QuizBlock from "@/components/review/QuizBlock";
-import { buildReviewQuizKey } from "@/lib/subjects/quizClient";
-import { cn } from "@/lib/cn";
+import {buildReviewQuizKey} from "@/lib/subjects/quizClient";
+import {cn} from "@/lib/cn";
 
 import SketchBlock from "@/components/sketches/subjects/SketchBlock";
 
 type SavedSketchState = any;
 
-function GateBanner({ kind }: { kind: "quiz" | "project" }) {
+function GateBanner({kind}: { kind: "quiz" | "project" }) {
     return (
-        <div className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
+        <div
+            className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
             Complete the topic items above (readings, videos, sketches) to unlock this {kind}.
         </div>
     );
@@ -30,7 +31,7 @@ function CompletedBadge() {
     );
 }
 
-function CardTitle({ title }: { title?: string | null }) {
+function CardTitle({title}: { title?: string | null }) {
     if (!title) return null;
     return (
         <div className="text-sm font-black text-neutral-900 dark:text-white/90">
@@ -119,9 +120,9 @@ export default function CardRenderer(props: {
 
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title} />
+                <CardTitle title={card.title}/>
 
-                {showGate ? <GateBanner kind={kind} /> : null}
+                {showGate ? <GateBanner kind={kind}/> : null}
 
                 {!showGate ? (
                     !canMountQuizBlock ? (
@@ -154,7 +155,7 @@ export default function CardRenderer(props: {
                     )
                 ) : null}
 
-                {done ? <CompletedBadge /> : null}
+                {done ? <CompletedBadge/> : null}
             </div>
         );
     }
@@ -162,10 +163,11 @@ export default function CardRenderer(props: {
     if (card.type === "text") {
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title} />
-                <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.markdown} />
+                <CardTitle title={card.title}/>
+                <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.markdown}/>
                 <div className="mt-3 flex justify-end">
-                    <button type="button" onClick={onMarkDone} className={actionBtn}>
+                    <button type="button" onClick={onMarkDone} className={actionBtn} data-flow-focus="1"
+                    >
                         {done ? "✓ Read" : "Mark as read"}
                     </button>
                 </div>
@@ -201,17 +203,17 @@ export default function CardRenderer(props: {
 
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title} />
+                <CardTitle title={card.title}/>
 
                 <div className="mt-3 ui-sketch-panel p-3">
                     {isFile ? (
                         <video className="w-full rounded-xl" controls preload="metadata" poster={card.posterUrl}>
-                            <source src={url} />
+                            <source src={url}/>
                         </video>
                     ) : (
                         <iframe
                             className="w-full rounded-xl"
-                            style={{ height: 380 }}
+                            style={{height: 380}}
                             src={url}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -220,13 +222,13 @@ export default function CardRenderer(props: {
 
                     {card.captionMarkdown ? (
                         <div className="mt-3">
-                            <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.captionMarkdown} />
+                            <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.captionMarkdown}/>
                         </div>
                     ) : null}
                 </div>
 
                 <div className="mt-3 flex justify-end">
-                    <button type="button" onClick={onMarkDone} className={actionBtn}>
+                    <button type="button" onClick={onMarkDone} className={actionBtn} data-flow-focus="1">
                         {done ? "✓ Watched" : "Mark watched"}
                     </button>
                 </div>

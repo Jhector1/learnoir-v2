@@ -121,6 +121,27 @@ export default function ReviewModuleView({
         });
     }, [topics, progress]);
 
+
+
+
+    // after reduceMotion effect (or anywhere near your scroll helpers)
+    useEffect(() => {
+        const down = () => ((window as any).__flowPointerDown = true);
+        const up = () => ((window as any).__flowPointerDown = false);
+
+        window.addEventListener("pointerdown", down, true);
+        window.addEventListener("pointerup", up, true);
+        window.addEventListener("pointercancel", up, true);
+
+        return () => {
+            window.removeEventListener("pointerdown", down, true);
+            window.removeEventListener("pointerup", up, true);
+            window.removeEventListener("pointercancel", up, true);
+        };
+    }, []);
+
+
+
     useEffect(() => {
         onModuleCompleteChange?.(moduleComplete || Boolean((progress as any)?.moduleCompleted));
     }, [moduleComplete, progress, onModuleCompleteChange]);
@@ -366,7 +387,7 @@ export default function ReviewModuleView({
 
 
 
-
+    const mainScrollRef = useRef<HTMLElement | null>(null);
 
 
 
@@ -396,19 +417,21 @@ export default function ReviewModuleView({
         [],
     );
 
-    const scrollToCardId = useCallback(
-        (id: string) => {
-            const el = cardElRef.current.get(id);
-            if (!el) return;
-            el.scrollIntoView({
-                behavior: reduceMotion ? "auto" : "smooth",
-                block: "start",
-            });
-        },
-        [reduceMotion],
-    );
+    // const scrollToCardId = useCallback(
+    //     (id: string) => {
+    //         const el = cardElRef.current.get(id);
+    //         if (!el) return;
+    //         el.scrollIntoView({
+    //             behavior: reduceMotion ? "auto" : "smooth",
+    //             block: "start",
+    //         });
+    //     },
+    //     [reduceMotion],
+    // );
 
-
+    useEffect(() => {
+        cardElRef.current.clear();
+    }, [viewTid, topicRenderKey]);
 
 
     function isQuizLikeCard(c: ReviewCard) {
@@ -438,6 +461,98 @@ export default function ReviewModuleView({
     }
 
 
+
+
+
+
+
+    function userIsInteracting() {
+        if (typeof window !== "undefined" && (window as any).__flowPointerDown) return true;
+
+        // text selection (mouse drag / highlight)
+        const sel = typeof window !== "undefined" ? window.getSelection?.() : null;
+        if (sel && !sel.isCollapsed) return true;
+
+        // typing / selecting inside inputs
+        const ae = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+        if (!ae) return false;
+
+        const tag = ae.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+        if (ae.isContentEditable) return true;
+
+        return false;
+    }
+
+    function visibleRatio(el: HTMLElement, container: HTMLElement) {
+        const r = el.getBoundingClientRect();
+        const c = container.getBoundingClientRect();
+
+        const top = Math.max(r.top, c.top);
+        const bot = Math.min(r.bottom, c.bottom);
+        const visPx = Math.max(0, bot - top);
+        const h = Math.max(1, r.height);
+
+        return visPx / h;
+    }
+
+    function focusPrimaryAction(root: HTMLElement) {
+        const preferred =
+            // ✅ your explicit flow target (and not disabled)
+            root.querySelector<HTMLElement>(
+                'button[data-flow-focus]:not([disabled]),' +
+                'input[data-flow-focus]:not([disabled]),' +
+                'textarea[data-flow-focus]:not([disabled]),' +
+                'select[data-flow-focus]:not([disabled]),' +
+                '[tabindex][data-flow-focus]:not([tabindex="-1"])'
+            ) ??
+            // ✅ quiz “primary” action if you ever forget data-flow-focus
+            root.querySelector<HTMLElement>('button.ui-quiz-action--primary:not([disabled])') ??
+            // ✅ standard primary button style
+            root.querySelector<HTMLElement>('button.ui-btn-primary:not([disabled])') ??
+            // ✅ last resort: first focusable control
+            root.querySelector<HTMLElement>(
+                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
+
+        preferred?.focus({ preventScroll: true } as any);
+    }
+
+    const scrollToCardId = useCallback(
+        (id: string) => {
+            const el = cardElRef.current.get(id);
+            if (!el) return;
+
+            if (userIsInteracting()) return;
+
+            const container = mainScrollRef.current;
+            if (!container) {
+                // fallback: just scroll normally or do nothing
+                el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+                return;
+            }const ratio = visibleRatio(el, container);
+
+            // ✅ only scroll if not already “visible enough”
+            const needsScroll = ratio < 0.6;
+
+            if (needsScroll) {
+                el.scrollIntoView({
+                    behavior: reduceMotion ? "auto" : "smooth",
+                    block: "start",
+                });
+            }
+
+            // ✅ focus primary action after scroll (or immediately if no scroll)
+            const focusLater = () => focusPrimaryAction(el);
+
+            if (reduceMotion || !needsScroll) {
+                requestAnimationFrame(focusLater);
+            } else {
+                window.setTimeout(focusLater, 250); // smooth scroll has started
+            }
+        },
+        [reduceMotion],
+    );
 
 
 
@@ -594,7 +709,7 @@ export default function ReviewModuleView({
                         ) : null}
 
                         {/* MAIN */}
-                        <main className="flex-1 min-w-0 h-full overflow-auto">
+                        <main ref={mainScrollRef} className="flex-1 min-w-0 h-full overflow-auto">
                             {panels.leftCollapsed ? (
                                 <div className="mb-3">
                                     <button
@@ -703,7 +818,7 @@ export default function ReviewModuleView({
                                             <div key={card.id} ref={setCardEl(card.id)}>
 
                                             <CardRenderer
-                                                key={card.id}
+                                                // key={card.id}
                                                 card={card}
                                                 done={done}
                                                 cardIndex={cardIndex} // ✅ NEW

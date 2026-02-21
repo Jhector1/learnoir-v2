@@ -117,6 +117,7 @@ export default function SketchBlock(props: {
                         className={cn(SKETCH_BTN_PRIMARY, done && "opacity-70")}
                         onClick={onMarkDone}
                         disabled={!prereqsMet}
+                        data-flow-focus="1"
                         title="Mark this learning card as read"
                     >
                         {done ? "✓ Marked as read" : "Mark as read"}

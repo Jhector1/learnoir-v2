@@ -29,6 +29,49 @@ import {
   getAssignmentDifficulty,
 } from "./session";
 
+
+
+
+
+
+
+
+
+
+
+// --- Quiz-only policy (server enforced) -------------------------
+
+// Keep this as strings to avoid enum mismatch / compile issues if you rename kinds.
+const QUIZ_ONLY_KINDS = new Set<string>([
+  "single_choice",
+  "multi_choice",
+  "numeric",
+  "drag_reorder",
+  "text_input",
+  "voice_input",
+  "matrix_input",
+  "vector_drag_target",
+  "vector_drag_dot",
+  "code_input", // include if you consider code exercises "quiz-like"
+  // add/remove as needed
+]);
+
+function isQuizOnlySession(session: any) {
+  // ✅ Most secure: apply to ALL session runs that come from module practice start
+  // Your /api/modules/[moduleSlug]/practice/start always creates session with assignmentId: null
+  return Boolean(session?.id) && session?.assignmentId == null;
+}
+
+function isAllowedQuizKind(kind: unknown) {
+  const k = String(kind ?? "");
+  return QUIZ_ONLY_KINDS.has(k);
+}
+
+
+
+
+
+
 export type PracticeGetResult =
   | { kind: "json"; status: number; body: any }
   | { kind: "res"; res: NextResponse };

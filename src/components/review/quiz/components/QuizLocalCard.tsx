@@ -96,6 +96,8 @@ export default function QuizLocalCard(props: {
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <button
           type="button"
+          data-flow-focus="1"
+
           disabled={disabled}
           onClick={() => !disabled && props.onCheck()}
           className={cn(

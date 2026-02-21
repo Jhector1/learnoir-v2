@@ -85,23 +85,15 @@ export default function ToolsPanel({
                     height={codeRunnerRegionH}
                     showTerminalDockToggle
                     showEditorThemeToggle
-                    // showLanguagePicker
-                    //
-                    // // ✅ controlled props
-                    // language={toolLang}
-                    onChangeLanguage={onChangeLang}
+
+                    fixedLanguage={toolLang}
+                    showLanguagePicker={false}
 
                     code={toolCode}
                     onChangeCode={onChangeCode}
 
                     stdin={toolStdin}
                     onChangeStdin={onChangeStdin}
-
-
-                    fixedLanguage={toolLang}
-                    showLanguagePicker={false}
-                    language={toolLang}
-
                 />
 
             </div>

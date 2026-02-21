@@ -6,7 +6,12 @@ import fs from "fs";
 import path from "path";
 
 import { hasReviewModule } from "@/lib/subjects/registry";
-import { getActor, ensureGuestId, attachGuestCookie, actorKeyOf } from "@/lib/practice/actor";
+import {
+    getActor,
+    ensureGuestId,
+    attachGuestCookie,
+    actorKeyOf,
+} from "@/lib/practice/actor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,16 +55,6 @@ async function loadPublicAsset(req: Request, relPath: string): Promise<Buffer> {
     return Buffer.from(ab);
 }
 
-// Minimal PNG size reader (works for PNG only)
-function readPngSize(buf: Buffer): { w: number; h: number } {
-    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
-    if (buf.length < 24) throw new Error("PNG too small");
-    if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error("Not a PNG");
-    const w = buf.readUInt32BE(16);
-    const h = buf.readUInt32BE(20);
-    return { w, h };
-}
-
 async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; locale: string }) {
     const { actorKey, subjectSlug, locale } = opts;
 
@@ -92,6 +87,7 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
 
     const progressByModule = new Map(progressRows.map((r) => [r.moduleId, r as any]));
 
+    // ✅ decide whether assignment is required for certificate
     const requireAssignment = true;
 
     const modules = await Promise.all(
@@ -139,14 +135,18 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
 }
 
 // Fit text into a box by reducing font size until it fits height (and wraps within width)
-function fitTextBox(doc: PDFKit.PDFDocument, text: string, opts: {
-    font: string;
-    maxSize: number;
-    minSize: number;
-    width: number;
-    maxHeight: number;
-    lineGap?: number;
-}) {
+function fitTextBox(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    opts: {
+        font: string;
+        maxSize: number;
+        minSize: number;
+        width: number;
+        maxHeight: number;
+        lineGap?: number;
+    },
+) {
     const { font, maxSize, minSize, width, maxHeight, lineGap = 0 } = opts;
 
     for (let size = maxSize; size >= minSize; size -= 1) {
@@ -230,123 +230,136 @@ export async function GET(req: Request) {
         select: { id: true, issuedAt: true, completedAt: true },
     });
 
-    // Assets
-    const bgPng = await loadPublicAsset(req, "/certificates/certificate-bg.png");
-    const { w: bgW, h: bgH } = readPngSize(bgPng);
+    try {
+        // Fonts (keep these to avoid Helvetica.afm issues in Next bundling)
+        const interRegular = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Regular.ttf");
+        const interBold = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Bold.ttf");
 
-    const interRegular = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Regular.ttf");
-    const interBold = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Bold.ttf");
+        // PDF (lightweight vector layout, no images)
+        const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 36 });
 
-    // PDF page: keep standard LETTER landscape, but place image without distortion
-    const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 0 });
+        const chunks: Buffer[] = [];
+        doc.on("data", (c) => chunks.push(c));
+        const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-    const chunks: Buffer[] = [];
-    doc.on("data", (c) => chunks.push(c));
-    const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
+        doc.registerFont("Inter", interRegular);
+        doc.registerFont("Inter-Bold", interBold);
 
-    // Register fonts (avoids pdfkit built-in Helvetica -> fixes Helvetica.afm errors)
-    doc.registerFont("Inter", interRegular);
-    doc.registerFont("Inter-Bold", interBold);
+        const W = doc.page.width;
+        const H = doc.page.height;
 
-    const W = doc.page.width;
-    const H = doc.page.height;
+        // Colors
+        const ink = "#0F172A";
+        const sub = "#334155";
+        const muted = "#64748B";
+        const border = "#CBD5E1";
 
-    // ---- Place background with CONTAIN (no stretch). Keep the full border visible.
-    const scale = Math.min(W / bgW, H / bgH);
-    const imgW = bgW * scale;
-    const imgH = bgH * scale;
-    const imgX = (W - imgW) / 2;
-    const imgY = (H - imgH) / 2;
+        // Frame
+        doc.save();
+        doc.lineWidth(2).strokeColor(border).roundedRect(18, 18, W - 36, H - 36, 18).stroke();
+        doc.lineWidth(1).strokeColor(border).roundedRect(32, 32, W - 64, H - 64, 14).stroke();
+        doc.restore();
 
-    doc.image(bgPng, imgX, imgY, { width: imgW, height: imgH });
+        // Content box
+        const boxX = 72;
+        const boxW = W - 144;
 
-    // Everything below is positioned INSIDE the image rectangle:
-    // Safe inset so we never collide with the decorative border
-    const inset = Math.round(imgW * 0.07);
-    const boxX = imgX + inset;
-    const boxW = imgW - inset * 2;
+        const courseTitle = status.subject.title;
+        const completionDateStr = fmtDate(status.completedAt);
+        const issuedDateStr = cert.issuedAt.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
 
-    function center(text: string, y: number, font: string, size: number, color: string, opts?: { lineGap?: number }) {
-        doc.fillColor(color).font(font).fontSize(size);
-        doc.text(text, boxX, y, { width: boxW, align: "center", lineGap: opts?.lineGap ?? 0 });
+        function center(
+            text: string,
+            y: number,
+            font: string,
+            size: number,
+            color: string,
+            opts?: { lineGap?: number },
+        ) {
+            doc.fillColor(color).font(font).fontSize(size);
+            doc.text(text, boxX, y, { width: boxW, align: "center", lineGap: opts?.lineGap ?? 0 });
+        }
+
+        // Header
+        center("Certificate of Completion", 92, "Inter-Bold", 34, ink);
+        center("This certifies that", 148, "Inter", 14, sub);
+
+        // Name (auto-fit)
+        const nameSize = fitTextBox(doc, displayName, {
+            font: "Inter-Bold",
+            maxSize: 46,
+            minSize: 22,
+            width: boxW,
+            maxHeight: 90,
+            lineGap: -2,
+        });
+        center(displayName, 176, "Inter-Bold", nameSize, ink, { lineGap: -2 });
+
+        // Body
+        center("has successfully completed the course", 260, "Inter", 14, sub);
+
+        // Course title (auto-fit)
+        const courseSize = fitTextBox(doc, courseTitle, {
+            font: "Inter-Bold",
+            maxSize: 30,
+            minSize: 16,
+            width: boxW,
+            maxHeight: 70,
+            lineGap: -1,
+        });
+        center(courseTitle, 292, "Inter-Bold", courseSize, ink, { lineGap: -1 });
+
+        // Divider
+        doc.save();
+        doc.strokeColor(border).lineWidth(1);
+        doc.moveTo(boxX + 140, 382).lineTo(boxX + boxW - 140, 382).stroke();
+        doc.restore();
+
+        // Dates
+        center(`Completion date: ${completionDateStr}`, 402, "Inter", 12, muted);
+        center(`Issued: ${issuedDateStr}`, 422, "Inter", 12, muted);
+
+        // Simple “seal” (vector, no image)
+        doc.save();
+        doc.strokeColor(border).lineWidth(2);
+        doc.circle(W - 120, H - 110, 42).stroke();
+        doc.fillColor(muted).font("Inter-Bold").fontSize(10);
+        doc.text("LEARNOIR", W - 168, H - 118, { width: 96, align: "center" });
+        doc.restore();
+
+        // Footer meta
+        doc.fillColor(muted).font("Inter").fontSize(10);
+        doc.text("Learnoir • Verified by course progress records", 54, H - 54, {
+            width: W - 108,
+            align: "left",
+        });
+        doc.text(`Certificate ID: ${cert.id}`, 54, H - 54, { width: W - 108, align: "right" });
+
+        doc.end();
+
+        const pdf = await done;
+        const filename = `${status.subject.slug}-certificate.pdf`;
+
+        const res = new NextResponse(pdf, {
+            status: 200,
+            headers: {
+                "Content-Type": "application/pdf",
+                "Content-Disposition": `attachment; filename="${filename}"`,
+                "Cache-Control": "no-store",
+            },
+        });
+
+        return attachGuestCookie(res, setGuestId);
+    } catch (e: any) {
+        return jsonErr(
+            "Failed to generate certificate PDF.",
+            500,
+            { error: String(e?.message ?? e) },
+            setGuestId,
+        );
     }
-
-    const courseTitle = status.subject.title;
-    const completionDateStr = fmtDate(status.completedAt);
-    const issuedDateStr = cert.issuedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-
-    // Layout as percentages of image height (so it matches your background even if it changes)
-    const yTitle = imgY + imgH * 0.18;
-    const yCertifies = imgY + imgH * 0.33;
-    const yName = imgY + imgH * 0.41;
-    const yHas = imgY + imgH * 0.50;
-    const yCourse = imgY + imgH * 0.58;
-    const yDates = imgY + imgH * 0.73;
-
-    // Auto-fit name + course to avoid overflow
-    const nameSize = fitTextBox(doc, displayName, {
-        font: "Inter-Bold",
-        maxSize: 44,
-        minSize: 24,
-        width: boxW,
-        maxHeight: imgH * 0.12, // allow wrap if needed
-        lineGap: -2,
-    });
-
-    const courseSize = fitTextBox(doc, courseTitle, {
-        font: "Inter-Bold",
-        maxSize: 28,
-        minSize: 16,
-        width: boxW,
-        maxHeight: imgH * 0.10, // allow 1–2 lines
-        lineGap: -1,
-    });
-
-    // Colors (slightly softer than pure black to look more “print”)
-    const ink = "#0F172A";
-    const sub = "#334155";
-    const muted = "#64748B";
-
-    center("Certificate of Completion", yTitle, "Inter-Bold", 34, ink);
-    center("This certifies that", yCertifies, "Inter", 14, sub);
-
-    // Name
-    center(displayName, yName, "Inter-Bold", nameSize, ink, { lineGap: -2 });
-
-    center("has successfully completed the course", yHas, "Inter", 14, sub);
-
-    // Course title (auto-fit)
-    center(courseTitle, yCourse, "Inter-Bold", courseSize, ink, { lineGap: -1 });
-
-    center(`Completion date: ${completionDateStr}`, yDates, "Inter", 13, sub);
-    center(`Issued: ${issuedDateStr}`, yDates + 18, "Inter", 13, sub);
-
-    // Footer: keep it off the seal by placing left + right, not centered
-    const footY = imgY + imgH * 0.90;
-
-    doc.fillColor(muted).font("Inter").fontSize(10);
-    doc.text("Learnoir • Verified by course progress records", boxX, footY, {
-        width: boxW,
-        align: "left",
-    });
-    doc.text(`Certificate ID: ${cert.id}`, boxX, footY, {
-        width: boxW,
-        align: "right",
-    });
-
-    doc.end();
-
-    const pdf = await done;
-    const filename = `${status.subject.slug}-certificate.pdf`;
-
-    const res = new NextResponse(pdf, {
-        status: 200,
-        headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="${filename}"`,
-            "Cache-Control": "no-store",
-        },
-    });
-
-    return attachGuestCookie(res, setGuestId);
 }

@@ -17,7 +17,7 @@ import {ROUTES} from "@/utils";
 import {cn} from "@/lib/cn";
 
 import TopicShell from "./components/TopicShell";
-import TopicIntro from "./components/TopicIntro";
+// import TopicIntro from "./components/TopicIntro";
 import TopicOutro from "./components/TopicOutro";
 import ModuleSidebar from "./components/ModuleSidebar";
 import ToolsPanel from "./components/ToolsPanel";
@@ -540,15 +540,35 @@ export default function ReviewModuleView({
                                 <div key={topicRenderKey} className="grid gap-3">
                                     {viewCards.map((card, cardIndex) => {
                                         const tp: any = (progress as any)?.topics?.[viewTid] ?? {};
-                                        const done =
-                                            card.type === "quiz" ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
+                                        // const done =
+                                        //     card.type === "quiz" ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
 
                                         const savedQuiz = (tp?.quizState?.[card.id] ?? null) as SavedQuizState | null;
                                         const savedSketch = tp?.sketchState?.[card.id] ?? null;
 
+
+
+
+
+                                        // const prereqsMet = unlockAll
+                                        //     ? true
+                                        //     : card.type === "quiz"
+                                        //         ? prereqsMetForQuiz(viewCards, tp, card.id)
+                                        //
+                                        //
+                                        //         : true;
+
+
+
+                                        const isQuizLike = card.type === "quiz" || card.type === "project";
+
+                                        const done = isQuizLike
+                                            ? Boolean(tp?.quizzesDone?.[card.id])
+                                            : Boolean(tp?.cardsDone?.[card.id]);
+
                                         const prereqsMet = unlockAll
                                             ? true
-                                            : card.type === "quiz"
+                                            : isQuizLike
                                                 ? prereqsMetForQuiz(viewCards, tp, card.id)
                                                 : true;
 

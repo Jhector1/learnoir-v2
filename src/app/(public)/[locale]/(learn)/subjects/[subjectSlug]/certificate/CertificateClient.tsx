@@ -10,6 +10,7 @@ type Status = {
     eligible: boolean;
     requireAssignment: boolean;
     subject: { slug: string; title: string };
+    locale: string;
     completedAt: string | null;
     modules: Array<{
         moduleId: string;
@@ -17,6 +18,8 @@ type Status = {
         moduleCompleted: boolean;
         assignmentCompleted: boolean;
     }>;
+    certificate: { id: string; issuedAt: string; completedAt: string | null } | null;
+    actor: { isGuest: boolean; userId: string | null; guestId: string | null };
 };
 
 export default function CertificateClient() {
@@ -62,7 +65,6 @@ export default function CertificateClient() {
     }, [subjectSlug, locale]);
 
     const nextSteps = useMemo(() => {
-        // You can make this dynamic per subject later
         return [
             { title: "Start the next course", body: "Keep momentum — pick your next module set and continue practicing." },
             { title: "Practice for 10 minutes/day", body: "Consistency beats cramming. Build a daily streak." },
@@ -97,6 +99,14 @@ export default function CertificateClient() {
             a.remove();
 
             window.URL.revokeObjectURL(url);
+
+            // refresh status so "certificate" object becomes available after first issue
+            const rr = await fetch(
+                `/api/certificates/subject?subjectSlug=${encodeURIComponent(subjectSlug)}&locale=${encodeURIComponent(locale)}`,
+                { cache: "no-store" },
+            );
+            const dd = await rr.json().catch(() => null);
+            if (rr.ok) setStatus(dd);
         } catch (e: any) {
             alert(e?.message ?? "Unable to download certificate.");
         } finally {
@@ -150,6 +160,12 @@ export default function CertificateClient() {
                                     </>
                                 )}
                             </div>
+
+                            {status?.certificate ? (
+                                <div className="mt-3 text-xs text-neutral-600 dark:text-white/60">
+                                    Issued certificate: <span className="font-black">{status.certificate.id}</span>
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="shrink-0 flex items-center gap-2">
@@ -160,10 +176,41 @@ export default function CertificateClient() {
                             <button
                                 className={cn("ui-btn ui-btn-primary", (!eligible || downloading) && "opacity-60 cursor-not-allowed")}
                                 disabled={!eligible || downloading}
+                                aria-disabled={!eligible || downloading}
                                 onClick={downloadPdf}
                             >
                                 {downloading ? "Preparing…" : "Download PDF"}
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ✅ Always-visible preview (locks when not eligible) */}
+                <div className="ui-card p-5 overflow-hidden">
+                    <div className="text-lg font-black">Certificate Preview</div>
+
+                    <div
+                        className={cn(
+                            "mt-3 rounded-2xl border bg-white p-6 dark:bg-white/[0.04] dark:border-white/10 relative",
+                            !eligible && "opacity-70",
+                        )}
+                    >
+                        {!eligible && (
+                            <div className="absolute inset-0 grid place-items-center bg-white/60 dark:bg-black/40 backdrop-blur-[1px]">
+                                <div className="ui-card px-4 py-2 text-sm font-extrabold">Finish the checklist to unlock</div>
+                            </div>
+                        )}
+
+                        <div className="text-2xl font-black tracking-tight">Certificate of Completion</div>
+                        <div className="mt-2 text-sm text-neutral-600 dark:text-white/60">This certifies that</div>
+
+                        <div className="mt-4 text-3xl font-black">{eligible ? "Learner" : "Guest Learner"}</div>
+
+                        <div className="mt-4 text-sm text-neutral-600 dark:text-white/60">has successfully completed</div>
+                        <div className="mt-2 text-xl font-extrabold">{status?.subject.title}</div>
+
+                        <div className="mt-6 text-xs text-neutral-500 dark:text-white/50">
+                            {status?.completedAt ? `Completed: ${new Date(status.completedAt).toLocaleDateString()}` : "Completed: —"}
                         </div>
                     </div>
                 </div>
@@ -192,7 +239,12 @@ export default function CertificateClient() {
                                             </div>
                                         ) : null}
                                     </div>
-                                    <div className={cn("text-xs font-black", ok ? "text-emerald-700 dark:text-emerald-200" : "text-neutral-500 dark:text-white/60")}>
+                                    <div
+                                        className={cn(
+                                            "text-xs font-black",
+                                            ok ? "text-emerald-700 dark:text-emerald-200" : "text-neutral-500 dark:text-white/60",
+                                        )}
+                                    >
                                         {ok ? "✓ Complete" : "In progress"}
                                     </div>
                                 </div>
@@ -205,7 +257,10 @@ export default function CertificateClient() {
                     <div className="text-lg font-black">Next steps</div>
                     <div className="mt-3 grid gap-3 md:grid-cols-3">
                         {nextSteps.map((s) => (
-                            <div key={s.title} className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                            <div
+                                key={s.title}
+                                className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]"
+                            >
                                 <div className="font-extrabold">{s.title}</div>
                                 <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">{s.body}</div>
                             </div>

@@ -100,9 +100,7 @@ export async function GET(req: Request) {
         }),
     );
 
-    const eligible = modules.every(
-        (x) => x.moduleCompleted && (!requireAssignment || x.assignmentCompleted),
-    );
+    const eligible = modules.every((x) => x.moduleCompleted && (!requireAssignment || x.assignmentCompleted));
 
     const completedAt =
         modules
@@ -133,7 +131,7 @@ export async function GET(req: Request) {
             locale,
             completedAt,
             modules,
-            certificate, // ✅ null until PDF route issues it
+            certificate, // null until PDF route issues it
             actor: {
                 isGuest: Boolean(actor.guestId && !actor.userId),
                 userId: actor.userId ?? null,

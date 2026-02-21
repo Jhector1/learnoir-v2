@@ -273,8 +273,156 @@ export default function QuizBlock({
 
 
 
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduceMotion(Boolean(mq.matches));
+    apply();
+
+    // Safari fallback
+    if (mq.addEventListener) mq.addEventListener("change", apply);
+    else (mq as any).addListener?.(apply);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", apply);
+      else (mq as any).removeListener?.(apply);
+    };
+  }, []);
+
+  const qElRef = useRef(new Map<string, HTMLElement | null>());
+  const footerElRef = useRef<HTMLDivElement | null>(null);
+
+  const lastActionQidRef = useRef<string | null>(null);
+  const advanceTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current);
+    };
+  }, []);
+
+  function setQuestionEl(qid: string) {
+    return (el: HTMLElement | null) => qElRef.current.set(qid, el);
+  }
+
+  function focusFirstControl(root: HTMLElement) {
+    const el = root.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    el?.focus({ preventScroll: true } as any);
+  }
+
+  function scrollToEl(root: HTMLElement) {
+    root.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    // focus after scroll starts (prevents jumpy behavior)
+    requestAnimationFrame(() => focusFirstControl(root));
+  }
+
+  function scrollToFooter() {
+    const el = footerElRef.current;
+    if (!el) return;
+    el.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }
 
 
+  function findNextUnlockedIndex(fromIdx: number) {
+    for (let i = fromIdx + 1; i < questions.length; i++) {
+      if (isUnlocked(i)) return i;
+    }
+    return -1;
+  }
+
+  function advanceFrom(qid: string) {
+    const idx = questions.findIndex((qq) => qq.id === qid);
+    if (idx < 0) return;
+
+    const nextIdx = findNextUnlockedIndex(idx);
+    if (nextIdx < 0) {
+      // nothing else to advance to; land on footer (nice UX)
+      scrollToFooter();
+      return;
+    }
+
+    const nextQ = questions[nextIdx];
+    const el = qElRef.current.get(nextQ.id);
+    if (el) scrollToEl(el);
+  }
+
+
+
+  function isFlowDone(q: ReviewQuestion): boolean {
+    // excused counts as flow-done
+    if (isExcused(q.id)) return true;
+
+    if (q.kind === "practice") {
+      const ps = practiceBank.practice[q.id];
+      if (ps?.ok === true) return true;
+
+      const outOfAttempts =
+          ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+
+      // non-strict: out-of-attempts allows progression (your rule)
+      if (!strictSequential && outOfAttempts) return true;
+
+      return false;
+    }
+
+    // local (mcq/numeric): flow-done only when correct
+    return getQuestionOk(q) === true;
+  }
+
+  function hasExplain(q: ReviewQuestion) {
+    const ex = (q as any).explain;
+    return typeof ex === "string" && ex.trim().length > 0;
+  }
+
+  useEffect(() => {
+    if (!prereqsMet || locked || isCompleted) return;
+
+    const qid = lastActionQidRef.current;
+    if (!qid) return;
+
+    const q = questions.find((x) => x.id === qid);
+    if (!q) return;
+
+    if (!isFlowDone(q)) return;
+
+    // Don’t auto-advance instantly if there’s an explanation
+    // (let user see it; still “smooth”)
+    const delay = hasExplain(q) ? 650 : 150;
+
+    if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = window.setTimeout(() => {
+
+      advanceFrom(qid);
+      // ✅ prevent repeated auto-advance on later renders
+      lastActionQidRef.current = null;
+
+      // optional: clear ref
+      advanceTimerRef.current = null;
+    }, delay);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    prereqsMet,
+    locked,
+    isCompleted,
+    questions,
+    local.checkedById,
+    local.answers,
+    practiceBank.practice,
+    excusedById,
+    strictSequential,
+    unlimitedAttempts,
+  ]);
 
 
 
@@ -348,70 +496,68 @@ export default function QuizBlock({
         {questions.map((q, idx) => {
           const unlocked = isUnlocked(idx);
 
-          if (q.kind === "practice") {
-            const ps = practiceBank.practice[q.id];
-            const pr = practiceBank.getPadRef(q.id);
-            const excused = isExcused(q.id);
-
-            return (
-                <QuizPracticeCard
-                    key={q.id}
-                    q={q}
-                    ps={ps}
-                    unlocked={unlocked}
-                    isCompleted={isCompleted}
-                    locked={locked}
-                    unlimitedAttempts={unlimitedAttempts}
-                    strictSequential={strictSequential}
-                    seqOrder={orderBase + idx}
-                    padRef={pr as any}
-                    excused={excused}
-                    onExcused={() => {
-                      const ps0 = practiceBank.practice[q.id];
-                      if (!unlocked) return;
-                      if (!ps0?.error) return;
-                      setExcusedById((prev) => ({ ...prev, [q.id]: true }));
-                    }}
-                    onUpdateItem={(patch) => practiceBank.updatePracticeItem(q.id, patch)}
-                    onSubmit={() => void practiceBank.submitPractice(q)}
-                    onReveal={() => void practiceBank.revealPractice(q)}
-                />
-            );
-          }
-
-          const checked = Boolean(local.checkedById[q.id]);
-          const ok = getQuestionOk(q);
-
           return (
-              <QuizLocalCard
-                  prereqsMet={prereqsMet}
-                  key={q.id}
-                  q={q}
-                  unlocked={unlocked}
-                  isCompleted={isCompleted}
-                  locked={locked}
-                  value={local.answers[q.id]}
-                  checked={checked}
-                  ok={ok}
-                  onPick={(val) => local.setAnswer(q.id, val)}
-                  onCheck={() => {
-                    if (isCompleted || locked) return;
-                    local.check(q.id);
-                  }}
-              />
+              <div key={q.id} ref={setQuestionEl(q.id)} data-qid={q.id}>
+                {q.kind === "practice" ? (
+                    <QuizPracticeCard
+                        q={q}
+                        ps={practiceBank.practice[q.id]}
+                        unlocked={unlocked}
+                        isCompleted={isCompleted}
+                        locked={locked}
+                        unlimitedAttempts={unlimitedAttempts}
+                        strictSequential={strictSequential}
+                        seqOrder={orderBase + idx}
+                        padRef={practiceBank.getPadRef(q.id) as any}
+                        excused={isExcused(q.id)}
+                        onExcused={() => {
+                          if (!unlocked) return;
+                          const ps0 = practiceBank.practice[q.id];
+                          if (!ps0?.error) return;
+                          setExcusedById((prev) => ({ ...prev, [q.id]: true }));
+                          // treat “Continue” as last action so it can advance
+                          lastActionQidRef.current = q.id;
+                        }}
+                        onUpdateItem={(patch) => practiceBank.updatePracticeItem(q.id, patch)}
+                        onSubmit={() => {
+                          lastActionQidRef.current = q.id;
+                          void practiceBank.submitPractice(q);
+                        }}
+                        onReveal={() => void practiceBank.revealPractice(q)}
+                    />
+                ) : (
+                    <QuizLocalCard
+                        prereqsMet={prereqsMet}
+                        q={q}
+                        unlocked={unlocked}
+                        isCompleted={isCompleted}
+                        locked={locked}
+                        value={local.answers[q.id]}
+                        checked={Boolean(local.checkedById[q.id])}
+                        ok={getQuestionOk(q)}
+                        onPick={(val) => local.setAnswer(q.id, val)}
+                        onCheck={() => {
+                          if (isCompleted || locked) return;
+                          lastActionQidRef.current = q.id;
+                          local.check(q.id);
+                        }}
+                    />
+                )}
+              </div>
           );
         })}
-
-        <QuizFooter
-            checkedCount={summary.checkedCount}
-            correctCount={summary.correctCount}
-            total={summary.total}
-            scorePct={Math.round(summary.score * 100)}
-            isCompleted={isCompleted}
-            passed={summary.passed}
-            sequential={sequential}
-            onResetClick={() => setConfirmResetQuiz(true)}
-        />
+        <div ref={footerElRef}>
+          <QuizFooter
+              checkedCount={summary.checkedCount}
+              correctCount={summary.correctCount}
+              total={summary.total}
+              scorePct={Math.round(summary.score * 100)}
+              isCompleted={isCompleted}
+              passed={summary.passed}
+              sequential={sequential}
+              onResetClick={() => setConfirmResetQuiz(true)}
+          />
+        </div>
         {isCompleted ? (
             <div className="...">✓ Completed</div>
         ) : prereqsMet && summary.passed ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useMemo, useEffect, useState} from "react";
+import React, {useMemo, useEffect, useState, useRef, useCallback} from "react";
 import {useParams} from "next/navigation";
 import {useRouter} from "@/i18n/navigation";
 
@@ -355,6 +355,99 @@ export default function ReviewModuleView({
         setConfirmOpen(true);
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const [reduceMotion, setReduceMotion] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) return;
+        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const apply = () => setReduceMotion(Boolean(mq.matches));
+        apply();
+
+        if (mq.addEventListener) mq.addEventListener("change", apply);
+        else (mq as any).addListener?.(apply);
+
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener("change", apply);
+            else (mq as any).removeListener?.(apply);
+        };
+    }, []);
+
+    const cardElRef = useRef(new Map<string, HTMLElement | null>());
+
+    const setCardEl = useCallback(
+        (id: string) => (el: HTMLElement | null) => {
+            cardElRef.current.set(id, el);
+        },
+        [],
+    );
+
+    const scrollToCardId = useCallback(
+        (id: string) => {
+            const el = cardElRef.current.get(id);
+            if (!el) return;
+            el.scrollIntoView({
+                behavior: reduceMotion ? "auto" : "smooth",
+                block: "start",
+            });
+        },
+        [reduceMotion],
+    );
+
+
+
+
+    function isQuizLikeCard(c: ReviewCard) {
+        return c.type === "quiz" || c.type === "project";
+    }
+
+    function isCardDone(c: ReviewCard, tp: any) {
+        if (isQuizLikeCard(c)) return Boolean(tp?.quizzesDone?.[c.id]);
+        return Boolean(tp?.cardsDone?.[c.id]);
+    }
+
+    function scrollToNextActionable(fromIndex: number, nextProgress: any) {
+        const tp = nextProgress?.topics?.[viewTid] ?? {};
+        const prereqsAllQuizzes = unlockAll ? true : prereqsMetForAnyQuizOrProject(viewCards, tp);
+
+        for (let i = fromIndex + 1; i < viewCards.length; i++) {
+            const c = viewCards[i];
+            if (isCardDone(c, tp)) continue;
+
+            // quizzes/projects only actionable when prereqs met
+            if (isQuizLikeCard(c) && !prereqsAllQuizzes) continue;
+
+            // wait one frame so layout reflects the “done” state
+            requestAnimationFrame(() => scrollToCardId(c.id));
+            return;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     function requestResetTopic(tid: string) {
         if (!tid) return;
         setPending({kind: "topic", tid});
@@ -607,6 +700,8 @@ export default function ReviewModuleView({
 
 
                                         return (
+                                            <div key={card.id} ref={setCardEl(card.id)}>
+
                                             <CardRenderer
                                                 key={card.id}
                                                 card={card}
@@ -620,23 +715,37 @@ export default function ReviewModuleView({
                                                 savedSketch={progressHydrated ? savedSketch : null}
                                                 onSketchStateChange={(sketchCardId, s) => sketch.saveSketchDebounced(viewTid, sketchCardId, s)}
                                                 onMarkDone={() => {
-                                                    commitProgress((p) => {
+                                                    setProgress((p: any) => {
                                                         const tp0: any = p.topics?.[viewTid] ?? {};
                                                         const cardsDone = { ...(tp0.cardsDone ?? {}), [card.id]: true };
-                                                        return {
+                                                        const next = {
                                                             ...p,
                                                             topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, cardsDone } },
                                                         };
+
+                                                        queueMicrotask(() => {
+                                                            flushNow(next);
+                                                            scrollToNextActionable(cardIndex, next); // ✅ smooth flow
+                                                        });
+
+                                                        return next;
                                                     });
                                                 }}
                                                 onQuizPass={(quizId) => {
-                                                    commitProgress((p) => {
+                                                    setProgress((p: any) => {
                                                         const tp0: any = p.topics?.[viewTid] ?? {};
                                                         const quizzesDone = { ...(tp0.quizzesDone ?? {}), [quizId]: true };
-                                                        return {
+                                                        const next = {
                                                             ...p,
                                                             topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizzesDone } },
                                                         };
+
+                                                        queueMicrotask(() => {
+                                                            flushNow(next);
+                                                            scrollToNextActionable(cardIndex, next); // ✅ also scroll after quiz/project completes
+                                                        });
+
+                                                        return next;
                                                     });
                                                 }}
                                                 onQuizStateChange={(quizCardId, s) => {
@@ -671,6 +780,7 @@ export default function ReviewModuleView({
                                                     });
                                                 }}
                                             />
+                                            </div>
                                         );
                                     })}
                                 </div>

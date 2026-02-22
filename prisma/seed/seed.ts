@@ -1,10 +1,12 @@
 import "dotenv/config";
 import { runSeed } from "./runSeed";
 import { genPracticeCatalog } from "./_genPracticeCatalog";
+import {seedPracticePresets} from "@/seed/presets";
 export async function main() {
   // ✅ generate catalog every time you seed
     await runSeed();
   await genPracticeCatalog();
+  await seedPracticePresets();
 
 
   // ... your existing seeding logic ...

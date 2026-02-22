@@ -24,6 +24,34 @@ enum UserRole {
   admin
 }
 
+enum PracticePurpose {
+  quiz
+  project
+}
+enum PracticeRunPresetKey {
+  MODULE_QUIZ_ONLY
+  MIXED_PRACTICE
+  // add more as you grow
+}
+
+model PracticeRunPreset {
+  id              String               @id @default(cuid())
+  key             PracticeRunPresetKey @unique
+
+  allowedKinds    PracticeKind[]       @default([])
+  allowedPurposes PracticePurpose[]    @default([]) // ✅ NEW
+
+  lockDifficulty  PracticeDifficulty?
+  lockTopic       String?
+  allowReveal     Boolean?
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  modules         PracticeModule[]
+  sessions        PracticeSession[]
+}
+
 model PracticeModule {
   id          String           @id @default(cuid())
   slug        String           @unique
@@ -43,7 +71,10 @@ model PracticeModule {
   sections PracticeSection[]
   topics   PracticeTopic[]
   sessions PracticeSession[] @relation("ModuleSessions") // ✅ opposite side
+ practicePresetId String?
+  practicePreset   PracticeRunPreset? @relation(fields: [practicePresetId], references: [id])
 
+  @@index([practicePresetId])
   @@index([order])
   @@index([subjectId, order])
 }
@@ -141,6 +172,7 @@ model PracticeQuestionInstance {
 
   kind       PracticeKind
   difficulty PracticeDifficulty
+  purpose    PracticePurpose @default(quiz) // ✅ NEW
 
   title  String
   prompt String
@@ -158,6 +190,8 @@ model PracticeQuestionInstance {
 
   @@index([sessionId])
   @@index([topicId, difficulty])
+    @@index([purpose]) // ✅ optional but useful
+
 }
 
 model PracticeAttempt {
@@ -212,6 +246,7 @@ model PracticeSection {
   updatedAt DateTime @updatedAt
   meta      Json?
 
+
   sessions    PracticeSession[]
   assignments Assignment[]      @relation("SectionAssignments")
 
@@ -225,6 +260,8 @@ model PracticeSession {
 
   userId  String?
   guestId String?
+   // ✅ new: default quiz so “practice” never accidentally becomes project
+    preferPurpose PracticePurpose @default(quiz)
 
   sectionId String
   section   PracticeSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
@@ -249,7 +286,10 @@ model PracticeSession {
   returnUrl    String?
   instances    PracticeQuestionInstance[]
   attempts     PracticeAttempt[]
+ presetId  String?
+  preset    PracticeRunPreset? @relation(fields: [presetId], references: [id])
 
+  @@index([presetId])
   @@index([assignmentId])
   @@index([moduleId])
   @@index([sectionId])

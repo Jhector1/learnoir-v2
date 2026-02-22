@@ -4,9 +4,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, pickName } from "../../python_shared/_shared";
 
 export const M1_STRINGS_POOL = [
-    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice" },
-    { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input" },
-    { key: "m1_str_username_code", w: 1, kind: "code_input" },
+    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice",purpose: "quiz" },
+    { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m1_str_username_code", w: 1, kind: "code_input",purpose: "project" },
 ] as const;
 
 export type M1StringsKey = (typeof M1_STRINGS_POOL)[number]["key"];

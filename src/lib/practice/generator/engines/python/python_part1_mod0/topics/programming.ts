@@ -4,9 +4,9 @@ import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 // ✅ Source of truth: key + weight + kind
 export const M0_PROGRAMMING_POOL = [
-    { key: "m0_prog_language_definition", w: 1, kind: "single_choice" },
-    { key: "m0_prog_python_is_language", w: 1, kind: "single_choice" },
-    { key: "m0_prog_instructions_precise", w: 1, kind: "single_choice" },
+    { key: "m0_prog_language_definition", w: 1, kind: "single_choice",purpose: "quiz" },
+    { key: "m0_prog_python_is_language", w: 1, kind: "single_choice",purpose: "quiz" },
+    { key: "m0_prog_instructions_precise", w: 1, kind: "single_choice",purpose: "quiz" },
 ] as const;
 
 // ✅ Derive keys from pool

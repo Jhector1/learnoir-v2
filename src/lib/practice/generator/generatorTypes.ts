@@ -12,6 +12,10 @@ import type { RNG } from "./shared/rng";
  * - variant can be null for "mixed"
  * - meta is PracticeTopic.meta (contains pool/label/etc.)
  */
+
+
+export type ExerciseRole = "quiz" | "project";
+
 export type TopicContext = {
   topicSlug: TopicSlug;
 
@@ -28,6 +32,10 @@ export type TopicContext = {
   exerciseKey?: string | null;   // ✅ ADD THIS
 
   rng?: RNG | null; // ✅ not any
+  // ✅ NEW: policy gates
+  allowedKinds?: PracticeKind[] | null;    // allowlist by kind
+  allowedRoles?: ExerciseRole[] | null;    // allowlist by role (quiz/project)
+
 };
 
 export type TopicGenerator = (

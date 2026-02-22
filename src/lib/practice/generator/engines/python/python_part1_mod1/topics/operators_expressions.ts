@@ -4,9 +4,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
 
 export const M1_OPERATORS_POOL = [
-    { key: "m1_ops_precedence_sc", w: 1, kind: "code_input" },
-    { key: "m1_ops_mod_evenodd_sc", w: 1, kind: "code_input" },
-    { key: "m1_ops_checkout_code", w: 1, kind: "code_input" },
+    { key: "m1_ops_precedence_sc", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m1_ops_mod_evenodd_sc", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m1_ops_checkout_code", w: 1, kind: "code_input" ,purpose: "project"},
 ] as const;
 
 export type M1OperatorsKey = (typeof M1_OPERATORS_POOL)[number]["key"];

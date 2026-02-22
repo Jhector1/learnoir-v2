@@ -4,9 +4,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, safeInt, pickName } from "../../python_shared/_shared";
 
 export const M1_IO_POOL = [
-    { key: "m1_io_age_next_year", w: 1, kind: "code_input" },
-    { key: "m1_io_tip_total", w: 1, kind: "code_input" },
-    { key: "m1_io_c_to_f", w: 1, kind: "code_input" },
+    { key: "m1_io_age_next_year", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m1_io_tip_total", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m1_io_c_to_f", w: 1, kind: "code_input",purpose: "project" },
 ] as const;
 
 export type M1IoKey = (typeof M1_IO_POOL)[number]["key"];

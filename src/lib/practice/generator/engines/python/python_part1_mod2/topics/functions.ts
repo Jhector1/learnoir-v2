@@ -5,10 +5,10 @@ import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
 import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 export const M2_FUNCTIONS_POOL = [
-    { key: "m2_func_total_with_tip_code", w: 1, kind: "code_input" },
-    { key: "m2_func_shipping_rule_code", w: 1, kind: "code_input" },
-    { key: "m2_func_sum_list_code", w: 1, kind: "code_input" },
-    { key: "m2_func_return_vs_print_sc", w: 1, kind: "single_choice" },
+    { key: "m2_func_total_with_tip_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_func_shipping_rule_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_func_sum_list_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_func_return_vs_print_sc", w: 1, kind: "single_choice" ,purpose: "project"},
 ] as const;
 
 export type M2FunctionsKey = (typeof M2_FUNCTIONS_POOL)[number]["key"];

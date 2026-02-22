@@ -4,9 +4,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
 
 export const M2_LISTS_POOL = [
-    { key: "m2_list_three_prices_sum_avg_code", w: 1, kind: "code_input" },
-    { key: "m2_list_max_of_four_code", w: 1, kind: "code_input" },
-    { key: "m2_list_build_names_print_code", w: 1, kind: "code_input" },
+    { key: "m2_list_three_prices_sum_avg_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_list_max_of_four_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_list_build_names_print_code", w: 1, kind: "code_input",purpose: "project" },
 ] as const;
 
 export type M2ListsKey = (typeof M2_LISTS_POOL)[number]["key"];

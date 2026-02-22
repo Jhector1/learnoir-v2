@@ -4,9 +4,9 @@ import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 // ✅ Source of truth: includes key + weight + kind
 export const M0_COMMENTS_POOL = [
-    { key: "m0_comments_symbol", w: 1, kind: "single_choice" },
-    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice" },
-    { key: "m0_comments_best_reason", w: 1, kind: "single_choice" },
+    { key: "m0_comments_symbol", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice" , purpose: "quiz"},
+    { key: "m0_comments_best_reason", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
 // ✅ Derive keys from pool (for routing + validation)

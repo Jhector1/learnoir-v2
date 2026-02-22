@@ -1,3 +1,4 @@
+// src/lib/practice/api/practiceGet/topic.ts
 import type { PrismaClient } from "@prisma/client";
 import type { TopicSlug } from "@/lib/practice/types";
 import { rngFromActor } from "@/lib/practice/catalog";
@@ -31,15 +32,10 @@ async function topicInSection(prisma: PrismaClient, sectionSlug: string, topicId
 }
 
 async function topicInModule(prisma: PrismaClient, moduleId: string, topic: { id: string; moduleId: string | null }) {
-  // Fast path: topic.moduleId stamped
   if (topic.moduleId) return topic.moduleId === moduleId;
 
-  // Fallback: check section links -> section.moduleId
   const link = await prisma.practiceSectionTopic.findFirst({
-    where: {
-      topicId: topic.id,
-      section: { moduleId },
-    },
+    where: { topicId: topic.id, section: { moduleId } },
     select: { sectionId: true },
   });
   return Boolean(link);
@@ -62,16 +58,27 @@ export async function resolveTopicFromDb(args: {
 
   rngSeedParts: RngSeedParts;
   topicPickSalt?: string | null;
+
+  // ✅ existing
+  fallbackOnMissing?: boolean;
+
+  // ✅ NEW: excludes (used by retry loop when generator rejects a DB topic)
+  excludeTopicSlugs?: string[] | null;
 }): Promise<
-  | {
-      kind: "ok";
-      topicId: string;
-      topicSlug: TopicSlug;
-      genKey: string | null;
-      variant: string | null;
-      meta: any;
-    }
-  | { kind: "missing"; message: string }
+    | {
+  kind: "ok";
+  topicId: string;
+  topicSlug: TopicSlug;
+  genKey: string | null;
+  variant: string | null;
+  meta: any;
+
+  // (optional: keep if you already added these)
+  requestedTopic?: string | null;
+  topicFallbackUsed?: boolean;
+  topicFallbackReason?: string | null;
+}
+    | { kind: "missing"; message: string }
 > {
   const {
     prisma,
@@ -84,10 +91,16 @@ export async function resolveTopicFromDb(args: {
     assignmentIdFromSession,
     rngSeedParts,
     topicPickSalt,
+    fallbackOnMissing = false,
+    excludeTopicSlugs,
   } = args;
 
   const requested = String(rawTopic ?? "").trim();
-  const wantsAll = !requested || requested === "all";
+  let wantsAll = !requested || requested === "all";
+
+  const exclude = new Set(
+      (excludeTopicSlugs ?? []).map((s) => String(s)).filter(Boolean),
+  );
 
   const rng = rngFromActor({
     ...rngSeedParts,
@@ -112,43 +125,71 @@ export async function resolveTopicFromDb(args: {
       },
     });
 
-    if (!row) return { kind: "missing", message: `Topic "${dbSlug}" not found.` };
-
-    // ✅ Assignment scope: must be in assignment
-    if (assignmentIdFromSession) {
-      const ok = await topicInAssignment(prisma, assignmentIdFromSession, row.id);
-      if (!ok) return { kind: "missing", message: `Topic "${dbSlug}" is not in this assignment.` };
-    }
-
-    // ✅ Module scope: must be in this module
-    if (moduleIdFromSession) {
-      const ok = await topicInModule(prisma, moduleIdFromSession, row);
-      if (!ok) return { kind: "missing", message: `Topic "${dbSlug}" is not in this module.` };
-    }
-
-    // ✅ Section scope: must be linked to this section
-    if (!moduleIdFromSession && sectionSlug) {
-      const ok = await topicInSection(prisma, sectionSlug, row.id);
-      if (!ok) return { kind: "missing", message: `Topic "${dbSlug}" is not in section "${sectionSlug}".` };
-    }
-
-    // ✅ Subject session scope (fallback check)
-    if (!moduleIdFromSession && subjectIdFromSession && row.subjectId && row.subjectId !== subjectIdFromSession) {
-      return { kind: "missing", message: `Topic "${dbSlug}" not in this session’s subject.` };
-    }
-
-    return {
-      kind: "ok",
-      topicId: row.id,
-      topicSlug: row.slug as TopicSlug,
-      genKey: row.genKey ? String(row.genKey) : null,
-      variant: readVariantFromMeta(row),
-      meta: row.meta ?? null,
+    const fallbackToAll = (message: string) => {
+      if (!fallbackOnMissing) return { kind: "missing" as const, message };
+      wantsAll = true;
+      return null;
     };
+
+    if (!row) {
+      const fb = fallbackToAll(`Topic "${dbSlug}" not found.`);
+      if (fb) return fb;
+    } else {
+      // ✅ NEW: excluded by caller
+      if (exclude.has(String(row.slug))) {
+        const fb = fallbackToAll(`Topic "${String(row.slug)}" is excluded.`);
+        if (fb) return fb;
+      }
+
+      // Assignment scope
+      if (assignmentIdFromSession) {
+        const ok = await topicInAssignment(prisma, assignmentIdFromSession, row.id);
+        if (!ok) {
+          const fb = fallbackToAll(`Topic "${dbSlug}" is not in this assignment.`);
+          if (fb) return fb;
+        }
+      }
+
+      // Module scope (session lock)
+      if (moduleIdFromSession) {
+        const ok = await topicInModule(prisma, moduleIdFromSession, row);
+        if (!ok) {
+          const fb = fallbackToAll(`Topic "${dbSlug}" is not in this module.`);
+          if (fb) return fb;
+        }
+      }
+
+      // Section scope (only if no module lock)
+      if (!moduleIdFromSession && sectionSlug) {
+        const ok = await topicInSection(prisma, sectionSlug, row.id);
+        if (!ok) {
+          const fb = fallbackToAll(`Topic "${dbSlug}" is not in section "${sectionSlug}".`);
+          if (fb) return fb;
+        }
+      }
+
+      // Subject session scope fallback check
+      if (!moduleIdFromSession && subjectIdFromSession && row.subjectId && row.subjectId !== subjectIdFromSession) {
+        const fb = fallbackToAll(`Topic "${dbSlug}" not in this session’s subject.`);
+        if (fb) return fb;
+      }
+
+      if (!wantsAll) {
+        return {
+          kind: "ok",
+          topicId: row.id,
+          topicSlug: row.slug as TopicSlug,
+          genKey: row.genKey ? String(row.genKey) : null,
+          variant: readVariantFromMeta(row),
+          meta: row.meta ?? null,
+        };
+      }
+    }
   }
 
   // ----------------------------
-  // wantsAll: pick from the correct pool (priority: assignment -> module -> section -> moduleSlug -> subjectSlug)
+  // wantsAll: pick from correct pool
+  // priority: assignment -> module(session) -> section -> moduleSlug -> subjectSlug
   // ----------------------------
 
   // 1) Assignment pool
@@ -157,17 +198,15 @@ export async function resolveTopicFromDb(args: {
       where: { assignmentId: assignmentIdFromSession },
       orderBy: { order: "asc" },
       select: {
-        topic: {
-          select: { id: true, slug: true, genKey: true, meta: true, moduleId: true },
-        },
+        topic: { select: { id: true, slug: true, genKey: true, meta: true, moduleId: true } },
       },
     });
 
     const pool = links
-      .map((x) => x.topic)
-      .filter((t) => t?.genKey) as Array<{ id: string; slug: string; genKey: string; meta: any; moduleId: string | null }>;
+        .map((x) => x.topic)
+        .filter((t) => t?.genKey && !exclude.has(String(t.slug))) as any[];
 
-    if (!pool.length) return { kind: "missing", message: "Assignment has no topics with genKey." };
+    if (!pool.length) return { kind: "missing", message: "Assignment has no topics with genKey (or all excluded)." };
 
     const picked = rng.pick(pool);
     return {
@@ -189,22 +228,22 @@ export async function resolveTopicFromDb(args: {
       take: 2000,
     });
 
-    // Fallback if moduleId not stamped on topics: use section links
-    let pool = rows;
+    let pool = rows.filter((t) => !exclude.has(String(t.slug)));
+
     if (!pool.length) {
       const links = await prisma.practiceSectionTopic.findMany({
         where: { section: { moduleId: moduleIdFromSession } },
         orderBy: [{ order: "asc" }],
-        select: {
-          topic: { select: { id: true, slug: true, genKey: true, meta: true, moduleId: true } },
-        },
+        select: { topic: { select: { id: true, slug: true, genKey: true, meta: true, moduleId: true } } },
         take: 4000,
       });
 
-      pool = links.map((x) => x.topic).filter((t) => t?.genKey) as any;
+      pool = links
+          .map((x) => x.topic)
+          .filter((t) => t?.genKey && !exclude.has(String(t.slug))) as any[];
     }
 
-    if (!pool.length) return { kind: "missing", message: "Module has no topics with genKey." };
+    if (!pool.length) return { kind: "missing", message: "Module has no topics with genKey (or all excluded)." };
 
     const picked = rng.pick(pool);
     return {
@@ -232,10 +271,10 @@ export async function resolveTopicFromDb(args: {
     if (!sectionRow) return { kind: "missing", message: `Section "${sectionSlug}" not found.` };
 
     const pool = (sectionRow.topics ?? [])
-      .map((x) => x.topic)
-      .filter((t) => t?.genKey) as any[];
+        .map((x) => x.topic)
+        .filter((t) => t?.genKey && !exclude.has(String(t.slug))) as any[];
 
-    if (!pool.length) return { kind: "missing", message: `Section "${sectionSlug}" has no topics with genKey.` };
+    if (!pool.length) return { kind: "missing", message: `Section "${sectionSlug}" has no topics with genKey (or all excluded).` };
 
     const picked = rng.pick(pool);
     return {
@@ -263,9 +302,10 @@ export async function resolveTopicFromDb(args: {
       take: 2000,
     });
 
-    if (!rows.length) return { kind: "missing", message: `Module "${moduleSlug}" has no topics with genKey.` };
+    const pool = rows.filter((t) => !exclude.has(String(t.slug)));
+    if (!pool.length) return { kind: "missing", message: `Module "${moduleSlug}" has no topics with genKey (or all excluded).` };
 
-    const picked = rng.pick(rows);
+    const picked = rng.pick(pool);
     return {
       kind: "ok",
       topicId: picked.id,
@@ -287,11 +327,12 @@ export async function resolveTopicFromDb(args: {
     take: 2000,
   });
 
-  if (!rows.length) {
-    return { kind: "missing", message: `No topics found for subject="${subjectSlug ?? ""}" (with genKey).` };
+  const pool = rows.filter((t) => !exclude.has(String(t.slug)));
+  if (!pool.length) {
+    return { kind: "missing", message: `No topics found for subject="${subjectSlug ?? ""}" (with genKey) or all excluded.` };
   }
 
-  const picked = rng.pick(rows);
+  const picked = rng.pick(pool);
   return {
     kind: "ok",
     topicId: picked.id,

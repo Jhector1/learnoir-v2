@@ -4,10 +4,10 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, safeInt, pickName, makeSingleChoiceOut } from "../../python_shared/_shared";
 
 export const M2_CONDITIONALS_POOL = [
-    { key: "m2_cond_age_gate_code", w: 1, kind: "code_input" },
-    { key: "m2_cond_member_discount_code", w: 1, kind: "code_input" },
-    { key: "m2_cond_password_check_code", w: 1, kind: "code_input" },
-    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice" },
+    { key: "m2_cond_age_gate_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m2_cond_member_discount_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m2_cond_password_check_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice" ,purpose: "project"},
 ] as const;
 
 export type M2ConditionalsKey = (typeof M2_CONDITIONALS_POOL)[number]["key"];

@@ -3,9 +3,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 export const M0_SYNTAX_POOL = [
-    { key: "m0_syntax_definition", w: 1, kind: "single_choice" },
-    { key: "m0_syntax_syntaxerror", w: 1, kind: "single_choice" },
-    { key: "m0_syntax_indentation_rule", w: 1, kind: "single_choice" },
+    { key: "m0_syntax_definition", w: 1, kind: "single_choice" ,purpose: "quiz"},
+    { key: "m0_syntax_syntaxerror", w: 1, kind: "single_choice" ,purpose: "quiz"},
+    { key: "m0_syntax_indentation_rule", w: 1, kind: "single_choice" ,purpose: "quiz"},
 ] as const;
 
 export type M0SyntaxKey = (typeof M0_SYNTAX_POOL)[number]["key"];

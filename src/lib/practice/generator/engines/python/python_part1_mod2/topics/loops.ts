@@ -4,9 +4,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
 
 export const M2_LOOPS_POOL = [
-    { key: "m2_loop_guess_until_secret_code", w: 1, kind: "code_input" },
-    { key: "m2_loop_keep_asking_valid_code", w: 1, kind: "code_input" },
-    { key: "m2_loop_echo_until_quit_code", w: 1, kind: "code_input" },
+    { key: "m2_loop_guess_until_secret_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m2_loop_keep_asking_valid_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m2_loop_echo_until_quit_code", w: 1, kind: "code_input" ,purpose: "project"},
 ] as const;
 
 export type M2LoopsKey = (typeof M2_LOOPS_POOL)[number]["key"];

@@ -3,12 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { PracticeKind } from "@prisma/client";
 
-import type {
-  Difficulty,
-  Exercise,
-  GenKey,
-  TopicSlug,
-} from "@/lib/practice/types";
+import type { Difficulty, Exercise, GenKey, TopicSlug } from "@/lib/practice/types";
 import type { TopicContext } from "@/lib/practice/generator/generatorTypes";
 
 import { DIFFICULTIES, rngFromActor } from "@/lib/practice/catalog";
@@ -29,52 +24,9 @@ import {
   getAssignmentDifficulty,
 } from "./session";
 
-
-
-
-
-
-
-
-
-
-
-// --- Quiz-only policy (server enforced) -------------------------
-
-// Keep this as strings to avoid enum mismatch / compile issues if you rename kinds.
-const QUIZ_ONLY_KINDS = new Set<string>([
-  "single_choice",
-  "multi_choice",
-  "numeric",
-  "drag_reorder",
-  "text_input",
-  "voice_input",
-  "matrix_input",
-  "vector_drag_target",
-  "vector_drag_dot",
-  "code_input", // include if you consider code exercises "quiz-like"
-  // add/remove as needed
-]);
-
-function isQuizOnlySession(session: any) {
-  // ✅ Most secure: apply to ALL session runs that come from module practice start
-  // Your /api/modules/[moduleSlug]/practice/start always creates session with assignmentId: null
-  return Boolean(session?.id) && session?.assignmentId == null;
-}
-
-function isAllowedQuizKind(kind: unknown) {
-  const k = String(kind ?? "");
-  return QUIZ_ONLY_KINDS.has(k);
-}
-
-
-
-
-
-
 export type PracticeGetResult =
-  | { kind: "json"; status: number; body: any }
-  | { kind: "res"; res: NextResponse };
+    | { kind: "json"; status: number; body: any }
+    | { kind: "res"; res: NextResponse };
 
 function statusOf(err: any, fallback = 500) {
   return Number(err?.status) || fallback;
@@ -91,7 +43,7 @@ function buildRunMeta(args: {
   const isSessionRun = Boolean(session?.id);
 
   const returnUrl =
-    typeof session?.returnUrl === "string" ? session.returnUrl : null;
+      typeof session?.returnUrl === "string" ? session.returnUrl : null;
 
   if (isAssignment) {
     return {
@@ -135,9 +87,6 @@ function buildRunMeta(args: {
  * ✅ Answer leakage policy (statusOnly):
  * - Assignments: ONLY if assignment.allowReveal === true
  * - Non-assignments: OK (practice/session) — these are not graded assignments
- *
- * If you want to be even stricter, you can require `session.status === "completed"`
- * before returning expected, but I kept it simple and safe for assignments.
  */
 function canRevealExpectedForStatusOnly(session: any): boolean {
   if (!session) return false;
@@ -145,29 +94,11 @@ function canRevealExpectedForStatusOnly(session: any): boolean {
   return true;
 }
 
-// function pickExpectedPayload(secretPayload: any) {
-//   const sp = secretPayload ?? null;
-//   if (!sp || typeof sp !== "object") return null;
-//   return (
-//     (sp as any).expectedAnswerPayload ??
-//     (sp as any).expected ??
-//     (sp as any).answer ??
-//     (sp as any).correct ??
-//     null
-//   );
-// }
-
-// function pickExplanation(secretPayload: any) {
-//   const sp = secretPayload ?? null;
-//   if (!sp || typeof sp !== "object") return null;
-//   return (sp as any).explanation ?? (sp as any).rationale ?? null;
-// }
 function sanitizeExpectedForHistory(kind: string, raw: any) {
   const k = String(kind);
 
   if (k === "single_choice") {
-    const optionId =
-        raw?.optionId ?? raw?.correctOptionId ?? raw?.correct ?? raw;
+    const optionId = raw?.optionId ?? raw?.correctOptionId ?? raw?.correct ?? raw;
     return optionId ? { kind: "single_choice", optionId: String(optionId) } : null;
   }
 
@@ -185,7 +116,6 @@ function sanitizeExpectedForHistory(kind: string, raw: any) {
         : null;
   }
 
-  // ✅ everything else: do NOT include expected via statusOnly/history
   return null;
 }
 
@@ -198,11 +128,9 @@ function pickExpectedPayload(kind: string, secretPayload: any) {
   const sp = secretPayload ?? null;
   if (!sp || typeof sp !== "object") return null;
 
-  // ✅ preferred: explicit safe payload you store
   const safe = (sp as any).expectedAnswerPayload ?? null;
   if (safe != null) return sanitizeExpectedForHistory(k, safe);
 
-  // legacy fallback (sanitized + safe kinds only)
   const legacy =
       (sp as any).expected ??
       (sp as any).answer ??
@@ -219,11 +147,36 @@ function pickExplanation(kind: string, secretPayload: any) {
   if (k === "code_input") return null;
 
   // ✅ optionally restrict to safe kinds
-  if (k !== "single_choice" && k !== "multi_choice" && k !== "drag_reorder") return null;
+  if (k !== "single_choice" && k !== "multi_choice" && k !== "drag_reorder")
+    return null;
 
   const sp = secretPayload ?? null;
   if (!sp || typeof sp !== "object") return null;
   return (sp as any).explanation ?? (sp as any).rationale ?? null;
+}
+
+function pickAllowedPurposesFromSession(session: any): string[] {
+  // priority: session preset -> module preset
+  const p1 = session?.preset?.allowedPurposes;
+  if (Array.isArray(p1) && p1.length) return p1.map(String);
+
+  const p2 = session?.section?.module?.practicePreset?.allowedPurposes;
+  if (Array.isArray(p2) && p2.length) return p2.map(String);
+
+  return [];
+}
+
+function enforcePreferPurpose(session: any): "quiz" | "project" {
+  // ✅ default long-term behavior: QUIZ unless explicitly impossible
+  const allowed = pickAllowedPurposesFromSession(session);
+
+  if (allowed.length) {
+    if (allowed.includes("quiz")) return "quiz";
+    if (allowed.includes("project")) return "project";
+  }
+
+  // if no preset restrictions, still default to quiz
+  return "quiz";
 }
 
 export async function handlePracticeGet(args: {
@@ -251,8 +204,7 @@ export async function handlePracticeGet(args: {
 
     // ✅ optional status extras
     includeMissed,
-    // includeHistory is read via (params as any).includeHistory to avoid breaking
-    // if your schema doesn't include it yet.
+    // includeHistory read via (params as any).includeHistory
   } = params as any;
 
   // ------------------------------------------------------------
@@ -278,11 +230,11 @@ export async function handlePracticeGet(args: {
 
     // Persist returnUrl ONCE (first time only)
     const ru =
-      typeof returnUrl === "string"
-        ? returnUrl
-        : typeof returnTo === "string"
-          ? returnTo
-          : null;
+        typeof returnUrl === "string"
+            ? returnUrl
+            : typeof returnTo === "string"
+                ? returnTo
+                : null;
 
     if (ru && !session.returnUrl) {
       await prisma.practiceSession.update({
@@ -299,11 +251,7 @@ export async function handlePracticeGet(args: {
   // ------------------------------------------------------------
   if (statusOnly === "true") {
     if (!session) {
-      return {
-        kind: "json",
-        status: 400,
-        body: { message: "statusOnly requires sessionId." },
-      };
+      return { kind: "json", status: 400, body: { message: "statusOnly requires sessionId." } };
     }
 
     const answeredCount = await prisma.practiceQuestionInstance.count({
@@ -314,14 +262,14 @@ export async function handlePracticeGet(args: {
     const pct = targetCount > 0 ? Math.min(1, answeredCount / targetCount) : 0;
 
     const complete =
-      session.status === "completed" ||
-      (targetCount > 0 && answeredCount >= targetCount);
+        session.status === "completed" ||
+        (targetCount > 0 && answeredCount >= targetCount);
 
     const allowRevealEffective = computeAllowRevealEffective(session, allowReveal);
 
     const assignmentDiff = getAssignmentDifficulty(session);
     const diff: Difficulty =
-      assignmentDiff ?? (session?.difficulty as any as Difficulty) ?? "easy";
+        assignmentDiff ?? (session?.difficulty as any as Difficulty) ?? "easy";
 
     const run = buildRunMeta({ session, diff, allowRevealEffective });
 
@@ -331,11 +279,9 @@ export async function handlePracticeGet(args: {
     ].filter(Boolean) as any[];
 
     const includeMissedParam =
-      includeMissed === "true" || (params as any)?.includeMissed === "true";
+        includeMissed === "true" || (params as any)?.includeMissed === "true";
 
-    const includeHistoryParam =
-      (params as any)?.includeHistory === "true";
-
+    const includeHistoryParam = (params as any)?.includeHistory === "true";
     const canRevealExpected = canRevealExpectedForStatusOnly(session);
 
     // ---------------------------
@@ -370,12 +316,12 @@ export async function handlePracticeGet(args: {
       });
 
       const sigFromRow = (row: any) =>
-        [
-          String(row?.topic?.slug ?? ""),
-          String(row?.kind ?? ""),
-          String(row?.title ?? ""),
-          String(row?.prompt ?? ""),
-        ].join("||");
+          [
+            String(row?.topic?.slug ?? ""),
+            String(row?.kind ?? ""),
+            String(row?.title ?? ""),
+            String(row?.prompt ?? ""),
+          ].join("||");
 
       const unresolved = new Map<string, { row: any; last: any }>();
 
@@ -392,19 +338,18 @@ export async function handlePracticeGet(args: {
 
       missed = Array.from(unresolved.values()).map(({ row, last }) => {
         const topicSlug = String(row?.topic?.slug ?? "all");
-
-        // ✅ Only include expected/explanation when allowed
         const expected = canRevealExpected ? pickExpectedPayload(row.kind, row.secretPayload) : null;
         const explanation = canRevealExpected ? pickExplanation(row.kind, row.secretPayload) : null;
+
         return {
           id: `${row.id}-missed`,
           at: last?.createdAt
-            ? new Date(last.createdAt).getTime()
-            : row?.answeredAt
-              ? new Date(row.answeredAt).getTime()
-              : row?.createdAt
-                ? new Date(row.createdAt).getTime()
-                : 0,
+              ? new Date(last.createdAt).getTime()
+              : row?.answeredAt
+                  ? new Date(row.answeredAt).getTime()
+                  : row?.createdAt
+                      ? new Date(row.createdAt).getTime()
+                      : 0,
 
           topic: topicSlug,
           kind: String(row?.kind ?? ""),
@@ -420,12 +365,11 @@ export async function handlePracticeGet(args: {
     }
 
     // ---------------------------
-    // History (optional) — ALL answered questions (correct + incorrect)
+    // History (optional)
     // ---------------------------
     let history: any[] = [];
 
     if (includeHistoryParam) {
-      // attempt counts (non-reveal) per instance for this actor
       const counts = await prisma.practiceAttempt.groupBy({
         by: ["instanceId"],
         where: {
@@ -437,7 +381,6 @@ export async function handlePracticeGet(args: {
       });
       const countMap = new Map(counts.map((c) => [c.instanceId, c._count._all]));
 
-      // Pull all attempts once (small: targetCount * attempts)
       const attemptRows = await prisma.practiceAttempt.findMany({
         where: {
           sessionId: session.id,
@@ -465,10 +408,7 @@ export async function handlePracticeGet(args: {
       }
 
       const instances = await prisma.practiceQuestionInstance.findMany({
-        where: {
-          sessionId: session.id,
-          answeredAt: { not: null }, // ✅ only finalized/answered questions
-        },
+        where: { sessionId: session.id, answeredAt: { not: null } },
         orderBy: { answeredAt: "asc" },
         select: {
           id: true,
@@ -516,7 +456,6 @@ export async function handlePracticeGet(args: {
           lastAnswerPayload: last?.answerPayload ?? null,
           lastAttemptAt: last?.createdAt ?? null,
 
-          // ✅ used by client to show correct selection when incorrect
           expectedAnswerPayload,
           explanation,
         };
@@ -533,11 +472,10 @@ export async function handlePracticeGet(args: {
         answeredCount,
         targetCount,
 
-        // ✅ new keys (what your client expects)
         correctCount: session.correct ?? 0,
         totalCount: session.total ?? 0,
 
-        // ✅ legacy keys (keep so nothing else breaks)
+        // legacy keys
         correct: session.correct ?? 0,
         total: session.total ?? 0,
 
@@ -560,11 +498,7 @@ export async function handlePracticeGet(args: {
     try {
       assertSessionActive(session);
     } catch (e: any) {
-      return {
-        kind: "json",
-        status: statusOf(e, 400),
-        body: { message: e.message },
-      };
+      return { kind: "json", status: statusOf(e, 400), body: { message: e.message } };
     }
   }
 
@@ -578,141 +512,175 @@ export async function handlePracticeGet(args: {
   // ------------------------------------------------------------
   const assignmentDiff = getAssignmentDifficulty(session);
   const diff: Difficulty =
-    assignmentDiff ??
-    (session ? (session.difficulty as any as Difficulty) : null) ??
-    (difficulty === "easy" || difficulty === "medium" || difficulty === "hard"
-      ? difficulty
-      : rngFromActor({
-          userId: actor.userId,
-          guestId: actor.guestId,
-          sessionId: session?.id,
-          salt: "diff-pick",
-        }).pick(DIFFICULTIES));
+      assignmentDiff ??
+      (session ? (session.difficulty as any as Difficulty) : null) ??
+      (difficulty === "easy" || difficulty === "medium" || difficulty === "hard"
+          ? difficulty
+          : rngFromActor({
+            userId: actor.userId,
+            guestId: actor.guestId,
+            sessionId: session?.id,
+            salt: "diff-pick",
+          }).pick(DIFFICULTIES));
 
   // ------------------------------------------------------------
-  // 4) request salt (stable or random)
+  // 4) request salt
   // ------------------------------------------------------------
   const { reqSalt } = resolveRequestSalt(salt);
 
   // ------------------------------------------------------------
-  // 5) resolve topic (db-driven)
+  // ✅ PURPOSE ENFORCEMENT (long-term)
   // ------------------------------------------------------------
+  const preferPurpose: "quiz" | "project" = enforcePreferPurpose(session);
+  // If you truly never want projects from this endpoint, uncomment:
+  // const preferPurpose: "quiz" = "quiz";
+
+  // ------------------------------------------------------------
+  // 5) resolve topic + 7) generate exercise (+ expected) ✅ robust retry
+  // ------------------------------------------------------------
+  function isGeneratorTopicMismatch(e: any) {
+    const msg = String(e?.message ?? "");
+    return (
+        msg.includes("unknown topicSlug=") ||
+        msg.includes("no generator registered for topicSlug=") ||
+        msg.includes("missing handler key=")
+    );
+  }
+
   const moduleIdFromSession = session?.section?.moduleId ?? null;
   const assignmentIdFromSession = session?.assignmentId ?? null;
 
-  const resolved = await resolveTopicFromDb({
-    prisma,
-    subjectSlug: session ? undefined : subject,
-    moduleSlug: session ? undefined : module,
-    sectionSlug: session?.section?.slug ?? section,
-    rawTopic: topic,
-
-    subjectIdFromSession: session?.section?.subjectId ?? null,
-    moduleIdFromSession,
-    assignmentIdFromSession,
-
-    rngSeedParts: {
-      userId: actor.userId,
-      guestId: actor.guestId,
-      sessionId: session?.id ?? null,
-    },
-    topicPickSalt: `topic-pick|${reqSalt}`,
-  });
-
-  if (resolved.kind !== "ok") {
-    return {
-      kind: "json",
-      status: 500,
-      body: { message: "Practice API failed", explanation: resolved.message },
-    };
-  }
-
-  const topicSlug = resolved.topicSlug;
-  const topicIdHint = resolved.topicId;
-  const genKey = resolved.genKey;
-
-  if (!genKey) {
-    return {
-      kind: "json",
-      status: 500,
-      body: {
-        message: "Practice API failed",
-        explanation: `Topic "${topicSlug}" has no genKey in DB.`,
-      },
-    };
-  }
+  const excludedTopicSlugs = new Set<string>();
 
   const preferKindEnum: PracticeKind | null = preferKind
-    ? toPracticeKindOrThrow(preferKind)
-    : null;
-
-  // ------------------------------------------------------------
-  // 6) deterministic generation rng
-  // ------------------------------------------------------------
-  const actorPart = actor.userId
-    ? `user:${actor.userId}`
-    : actor.guestId
-      ? `guest:${actor.guestId}`
-      : "anon";
+      ? toPracticeKindOrThrow(preferKind)
+      : null;
 
   const seedPolicy = (params as any).seedPolicy === "global" ? "global" : "actor";
-
   const rngArgs =
       seedPolicy === "global"
           ? { userId: null, guestId: null, sessionId: null }
           : { userId: actor.userId, guestId: actor.guestId, sessionId: session?.id ?? null };
 
-  const exerciseRng = rngFromActor({
-    ...rngArgs,
-    salt: [
-      "practice-ex",
-      `seedPolicy=${seedPolicy}`,
-      `genKey=${genKey}`,
-      `topic=${topicSlug}`,
-      `diff=${diff}`,
-      `preferKind=${preferKindEnum ?? ""}`,
-      `exerciseKey=${(params as any).exerciseKey ?? ""}`,
-      `salt=${reqSalt ?? ""}`,
-    ].join("|"),
-  });
+  let resolved: any = null;
+  let out: any = null;
+  let lastGenErr: any = null;
 
+  for (let attempt = 0; attempt < 6; attempt++) {
+    resolved = await resolveTopicFromDb({
+      prisma,
+      subjectSlug: session ? undefined : subject,
+      moduleSlug: session ? undefined : module,
+      sectionSlug: session?.section?.slug ?? section,
 
-  // ------------------------------------------------------------
-  // 7) generate exercise (+ expected)
-  // ------------------------------------------------------------
-  let out: any;
-  const meta2 = {
-    ...(resolved.meta ?? {}),
-    forceKey: (params as any).exerciseKey ?? undefined,
-  };
+      rawTopic: attempt === 0 ? topic : null,
 
-  try {
-    out = await getExerciseWithExpected(genKey as GenKey, diff, {
-      topicSlug,
-      variant: resolved.variant ?? null,
-      meta: meta2,
-      subjectSlug: subject ?? null,
-      moduleSlug: module ?? null,
-      preferKind: preferKindEnum ?? null,
-      rng: exerciseRng as any,
+      subjectIdFromSession: session?.section?.subjectId ?? null,
+      moduleIdFromSession,
+      assignmentIdFromSession,
 
+      rngSeedParts: {
+        userId: actor.userId,
+        guestId: actor.guestId,
+        sessionId: session?.id ?? null,
+      },
+      topicPickSalt: `topic-pick|${reqSalt}`,
 
-      salt: reqSalt ?? null,
-      exerciseKey: ((params as any).exerciseKey ?? null) as any,
+      fallbackOnMissing: true,
 
-    } as TopicContext);
-  } catch (e: any) {
+      // ✅ requires resolveTopicFromDb to implement filtering
+      excludeTopicSlugs: Array.from(excludedTopicSlugs),
+    } as any);
+
+    if (resolved.kind !== "ok") {
+      return {
+        kind: "json",
+        status: 400,
+        body: { message: "Invalid topic/filters", explanation: resolved.message },
+      };
+    }
+
+    const topicSlug = resolved.topicSlug as TopicSlug;
+    const genKey = resolved.genKey as GenKey | null;
+
+    if (!genKey) {
+      excludedTopicSlugs.add(String(topicSlug));
+      lastGenErr = new Error(`Topic "${topicSlug}" has no genKey in DB.`);
+      continue;
+    }
+
+    const exerciseRng = rngFromActor({
+      ...rngArgs,
+      salt: [
+        "practice-ex",
+        `seedPolicy=${seedPolicy}`,
+        `genKey=${genKey}`,
+        `topic=${topicSlug}`,
+        `diff=${diff}`,
+        `preferKind=${preferKindEnum ?? ""}`,
+        `preferPurpose=${preferPurpose}`, // ✅
+        `exerciseKey=${(params as any).exerciseKey ?? ""}`,
+        `salt=${reqSalt ?? ""}`,
+      ].join("|"),
+    });
+
+    const meta2 = {
+      ...(resolved.meta ?? {}),
+      forceKey: (params as any).exerciseKey ?? undefined,
+      preferPurpose, // ✅ (also supports ctx.meta?.preferPurpose fallback)
+    };
+
+    try {
+      out = await getExerciseWithExpected(genKey as GenKey, diff, {
+        topicSlug,
+        variant: resolved.variant ?? null,
+        meta: meta2,
+        subjectSlug: subject ?? null,
+        moduleSlug: module ?? null,
+        preferKind: preferKindEnum ?? null,
+        preferPurpose, // ✅ THIS activates your generator’s purpose filter
+        rng: exerciseRng as any,
+        salt: reqSalt ?? null,
+        exerciseKey: ((params as any).exerciseKey ?? null) as any,
+      } as TopicContext);
+
+      lastGenErr = null;
+      break;
+    } catch (e: any) {
+      lastGenErr = e;
+
+      if (isGeneratorTopicMismatch(e)) {
+        excludedTopicSlugs.add(String(topicSlug));
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  if (!resolved || resolved.kind !== "ok" || !out) {
     return {
       kind: "json",
       status: 500,
       body: {
         message: "Generator failed",
-        explanation: e?.message ?? "Unknown generator error",
-        meta: { genKey, topic: topicSlug, variant: resolved.variant ?? null },
+        explanation: lastGenErr?.message ?? "Unknown generator error",
+        meta: {
+          lastTopicTried: resolved?.kind === "ok" ? resolved.topicSlug : null,
+          excludedTopicSlugs: Array.from(excludedTopicSlugs),
+          preferPurpose,
+        },
       },
     };
   }
 
+  const topicSlug = resolved.topicSlug as TopicSlug;
+  const topicIdHint = resolved.topicId as string;
+  const genKey = resolved.genKey as GenKey;
+
+  // ------------------------------------------------------------
+  // Validate generator output
+  // ------------------------------------------------------------
   const ex0 = out?.exercise;
   const kind0 = ex0?.kind;
 
@@ -731,7 +699,7 @@ export async function handlePracticeGet(args: {
   const exercise = { ...(ex0 as any), topic: topicSlug } as Exercise;
 
   // ------------------------------------------------------------
-  // 8) create instance
+  // 8) create instance (force purpose to the server decision)
   // ------------------------------------------------------------
   const instance = await createInstance({
     prisma,
@@ -741,6 +709,7 @@ export async function handlePracticeGet(args: {
     topicSlug: topicSlug as TopicSlug,
     difficulty: diff,
     topicIdHint,
+    purpose: preferPurpose, // ✅ enforce DB purpose too
   });
 
   // ------------------------------------------------------------
@@ -773,6 +742,8 @@ export async function handlePracticeGet(args: {
         variant: resolved.variant ?? null,
         allowReveal: allowRevealEffective,
         salt: reqSalt ?? null,
+        preferPurpose,
+        excludedTopicSlugs: Array.from(excludedTopicSlugs),
       },
     },
   };

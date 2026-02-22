@@ -16,6 +16,7 @@ import {
 import { usePracticeEngine } from "./usePracticeEngine";
 import { useVectorPadRef } from "./useVectorPadRef";
 import { SESSION_DEFAULT } from "./constants";
+import {lastSessionKey} from "@/features/practice/client/storage";
 
 type PendingChange =
   | { kind: "topic"; value: TopicValue }
@@ -226,6 +227,61 @@ export function usePracticeController(args: {
     void engine.loadNextExercise({ forceNew: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topic, difficulty, section, hydrated, isLockedRun]);
+
+
+
+
+
+
+
+
+
+
+  // import { lastSessionKey } from "./storage"; // you already have this helper
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (isLockedRun) return;
+
+    // wait until options are real (beyond "all")
+    if (!Array.isArray(effectiveTopicOptions) || effectiveTopicOptions.length <= 1) return;
+
+    const valid = new Set(effectiveTopicOptions.map((o: any) => String(o.id)));
+    const cur = String(topic);
+
+    if (cur !== "all" && !valid.has(cur)) {
+      // ✅ reset filters + kill stale session pointer
+      setTopic("all" as any);
+      setSessionId(null);
+      setStack([]);
+      setIdx(0);
+
+      // ✅ remove the stale "last session" pointer
+      try {
+        localStorage.removeItem(lastSessionKey(subjectSlug, moduleSlug));
+      } catch {}
+
+      // ✅ also remove stale topic from the URL so refresh can’t re-inject it
+      const qs = new URLSearchParams(sp.toString());
+      qs.set("topic", "all");
+      qs.delete("sessionId"); // prevents resurrecting old session
+      router.replace(`${pathname}?${qs.toString()}`, { scroll: false });
+    }
+  }, [
+    hydrated,
+    isLockedRun,
+    effectiveTopicOptions,
+    topic,
+    subjectSlug,
+    moduleSlug,
+    router,
+    pathname,
+    sp,
+  ]);
+
+
+
+
 
   // URL sync (unlocked only)
   useEffect(() => {

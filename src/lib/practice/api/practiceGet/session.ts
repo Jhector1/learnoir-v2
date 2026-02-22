@@ -16,13 +16,22 @@ export async function loadSession(prisma: PrismaClient, sessionId?: string) {
 
       difficulty: true,
       targetCount: true,
-
-      // ✅ needed for statusOnly + summary UI
       total: true,
       correct: true,
-
-      // ✅ NEW
       returnUrl: true,
+
+      presetId: true,
+      preset: {
+        select: {
+          id: true,
+          key: true,
+          allowedKinds: true,
+          allowedPurposes: true,
+          lockDifficulty: true,
+          lockTopic: true,
+          allowReveal: true,
+        },
+      },
 
       assignmentId: true,
       assignment: {
@@ -40,12 +49,28 @@ export async function loadSession(prisma: PrismaClient, sessionId?: string) {
           subjectId: true,
           slug: true,
           moduleId: true,
+          module: {
+            select: {
+              id: true,
+              practicePresetId: true,
+              practicePreset: {
+                select: {
+                  id: true,
+                  key: true,
+                  allowedKinds: true,
+                  allowedPurposes: true,
+                  lockDifficulty: true,
+                  lockTopic: true,
+                  allowReveal: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   });
 }
-
 export function assertSessionActive(session: any) {
   if (!session) return;
   if (session.status !== "active") {

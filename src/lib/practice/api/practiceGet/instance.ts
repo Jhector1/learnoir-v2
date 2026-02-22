@@ -1,7 +1,9 @@
+// src/lib/practice/api/practiceGet/instance.ts
 import type { PrismaClient } from "@prisma/client";
 import {
   PracticeKind,
   PracticeDifficulty as DbPracticeDifficulty,
+  PracticePurpose,
 } from "@prisma/client";
 
 import { toDbTopicSlug } from "@/lib/practice/topicSlugs";
@@ -41,8 +43,11 @@ function buildExpectedAnswerPayload(kind: PracticeKind, expectedCanon: any) {
     return { kind: "drag_reorder", order: order.map((x: any) => String(x)) };
   }
 
-  // default: don't ship expected via history
   return null;
+}
+
+function toDbPurpose(purpose?: string | null): PracticePurpose {
+  return purpose === "project" ? PracticePurpose.project : PracticePurpose.quiz;
 }
 
 export async function createInstance(args: {
@@ -53,8 +58,20 @@ export async function createInstance(args: {
   topicSlug: TopicSlug;
   difficulty: Difficulty;
   topicIdHint?: string | null;
+
+  // ✅ NEW
+  purpose?: "quiz" | "project" | PracticePurpose | null;
 }) {
-  const { prisma, sessionId, exercise, expected, topicSlug, difficulty, topicIdHint } = args;
+  const {
+    prisma,
+    sessionId,
+    exercise,
+    expected,
+    topicSlug,
+    difficulty,
+    topicIdHint,
+    purpose,
+  } = args;
 
   const difficultyValue = ((exercise as any).difficulty ?? difficulty) as Difficulty;
   const dbDifficulty: DbPracticeDifficulty = toDbDifficultyOrThrow(difficultyValue);
@@ -76,21 +93,18 @@ export async function createInstance(args: {
     throw new Error(`Expected.kind "${expected.kind}" != instance kind "${kindEnum}".`);
   }
 
-  // ✅ canonicalize (code_input becomes tests[])
   const expectedCanon = normalizeExpectedForSave(kindEnum, expected);
 
-  // stamp into public payload for UI
   const publicPayload = { ...(exercise as any), topic: dbTopicSlug } as any;
+
   if (kindEnum === PracticeKind.matrix_input) {
     const v = expectedCanon?.values as number[][];
     publicPayload.rows ??= v.length;
     publicPayload.cols ??= v[0]?.length ?? 0;
   }
 
-  // ✅ safe expected for status/history (never code_input)
   const expectedAnswerPayload = buildExpectedAnswerPayload(kindEnum, expectedCanon);
 
-  // optional safe explanation (never required)
   const explanation =
       typeof expected?.explanation === "string"
           ? expected.explanation
@@ -98,19 +112,28 @@ export async function createInstance(args: {
               ? expected.rationale
               : null;
 
+  const dbPurpose = typeof purpose === "string" ? toDbPurpose(purpose) : (purpose ?? PracticePurpose.quiz);
+
+  // helpful for client/debug if you want it
+  publicPayload.purpose = dbPurpose;
+
   return prisma.practiceQuestionInstance.create({
     data: {
       sessionId,
       kind: kindEnum,
       topicId,
       difficulty: dbDifficulty,
+
+      // ✅ NEW
+      purpose: dbPurpose,
+
       title: String((exercise as any).title ?? "Practice"),
       prompt: String((exercise as any).prompt ?? ""),
       publicPayload,
       secretPayload: {
-        expected: expectedCanon,           // 🔒 private (includes code tests)
-        expectedAnswerPayload,             // ✅ safe for history UI
-        explanation,                       // ✅ safe (optional)
+        expected: expectedCanon,
+        expectedAnswerPayload,
+        explanation,
       },
     },
     select: { id: true, sessionId: true },

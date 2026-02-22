@@ -64,6 +64,8 @@ function CodeInputWithTools(props: {
     codeInputId: string;
 
     updateCurrent: (patch: any) => void;
+    showPrompt: boolean;
+
 }) {
     const {
         exercise,
@@ -76,6 +78,7 @@ function CodeInputWithTools(props: {
         codeTools,
         codeInputId,
         updateCurrent,
+        showPrompt
     } = props;
 
     const curLang = ((current as any).codeLang ?? "python") as Lang;
@@ -134,6 +137,8 @@ function CodeInputWithTools(props: {
             toolsBound={toolsBoundToThis}
             toolsUnbound={toolsUnbound}
             autoBindMode="never"
+            // ✅ NEW
+            showPrompt={showPrompt}
             onUseTools={() => {
                 codeTools.ensureVisible?.();
                 codeTools.requestBind(codeInputId);
@@ -162,6 +167,8 @@ export default function ExerciseRenderer({
                                              codeRunnerMode = "embedded",
                                              codeTools = null,
                                              codeInputId,
+                                             // ✅ NEW
+                                             showPrompt = true,
                                          }: {
     exercise: Exercise;
     current: QItem;
@@ -177,6 +184,8 @@ export default function ExerciseRenderer({
     codeRunnerMode?: "embedded" | "tools";
     codeTools?: CodeToolsApi | null;
     codeInputId?: string;
+    // ✅ NEW
+    showPrompt?: boolean;
 }) {
     const attempts = current.attempts ?? 0;
 
@@ -427,6 +436,8 @@ export default function ExerciseRenderer({
                     codeTools={codeTools!}
                     codeInputId={codeInputId!}
                     updateCurrent={updateCurrent}
+                    showPrompt={showPrompt}
+
                 />
             );
         }
@@ -448,6 +459,8 @@ export default function ExerciseRenderer({
                 disabled={lockInputs}
                 checked={checked}
                 ok={ok}
+                showPrompt={showPrompt}
+
                 readOnly={readOnly}
                 variant="embedded"
             />

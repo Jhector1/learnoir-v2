@@ -110,7 +110,7 @@ const list = (reviewStack && reviewStack.length ? reviewStack : stack);
           {/* ✅ render ALL, or only incorrect based on showMissed */}
           <PracticeReviewList
             stack={list}
-            showOnlyIncorrect={false}
+            showOnlyIncorrect={showMissed}
             maxAttempts={maxAttempts}
             isLockedRun={isLockedRun}
           />

@@ -27,6 +27,9 @@ export type GenOut<K extends ExerciseKind> = {
   exercise: ExerciseOf<K>;
   expected: ExpectedOf<K>;
   archetype: string;
+  meta?: {
+    purpose?: PracticePurpose; // ✅ NEW
+  };
 };
 
 // Convenience constructor (prevents mismatched kinds)

@@ -5,9 +5,9 @@ import { makeCodeExpected, safeInt, pickName } from "../../python_shared/_shared
 import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 export const M1_VARIABLES_TYPES_POOL = [
-    { key: "m1_vars_boxes_print_code", w: 1, kind: "code_input" },
-    { key: "m1_types_convert_next_year_code", w: 1, kind: "code_input" },
-    { key: "m1_types_errors_sc", w: 1, kind: "single_choice" },
+    { key: "m1_vars_boxes_print_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m1_types_convert_next_year_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m1_types_errors_sc", w: 1, kind: "single_choice" ,purpose: "quiz"},
 ] as const;
 
 export type M1VarsTypesKey = (typeof M1_VARIABLES_TYPES_POOL)[number]["key"];

@@ -49,6 +49,8 @@ export default function QuestionPanel(props: PracticeShellProps) {
             maxAttempts={maxAttempts}
             padRef={padRef}
             updateCurrent={updateCurrent}
+              // ✅ NEW: prevent duplicate prompt/title for code_input (and any future kinds)
+            showPrompt={false}
           />
         )}
       </div>

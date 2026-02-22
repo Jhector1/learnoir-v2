@@ -34,6 +34,8 @@ export function pickName(rng: RNG) {
 export function safeInt(rng: RNG, lo: number, hi: number) {
     return rng.int(lo, hi);
 }
+export type PracticePurpose = "quiz" | "project";
+
 export function pickSnakeCandidate(rng: RNG) {
     return rng.pick(["user_name", "total_score", "my_var", "age_years", "first_name"] as const);
 }
@@ -99,8 +101,12 @@ export function makeCodeExpected(args: {
 // ------------------------------------------------------------
 // Pool helpers
 // ------------------------------------------------------------
-export type PoolItem = { key: string; w: number; kind?: PracticeKind };
-
+export type PoolItem = {
+    key: string;
+    w: number;
+    kind?: PracticeKind;
+    purpose?: "quiz" | "project"; // ✅ NEW (string is fine; DB uses enum)
+};
 export function readPoolFromMeta(meta: any): PoolItem[] {
     const pool = meta?.pool;
     if (!Array.isArray(pool)) return [];
@@ -109,6 +115,7 @@ export function readPoolFromMeta(meta: any): PoolItem[] {
             key: String(p?.key ?? "").trim(),
             w: Number(p?.w ?? 0),
             kind: p?.kind ? (String(p.kind).trim() as PracticeKind) : undefined,
+            purpose: p?.purpose ? String(p.purpose).trim() : undefined, // ✅ NEW
         }))
         .filter((p) => p.key && Number.isFinite(p.w) && p.w > 0);
 }
@@ -170,14 +177,17 @@ export type Handler = (args: HandlerArgs) => GenOut<ExerciseKind>;
 // Re-export types that topic files often use
 export type { SingleChoiceExercise, CodeInputExercise, CodeLanguage };
 // Pool helper (UI-safe): use string literal kinds like "code_input", "single_choice", etc.
+// Pool helper
 export function poolFromKeys(
     keys: readonly string[],
     kind?: string,
-    w = 1
-): Array<{ key: string; w: number; kind?: string }> {
-    return keys.map((key) => (kind ? { key, w, kind } : { key, w }));
+    w = 1,
+    purpose?: PracticePurpose,
+): Array<{ key: string; w: number; kind?: string; purpose?: PracticePurpose }> {
+    return keys.map((key) =>
+        kind || purpose ? { key, w, kind, purpose } : { key, w }
+    );
 }
-
 
 
 
@@ -208,5 +218,140 @@ export function makeSingleChoiceOut(args: {
         archetype: args.archetype,
         exercise,
         expected: { kind: "single_choice", optionId: args.answerOptionId },
+    };
+}
+
+
+
+
+
+
+
+
+
+// src/lib/practice/generator/engines/python/python_shared/_shared.ts
+
+// import type { Difficulty, ExerciseKind } from "../../../types";
+// import type { GenOut } from "../../../shared/expected";
+// import type { RNG } from "../../../shared/rng";
+// import type { TopicContext } from "../../../generatorTypes";
+// import type { PracticeKind } from "@prisma/client";
+
+// NOTE: these are already in your _shared.ts exports per your handlers usage:
+// - parseTopicSlug
+// - readPoolFromMeta
+// - normalizeExcludedKeys
+// - filterExcluded
+// - weightedKey
+// - type Handler
+// - type PoolItem
+// - type PracticePurpose
+
+function normalizePurpose(p?: PracticePurpose | null): PracticePurpose {
+    return p === "project" || p === "quiz" ? p : "quiz";
+}
+
+function safeMixedPoolFor(validKeys: string[], defaultPurpose: PracticePurpose): PoolItem[] {
+    return validKeys.map((key) => ({ key, w: 1, purpose: defaultPurpose as any }));
+}
+
+export function makePythonTopicGenerator(args: {
+    engineName: string;
+    ctx: TopicContext;
+
+    topicHandlers: Record<string, Record<string, Handler>>;
+    topicValidKeys: Record<string, string[]>;
+
+    /** Optional per-topic fallback pools (useful for mod0 where pool items have purpose). */
+    topicDefaultPools?: Record<string, PoolItem[]>;
+
+    /** Default purpose when pool items omit it. */
+    defaultPurpose?: PracticePurpose;
+
+    /** Enables preferPurpose filtering (safe even if pools omit purpose; defaults to quiz). */
+    enablePurpose?: boolean;
+}) {
+    const {
+        engineName,
+        ctx,
+        topicHandlers,
+        topicValidKeys,
+        topicDefaultPools,
+        defaultPurpose = "quiz",
+        enablePurpose = true,
+    } = args;
+
+    return (rng: RNG, diff: Difficulty, id: string): GenOut<ExerciseKind> => {
+        const R: RNG = (ctx as any).rng ?? rng;
+
+        const { raw: topicSlugRaw, base: topicSlugBase } = parseTopicSlug(String(ctx.topicSlug));
+        const topic = topicSlugRaw; // keep RAW for progress keys
+
+        const handlers = topicHandlers[topicSlugBase];
+        const validKeys = topicValidKeys[topicSlugBase];
+
+        if (!handlers || !validKeys?.length) {
+            throw new Error(
+                `${engineName}: unknown topicSlug="${topicSlugRaw}" (base="${topicSlugBase}") valid=[${Object.keys(
+                    topicHandlers,
+                ).join(", ")}]`,
+            );
+        }
+
+        // 1) meta pool from DB
+        const metaPool = readPoolFromMeta(ctx.meta).filter((p) => validKeys.includes(p.key));
+
+        // 2) optional hardcoded fallback pool (keeps purpose/weights if you have them)
+        const fallbackPool = (topicDefaultPools?.[topicSlugBase] ?? []).filter((p) => validKeys.includes(p.key));
+
+        const basePool =
+            metaPool.length ? metaPool : fallbackPool.length ? fallbackPool : safeMixedPoolFor(validKeys, defaultPurpose);
+
+        // preferences (safe reads; ctx fields may not exist on type)
+        const preferKindRaw = (ctx as any).preferKind ?? (ctx as any).meta?.preferKind ?? null;
+        const preferPurposeRaw = (ctx as any).preferPurpose ?? (ctx as any).meta?.preferPurpose ?? null;
+
+        const preferKind = preferKindRaw ? (String(preferKindRaw) as PracticeKind) : null;
+        const preferPurpose = enablePurpose && preferPurposeRaw ? normalizePurpose(String(preferPurposeRaw) as any) : null;
+
+        const kindFiltered = preferKind ? basePool.filter((p) => !p.kind || p.kind === preferKind) : basePool;
+
+        // purpose filter (missing purpose defaults to defaultPurpose)
+        const purposeFiltered = preferPurpose
+            ? kindFiltered.filter((p) => normalizePurpose((p as any).purpose ?? defaultPurpose) === preferPurpose)
+            : kindFiltered;
+
+        const excluded = normalizeExcludedKeys(ctx);
+        const uniqFiltered = filterExcluded(purposeFiltered, excluded);
+
+        const pool = uniqFiltered.length ? uniqFiltered : purposeFiltered;
+
+        const forceKey = String((ctx as any).meta?.forceKey ?? "").trim();
+        const exerciseKey = String((ctx as any).exerciseKey ?? "").trim();
+
+        const chosen =
+            (exerciseKey && validKeys.includes(exerciseKey) ? exerciseKey : "") ||
+            (forceKey && validKeys.includes(forceKey) ? forceKey : "") ||
+            weightedKey(R, pool);
+
+        const handler = handlers[chosen];
+        if (!handler) {
+            throw new Error(`${engineName}: missing handler key="${chosen}" topicSlug="${topicSlugRaw}"`);
+        }
+
+        const chosenItem = pool.find((p) => p.key === chosen) ?? null;
+        const chosenPurpose = normalizePurpose((chosenItem as any)?.purpose ?? defaultPurpose);
+
+        const out = handler({ rng: R, diff, id, topic });
+
+        // Always tag the chosen key; tag purpose too (safe even if you don’t use it elsewhere)
+        return {
+            ...(out as any),
+            meta: {
+                ...((out as any).meta ?? {}),
+                key: chosen,
+                purpose: chosenPurpose,
+            },
+        } as any;
     };
 }

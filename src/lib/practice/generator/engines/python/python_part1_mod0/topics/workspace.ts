@@ -3,9 +3,9 @@ import type { Handler } from "../../python_shared/_shared";
 import { makeSingleChoiceOut } from "../../python_shared/_shared";
 
 export const M0_WORKSPACE_POOL = [
-    { key: "m0_workspace_run_button", w: 1, kind: "single_choice" },
-    { key: "m0_workspace_terminal_output", w: 1, kind: "single_choice" },
-    { key: "m0_workspace_editor_area", w: 1, kind: "single_choice" },
+    { key: "m0_workspace_run_button", w: 1, kind: "single_choice", purpose:"quiz" },
+    { key: "m0_workspace_terminal_output", w: 1, kind: "single_choice", purpose:"quiz" },
+    { key: "m0_workspace_editor_area", w: 1, kind: "single_choice", purpose:"quiz" },
 ] as const;
 
 export type M0WorkspaceKey = (typeof M0_WORKSPACE_POOL)[number]["key"];

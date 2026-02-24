@@ -1,18 +1,15 @@
-// src/lib/practice/generator/engines/python/python_part1_mod2/topics/functions.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {  makeCodeExpected, safeInt, } from "../../_shared";
 
 export const M2_FUNCTIONS_POOL = [
-    { key: "m2_func_total_with_tip_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_func_shipping_rule_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_func_sum_list_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_func_return_vs_print_sc", w: 1, kind: "single_choice" ,purpose: "project"},
+    { key: "m2_func_total_with_tip_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_func_shipping_rule_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_func_sum_list_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_func_return_vs_print_sc", w: 1, kind: "single_choice", purpose: "project" },
 ] as const;
 
 export type M2FunctionsKey = (typeof M2_FUNCTIONS_POOL)[number]["key"];
-export const M2_FUNCTIONS_VALID_KEYS = M2_FUNCTIONS_POOL.map((p) => p.key) as M2FunctionsKey[];
 
 function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     let x = safeInt(rng, lo, hi);
@@ -52,16 +49,6 @@ Rules:
 Then:
 Read TWO integers (bill, pct) and print:
 Total = <total>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-50
-20
-
-$ output
-Total = 60
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`def total_with_tip(bill, pct):
@@ -119,15 +106,6 @@ Rule:
 
 Then read ONE integer total and print:
 Shipping = <cost>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-40
-
-$ output
-Shipping = 7
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`def shipping_cost(total):
@@ -187,17 +165,6 @@ Rules:
 Then:
 Read THREE integers, store them in a list, call sum_list, and print:
 sum = <value>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-10
-20
-30
-
-$ output
-sum = 60
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`def sum_list(xs):
@@ -253,3 +220,9 @@ xs = [a, b, c]
             hint: "`return` gives back a value (and ends the function).",
         }),
 };
+
+export const M2_FUNCTIONS_TOPIC: TopicBundle = defineTopic(
+    "functions_basics",
+    M2_FUNCTIONS_POOL as any,
+    M2_FUNCTIONS_HANDLERS as any,
+);

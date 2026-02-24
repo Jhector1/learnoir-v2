@@ -1,16 +1,16 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/input_output_patterns.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt, pickName } from "../../python_shared/_shared";
+// import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {  makeCodeExpected, safeInt, pickName } from "../../_shared";
+import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
 
 export const M1_IO_POOL = [
-    { key: "m1_io_age_next_year", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m1_io_tip_total", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m1_io_c_to_f", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m1_io_age_next_year", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m1_io_tip_total", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m1_io_c_to_f", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
 export type M1IoKey = (typeof M1_IO_POOL)[number]["key"];
-export const M1_IO_VALID_KEYS = M1_IO_POOL.map((p) => p.key) as M1IoKey[];
 
 function pickDifferentName(rng: any, avoid: string) {
     let x = pickName(rng);
@@ -35,32 +35,19 @@ export const M1_IO_HANDLERS: Record<M1IoKey, Handler> = {
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Age next year",
+            title: "Age next year",
             prompt: String.raw`
-Read **TWO inputs**:
-1) name (string)
-2) age (integer)
+Read TWO inputs:
+1) name
+2) age
 
-Print **exactly ONE line**:
+Print exactly:
 Hi <name>! Next year you'll be <age+1>.
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-Maya
-16
-
-$ output
-Hi Maya! Next year you'll be 17.
-~~~
 `.trim(),
             language: "python",
-            starterCode: String.raw`# TODO: read name
-# TODO: read age
-# TODO: compute next year
-# TODO: print the message
+            starterCode: String.raw`# TODO
 `,
-            hint: `Remember: input() returns str. Convert age using int(...).`,
+            hint: "Convert age with int(...).",
         };
 
         const expected = makeCodeExpected({
@@ -91,37 +78,26 @@ Hi Maya! Next year you'll be 17.
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Tip + total (integers)",
+            title: "Tip + total",
             prompt: String.raw`
-Read **TWO integers**:
-1) bill amount (whole dollars)
+Read TWO integers:
+1) bill
 2) tip percent
 
 Compute:
-- tip = bill * pct // 100
-- total = bill + tip
+tip = bill * pct // 100
+total = bill + tip
 
-Print **EXACTLY two lines**:
+Print exactly:
 Tip = <tip>
 Total = <total>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-50
-20
-
-$ output
-Tip = 10
-Total = 60
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`bill = int(input())
 pct = int(input())
-# TODO: compute tip and total
+# TODO
 `,
-            hint: `Use integer math: tip = bill * pct // 100`,
+            hint: "Use integer math: // 100",
         };
 
         const expected = makeCodeExpected({
@@ -154,30 +130,20 @@ pct = int(input())
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Celsius → Fahrenheit",
+            title: "Celsius → Fahrenheit",
             prompt: String.raw`
-Read **ONE integer** Celsius value.
+Read ONE integer C.
 
-Convert using:
+Compute:
 F = C * 9/5 + 32
 
-Print **ONLY the Fahrenheit number** (one line).
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-0
-
-$ output
-32
-~~~
+Print ONLY F.
 `.trim(),
             language: "python",
             starterCode: String.raw`c = int(input())
-# TODO: compute fahrenheit
-# TODO: print it
+# TODO
 `,
-            hint: `You can use: f = int(c * 9 / 5 + 32)`,
+            hint: "f = int(c * 9 / 5 + 32)",
         };
 
         const expected = makeCodeExpected({
@@ -192,3 +158,9 @@ $ output
         return { archetype: "m1_io_c_to_f", exercise, expected };
     },
 };
+
+export const M1_IO_TOPIC: TopicBundle = defineTopic(
+    "input_output_patterns",
+    M1_IO_POOL as any,
+    M1_IO_HANDLERS as any,
+);

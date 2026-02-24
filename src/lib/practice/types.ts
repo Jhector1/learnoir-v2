@@ -54,7 +54,9 @@ export type ExerciseKind =
     // ✅ NEW
     | "text_input"
     | "drag_reorder"
-    | "voice_input"; // ✅ ADD
+    | "voice_input" | "word_bank_arrange"
+    | "listen_build"
+    | "fill_blank_choice"; // ✅ ADD
 // ✅ NEW;
 
 export type Vec3 = { x: number; y: number; z?: number };
@@ -195,6 +197,34 @@ export type CodeInputExercise = ExerciseBase & {
     // Optional: if you want to show sample IO
     examples?: Array<{ stdin?: string; stdout: string }>;
 };
+
+export type WordBankArrangeExercise = ExerciseBase & {
+    kind: "word_bank_arrange";
+    targetText: string;
+    locale?: string;
+    hint?: string | null;
+    wordBank?: string[];
+    distractors?: string[];
+    ttsText?: string;
+};
+
+export type ListenBuildExercise = ExerciseBase & {
+    kind: "listen_build";
+    targetText: string;
+    locale?: string;
+    hint?: string | null;
+    wordBank?: string[];
+    distractors?: string[];
+};
+
+export type FillBlankChoiceExercise = ExerciseBase & {
+    kind: "fill_blank_choice";
+    template: string;
+    choices: string[];
+    correct?: string; // (optional; ideally only in signed expected)
+    locale?: string;
+    hint?: string | null;
+};
 // export type Exercise =
 //   | NumericExercise
 //   | SingleChoiceExercise
@@ -231,7 +261,24 @@ export type Exercise =
     | CodeInputExercise
     | TextInputExercise
     | DragReorderExercise
-    | VoiceInputExercise; // ✅ include
+    | VoiceInputExercise | WordBankArrangeExercise
+    | ListenBuildExercise
+    | FillBlankChoiceExercise; // ✅ include
+
+export type WordBankArrangeSubmitAnswer = {
+    kind: "word_bank_arrange";
+    value: string; // assembled sentence
+};
+
+export type ListenBuildSubmitAnswer = {
+    kind: "listen_build";
+    value: string; // assembled sentence
+};
+
+export type FillBlankChoiceSubmitAnswer = {
+    kind: "fill_blank_choice";
+    value: string; // selected choice
+};
 export type SubmitAnswer =
     | { kind: "single_choice"; optionId: string }
     | { kind: "multi_choice"; optionIds: string[] }
@@ -247,7 +294,9 @@ export type SubmitAnswer =
 }
     | TextInputSubmitAnswer
     | DragReorderSubmitAnswer
-    | VoiceInputSubmitAnswer;
+    | VoiceInputSubmitAnswer | WordBankArrangeSubmitAnswer
+    | ListenBuildSubmitAnswer
+    | FillBlankChoiceSubmitAnswer;;
 
 export type ValidateResponse = {
     ok: boolean;

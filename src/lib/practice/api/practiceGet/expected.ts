@@ -144,7 +144,47 @@ export function normalizeExpectedForSave(kind: PracticeKind, expected: any) {
   if (kind === PracticeKind.code_input) {
     return normalizeCodeExpectedForSave(expected);
   }
+// ---------------- text-like (text_input + sentence builders) ----------------
+  if (
+      kind === PracticeKind.text_input ||
+      kind === PracticeKind.word_bank_arrange ||
+      kind === PracticeKind.listen_build ||
+      kind === PracticeKind.fill_blank_choice
+  ) {
+    const match = expected?.match === "includes" ? "includes" : "exact";
 
+    // Accept multiple legacy shapes
+    const rawAnswers =
+        Array.isArray(expected?.answers) ? expected.answers :
+            Array.isArray(expected?.acceptable) ? expected.acceptable :
+                typeof expected?.value === "string" ? [expected.value] :
+                    typeof expected?.correct === "string" ? [expected.correct] :
+                        null;
+
+    const answers: string[] = [];
+    for (const x of (rawAnswers ?? [])) {
+      const s = String(x ?? "").trim();
+      if (!s) continue;
+      if (answers.some((a) => a.toLowerCase() === s.toLowerCase())) continue;
+      answers.push(s);
+      if (answers.length >= 12) break;
+    }
+
+    if (!answers.length) {
+      throw new Error(
+          `Generator bug: ${String(kind)} expected missing answers/value. expected=${JSON.stringify(expected, null, 2)}`
+      );
+    }
+
+    // ✅ IMPORTANT: force kind to match instance kind
+    return {
+      ...(expected ?? {}),
+      kind: String(kind), // "word_bank_arrange" | "listen_build" | "fill_blank_choice" | "text_input"
+      answers,
+      match,
+      value: typeof expected?.value === "string" ? expected.value : answers[0],
+    };
+  }
   // everything else unchanged
   return expected;
 }

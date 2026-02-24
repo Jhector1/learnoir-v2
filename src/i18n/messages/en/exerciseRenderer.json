@@ -1,0 +1,24 @@
+{
+  "ExerciseRenderer": {
+    "singleChoice": {
+      "chooseOne": "Choose one"
+    },
+    "review": {
+      "emptyAll": "No questions yet.",
+      "emptyIncorrect": "No incorrect questions.",
+      "status": {
+        "revealed": "Revealed",
+        "correct": "✓ Correct",
+        "incorrect": "✕ Not correct",
+        "notChecked": "Not checked"
+      },
+      "card": {
+        "question": "Question {n}",
+        "attempts": "Attempts:",
+        "notCheckedYet": "Not checked yet",
+        "hiddenNote": "Correct answer is hidden for this run.",
+        "showDetails": "Show expected / explanation"
+      }
+    }
+  }
+}

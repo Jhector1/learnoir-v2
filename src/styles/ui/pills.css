@@ -2,9 +2,9 @@
   /* =========================
    * Pill component tokens (tone)
    * ========================= */
-  .ui-pill {
-    @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold;
-  }
+  /*.ui-pill {*/
+  /*  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold;*/
+  /*}*/
 
   .ui-pill--good {
     @apply border-emerald-600/20 bg-emerald-500/10 text-emerald-900;
@@ -29,4 +29,63 @@
   .dark .ui-pill--neutral {
     @apply border-white/10 bg-white/[0.04] text-white/80;
   }
+
+
+
+
+  /* =========================
+   * Pills / Badges (theme-aware)
+   * ========================= */
+
+  .ui-pill {
+    @apply inline-flex items-center rounded-full border px-2 py-1;
+    @apply text-[11px] font-extrabold leading-none;
+  }
+
+  /* Neutral pill (default) */
+  .ui-pill--neutral {
+    @apply border-neutral-200 bg-white/70 text-neutral-700;
+  }
+  .dark .ui-pill--neutral {
+    @apply border-white/10 bg-white/[0.06] text-white/70;
+  }
+
+  /* Sky pill (session) */
+  .ui-pill--sky {
+    @apply border-sky-300/60 bg-sky-50 text-sky-950;
+  }
+  .dark .ui-pill--sky {
+    @apply border-sky-300/25 bg-sky-300/10 text-sky-200/90;
+  }
+
+  /* Amber pill (assignment) */
+  .ui-pill--amber {
+    @apply border-amber-600/25 bg-amber-500/10 text-amber-950;
+  }
+  .dark .ui-pill--amber {
+    @apply border-amber-300/30 bg-amber-300/10 text-amber-200/90;
+  }
+
+  /* Emerald pill (optional) */
+  .ui-pill--emerald {
+    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
+  }
+  .dark .ui-pill--emerald {
+    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
+  }
+
+  /* Rose pill (optional) */
+  .ui-pill--rose {
+    @apply border-rose-400/40 bg-rose-50 text-rose-950;
+  }
+  .dark .ui-pill--rose {
+    @apply border-rose-300/30 bg-rose-300/10 text-rose-200/90;
+  }
 }
+
+
+
+
+
+
+

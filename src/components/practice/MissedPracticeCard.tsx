@@ -209,6 +209,7 @@ function ReadOnlyPracticeCard({
             maxAttempts={maxAttempts}
             padRef={padRef.current as any}
             updateCurrent={() => {}}
+            showPrompt={false}
             readOnly
           />
         )}

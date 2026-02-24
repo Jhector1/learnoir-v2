@@ -16,6 +16,7 @@ import Badge from "@/components/billing/Badge";
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
 import {ROUTES} from "@/utils";
 import {useSearchParams} from "next/navigation";
+import SoundToggle from "@/lib/sfx/SoundToggle";
 
 type NavItem = { href: string; label: string };
 
@@ -96,7 +97,10 @@ function SettingsMenu({ title = "Settings" }: { title?: string }) {
                     <LocaleSwitcher />
                   </div>
                 </div>
-
+                <div className="ui-menu-section">
+                  <div className="ui-menu-label">Sound</div>
+                  <SoundToggle />
+                </div>
                 <button
                     type="button"
                     onClick={() => setOpen(false)}

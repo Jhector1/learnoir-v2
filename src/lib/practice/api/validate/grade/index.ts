@@ -12,6 +12,8 @@ import { gradeCodeInput } from "./codeInput";
 import { gradeTextInput } from "./textInput";
 import { gradeDragReorder } from "./dragReorder";
 import { gradeVoiceInput } from "./voiceInput";
+import {gradeSentenceBuild} from "@/lib/practice/api/validate/grade/sentenceBuild";
+import {gradeFillBlankChoice} from "@/lib/practice/api/validate/grade/fillBlankChoice";
 
 export type GradeResult = {
   ok: boolean;
@@ -56,7 +58,15 @@ export async function gradeInstance(args: {
 
     case "voice_input":
       return gradeVoiceInput(args as any);
+      // ✅ NEW
+    case "word_bank_arrange":
+      return gradeSentenceBuild(args as any);
 
+    case "listen_build":
+      return gradeSentenceBuild(args as any);
+
+    case "fill_blank_choice":
+      return gradeFillBlankChoice(args as any);
     default:
       return {
         ok: false,

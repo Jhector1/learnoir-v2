@@ -20,10 +20,12 @@ import {
 
 import { loadInstance } from "@/lib/practice/api/validate/load";
 import { getExpectedCanon } from "@/lib/practice/api/validate/expected";
+
 import {
   computeCanReveal,
   computeMaxAttempts,
   countPriorNonRevealAttempts,
+  type RunMode,
 } from "@/lib/practice/api/validate/policies";
 
 import { gradeInstance } from "@/lib/practice/api/validate/grade";
@@ -40,9 +42,7 @@ async function readJson(req: Request) {
 }
 
 function json(message: string, status: number, extra?: any) {
-  return NextResponse.json(extra ? { message, ...extra } : { message }, {
-    status,
-  });
+  return NextResponse.json(extra ? { message, ...extra } : { message }, { status });
 }
 
 export async function POST(req: Request) {
@@ -83,8 +83,9 @@ export async function POST(req: Request) {
 
   const sess = instance.session ?? null;
   const isAssignment = Boolean(sess?.assignmentId);
+  const hasSession = Boolean(sess?.id);
 
-  // HARD GUARD: answer kind must match instance kind (when submitting)
+  // --- 4.1) HARD GUARD: answer kind must match instance kind (when submitting)
   if (!isReveal && answer && answer.kind !== instance.kind) {
     const res = json("Answer kind mismatch.", 400, {
       debug: { instanceKind: instance.kind, answerKind: answer.kind },
@@ -105,8 +106,8 @@ export async function POST(req: Request) {
 
   // session owner must match actor (practice + assignment)
   if (
-    (sess?.userId && sess.userId !== (actor.userId ?? null)) ||
-    (sess?.guestId && sess.guestId !== (actor.guestId ?? null))
+      (sess?.userId && sess.userId !== (actor.userId ?? null)) ||
+      (sess?.guestId && sess.guestId !== (actor.guestId ?? null))
   ) {
     const res = json("Forbidden.", 403);
     return attachGuestCookie(res, setGuestId);
@@ -124,22 +125,22 @@ export async function POST(req: Request) {
     return attachGuestCookie(res, setGuestId);
   }
 
-  // --- 7) Attempts policy
-  // const sess = instance.session ?? null;
-  // const isAssignment = Boolean(sess?.assignmentId);
-  const isSessionRun = Boolean(sess?.id); // session exists => locked run
-  const isLockedRun = isAssignment || isSessionRun;
+  // --- 7) Attempts policy (server truth)
+  const mode: RunMode = isAssignment ? "assignment" : hasSession ? "session" : "practice";
 
+  // null => unlimited
   const maxAttempts = computeMaxAttempts({
-    isLockedRun,
+    mode,
     assignmentMaxAttempts: sess?.assignment?.maxAttempts ?? null,
+    // sessionMaxAttempts: (sess as any)?.maxAttempts ?? null, // add later if you want
+    // practiceMaxAttempts: null, // override later if you want global cap
   });
 
-  // block submitting new attempts when finalized
+  // block submitting new attempts when already finalized (answeredAt set)
   if (!isReveal && instance.answeredAt) {
     const res = NextResponse.json(
-      { message: "This question is already finalized.", finalized: true },
-      { status: 409 },
+        { message: "This question is already finalized.", finalized: true },
+        { status: 409 },
     );
     return attachGuestCookie(res, setGuestId);
   }
@@ -149,14 +150,15 @@ export async function POST(req: Request) {
     actor,
   });
 
-  if (!isReveal && priorNonRevealAttempts >= maxAttempts) {
+  // enforce attempts only if finite
+  if (!isReveal && maxAttempts != null && priorNonRevealAttempts >= maxAttempts) {
     const res = NextResponse.json(
-      {
-        message: "No attempts left for this question.",
-        attempts: { used: priorNonRevealAttempts, max: maxAttempts, left: 0 },
-        finalized: true,
-      },
-      { status: 409 },
+        {
+          message: "No attempts left for this question.",
+          attempts: { used: priorNonRevealAttempts, max: maxAttempts, left: 0 },
+          finalized: true,
+        },
+        { status: 409 },
     );
     return attachGuestCookie(res, setGuestId);
   }
@@ -169,9 +171,9 @@ export async function POST(req: Request) {
   }
 
   // optional sanity check: instance.kind must match expected.kind (if present)
-  if (expectedCanon.kind && expectedCanon.kind !== instance.kind) {
+  if ((expectedCanon as any).kind && (expectedCanon as any).kind !== instance.kind) {
     const res = json("Server bug: expected.kind mismatch.", 500, {
-      debug: { instanceKind: instance.kind, expectedKind: expectedCanon.kind },
+      debug: { instanceKind: instance.kind, expectedKind: (expectedCanon as any).kind },
     });
     return attachGuestCookie(res, setGuestId);
   }
@@ -188,46 +190,54 @@ export async function POST(req: Request) {
   });
 
   // --- 10) Finalization + persist attempt + session updates
-  const nextNonRevealAttempts = isReveal
-    ? priorNonRevealAttempts
-    : priorNonRevealAttempts + 1;
+  const nextNonRevealAttempts = isReveal ? priorNonRevealAttempts : priorNonRevealAttempts + 1;
 
-  // reveal never finalizes (practice/review + assignment)
+  // Practice finalizes ONLY when correct.
+  // Locked runs (assignment/session) can finalize on exhaustion.
+  const finalizeOnExhaust = mode === "assignment" || mode === "session";
+  const exhausted = maxAttempts != null && nextNonRevealAttempts >= maxAttempts;
+
   const finalized = isReveal
-    ? false
-    : graded.ok || nextNonRevealAttempts >= maxAttempts;
+      ? false
+      : Boolean(graded.ok) || (finalizeOnExhaust && exhausted);
 
   const persisted = await persistAttemptAndFinalize(prisma, {
     instance,
     actor,
     isReveal,
     answerPayload: isReveal ? { reveal: true } : (answer ?? Prisma.JsonNull),
-    ok: isReveal ? false : graded.ok,
+    ok: isReveal ? false : Boolean(graded.ok),
     finalized,
   });
 
-  // --- 11) Response shaping (avoid leaking numeric expected when not revealing)
+  // --- 11) Response shaping (avoid leaking expected when not revealing)
   const includeExpected = isReveal;
 
   let publicExplanation = graded.explanation;
   if (!includeExpected && instance.kind === "numeric" && !graded.ok) {
     publicExplanation = "Not correct.";
   }
+
+  const left = maxAttempts == null ? null : Math.max(0, maxAttempts - nextNonRevealAttempts);
   const returnUrl = sess?.returnUrl ?? null;
+
   const res = NextResponse.json({
-    ok: isReveal ? false : graded.ok,
+    ok: isReveal ? false : Boolean(graded.ok),
     revealAnswer: isReveal ? graded.revealAnswer : null,
-    expected: null, // keep hidden (single source of truth remains secretPayload.expected)
+    expected: null,
     explanation: includeExpected ? graded.explanation : publicExplanation,
+
+    // ✅ server truth for UI locking
     finalized,
+
     attempts: {
       used: nextNonRevealAttempts,
-      max: maxAttempts,
-      left: Math.max(0, maxAttempts - nextNonRevealAttempts),
+      max: maxAttempts, // null => unlimited
+      left,             // null => unlimited
     },
+
     sessionComplete: persisted.sessionComplete,
     summary: persisted.sessionSummary,
-    // ✅ NEW: lets client redirect on completion
     returnUrl,
   });
 

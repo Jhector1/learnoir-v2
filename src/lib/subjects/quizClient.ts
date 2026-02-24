@@ -1,4 +1,4 @@
-import type { ReviewQuizSpec, ReviewProjectSpec } from "@/lib/subjects/types";
+import type {ReviewQuizSpec, ReviewProjectSpec, PurposeMode, PurposePolicy} from "@/lib/subjects/types";
 
 type AnySpec = ReviewQuizSpec | ReviewProjectSpec;
 
@@ -61,4 +61,16 @@ export function buildReviewQuizKey(
 
   const stepsHash = fnv1aBase36(projectStepsSig(spec as ReviewProjectSpec));
   return `${base}|mode=project|steps=${stepsHash}`;
+}
+
+
+
+export function coercePurposeMode(v: any): PurposeMode | null {
+    const s = String(v ?? "").trim();
+    return s === "quiz" || s === "project" || s === "mixed" ? (s as PurposeMode) : null;
+}
+
+export function coercePurposePolicy(v: any): PurposePolicy | null {
+    const s = String(v ?? "").trim();
+    return s === "strict" || s === "fallback" ? (s as PurposePolicy) : null;
 }

@@ -1,3 +1,4 @@
+// src/components/practice/shell/PracticeView.tsx
 "use client";
 
 import React from "react";
@@ -25,7 +26,6 @@ export default function PracticeView(
         answeredCount,
         sessionSize,
 
-        // derived
         canSubmitNow,
         finalized,
         attempts,
@@ -35,35 +35,39 @@ export default function PracticeView(
     } = props;
 
     return (
-        <div className="min-h-screen p-4 md:p-6 bg-[radial-gradient(1200px_700px_at_20%_0%,#151a2c_0%,#0b0d12_50%)] text-white/90">
+        <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
             {confirmOpen ? (
                 <ConfirmResetModal
                     open={confirmOpen}
-                    title={t("reset.title")}
-                    description={t("reset.description", { answered: answeredCount, sessionSize })}
-                    confirmText={t("reset.confirm")}
-                    cancelText={t("reset.cancel")}
+                    title={t("confirm.title")}
+                    description={`${t("confirm.subtitle")} ${t("confirm.progressLine", {
+                        answered: answeredCount,
+                        sessionSize,
+                    })}`}
+                    confirmText={t("confirm.restart")}
+                    cancelText={t("confirm.keep")}
                     danger={true}
                     onConfirm={applyPendingChange}
                     onClose={cancelPendingChange}
                 />
             ) : null}
 
-            <div className="mx-auto max-w-5xl grid gap-4 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
-                {/* ✅ Sticky sidebar wrapper */}
-                <div className="lg:sticky lg:top-6 lg:self-start">
-                    <PracticeSidebar
-                        {...props}
-                        canSubmitNow={canSubmitNow}
-                        finalized={finalized}
-                        attempts={attempts}
-                        outOfAttempts={outOfAttempts}
-                        resultBoxClass={resultBoxClass}
-                        concept={concept}
-                    />
-                </div>
+            <div className="ui-container py-4 md:py-6">
+                <div className="grid gap-4 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
+                    <div className="lg:sticky lg:top-6 lg:self-start">
+                        <PracticeSidebar
+                            {...props}
+                            canSubmitNow={canSubmitNow}
+                            finalized={finalized}
+                            attempts={attempts}
+                            outOfAttempts={outOfAttempts}
+                            resultBoxClass={resultBoxClass}
+                            concept={concept}
+                        />
+                    </div>
 
-                <QuestionPanel {...props} />
+                    <QuestionPanel {...props} />
+                </div>
             </div>
         </div>
     );

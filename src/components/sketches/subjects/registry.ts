@@ -4,11 +4,13 @@ import {ARCHETYPE_GALLERY_SKETCHES} from "@/components/sketches/gallery/registry
 import {PY_PART1_SKETCHES} from "@/components/sketches/subjects/python/modules/module0";
 import {PY_PART2_SKETCHES} from "@/components/sketches/subjects/python/modules/module1/sections";
 import {PY_PART3_SKETCHES} from "@/components/sketches/subjects/python/modules/module2";
+import {HC_PART1_SKETCHES} from "@/components/sketches/subjects/haitian-creole/modules/module0/sections";
 
 const ALL: Record<string, SketchEntry> = {
     ...AI_MOD0_SKETCHES,
     // ...LA_SKETCHES,
     // ...PY_SKETCHES,
+    ...HC_PART1_SKETCHES,
     ...PY_PART1_SKETCHES,
     ...PY_PART2_SKETCHES,
     ...PY_PART3_SKETCHES,

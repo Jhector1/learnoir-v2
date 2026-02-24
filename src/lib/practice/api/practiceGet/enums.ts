@@ -16,6 +16,9 @@ export function toPracticeKindOrThrow(kind: unknown): PracticeKind {
     PracticeKind.text_input,
     PracticeKind.drag_reorder,
     PracticeKind.voice_input,
+    PracticeKind.word_bank_arrange,
+    PracticeKind.listen_build,
+    PracticeKind.fill_blank_choice
   ]);
   if (!allowed.has(k)) throw new Error(`Unsupported kind "${k}" for PracticeKind.`);
   return k;

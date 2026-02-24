@@ -1,3 +1,4 @@
+// src/components/markdown/MathMarkdown.tsx
 "use client";
 
 import React from "react";
@@ -14,6 +15,10 @@ type Props = {
     inline?: boolean;
 };
 
+function join(...xs: Array<string | false | null | undefined>) {
+    return xs.filter(Boolean).join(" ");
+}
+
 function nodeToText(node: React.ReactNode): string {
     if (node == null) return "";
     if (typeof node === "string" || typeof node === "number") return String(node);
@@ -25,12 +30,7 @@ function nodeToText(node: React.ReactNode): string {
 function CopyIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-            <path
-                d="M9 9h10v10H9V9Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-            />
+            <path d="M9 9h10v10H9V9Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
             <path
                 d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
                 stroke="currentColor"
@@ -82,7 +82,6 @@ function PreWithCopy({
                 document.execCommand("copy");
                 document.body.removeChild(ta);
             }
-
             setCopied(true);
             window.setTimeout(() => setCopied(false), 900);
         } catch {
@@ -90,27 +89,38 @@ function PreWithCopy({
         }
     }
 
-    const preClass = [
-        "overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-3 text-xs leading-relaxed",
+    const preClass = join(
+        // ✅ theme-aware code surface
+        "overflow-x-auto rounded-xl border p-3 pt-10 text-xs leading-relaxed font-mono",
+        "border-neutral-200 bg-neutral-50 text-neutral-900",
+        "dark:border-white/10 dark:bg-black/30 dark:text-white/85",
+
+        // ✅ ensure highlight.js doesn't paint its own bg
+        "[&_.hljs]:bg-transparent [&_.hljs]:p-0 [&_.hljs]:m-0",
+
         className,
-    ]
-        .filter(Boolean)
-        .join(" ");
+    );
+
+    const copyBtnClass = join(
+        "absolute z-10 top-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-lg border transition",
+        "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
+        "dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80 dark:hover:bg-white/[0.10]",
+        "focus:outline-none focus:ring-2 focus:ring-emerald-300/50",
+    );
 
     return (
         <div className="relative z-0 my-3 w-full">
             <button
                 type="button"
                 onClick={onCopy}
-                className="absolute z-10 top-2 !right-2 !left-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/50"
-                style={{ right: 8, left: "auto", top: 8 }}
-                aria-label="Copy code"
+                className={copyBtnClass}
+                aria-label={copied ? "Copied" : "Copy code"}
                 title={copied ? "Copied" : "Copy"}
             >
                 {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
             </button>
 
-            <pre className={`${preClass} w-full pt-10`}>{children}</pre>
+            <pre className={preClass}>{children}</pre>
         </div>
     );
 }
@@ -152,13 +162,11 @@ function TerminalExample({ raw }: { raw: string }) {
 
     return (
         <div
-            className={[
-                // ✅ narrower + centered, no stretching
+            className={join(
                 "relative z-0 my-3 w-full max-w-[760px] mx-auto",
-                "rounded-2xl border p-3",
-                "bg-white/80 dark:bg-black/40",
+                "rounded-2xl border p-3 bg-white/80 dark:bg-black/40",
                 outerBorder,
-            ].join(" ")}
+            )}
         >
             <div className="flex items-center justify-between">
                 <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
@@ -170,13 +178,11 @@ function TerminalExample({ raw }: { raw: string }) {
             </div>
 
             <div
-                className={[
-                    // ✅ content height, capped, scrolls instead of pushing/overlapping
-                    "mt-2 rounded-xl border p-2",
+                className={join(
+                    "mt-2 rounded-xl border p-2 max-h-48 overflow-auto",
                     "bg-white/60 dark:bg-black/30",
-                    "max-h-48 overflow-auto",
                     innerBorder,
-                ].join(" ")}
+                )}
             >
                 <div className="font-mono text-xs leading-5 whitespace-pre-wrap px-2 break-words">
                     {lines.map((l, i) => {
@@ -207,11 +213,18 @@ function TerminalExample({ raw }: { raw: string }) {
         </div>
     );
 }
+
 export default function MathMarkdown({ content, className, inline = false }: Props) {
     const Wrapper: React.ElementType = inline ? "span" : "div";
 
+    const wrapperClass = join(
+        // ✅ ensures KaTeX inherits the surrounding text color
+        "[&_.katex]:text-inherit [&_.katex-display]:overflow-x-auto",
+        className,
+    );
+
     return (
-        <Wrapper className={className}>
+        <Wrapper className={wrapperClass}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[
@@ -263,7 +276,11 @@ export default function MathMarkdown({ content, className, inline = false }: Pro
 
                             return (
                                 <code
-                                    className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[0.85em] text-white/90"
+                                    className={join(
+                                        "rounded-md border px-1.5 py-0.5 font-mono text-[0.85em]",
+                                        "border-neutral-200 bg-neutral-100 text-neutral-900",
+                                        "dark:border-white/10 dark:bg-white/[0.06] dark:text-white/90",
+                                    )}
                                     {...props}
                                 >
                                     {text}

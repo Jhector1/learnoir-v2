@@ -20,6 +20,18 @@ import {
   initItemFromExercise,
 } from "@/lib/practice/uiHelpers";
 import type { SavedQuizState } from "@/lib/subjects/progressTypes";
+import { emitSfx } from "@/lib/sfx/bus";
+
+/** null => unlimited (server truth) */
+function coerceMaxAttempts(v: any): number | null {
+  if (v == null) return null;
+  if (v === Number.POSITIVE_INFINITY || v === Infinity) return null;
+
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  return Math.max(1, Math.floor(n));
+}
 
 export type PracticeState = {
   loading: boolean;
@@ -28,7 +40,7 @@ export type PracticeState = {
   exercise: Exercise | null;
   item: QItem | null;
   attempts: number;
-  maxAttempts: number; // Infinity allowed
+  maxAttempts: number | null; // ✅ null = unlimited
   ok: boolean | null;
 };
 
@@ -73,25 +85,24 @@ export function isEmptyPracticeAnswer(
 ) {
   if (ex.kind === "vector_drag_dot") {
     const a = pad?.a ?? (item as any).dragA;
-    return !a || (![a.x, a.y, a.z].some((v) => Number.isFinite(v)));
+    return !a || ![a.x, a.y, a.z].some((v) => Number.isFinite(v));
   }
 
   if (ex.kind === "vector_drag_target") {
     const a = pad?.a ?? (item as any).dragA;
     const b = pad?.b ?? (item as any).dragB;
-    const hasA = a && ([a.x, a.y, a.z].some((v) => Number.isFinite(v)));
-    const hasB = b && ([b.x, b.y, b.z].some((v) => Number.isFinite(v)));
+    const hasA = a && [a.x, a.y, a.z].some((v) => Number.isFinite(v));
+    const hasB = b && [b.x, b.y, b.z].some((v) => Number.isFinite(v));
     return !(hasA && hasB);
   }
 
   if (ex.kind === "drag_reorder") {
     const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
-    const order =
-        Array.isArray((item as any).reorder)
-            ? (item as any).reorder
-            : Array.isArray((item as any).reorderIds)
-                ? (item as any).reorderIds
-                : [];
+    const order = Array.isArray((item as any).reorder)
+        ? (item as any).reorder
+        : Array.isArray((item as any).reorderIds)
+            ? (item as any).reorderIds
+            : [];
     return !(tokens.length > 0 && order.length === tokens.length);
   }
 
@@ -178,6 +189,12 @@ export function useQuizPracticeBank(args: {
 
         const initMeta = initialState?.practiceMeta?.[q.id];
 
+        // ✅ Never default to 1. Prefer "unknown/unlimited" until server tells us.
+        const fallbackMax =
+            unlimitedAttempts
+                ? null
+                : coerceMaxAttempts((q as any).maxAttempts ?? specMaxAttempts ?? null);
+
         return {
           ...prev,
           [q.id]: {
@@ -191,9 +208,7 @@ export function useQuizPracticeBank(args: {
             attempts: initMeta?.attempts ?? 0,
             ok: initMeta?.ok ?? null,
 
-            maxAttempts: unlimitedAttempts
-                ? Number.POSITIVE_INFINITY
-                : Math.max(1, Math.floor(q.maxAttempts ?? specMaxAttempts ?? 1)),
+            maxAttempts: fallbackMax, // null => unlimited
           },
         };
       });
@@ -209,7 +224,9 @@ export function useQuizPracticeBank(args: {
           preferKind: (q as any).fetch.preferKind ?? undefined,
           salt: (q as any).fetch.salt ?? undefined,
 
-          // ✅ determinism controls (optional)
+          preferPurpose: "mixed",
+          purposePolicy: "fallback",
+
           exerciseKey: (q as any).fetch.exerciseKey ?? undefined,
           seedPolicy: (q as any).fetch.seedPolicy ?? undefined,
         } as any);
@@ -217,15 +234,12 @@ export function useQuizPracticeBank(args: {
         const ex = (res as any)?.exercise;
         const key = (res as any)?.key;
 
-        if (
-            !ex ||
-            typeof (ex as any)?.kind !== "string" ||
-            typeof key !== "string"
-        ) {
-          throw new Error(
-              "Malformed response from /api/practice (missing exercise/key).",
-          );
+        if (!ex || typeof (ex as any)?.kind !== "string" || typeof key !== "string") {
+          throw new Error("Malformed response from /api/practice (missing exercise/key).");
         }
+
+        // ✅ server truth (may be null/unlimited)
+        const serverRunMax = coerceMaxAttempts((res as any)?.run?.maxAttempts);
 
         // Base item from exercise
         let item: any = initItemFromExercise(ex as Exercise, key);
@@ -249,7 +263,8 @@ export function useQuizPracticeBank(args: {
           let prevSource: any = null;
           if (prevQ) {
             const livePrevItem = (practiceRef.current as any)?.[prevQ.id]?.item;
-            prevSource = livePrevItem ?? initialState?.practiceItemPatch?.[prevQ.id] ?? null;
+            prevSource =
+                livePrevItem ?? initialState?.practiceItemPatch?.[prevQ.id] ?? null;
           }
 
           const prev = extractCodeLike(prevSource);
@@ -258,13 +273,9 @@ export function useQuizPracticeBank(args: {
           if (!current.code && prev.code) {
             item = {
               ...item,
-
-              // ✅ actual fields your app uses
               code: prev.code,
               codeStdin: prev.stdin ?? item.codeStdin ?? "",
               codeLang: (prev.language as any) ?? item.codeLang,
-
-              // ✅ optional alias (safe if you keep it in QItem)
               stdin: prev.stdin ?? (item as any).stdin ?? "",
             };
           }
@@ -276,21 +287,26 @@ export function useQuizPracticeBank(args: {
         const patch = initialState?.practiceItemPatch?.[q.id];
         const patchedItem = patch ? { ...item, ...patch } : item;
 
-        setPractice((prev) => ({
-          ...prev,
-          [q.id]: {
-            ...prev[q.id],
-            loading: false,
-            error: null,
-            exercise: ex as Exercise,
-            item: patchedItem,
-            attempts:
-                initialState?.practiceMeta?.[q.id]?.attempts ??
-                prev[q.id]?.attempts ??
-                0,
-            ok: initialState?.practiceMeta?.[q.id]?.ok ?? prev[q.id]?.ok ?? null,
-          },
-        }));
+        setPractice((prev) => {
+          const base = prev[q.id];
+          return {
+            ...prev,
+            [q.id]: {
+              ...base,
+              loading: false,
+              error: null,
+              exercise: ex as Exercise,
+              item: patchedItem,
+
+              // keep seeded attempts/ok; do not overwrite with nulls
+              attempts: initialState?.practiceMeta?.[q.id]?.attempts ?? base?.attempts ?? 0,
+              ok: initialState?.practiceMeta?.[q.id]?.ok ?? base?.ok ?? null,
+
+              // ✅ prefer server run meta when available; otherwise keep existing fallback
+              maxAttempts: serverRunMax ?? base?.maxAttempts ?? null,
+            },
+          };
+        });
       } catch (e: any) {
         if (cancelled) return;
         setPractice((prev) => ({
@@ -315,7 +331,6 @@ export function useQuizPracticeBank(args: {
     unlimitedAttempts,
     specMaxAttempts,
     resetKey,
-    // NOTE: we intentionally don't depend on whole initialState/spec objects to avoid refetch storms
     (spec as any).mode,
   ]);
 
@@ -356,8 +371,11 @@ export function useQuizPracticeBank(args: {
         const ps = practice[q.id];
         if (!ps || ps.loading || ps.busy || !ps.item || !ps.exercise) return;
 
-        const outOfAttempts = !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
-        if (outOfAttempts) return;
+        // ✅ optional client-side cap (server is still authority)
+        const attemptsCapped =
+            !unlimitedAttempts && ps.maxAttempts != null && ps.attempts >= ps.maxAttempts;
+
+        if (attemptsCapped) return;
         if (ps.ok === true) return;
 
         setPractice((prev) => ({
@@ -392,9 +410,14 @@ export function useQuizPracticeBank(args: {
           } as any);
 
           const ok = Boolean((data as any)?.ok);
+          emitSfx(ok ? "answer:correct" : "answer:wrong");
+
+          // ✅ if server sends attempts.max (may be null), adopt it
+          const serverMax = coerceMaxAttempts((data as any)?.attempts?.max);
 
           setPractice((prev) => {
             const nextAttempts = (prev[q.id]?.attempts ?? 0) + 1;
+
             return {
               ...prev,
               [q.id]: {
@@ -402,6 +425,7 @@ export function useQuizPracticeBank(args: {
                 busy: false,
                 attempts: nextAttempts,
                 ok,
+                maxAttempts: serverMax ?? prev[q.id].maxAttempts ?? null,
                 item: {
                   ...prev[q.id].item!,
                   result: data as any,

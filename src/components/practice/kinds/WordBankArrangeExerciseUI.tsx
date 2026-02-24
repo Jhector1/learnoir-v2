@@ -7,25 +7,21 @@ import { useSpeak } from "./_shared/useSpeak";
 type Exercise = {
     title: string;
     prompt: string;
-    targetText: string;     // sentence to build
+    targetText: string;
     locale?: string;
     hint?: string;
-
-    // Optional:
-    wordBank?: string[];    // explicit token list
-    distractors?: string[]; // extra wrong tokens
-    ttsText?: string;       // if you want audio to read something different
+    wordBank?: string[];
+    distractors?: string[];
+    ttsText?: string;
 };
 
 function tokenizeLoose(s: string): string[] {
-    // Words + punctuation tokens (keeps apostrophes inside words)
     const re = /[\p{L}\p{M}]+(?:['’-][\p{L}\p{M}]+)*|\d+|[^\s]/gu;
     return (s.match(re) ?? []).filter(Boolean);
 }
 
 function joinNice(tokens: string[]): string {
     const s = tokens.join(" ");
-    // remove space before punctuation like . , ? ! : ;
     return s.replace(/\s+([.,!?;:])/g, "$1").replace(/\s+'/g, "'").trim();
 }
 
@@ -38,6 +34,16 @@ function shuffle<T>(arr: T[]) {
     return a;
 }
 
+// multiset remove from a SEED order (preserves order, removes only one occurrence)
+function removeUsedFromSeed(seed: string[], used: string[]) {
+    const out = seed.slice();
+    for (const t of used) {
+        const idx = out.indexOf(t);
+        if (idx >= 0) out.splice(idx, 1);
+    }
+    return out;
+}
+
 export default function WordBankArrangeExerciseUI({
                                                       exercise,
                                                       value,
@@ -48,7 +54,7 @@ export default function WordBankArrangeExerciseUI({
                                                       reviewCorrectValue = null,
                                                   }: {
     exercise: Exercise;
-    value: string; // assembled answer string
+    value: string;
     onChangeValue: (v: string) => void;
     disabled: boolean;
     checked: boolean;
@@ -59,53 +65,86 @@ export default function WordBankArrangeExerciseUI({
 
     const baseTokens = useMemo(() => {
         const fromTarget = exercise.wordBank?.length ? exercise.wordBank : tokenizeLoose(exercise.targetText);
-        const plus = [...fromTarget, ...(exercise.distractors ?? [])].filter(Boolean);
-        return plus;
+        return [...fromTarget, ...(exercise.distractors ?? [])].filter(Boolean);
     }, [exercise.wordBank, exercise.targetText, exercise.distractors]);
 
-    const [bank, setBank] = useState<string[]>(() => shuffle(baseTokens));
-    const [answer, setAnswer] = useState<string[]>(() => tokenizeLoose(value));
+    // stable “exercise identity”
+    const baseKey = useMemo(
+        () => `${exercise.targetText}::${baseTokens.join("|")}`,
+        [exercise.targetText, baseTokens]
+    );
 
-    // keep controlled string in sync if parent resets it
+    // Seed order should be stable for an exercise instance (don’t reshuffle every keystroke)
+    const seedRef = useRef<string[]>([]);
+    const [bank, setBank] = useState<string[]>([]);
+    const [answer, setAnswer] = useState<string[]>(() => tokenizeLoose(value ?? ""));
+    const answerRef = useRef(answer);
+
     useEffect(() => {
-        const next = tokenizeLoose(value);
-        setAnswer(next);
+        answerRef.current = answer;
+    }, [answer]);
 
-        // rebuild bank as "all tokens minus used tokens" (multiset)
-        const remaining = baseTokens.slice();
-        for (const t of next) {
-            const idx = remaining.indexOf(t);
-            if (idx >= 0) remaining.splice(idx, 1);
-        }
-        setBank(shuffle(remaining));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value, exercise.targetText]);
+    // Initialize / reset when exercise changes
+    useEffect(() => {
+        seedRef.current = shuffle(baseTokens);
+        const nextAnswer = tokenizeLoose(value ?? "");
+        const nextBank = removeUsedFromSeed(seedRef.current, nextAnswer);
+
+        setAnswer(nextAnswer);
+        setBank(nextBank);
+    }, [baseKey, baseTokens, value]);
+
+    // If parent externally changes value (reset / hydrate), sync local state.
+    // IMPORTANT: do NOT shuffle on every value change that already matches local state.
+    useEffect(() => {
+        const currentStr = joinNice(answerRef.current);
+        const incoming = String(value ?? "");
+
+        if (incoming === currentStr) return;
+
+        const nextAnswer = tokenizeLoose(incoming);
+        const nextBank = removeUsedFromSeed(seedRef.current.length ? seedRef.current : shuffle(baseTokens), nextAnswer);
+
+        setAnswer(nextAnswer);
+        setBank(nextBank);
+    }, [value, baseTokens]);
+
+    // ✅ Emit to parent AFTER commit (no render-phase updates)
+    useEffect(() => {
+        const nextStr = joinNice(answer);
+        const cur = String(value ?? "");
+        if (nextStr === cur) return; // prevents loops
+        onChangeValue(nextStr);
+    }, [answer, value, onChangeValue]);
 
     const pushToAnswer = useCallback(
         (token: string, fromIndex: number) => {
             if (disabled) return;
-            setBank((b) => b.filter((_, i) => i !== fromIndex));
-            setAnswer((a) => {
-                const next = [...a, token];
-                onChangeValue(joinNice(next));
+
+            setBank((b) => {
+                const next = b.slice();
+                next.splice(fromIndex, 1);
                 return next;
             });
+
+            setAnswer((a) => [...a, token]);
         },
-        [disabled, onChangeValue]
+        [disabled]
     );
 
     const popFromAnswer = useCallback(
         (token: string, index: number) => {
             if (disabled) return;
+
             setAnswer((a) => {
                 const next = a.slice();
                 next.splice(index, 1);
-                onChangeValue(joinNice(next));
                 return next;
             });
+
             setBank((b) => [...b, token]);
         },
-        [disabled, onChangeValue]
+        [disabled]
     );
 
     // drag reorder inside answer
@@ -114,21 +153,22 @@ export default function WordBankArrangeExerciseUI({
     const onDropOn = (to: number) => {
         const from = dragFromRef.current;
         dragFromRef.current = null;
+        if (disabled) return;
         if (from == null || from === to) return;
+
         setAnswer((a) => {
             const copy = a.slice();
             const [item] = copy.splice(from, 1);
             copy.splice(to, 0, item);
-            onChangeValue(joinNice(copy));
             return copy;
         });
     };
 
     const shuffleBank = () => setBank((b) => shuffle(b));
     const clear = () => {
-        onChangeValue("");
+        if (disabled) return;
         setAnswer([]);
-        setBank(shuffle(baseTokens));
+        setBank(removeUsedFromSeed(seedRef.current.length ? seedRef.current : shuffle(baseTokens), []));
     };
 
     const speakSentence = () => {
@@ -164,7 +204,7 @@ export default function WordBankArrangeExerciseUI({
     return (
         <div className={shell}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <ExercisePrompt exercise={exercise} />
+                <ExercisePrompt exercise={exercise as any} />
                 {checked ? (
                     <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>
                         {ok ? "Correct" : "Try again"}
@@ -172,7 +212,6 @@ export default function WordBankArrangeExerciseUI({
                 ) : null}
             </div>
 
-            {/* Listen / hint */}
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className={`text-xs font-semibold ${muted}`}>
                     Tap tiles to build the sentence. Drag tiles in the answer to reorder.
@@ -200,7 +239,6 @@ export default function WordBankArrangeExerciseUI({
 
             {ttsStatus ? <div className={`mt-2 text-xs font-semibold ${muted}`}>{ttsStatus}</div> : null}
 
-            {/* Answer area */}
             <div className="mt-4">
                 <div className={`text-xs font-semibold ${muted}`}>Your sentence</div>
                 <div className={`${answerSlot} mt-2`}>
@@ -232,7 +270,6 @@ export default function WordBankArrangeExerciseUI({
                 </div>
             </div>
 
-            {/* Bank */}
             <div className="mt-4">
                 <div className={`text-xs font-semibold ${muted}`}>Word bank</div>
                 <div className="mt-2 flex flex-wrap gap-2">

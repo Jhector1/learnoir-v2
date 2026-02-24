@@ -1,16 +1,14 @@
-// src/lib/practice/generator/engines/python python_part1_mod2/topics/lists.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
+import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {  makeCodeExpected, safeInt } from "../../_shared";
 
 export const M2_LISTS_POOL = [
-    { key: "m2_list_three_prices_sum_avg_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_list_max_of_four_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_list_build_names_print_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m2_list_three_prices_sum_avg_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_list_max_of_four_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_list_build_names_print_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
 export type M2ListsKey = (typeof M2_LISTS_POOL)[number]["key"];
-export const M2_LISTS_VALID_KEYS = M2_LISTS_POOL.map((p) => p.key) as M2ListsKey[];
 
 function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     let x = safeInt(rng, lo, hi);
@@ -50,18 +48,6 @@ Compute:
 Print EXACTLY two lines:
 sum = <sum>
 avg = <avg>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-10
-20
-30
-
-$ output
-sum = 60
-avg = 20
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read 3 prices
@@ -115,18 +101,6 @@ Store them in a list.
 Print the maximum as:
 
 max = <value>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-3
-9
-2
-7
-
-$ output
-max = 9
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read 4 integers
@@ -142,9 +116,7 @@ max = 9
                 { stdin: `${x1}\n${x2}\n${x3}\n${x4}\n`, stdout: `max = ${m1}\n`, match: "exact" },
                 { stdin: `${y1}\n${y2}\n${y3}\n${y4}\n`, stdout: `max = ${m2}\n`, match: "exact" },
             ],
-            solutionCode:
-                `nums = [int(input()), int(input()), int(input()), int(input())]\n` +
-                `print(f"max = {max(nums)}")\n`,
+            solutionCode: `nums = [int(input()), int(input()), int(input()), int(input())]\nprint(f"max = {max(nums)}")\n`,
         });
 
         return { archetype: "m2_list_max_of_four_code", exercise, expected };
@@ -172,17 +144,6 @@ Print EXACTLY:
 
 names[0] = <first>
 names[1] = <second>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-Maya
-Leo
-
-$ output
-names[0] = Maya
-names[1] = Leo
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read two names
@@ -209,3 +170,9 @@ names[1] = Leo
         return { archetype: "m2_list_build_names_print_code", exercise, expected };
     },
 };
+
+export const M2_LISTS_TOPIC: TopicBundle = defineTopic(
+    "lists_basics",
+    M2_LISTS_POOL as any,
+    M2_LISTS_HANDLERS as any,
+);

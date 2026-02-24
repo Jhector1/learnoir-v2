@@ -22,6 +22,7 @@ import { useReviewQuizQuestions } from "./quiz/hooks/useReviewQuizQuestions";
 import QuizPracticeCard from "./quiz/components/QuizPracticeCard";
 import QuizLocalCard from "./quiz/components/QuizLocalCard";
 import QuizFooter from "./quiz/components/QuizFooter";
+import {emitSfx} from "@/lib/sfx/bus";
 
 /* -------------------------------- settings -------------------------------- */
 
@@ -36,7 +37,15 @@ function readAutoAdvance(defaultVal = true) {
     return defaultVal;
   }
 }
+function computeLocalOkNow(q: Exclude<ReviewQuestion, { kind: "practice" }>, val: any) {
+  if (q.kind === "mcq") return val === q.answerId;
 
+  // numeric
+  const v = Number(val);
+  if (!Number.isFinite(v)) return false;
+  const tol = q.tolerance ?? 0;
+  return Math.abs(v - q.answer) <= tol;
+}
 /* -------------------------------- helpers -------------------------------- */
 
 function findScrollParent(el: HTMLElement): HTMLElement {
@@ -233,8 +242,12 @@ export default function QuizBlock({
 
       if (prev.kind === "practice") {
         const ps = practiceBank.practice[prev.id];
-        const outOfAttempts = ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
-        if (outOfAttempts) return true;
+        const attemptsCapped =
+            ps &&
+            !unlimitedAttempts &&
+            Number.isFinite(ps.maxAttempts) &&
+            ps.attempts >= ps.maxAttempts;
+        if (attemptsCapped) return true;
       }
     }
     return ok;
@@ -640,8 +653,14 @@ export default function QuizBlock({
                         onPick={(val) => local.setAnswer(q.id, val)}
                         onCheck={() => {
                           if (isCompleted || locked) return;
+                          // ✅ prevent re-check spam sound
+                          if (local.checkedById[q.id]) return;
                           lastActionQidRef.current = q.id;
+                          const okNow = computeLocalOkNow(q, local.answers[q.id]);
+
                           local.check(q.id);
+                          emitSfx(okNow ? "answer:correct" : "answer:wrong");
+
                         }}
                     />
                 )}

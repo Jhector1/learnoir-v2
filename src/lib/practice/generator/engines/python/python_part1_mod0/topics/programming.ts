@@ -1,19 +1,14 @@
-// src/lib/practice/generator/engines/python/python_part1_mod0/topics/programming.ts
-import type { Handler } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
 
-// ✅ Source of truth: key + weight + kind
 export const M0_PROGRAMMING_POOL = [
-    { key: "m0_prog_language_definition", w: 1, kind: "single_choice",purpose: "quiz" },
-    { key: "m0_prog_python_is_language", w: 1, kind: "single_choice",purpose: "quiz" },
-    { key: "m0_prog_instructions_precise", w: 1, kind: "single_choice",purpose: "quiz" },
+    { key: "m0_prog_language_definition", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_prog_python_is_language", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_prog_instructions_precise", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
-// ✅ Derive keys from pool
 export type M0ProgrammingKey = (typeof M0_PROGRAMMING_POOL)[number]["key"];
-export const M0_PROGRAMMING_VALID_KEYS = M0_PROGRAMMING_POOL.map((p) => p.key) as M0ProgrammingKey[];
 
-// ✅ Handlers keyed by derived union
 export const M0_PROGRAMMING_HANDLERS: Record<M0ProgrammingKey, Handler> = {
     m0_prog_language_definition: ({ diff, id, topic }) =>
         makeSingleChoiceOut({
@@ -66,3 +61,9 @@ export const M0_PROGRAMMING_HANDLERS: Record<M0ProgrammingKey, Handler> = {
             hint: "Computers follow exact instructions.",
         }),
 };
+
+export const M0_PROGRAMMING_TOPIC: TopicBundle = defineTopic(
+    "programming_intro",
+    M0_PROGRAMMING_POOL as any,
+    M0_PROGRAMMING_HANDLERS as any,
+);

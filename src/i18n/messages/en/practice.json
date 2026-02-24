@@ -1,13 +1,46 @@
 {
   "Practice": {
+
+
+
+
+
+
+    "ai": {
+      "explainConcept": "Explain concept",
+      "explaining": "Explaining…",
+      "helperLine": "Explains the idea + approach — no final answer."
+    },
+    "review": {
+      "emptyAll": "No questions yet.",
+      "emptyIncorrect": "No incorrect questions.",
+      "status": {
+        "revealed": "Revealed",
+        "correct": "✓ Correct",
+        "incorrect": "✕ Not correct",
+        "notChecked": "Not checked"
+      },
+      "card": {
+        "question": "Question {n}",
+        "attempts": "Attempts:",
+        "notCheckedYet": "Not checked yet",
+        "hiddenNote": "Correct answer is hidden for this run.",
+        "showDetails": "Show expected / explanation"
+      }
+    },
+
     "title": "Practice Generator",
     "subtitle": "Refresh keeps progress • ←/→ navigate • Enter submits",
     "progress": {
+      "attempts": "Attempts",
+
       "label": "Progress",
       "correct": "Correct",
       "question": "Q"
     },
     "filters": {
+      "sessionLocked": "Session mode • filters locked",
+
       "topic": "Topic",
       "difficulty": "Difficulty",
       "assignmentLocked": "Assignment mode • filters locked"
@@ -21,11 +54,15 @@
       "auto": "Auto"
     },
     "status": {
+      "clickNextToStart": "Click Next to start.",
+      "revealDisabled": "Reveal is disabled for this run.",
       "loading": "Loading…",
       "loadingDots": "Loading...",
       "dash": "—"
     },
     "confirm": {
+      "progressLine": "Current progress: {answered}/{sessionSize} answered.",
+
       "title": "Restart session?",
       "subtitle": "Changing topic or difficulty will reset your current run.",
       "loseProgress": "You’ll lose progress:",
@@ -34,6 +71,8 @@
       "esc": "Press Esc to close."
     },
     "result": {
+      "attemptsLeft": "Attempts left: {count}",
+
       "title": "Result",
       "submitToValidate": "Submit your answer to get validation.",
       "errorTitle": "⚠️ Error",
@@ -73,6 +112,8 @@
       }
     },
     "summary": {
+      "return": "Return",
+
       "title": "Session complete",
       "subtitle": "You finished {answered}/{sessionSize} exercises",
       "scoreLine": "{correct} correct • {missed} missed • {pct}%",

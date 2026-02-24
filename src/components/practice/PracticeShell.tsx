@@ -1,3 +1,4 @@
+// src/components/practice/PracticeShell.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -9,14 +10,13 @@ import { buildSubmitAnswerFromItem } from "@/lib/practice/uiHelpers";
 
 import SummaryView from "./shell/SummaryView";
 import PracticeView from "./shell/PracticeView";
-
 import { useConceptExplain } from "./hooks/useConceptExplain";
+
 export type TFn = (key: string, values?: Record<string, any>) => string;
 
 export type PracticeShellProps = {
   t: TFn;
 
-  // run-mode flags
   isAssignmentRun: boolean;
   isSessionRun: boolean;
   isLockedRun: boolean;
@@ -27,8 +27,8 @@ export type PracticeShellProps = {
   allowReveal: boolean;
   showDebug: boolean;
   maxAttempts: number;
-reviewStack?: QItem[];
-  // locks for the filter UI
+  reviewStack?: QItem[];
+
   topicLocked: boolean;
   difficultyLocked: boolean;
 
@@ -91,43 +91,46 @@ reviewStack?: QItem[];
 };
 
 function getResultBoxClass(current: QItem | null) {
-  if (current?.revealed) return "border-sky-300/20 bg-sky-300/10";
-  if (current?.result?.ok === true) return "border-emerald-300/30 bg-emerald-300/10";
-  if (current?.result) return "border-rose-300/30 bg-rose-300/10";
-  return "border-white/10 bg-white/5";
+  if (current?.revealed) {
+    return "border-sky-300/50 bg-sky-50/70 dark:border-sky-300/25 dark:bg-sky-300/10";
+  }
+  if (current?.result?.ok === true) {
+    return "border-emerald-600/25 bg-emerald-50 dark:border-emerald-300/30 dark:bg-emerald-300/10";
+  }
+  if (current?.result) {
+    return "border-rose-400/40 bg-rose-50 dark:border-rose-300/30 dark:bg-rose-300/10";
+  }
+  return "border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.06]";
 }
 
 export default function PracticeShell(props: PracticeShellProps) {
-  const { phase, isLockedRun, reviewStack, maxAttempts, busy, allowReveal, current, exercise } = props;
+  const { phase, isLockedRun, maxAttempts, current, exercise } = props;
 
   const canSubmitNow = useMemo(
-    () => !!(current && buildSubmitAnswerFromItem(current)),
-    [current],
+      () => !!(current && buildSubmitAnswerFromItem(current)),
+      [current],
   );
 
   const finalized = Boolean((current as any)?.result?.finalized);
   const attempts = current?.attempts ?? 0;
 
   const outOfAttempts =
-    isLockedRun && attempts >= maxAttempts && current?.result?.ok !== true;
+      isLockedRun && attempts >= maxAttempts && current?.result?.ok !== true;
 
   const resultBoxClass = useMemo(() => getResultBoxClass(current), [current]);
-
   const concept = useConceptExplain({ current, exercise });
 
-  if (phase === "summary") {
-    return <SummaryView {...props} />;
-  }
+  if (phase === "summary") return <SummaryView {...props} />;
 
   return (
-    <PracticeView
-      {...props}
-      canSubmitNow={canSubmitNow}
-      finalized={finalized}
-      attempts={attempts}
-      outOfAttempts={outOfAttempts}
-      resultBoxClass={resultBoxClass}
-      concept={concept}
-    />
+      <PracticeView
+          {...props}
+          canSubmitNow={canSubmitNow}
+          finalized={finalized}
+          attempts={attempts}
+          outOfAttempts={outOfAttempts}
+          resultBoxClass={resultBoxClass}
+          concept={concept}
+      />
   );
 }

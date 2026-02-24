@@ -4,10 +4,10 @@ import type { GenOut } from "../../shared/expected";
 import type { RNG } from "../../shared/rng";
 import type { TopicContext } from "../../generatorTypes";
 
-import { parseTopicSlug } from "./python_shared/_shared";
 import { makeGenPythonStatementsPart1Mod0 } from "./python_part1_mod0/handlers";
 import { makeGenPythonStatementsPart1Mod1 } from "./python_part1_mod1/handlers";
 import { makeGenPythonStatementsPart1Mod2 } from "./python_part1_mod2/handlers";
+import {parseTopicSlug} from "@/lib/practice/generator/engines/utils";
 
 // Base slugs (no prefix)
 const MOD0_BASE = new Set<string>([

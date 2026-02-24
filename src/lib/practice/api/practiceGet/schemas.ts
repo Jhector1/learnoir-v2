@@ -14,10 +14,16 @@ includeMissed: z.enum(["true", "false"]).optional(),
   allowReveal: z.enum(["true", "false"]).optional(),
   sessionId: z.string().optional(),
   statusOnly: z.enum(["true", "false"]).optional(),
-
+    // ✅ add this
+    // preferPurpose: z.enum(["quiz", "project"]).optional(),
   // ✅ NEW: persisted on PracticeSession so completion redirect survives refresh
   returnUrl: z.string().optional(),
   returnTo: z.string().optional(), // alias (optional)
+    // ✅ NEW: quiz | project | mixed
+    preferPurpose: z.enum(["quiz", "project", "mixed"]).optional(),
+
+    // ✅ NEW: strict = error if not allowed, fallback = auto-pick allowed
+    purposePolicy: z.enum(["strict", "fallback"]).optional(),
 
   preferKind: z
     .enum([

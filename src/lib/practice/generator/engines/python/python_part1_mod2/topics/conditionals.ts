@@ -1,17 +1,19 @@
-// src/lib/practice/generator/engines/python/python_part1_mod2/topics/conditionals.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt, pickName, makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {
+    makeCodeExpected,
+    safeInt,
+    pickName,
+} from "../../_shared";
 
 export const M2_CONDITIONALS_POOL = [
-    { key: "m2_cond_age_gate_code", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m2_cond_member_discount_code", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m2_cond_password_check_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice" ,purpose: "project"},
+    { key: "m2_cond_age_gate_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_cond_member_discount_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_cond_password_check_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice", purpose: "project" },
 ] as const;
 
 export type M2ConditionalsKey = (typeof M2_CONDITIONALS_POOL)[number]["key"];
-export const M2_CONDITIONALS_VALID_KEYS = M2_CONDITIONALS_POOL.map((p) => p.key) as M2ConditionalsKey[];
 
 function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     let x = safeInt(rng, lo, hi);
@@ -40,15 +42,6 @@ ALLOWED
 
 Else print:
 DENIED
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-16
-
-$ output
-DENIED
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`age = int(input())
@@ -74,7 +67,6 @@ DENIED
         const subtotal1 = safeInt(rng, 10, 200);
         const subtotal2 = pickDifferentInt(rng, 10, 200, subtotal1);
 
-        // member flag: y/n (case-insensitive)
         const flag1 = "y";
         const flag2 = "n";
 
@@ -99,16 +91,6 @@ Rules:
 
 Print exactly:
 Total = <total>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-50
-y
-
-$ output
-Total = 45
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`subtotal = int(input())
@@ -139,7 +121,7 @@ member = input().strip()
 
     m2_cond_password_check_code: ({ rng, diff, id, topic }) => {
         const correct = "letmein";
-        const wrong = pickName(rng); // random-ish wrong password
+        const wrong = pickName(rng);
 
         const exercise: CodeInputExercise = {
             id,
@@ -157,15 +139,6 @@ Logged in
 
 Else print:
 Wrong password
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-letmein
-
-$ output
-Logged in
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`pw = input().strip()
@@ -181,9 +154,7 @@ Logged in
                 { stdin: `${correct}\n`, stdout: `Logged in\n`, match: "exact" },
                 { stdin: `${wrong}\n`, stdout: `Wrong password\n`, match: "exact" },
             ],
-            solutionCode:
-                `pw = input().strip()\n` +
-                `print("Logged in" if pw == "letmein" else "Wrong password")\n`,
+            solutionCode: `pw = input().strip()\nprint("Logged in" if pw == "letmein" else "Wrong password")\n`,
         });
 
         return { archetype: "m2_cond_password_check_code", exercise, expected };
@@ -206,3 +177,9 @@ Logged in
             hint: "`elif` = else if (check another condition).",
         }),
 };
+
+export const M2_CONDITIONALS_TOPIC: TopicBundle = defineTopic(
+    "conditionals_basics",
+    M2_CONDITIONALS_POOL as any,
+    M2_CONDITIONALS_HANDLERS as any,
+);

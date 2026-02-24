@@ -24,9 +24,11 @@ import { genVectorsPart1 } from "./engines/linear_algebra/vectorsPart1";
 import { makeGenMatricesPart1 } from "./engines/linear_algebra/matricesPart1";
 import { makeGenMatricesPart2 } from "./engines/linear_algebra/matricesPart2";
 import { makeGenPythonStatementsPart1 } from "./engines/python/python_part1";
-import { makeGenHaitianCreolePart1 } from "./engines/haitian-creole/hc_part1";
+// import { makeGenHaitianCreolePart1 } from "./engines/haitian-creole/hc_part1";
 import {makeGenAnalyticGeometry} from "@/lib/practice/generator/engines/linear_algebra/matricePart4";
 import {makeGenAiMod0} from "@/lib/practice/generator/engines/ai/intro_ai/mod0";
+import {makeGenHaitianCreolePart1} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_part1";
+// import {makeGenAiMod0keGenHaitianCreolePart1} from "@/lib/practice/generator/engines/haitian-creole_thumb/hc_part1";
 // import {makeGenAiMod0} from "@/lib/practice/generator/engines/ai/genAiMod0";
 
 export type GenFn = (

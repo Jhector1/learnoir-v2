@@ -1,13 +1,37 @@
 {
   "Practice": {
+    "ai": {
+      "explainConcept": "Eksplike konsèp",
+      "explaining": "Ap eksplike…",
+      "helperLine": "Li eksplike lide a + metòd la — li pa bay repons final la."
+    },
+    "review": {
+      "emptyAll": "Pa gen kesyon ankò.",
+      "emptyIncorrect": "Pa gen kesyon ki pa kòrèk.",
+      "status": {
+        "revealed": "Montre",
+        "correct": "✓ Kòrèk",
+        "incorrect": "✕ Pa kòrèk",
+        "notChecked": "Pa verifye"
+      },
+      "card": {
+        "question": "Kesyon {n}",
+        "attempts": "Tantativ:",
+        "notCheckedYet": "Poko verifye",
+        "hiddenNote": "Repons kòrèk la kache pou kous sa a.",
+        "showDetails": "Montre sa yo te atann / eksplikasyon"
+      }
+    },
     "title": "Jeneratè Pratik",
     "subtitle": "Refresh kenbe pwogrè • ←/→ pou navige • Antre pou soumèt",
     "progress": {
+      "attempts": "Tantativ",
       "label": "Pwogrè",
       "correct": "Kòrèk",
       "question": "K"
     },
     "filters": {
+      "sessionLocked": "Mòd sesyon • filtè yo bloke",
       "topic": "Sijè",
       "difficulty": "Nivo",
       "assignmentLocked": "Mòd devwa • filtè yo bloke"
@@ -21,11 +45,14 @@
       "auto": "Oto"
     },
     "status": {
+      "clickNextToStart": "Peze Next pou kòmanse.",
+      "revealDisabled": "Montre repons dezaktive pou kous sa a.",
       "loading": "Ap chaje…",
       "loadingDots": "Ap chaje...",
       "dash": "—"
     },
     "confirm": {
+      "progressLine": "Pwogrè kounye a: {answered}/{sessionSize} reponn.",
       "title": "Rekòmanse sesyon an?",
       "subtitle": "Chanje sijè oswa nivo ap rekòmanse sesyon w ap fè a.",
       "loseProgress": "Ou pral pèdi pwogrè w:",
@@ -34,6 +61,7 @@
       "esc": "Peze Esc pou fèmen."
     },
     "result": {
+      "attemptsLeft": "Tantativ ki rete: {count}",
       "title": "Rezilta",
       "submitToValidate": "Soumèt repons ou pou w jwenn koreksyon an.",
       "errorTitle": "⚠️ Erè",
@@ -73,6 +101,7 @@
       }
     },
     "summary": {
+      "return": "Retounen",
       "title": "Sesyon fini",
       "subtitle": "Ou fini {answered}/{sessionSize} egzèsis",
       "scoreLine": "{correct} kòrèk • {missed} rate • {pct}%",

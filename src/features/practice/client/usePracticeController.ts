@@ -17,6 +17,8 @@ import { usePracticeEngine } from "./usePracticeEngine";
 import { useVectorPadRef } from "./useVectorPadRef";
 import { SESSION_DEFAULT } from "./constants";
 import {lastSessionKey} from "@/features/practice/client/storage";
+import {coercePurposeMode, coercePurposePolicy} from "@/lib/subjects/quizClient";
+import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
 
 type PendingChange =
   | { kind: "topic"; value: TopicValue }
@@ -87,8 +89,17 @@ export function usePracticeController(args: {
   // internal refs used by persistence/url-sync and filter reset
   const firstFiltersEffectRef = useRef(true);
   const skipUrlSyncRef = useRef(true);
+  const preferPurposeFromQuery = coercePurposeMode((sp as any)?.get?.("preferPurpose"));
+  const purposePolicyFromQuery = coercePurposePolicy((sp as any)?.get?.("purposePolicy"));
 
-  // ✅ persistence hydrates + persists stack/idx (+ completed)
+  // defaults (good long-term)
+  const preferPurposeRaw: PurposeMode = preferPurposeFromQuery ?? "quiz";
+  const purposePolicyRaw: PurposePolicy = purposePolicyFromQuery ?? "fallback";
+
+// ✅ assignments/sessions: don't let URL params influence purpose on client
+  const preferPurpose: PurposeMode = isLockedRun ? "quiz" : preferPurposeRaw;
+  const purposePolicy: PurposePolicy = isLockedRun ? "fallback" : purposePolicyRaw;
+// ✅ persistence hydrates + persists stack/idx (+ completed)
   const { hydrated, resolvedSessionIdRef } = usePracticeStatePersistence({
     subjectSlug,
     moduleSlug,
@@ -136,6 +147,7 @@ export function usePracticeController(args: {
   const engine = usePracticeEngine({
     subjectSlug,
     moduleSlug,
+    t, // ✅ ADD THIS
 
     run,
     setRun,
@@ -177,6 +189,10 @@ export function usePracticeController(args: {
     setIdx,
 
     padRef,
+
+    // ✅ NEW
+    preferPurpose,
+    purposePolicy,
   } as any);
 
   // lock selected values when run says so
@@ -226,8 +242,7 @@ export function usePracticeController(args: {
 
     void engine.loadNextExercise({ forceNew: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, section, hydrated, isLockedRun]);
-
+  }, [topic, difficulty, section, preferPurpose, purposePolicy, hydrated, isLockedRun]);
 
 
 
@@ -303,7 +318,12 @@ export function usePracticeController(args: {
 
     qs.set("topic", String(topic));
     qs.set("difficulty", String(difficulty));
+    // ✅ purpose controls (only for unlocked runs)
+    if (preferPurpose) qs.set("preferPurpose", preferPurpose);
+    else qs.delete("preferPurpose");
 
+    if (purposePolicy) qs.set("purposePolicy", purposePolicy);
+    else qs.delete("purposePolicy");
     if (sessionSize && sessionSize !== SESSION_DEFAULT)
       qs.set("questionCount", String(sessionSize));
     else qs.delete("questionCount");
@@ -321,6 +341,9 @@ export function usePracticeController(args: {
     section,
     topic,
     difficulty,
+    preferPurpose,    // ✅ ADD
+    purposePolicy,    // ✅ ADD
+
     sessionSize,
     router,
     pathname,

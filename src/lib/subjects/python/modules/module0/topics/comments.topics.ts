@@ -39,7 +39,7 @@ export const PY_COMMENTS = {
                     n: M0_COMMENTS_POOL.length, // ✅ matches pool length (no repeats if you enforce uniqueness)
                     allowReveal: true,
                     preferKind: null,
-                    maxAttempts: 1,
+                    maxAttempts: 10,
                 },
             },
         ],

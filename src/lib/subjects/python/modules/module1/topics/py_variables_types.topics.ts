@@ -4,7 +4,7 @@ import { PY_MOD1 } from "../../../../../../../prisma/seed/data/subjects/python/c
 import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects/python/slugs";
 import type { PracticeKind } from "@prisma/client";
 
-import { M1_VARIABLES_TYPES_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables_types";
+import { M1_VARIABLES_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables_types";
 
 const ID = "variables_types_intro" as const;
 const LABEL = "Variables + Data Types: Boxes That Hold Real Values" as const;
@@ -86,7 +86,7 @@ export const PY_VARIABLES_TYPES = {
         meta: {
             label: LABEL,
             minutes: MINUTES,
-            pool: M1_VARIABLES_TYPES_POOL.map((p) => ({ ...p })),
+            pool: M1_VARIABLES_POOL.map((p) => ({ ...p })),
         },
     } as const satisfies TopicDefCompat,
 } as const;

@@ -28,6 +28,7 @@ enum PracticePurpose {
   quiz
   project
 }
+
 enum PracticeRunPresetKey {
   MODULE_QUIZ_ONLY
   MIXED_PRACTICE
@@ -35,21 +36,21 @@ enum PracticeRunPresetKey {
 }
 
 model PracticeRunPreset {
-  id              String               @id @default(cuid())
-  key             PracticeRunPresetKey @unique
+  id  String               @id @default(cuid())
+  key PracticeRunPresetKey @unique
 
-  allowedKinds    PracticeKind[]       @default([])
-  allowedPurposes PracticePurpose[]    @default([]) // ✅ NEW
+  allowedKinds    PracticeKind[]    @default([])
+  allowedPurposes PracticePurpose[] @default([]) // ✅ NEW
 
-  lockDifficulty  PracticeDifficulty?
-  lockTopic       String?
-  allowReveal     Boolean?
+  lockDifficulty PracticeDifficulty?
+  lockTopic      String?
+  allowReveal    Boolean?
 
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  modules         PracticeModule[]
-  sessions        PracticeSession[]
+  modules  PracticeModule[]
+  sessions PracticeSession[]
 }
 
 model PracticeModule {
@@ -68,10 +69,10 @@ model PracticeModule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sections PracticeSection[]
-  topics   PracticeTopic[]
-  sessions PracticeSession[] @relation("ModuleSessions") // ✅ opposite side
- practicePresetId String?
+  sections         PracticeSection[]
+  topics           PracticeTopic[]
+  sessions         PracticeSession[]  @relation("ModuleSessions") // ✅ opposite side
+  practicePresetId String?
   practicePreset   PracticeRunPreset? @relation(fields: [practicePresetId], references: [id])
 
   @@index([practicePresetId])
@@ -147,6 +148,10 @@ enum PracticeKind {
   text_input
   drag_reorder
   voice_input
+    // ✅ NEW
+    word_bank_arrange
+    listen_build
+    fill_blank_choice
 }
 
 enum PracticeDifficulty {
@@ -172,7 +177,7 @@ model PracticeQuestionInstance {
 
   kind       PracticeKind
   difficulty PracticeDifficulty
-  purpose    PracticePurpose @default(quiz) // ✅ NEW
+  purpose    PracticePurpose    @default(quiz) // ✅ NEW
 
   title  String
   prompt String
@@ -190,8 +195,7 @@ model PracticeQuestionInstance {
 
   @@index([sessionId])
   @@index([topicId, difficulty])
-    @@index([purpose]) // ✅ optional but useful
-
+  @@index([purpose]) // ✅ optional but useful
 }
 
 model PracticeAttempt {
@@ -246,7 +250,6 @@ model PracticeSection {
   updatedAt DateTime @updatedAt
   meta      Json?
 
-
   sessions    PracticeSession[]
   assignments Assignment[]      @relation("SectionAssignments")
 
@@ -258,10 +261,10 @@ model PracticeSession {
   id     String                @id @default(cuid())
   status PracticeSessionStatus @default(active)
 
-  userId  String?
-  guestId String?
-   // ✅ new: default quiz so “practice” never accidentally becomes project
-    preferPurpose PracticePurpose @default(quiz)
+  userId        String?
+  guestId       String?
+  // ✅ new: default quiz so “practice” never accidentally becomes project
+  preferPurpose PracticePurpose @default(quiz)
 
   sectionId String
   section   PracticeSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
@@ -286,8 +289,8 @@ model PracticeSession {
   returnUrl    String?
   instances    PracticeQuestionInstance[]
   attempts     PracticeAttempt[]
- presetId  String?
-  preset    PracticeRunPreset? @relation(fields: [presetId], references: [id])
+  presetId     String?
+  preset       PracticeRunPreset?         @relation(fields: [presetId], references: [id])
 
   @@index([presetId])
   @@index([assignmentId])
@@ -343,12 +346,13 @@ model User {
   stripeCustomerId String?   @unique
   trialUsedAt      DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  accounts      Account[]
-  sessions      Session[]
-  subscriptions Subscription[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  subjectEnrollments  SubjectEnrollment[]
+  subjectAccessGrants SubjectAccessGrant[]
+  accounts            Account[]
+  sessions            Session[]
+  subscriptions       Subscription[]
 }
 
 model Account {
@@ -443,9 +447,11 @@ model PracticeSubject {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules  PracticeModule[]
-  sections PracticeSection[]
-  topics   PracticeTopic[]
+  modules      PracticeModule[]
+  sections     PracticeSection[]
+  topics       PracticeTopic[]
+  enrollments  SubjectEnrollment[]
+  accessGrants SubjectAccessGrant[] // ✅ add
 
   @@index([order])
 }
@@ -491,17 +497,126 @@ model StripeEvent {
   receivedAt DateTime @default(now())
 }
 
-
 model CourseCertificate {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   actorKey    String
   subjectSlug String
   locale      String
-  issuedAt    DateTime @default(now())
+  issuedAt    DateTime  @default(now())
   completedAt DateTime?
   meta        Json?
 
   @@unique([actorKey, subjectSlug, locale])
   @@index([actorKey])
   @@index([subjectSlug, locale])
+}
+
+enum ToolDocFormat {
+  markdown
+  plain
+}
+
+model ToolDoc {
+  id String @id @default(cuid())
+
+  actorKey    String // "user:<id>" or "guest:<id>"
+  subjectSlug String
+  moduleId    String
+  locale      String
+
+  toolId   String // "notes" (future: "scratchpad", "cheatsheet", etc.)
+  scopeKey String // "general" | "exercise:<boundId>" | ...
+
+  format ToolDocFormat @default(markdown)
+  body   String        @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([actorKey, subjectSlug, moduleId, locale, toolId, scopeKey], name: "actor_tool_scope")
+  @@index([actorKey])
+  @@index([subjectSlug, moduleId, locale])
+  @@index([toolId])
+}
+
+enum EnrollmentStatus {
+  enrolled
+  completed
+  archived
+}
+
+enum EnrollmentSource {
+  self
+  assignment
+  admin
+  import
+}
+
+enum AccessGrantType {
+  subscription
+  purchase
+  assignment
+  admin
+  trial
+}
+
+model SubjectAccessGrant {
+  id String @id @default(cuid())
+
+  actorKey String // "user:<id>" | "guest:<id>"
+
+  // Optional link to User (handy for admin queries + joins)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  subjectId String
+  subject   PracticeSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  type AccessGrantType
+
+  startsAt  DateTime? // null = immediate
+  endsAt    DateTime? // null = never expires
+  revokedAt DateTime?
+  meta      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([actorKey, subjectId, revokedAt])
+  @@index([actorKey, subjectId, endsAt])
+  @@index([actorKey])
+  @@index([actorKey, subjectId]) // ✅ add this (common lookup)
+  @@index([subjectId])
+  @@index([type])
+  @@index([endsAt])
+  @@index([revokedAt])
+}
+
+model SubjectEnrollment {
+  id String @id @default(cuid())
+
+  actorKey String // "user:<id>" | "guest:<id>"
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  subjectId String
+  subject   PracticeSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  status      EnrollmentStatus @default(enrolled)
+  source      EnrollmentSource @default(self)
+  startedAt   DateTime         @default(now())
+  lastSeenAt  DateTime?
+  completedAt DateTime?
+  archivedAt  DateTime?
+  meta        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([actorKey, subjectId])
+  @@index([actorKey, lastSeenAt])
+  @@index([userId])
+  @@index([subjectId])
+  @@index([actorKey, status])
 }

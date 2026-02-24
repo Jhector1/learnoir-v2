@@ -2,11 +2,30 @@ import type { GradeResult } from ".";
 import type { LoadedInstance } from "../load";
 import type { SubmitAnswer } from "../schemas";
 
-function norm(s: string) {
+function normLoose(s: string) {
   return String(s ?? "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
+      .trim()
+      .replace(/\s+/g, " ")
+      // remove space before punctuation like . , ? ! : ;
+      .replace(/\s+([.,!?;:])/g, "$1")
+      // normalize apostrophes / quotes
+      .replace(/[’‘]/g, "'")
+      .replace(/\s+'/g, "'")
+      .toLowerCase();
+}
+
+function uniqRaw(list: string[]) {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const x of list) {
+    const s = String(x ?? "").trim();
+    if (!s) continue;
+    const key = s.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
 }
 
 export function gradeTextInput(args: {
@@ -15,42 +34,44 @@ export function gradeTextInput(args: {
   answer: SubmitAnswer | null;
   isReveal: boolean;
 }): GradeResult {
+  const match: "exact" | "includes" =
+      args.expectedCanon?.match === "includes" ? "includes" : "exact";
+
   const expectedRaw =
-    typeof args.expectedCanon.value === "string"
-      ? args.expectedCanon.value
-      : typeof args.expectedCanon.text === "string"
-        ? args.expectedCanon.text
-        : null;
+      typeof args.expectedCanon?.value === "string"
+          ? args.expectedCanon.value
+          : typeof args.expectedCanon?.text === "string"
+              ? args.expectedCanon.text
+              : null;
 
-  const acceptedRaw: string[] = Array.isArray(args.expectedCanon.accepted)
-    ? args.expectedCanon.accepted.filter((x: any) => typeof x === "string")
-    : [];
+  const acceptedRaw: string[] = Array.isArray(args.expectedCanon?.accepted)
+      ? args.expectedCanon.accepted.filter((x: any) => typeof x === "string")
+      : [];
 
-  // ✅ NEW: support canonical `answers: string[]`
-  const answersRaw: string[] = Array.isArray(args.expectedCanon.answers)
-    ? args.expectedCanon.answers.filter((x: any) => typeof x === "string")
-    : [];
+  const answersRaw: string[] = Array.isArray(args.expectedCanon?.answers)
+      ? args.expectedCanon.answers.filter((x: any) => typeof x === "string")
+      : [];
 
-  // merge all candidates
-  const expectedList = [
+  // ✅ raw list for reveal (human-friendly)
+  const rawCandidates = uniqRaw([
     ...(expectedRaw ? [expectedRaw] : []),
     ...acceptedRaw,
     ...answersRaw,
-  ]
-    .map(norm)
-    .filter(Boolean);
+  ]);
+
+  // ✅ normalized list for matching (machine-friendly)
+  const normCandidates = rawCandidates.map(normLoose).filter(Boolean);
 
   if (args.isReveal) {
-    const shown = expectedRaw ?? answersRaw[0] ?? acceptedRaw[0] ?? "";
+    const shown = expectedRaw ?? rawCandidates[0] ?? "";
     return {
-
-        
       ok: false,
-      // (your RevealAnswerCard can evolve later; this is fine)
       revealAnswer: {
-        kind: "text_input",
+        // ✅ IMPORTANT: match the instance kind (works for word_bank_arrange/listen_build/fill_blank_choice too)
+        kind: String(args.instance.kind),
         value: shown,
-        answers: [shown, ...expectedList.filter((x) => x !== norm(shown))],
+        answers: rawCandidates.length ? rawCandidates : shown ? [shown] : [],
+        match,
       },
       explanation: "Solution shown.",
     };
@@ -61,15 +82,17 @@ export function gradeTextInput(args: {
     return { ok: false, revealAnswer: null, explanation: "Missing text answer." };
   }
 
-  // ⚠️ If you want to STOP silently accepting when expected is missing:
-  // return { ok: false, revealAnswer: null, explanation: "Server bug: missing expected." };
-
-  if (!expectedList.length) {
+  // If expected is missing, record (keeps your current behavior)
+  if (!normCandidates.length) {
     return { ok: true, revealAnswer: null, explanation: "Answer recorded." };
   }
 
-  const r = norm(received);
-  const ok = expectedList.includes(r);
+  const r = normLoose(received);
+
+  const ok =
+      match === "includes"
+          ? normCandidates.some((exp) => r.includes(exp))
+          : normCandidates.includes(r);
 
   return {
     ok,

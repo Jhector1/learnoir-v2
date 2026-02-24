@@ -1,16 +1,14 @@
-// src/lib/practice/generator/engines/python/python_part1_mod2/topics/loops.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
+import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt } from "../../_shared";
 
 export const M2_LOOPS_POOL = [
-    { key: "m2_loop_guess_until_secret_code", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m2_loop_keep_asking_valid_code", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m2_loop_echo_until_quit_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m2_loop_guess_until_secret_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_loop_keep_asking_valid_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m2_loop_echo_until_quit_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
 export type M2LoopsKey = (typeof M2_LOOPS_POOL)[number]["key"];
-export const M2_LOOPS_VALID_KEYS = M2_LOOPS_POOL.map((p) => p.key) as M2LoopsKey[];
 
 function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     let x = safeInt(rng, lo, hi);
@@ -39,16 +37,6 @@ Rules:
 - while guess != 7: keep reading
 - when correct, print exactly:
 You got it!
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-3
-7
-
-$ output
-You got it!
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`# secret is 7
@@ -79,7 +67,6 @@ guess = int(input())
         const bad1 = safeInt(rng, -10, 0);
         const bad2 = safeInt(rng, 11, 25);
         const good = safeInt(rng, 1, 10);
-
         const good2 = pickDifferentInt(rng, 1, 10, good);
 
         const exercise: CodeInputExercise = {
@@ -97,17 +84,6 @@ When you finally get a valid value, print:
 OK: <value>
 
 (No other output.)
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-0
-12
-7
-
-$ output
-OK: 7
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`n = int(input())
@@ -137,7 +113,6 @@ OK: 7
         const w1 = "hello";
         const w2 = "menu";
         const q = "quit";
-
         const w3 = rng.pick(["status", "help", "snack"] as const);
 
         const exercise: CodeInputExercise = {
@@ -157,19 +132,6 @@ Rules:
 You typed: <command>
 - When you read quit, print:
 Bye!
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-hello
-menu
-quit
-
-$ output
-You typed: hello
-You typed: menu
-Bye!
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`cmd = input().strip()
@@ -182,16 +144,8 @@ Bye!
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                {
-                    stdin: `${w1}\n${w2}\n${q}\n`,
-                    stdout: `You typed: ${w1}\nYou typed: ${w2}\nBye!\n`,
-                    match: "exact",
-                },
-                {
-                    stdin: `${w3}\n${q}\n`,
-                    stdout: `You typed: ${w3}\nBye!\n`,
-                    match: "exact",
-                },
+                { stdin: `${w1}\n${w2}\n${q}\n`, stdout: `You typed: ${w1}\nYou typed: ${w2}\nBye!\n`, match: "exact" },
+                { stdin: `${w3}\n${q}\n`, stdout: `You typed: ${w3}\nBye!\n`, match: "exact" },
             ],
             solutionCode:
                 `cmd = input().strip()\n` +
@@ -204,3 +158,9 @@ Bye!
         return { archetype: "m2_loop_echo_until_quit_code", exercise, expected };
     },
 };
+
+export const M2_LOOPS_TOPIC: TopicBundle = defineTopic(
+    "loops_basics",
+    M2_LOOPS_POOL as any,
+    M2_LOOPS_HANDLERS as any,
+);

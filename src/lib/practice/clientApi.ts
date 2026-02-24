@@ -1,4 +1,28 @@
 // src/lib/practice/clientApi.ts
+import {PracticePurpose} from "@prisma/client";
+import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export type PracticeGetResponse = any;
 
 async function readJsonSafe(res: Response) {
@@ -13,6 +37,7 @@ async function readJsonSafe(res: Response) {
 
 type SeedPolicy = "actor" | "global";
 
+
 function buildPracticeUrl(args: {
   subject?: string;
   module?: string;
@@ -23,12 +48,14 @@ function buildPracticeUrl(args: {
   sessionId?: string;
   preferKind?: string;
 
-  // determinism knobs
+  // ✅ NEW
+  preferPurpose?: PurposeMode;
+  purposePolicy?: PurposePolicy;
+
   salt?: string;
   exerciseKey?: string;
   seedPolicy?: SeedPolicy;
 
-  // optional extras you may use elsewhere
   statusOnly?: boolean;
   includeMissed?: boolean;
   includeHistory?: boolean;
@@ -55,12 +82,14 @@ function buildPracticeUrl(args: {
   set("sessionId", args.sessionId);
   set("preferKind", args.preferKind);
 
-  // ✅ REQUIRED FOR PROJECT DETERMINISM (your server uses these)
+  // ✅ NEW
+  set("preferPurpose", args.preferPurpose);
+  set("purposePolicy", args.purposePolicy);
+
   set("salt", args.salt);
   set("exerciseKey", args.exerciseKey);
   set("seedPolicy", args.seedPolicy);
 
-  // optional extras
   if (args.statusOnly !== undefined) sp.set("statusOnly", args.statusOnly ? "true" : "false");
   if (args.includeMissed !== undefined) sp.set("includeMissed", args.includeMissed ? "true" : "false");
   if (args.includeHistory !== undefined) sp.set("includeHistory", args.includeHistory ? "true" : "false");
@@ -80,12 +109,14 @@ export async function fetchPracticeExercise(args: {
   signal?: AbortSignal;
   preferKind?: string;
 
-  // ✅ determinism
+  // ✅ NEW
+  preferPurpose?: PurposeMode;
+  purposePolicy?: PurposePolicy;
+
   salt?: string;
   exerciseKey?: string;
   seedPolicy?: SeedPolicy;
 
-  // optional extras
   statusOnly?: boolean;
   includeMissed?: boolean;
   includeHistory?: boolean;

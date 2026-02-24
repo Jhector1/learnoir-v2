@@ -1,16 +1,16 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/operators_expressions.ts
 import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt } from "../../python_shared/_shared";
+import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {  makeCodeExpected, safeInt } from "../../_shared";
 
 export const M1_OPERATORS_POOL = [
+    // ✅ PRACTICE QUIZ MODE: these must be quiz to ever appear
     { key: "m1_ops_precedence_sc", w: 1, kind: "code_input", purpose: "project" },
-    { key: "m1_ops_mod_evenodd_sc", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m1_ops_checkout_code", w: 1, kind: "code_input" ,purpose: "project"},
+    { key: "m1_ops_mod_evenodd_sc", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m1_ops_checkout_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
 export type M1OperatorsKey = (typeof M1_OPERATORS_POOL)[number]["key"];
-export const M1_OPERATORS_VALID_KEYS = M1_OPERATORS_POOL.map((p) => p.key) as M1OperatorsKey[];
 
 function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     let x = safeInt(rng, lo, hi);
@@ -35,7 +35,7 @@ export const M1_OPERATORS_HANDLERS: Record<M1OperatorsKey, Handler> = {
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Operator precedence",
+            title: "Operator precedence",
             prompt: String.raw`
 Read **THREE integers** (a, b, c).
 
@@ -45,7 +45,6 @@ a + b * c
 Print **ONLY the number** (one line).
 
 ~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
 $ input
 1
 2
@@ -59,8 +58,7 @@ $ output
             starterCode: String.raw`a = int(input())
 b = int(input())
 c = int(input())
-# TODO: compute a + b * c
-# TODO: print the result
+# TODO: print a + b * c
 `,
             hint: "Multiplication happens before addition: a + (b * c).",
         };
@@ -89,7 +87,7 @@ c = int(input())
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Modulo even/odd detector",
+            title: "Modulo even/odd",
             prompt: String.raw`
 Read **ONE integer** n.
 
@@ -98,19 +96,9 @@ even
 
 Otherwise print:
 odd
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-10
-
-$ output
-even
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`n = int(input())
-# TODO: use % to decide
 # TODO: print "even" or "odd"
 `,
             hint: "If n % 2 == 0, it's even.",
@@ -144,10 +132,10 @@ even
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Checkout line (subtotal + tax + total)",
+            title: "Checkout (subtotal + tax)",
             prompt: String.raw`
 Read **TWO integers**:
-1) subtotal (whole dollars)
+1) subtotal
 2) tax percent
 
 Compute:
@@ -157,24 +145,13 @@ Compute:
 Print **EXACTLY two lines**:
 Tax = <tax>
 Total = <total>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-100
-10
-
-$ output
-Tax = 10
-Total = 110
-~~~
 `.trim(),
             language: "python",
             starterCode: String.raw`subtotal = int(input())
 taxPct = int(input())
-# TODO: compute tax and total
+# TODO
 `,
-            hint: "Use integer math: tax = subtotal * taxPct // 100",
+            hint: "tax = subtotal * taxPct // 100",
         };
 
         const expected = makeCodeExpected({
@@ -195,3 +172,9 @@ taxPct = int(input())
         return { archetype: "m1_ops_checkout_code", exercise, expected };
     },
 };
+
+export const M1_OPERATORS_TOPIC: TopicBundle = defineTopic(
+    "operators_expressions",
+    M1_OPERATORS_POOL as any,
+    M1_OPERATORS_HANDLERS as any,
+);

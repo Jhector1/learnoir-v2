@@ -20,7 +20,8 @@ import TopicShell from "./components/TopicShell";
 // import TopicIntro from "./components/TopicIntro";
 import TopicOutro from "./components/TopicOutro";
 import ModuleSidebar from "./components/ModuleSidebar";
-import ToolsPanel from "./components/ToolsPanel";
+// import ToolsPanel from "./components/ToolsPanel";
+import ToolsPanel  from "@/components/tools/ToolsPanel";
 
 import CardRenderer from "@/components/review/module/CardRenderer";
 
@@ -30,6 +31,7 @@ import {useDebouncedSketchState} from "./hooks/useDebouncedSketchState";
 import {useToolCodeRunnerState} from "./hooks/useToolCodeRunnerState";
 import ConfirmResetModal from "@/components/practice/ConfirmResetModal";
 import {ReviewToolsProvider} from "@/components/review/module/context/ReviewToolsContext";
+import {toolsPolicyForSubject} from "@/lib/tools/policy";
 
 export default function ReviewModuleView({
                                              mod,
@@ -51,7 +53,11 @@ export default function ReviewModuleView({
 
     const topics = Array.isArray(mod?.topics) ? mod.topics : [];
     const firstTopicId = topics[0]?.id ?? "";
-
+    const { codeEnabled } = useMemo(() => {
+        // optional: if your ReviewModule has meta, it can override per subject later
+        const meta = (mod as any)?.meta;
+        return toolsPolicyForSubject(subjectSlug, meta);
+    }, [subjectSlug, mod]);
     const {
         hydrated: progressHydrated,
         progress,
@@ -947,11 +953,14 @@ export default function ReviewModuleView({
                                 onCollapse={() => panels.setRightCollapsed(true)}
                                 onUnbind={tool.unbindCodeInput}
                                 boundId={tool.boundId}
+
                                 rightBodyRef={tool.rightBodyRef}
                                 codeRunnerRegionH={tool.codeRunnerRegionH}
+
                                 toolLang={tool.toolLang as Lang}
                                 toolCode={tool.toolCode}
                                 toolStdin={tool.toolStdin}
+
                                 onChangeLang={(l: Lang) => {
                                     tool.setToolLang(l);
                                     tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
@@ -964,6 +973,12 @@ export default function ReviewModuleView({
                                     tool.setToolStdin(s);
                                     tool.saveDebounced(tool.toolLang, tool.toolCode, s);
                                 }}
+
+                                /* ✅ NEW: needed for Prisma-backed notes + tool defaults */
+                                subjectSlug={subjectSlug}
+                                moduleId={moduleId}
+                                locale={locale}
+                                codeEnabled={codeEnabled}
                             />
 
 

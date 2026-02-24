@@ -1,4 +1,3 @@
-// src/components/practice/kinds/VoiceInputExerciseUI.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
@@ -20,7 +19,7 @@ function getSpeechGrammarListCtor(): any | null {
 
 function normalizeSpeechLang(locale?: string) {
     const raw = String(locale ?? "").trim();
-    if (!raw) return "ht"; // Haitian Creole
+    if (!raw) return "ht";
     const lower = raw.toLowerCase();
 
     if (lower === "ht" || lower.startsWith("ht-") || lower === "hat") return "ht";
@@ -51,10 +50,7 @@ function buildJsgfFromPhrases(phrases: string[]) {
 function phraseVariants(target: string) {
     const t = normalizePhrase(target);
     if (!t) return [];
-    const stripped = t
-        .replace(/[^\p{L}\p{N}\s']/gu, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    const stripped = t.replace(/[^\p{L}\p{N}\s']/gu, " ").replace(/\s+/g, " ").trim();
     return Array.from(new Set([t, stripped].filter(Boolean)));
 }
 
@@ -82,7 +78,6 @@ function clamp01(x: number) {
 
 // Basic autocorrelation pitch estimation (good enough for voiced speech)
 function estimatePitchHz(buf: Float32Array, sampleRate: number): number | null {
-    // remove DC
     let mean = 0;
     for (let i = 0; i < buf.length; i++) mean += buf[i];
     mean /= buf.length;
@@ -90,7 +85,6 @@ function estimatePitchHz(buf: Float32Array, sampleRate: number): number | null {
     const x = new Float32Array(buf.length);
     for (let i = 0; i < buf.length; i++) x[i] = buf[i] - mean;
 
-    // RMS gate (avoid false pitch on silence)
     let rms = 0;
     for (let i = 0; i < x.length; i++) rms += x[i] * x[i];
     rms = Math.sqrt(rms / x.length);
@@ -123,10 +117,7 @@ function estimatePitchHz(buf: Float32Array, sampleRate: number): number | null {
 
 function canUseMediaRecorder(): boolean {
     if (typeof window === "undefined") return false;
-    return (
-        typeof (window as any).MediaRecorder !== "undefined" &&
-        Boolean(navigator?.mediaDevices?.getUserMedia)
-    );
+    return typeof (window as any).MediaRecorder !== "undefined" && Boolean(navigator?.mediaDevices?.getUserMedia);
 }
 
 function pickMimeType() {
@@ -172,9 +163,12 @@ export default function VoiceInputExerciseUI({
     const Rec = useMemo(() => getSpeechRecognition(), []);
     const recRef = useRef<any | null>(null);
 
-    // TTS (read-back) — MUST be inside component
+    const lang = useMemo(() => normalizeSpeechLang(exercise.locale), [exercise.locale]);
+    const isHaitian = lang === "ht";
+
+    // TTS read-back
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [autoReadBack, setAutoReadBack] = useState(true);
+    const [autoReadBack, setAutoReadBack] = useState(false);
     const [ttsStatus, setTtsStatus] = useState<string | null>(null);
 
     const speakBack = useCallback(async (text: string) => {
@@ -182,7 +176,7 @@ export default function VoiceInputExerciseUI({
         if (!clean) return;
 
         try {
-            setTtsStatus("Reading back…");
+            setTtsStatus("Playing…");
 
             const res = await fetch("/api/speech/speak", {
                 method: "POST",
@@ -192,8 +186,7 @@ export default function VoiceInputExerciseUI({
                     voice: "marin",
                     format: "mp3",
                     speed: 1.0,
-                    instructions:
-                        "Speak in Haitian Creole (Kreyòl ayisyen). Clear, friendly, teacher-like. Slightly slow.",
+                    instructions: "Speak in Haitian Creole. Clear, friendly, teacher-like. Slightly slow.",
                 }),
             });
 
@@ -210,25 +203,20 @@ export default function VoiceInputExerciseUI({
             const a = audioRef.current ?? new Audio();
             audioRef.current = a;
 
-            // stop previous
             try {
                 a.pause();
                 a.currentTime = 0;
             } catch {}
 
-            // cleanup old URL
             const prev = (a as any).__blobUrl as string | undefined;
             if (prev) URL.revokeObjectURL(prev);
             (a as any).__blobUrl = url;
 
             a.src = url;
-
-            // Autoplay can be blocked if not from a user gesture; user still has “Play back” button.
             await a.play();
-
             setTtsStatus(null);
         } catch (e: any) {
-            setTtsStatus(`Read-back failed: ${String(e?.message ?? e)}`);
+            setTtsStatus(`Play failed: ${String(e?.message ?? e)}`);
         }
     }, []);
 
@@ -237,17 +225,24 @@ export default function VoiceInputExerciseUI({
     const [isUploading, setIsUploading] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
 
-    // Visualizer (no React rerenders per frame)
+    // Force Haitian to server-only (best long-term accuracy)
+    useEffect(() => {
+        if (isHaitian) setMode("server");
+    }, [isHaitian]);
+
+    // Visualizer
+    const [showViz, setShowViz] = useState(false);
+
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const rafRef = useRef<number | null>(null);
 
     const audioCtxRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
+
     const mediaStreamRef = useRef<MediaStream | null>(null);
 
     const ampTextRef = useRef<HTMLSpanElement | null>(null);
     const pitchTextRef = useRef<HTMLSpanElement | null>(null);
-
     const ampSmoothRef = useRef(0);
 
     // Server STT recording
@@ -266,7 +261,21 @@ export default function VoiceInputExerciseUI({
         }
     }, []);
 
-    const stopVisualizer = useCallback(() => {
+    // ✅ always acquire mic for server mode (independent of showViz)
+    const ensureMicStream = useCallback(async () => {
+        if (mediaStreamRef.current) return mediaStreamRef.current;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any,
+            video: false,
+        });
+
+        mediaStreamRef.current = stream;
+        return stream;
+    }, []);
+
+    // ✅ stop only viz rendering + audio nodes (don’t stop mic tracks)
+    const stopVizOnly = useCallback(() => {
         if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
@@ -282,13 +291,7 @@ export default function VoiceInputExerciseUI({
         } catch {}
         audioCtxRef.current = null;
 
-        try {
-            mediaStreamRef.current?.getTracks?.().forEach((t) => t.stop());
-        } catch {}
-        mediaStreamRef.current = null;
-
         ampSmoothRef.current = 0;
-
         if (ampTextRef.current) ampTextRef.current.textContent = "0%";
         if (pitchTextRef.current) pitchTextRef.current.textContent = "—";
 
@@ -299,18 +302,19 @@ export default function VoiceInputExerciseUI({
         }
     }, []);
 
-    const startVisualizer = useCallback(async () => {
-        if (analyserRef.current || audioCtxRef.current || mediaStreamRef.current) return;
+    // ✅ stop mic tracks (only when session truly ends)
+    const stopMicStream = useCallback(() => {
+        try {
+            mediaStreamRef.current?.getTracks?.().forEach((t) => t.stop());
+        } catch {}
+        mediaStreamRef.current = null;
+    }, []);
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any,
-            video: false,
-        });
-        mediaStreamRef.current = stream;
+    const startVisualizer = useCallback(async (stream: MediaStream) => {
+        if (!showViz) return;
+        if (analyserRef.current || audioCtxRef.current) return;
 
-        const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as
-            | typeof AudioContext
-            | undefined;
+        const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
         if (!AudioCtx) return;
 
         const ctx = new AudioCtx();
@@ -372,7 +376,7 @@ export default function VoiceInputExerciseUI({
             const pitch = estimatePitchHz(timeF32, audioCtx.sampleRate);
 
             g.clearRect(0, 0, w, h);
-            g.globalAlpha = 0.9;
+            g.globalAlpha = 0.8;
             g.beginPath();
             for (let i = 0; i < timeU8.length; i++) {
                 const x = (i / (timeU8.length - 1)) * w;
@@ -380,63 +384,54 @@ export default function VoiceInputExerciseUI({
                 if (i === 0) g.moveTo(x, y);
                 else g.lineTo(x, y);
             }
-            g.strokeStyle = "rgba(255,255,255,0.85)";
+            g.strokeStyle = "rgba(16,185,129,0.65)";
             g.lineWidth = Math.max(1.25 * dpr, 2);
             g.stroke();
             g.globalAlpha = 1;
 
-            const pad = Math.floor(10 * dpr);
-            const barH = Math.floor(h * 0.12);
-            const barW = Math.floor(w * 0.22);
-            const x0 = pad;
-            const y0 = h - pad - barH;
-
-            g.globalAlpha = 0.35;
-            g.fillStyle = "rgba(255,255,255,0.25)";
-            g.fillRect(x0, y0, barW, barH);
-            g.globalAlpha = 0.9;
-            g.fillStyle = "rgba(255,255,255,0.85)";
-            g.fillRect(x0, y0, Math.floor(barW * amp), barH);
-            g.globalAlpha = 1;
-
-            if (t - lastTextUpdate > 100) {
+            if (t - lastTextUpdate > 120) {
                 lastTextUpdate = t;
-
                 const ampPct = Math.round(amp * 100);
                 if (ampTextRef.current) ampTextRef.current.textContent = `${ampPct}%`;
-
-                if (pitchTextRef.current) {
-                    pitchTextRef.current.textContent = pitch ? `${Math.round(pitch)} Hz` : "—";
-                }
+                if (pitchTextRef.current) pitchTextRef.current.textContent = pitch ? `${Math.round(pitch)} Hz` : "—";
             }
 
             rafRef.current = requestAnimationFrame(draw);
         };
 
         rafRef.current = requestAnimationFrame(draw);
-    }, []);
+    }, [showViz]);
+
+    // if user toggles viz on mid-session, attach viz to existing stream
+    useEffect(() => {
+        if (!showViz) {
+            stopVizOnly();
+            return;
+        }
+        const stream = mediaStreamRef.current;
+        if (stream) void startVisualizer(stream);
+    }, [showViz, startVisualizer, stopVizOnly]);
 
     useEffect(() => {
         return () => {
             try {
                 recRef.current?.stop?.();
             } catch {}
-
             clearStopTimeout();
             try {
                 mediaRecorderRef.current?.stop?.();
             } catch {}
 
-            // cleanup TTS blob URL
             try {
                 const a = audioRef.current as any;
                 const prev = a?.__blobUrl as string | undefined;
                 if (prev) URL.revokeObjectURL(prev);
             } catch {}
 
-            stopVisualizer();
+            stopVizOnly();
+            stopMicStream();
         };
-    }, [clearStopTimeout, stopVisualizer]);
+    }, [clearStopTimeout, stopMicStream, stopVizOnly]);
 
     /* -------------------------- server STT mode -------------------------- */
 
@@ -446,18 +441,18 @@ export default function VoiceInputExerciseUI({
             const file = await blobToFile(blob, "speech.webm");
             fd.append("file", file);
 
-            // IMPORTANT:
-            // Your server route will OMIT language for Haitian Creole, because OpenAI rejects ht/haitian codes in language=.
-            // So we can skip language entirely here, and let the prompt steer HT.
-            // If you want to support non-HT locales later, you can append conditionally.
-            const lang = normalizeSpeechLang(exercise.locale);
-            if (lang && lang !== "ht") fd.append("language", lang);
-
+            // ✅ always send language/locale; server should do “try ht then omit”
+            fd.append("language", normalizeSpeechLang(exercise.locale));
             fd.append("target", exercise.targetText);
-            fd.append(
-                "prompt",
-                "Lang: Haitian Creole / Kreyòl ayisyen. Pa tradui. Kenbe òtograf nòmal."
-            );
+
+            // include a bit more context to reduce English drift
+            const promptParts = [
+                "Lang: Haitian Creole / Kreyòl ayisyen. Pa tradui. Kenbe òtograf nòmal.",
+                exercise.hint ? `Sijesyon: ${String(exercise.hint).slice(0, 200)}` : null,
+                "Transkri egzakteman sa w tande a. Pa tradui.",
+            ].filter(Boolean);
+
+            fd.append("prompt", promptParts.join("\n"));
 
             const res = await fetch("/api/speech/transcribe", { method: "POST", body: fd });
             const json = await res.json().catch(() => ({}));
@@ -473,7 +468,7 @@ export default function VoiceInputExerciseUI({
 
             return normalizePhrase(String((json as any)?.text ?? ""));
         },
-        [exercise.locale, exercise.targetText]
+        [exercise.locale, exercise.targetText, exercise.hint]
     );
 
     const startServerMode = useCallback(async () => {
@@ -482,9 +477,9 @@ export default function VoiceInputExerciseUI({
         setStatus(null);
         setIsRecording(true);
 
-        await startVisualizer();
-        const stream = mediaStreamRef.current;
-        if (!stream) throw new Error("No mic stream");
+        // ✅ always acquire mic stream for server mode
+        const stream = await ensureMicStream();
+        await startVisualizer(stream);
 
         const mimeType = pickMimeType();
         const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -498,20 +493,19 @@ export default function VoiceInputExerciseUI({
         rec.onerror = () => {
             setStatus("Recording error.");
             setIsRecording(false);
-            stopVisualizer();
+            stopVizOnly();
+            stopMicStream();
         };
 
         rec.onstop = async () => {
             try {
                 setIsUploading(true);
-                setStatus("Transcribing (high accuracy)…");
+                setStatus("Transcribing…");
 
                 const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
                 const text = await transcribeOnServer(blob);
 
                 if (text) onChangeTranscript(text);
-
-                // Auto read-back (may be blocked if stop wasn't a user gesture; user still has Play back)
                 if (autoReadBack && text) void speakBack(text);
 
                 setStatus(null);
@@ -520,12 +514,13 @@ export default function VoiceInputExerciseUI({
             } finally {
                 setIsUploading(false);
                 setIsRecording(false);
-                stopVisualizer();
+                stopVizOnly();
+                stopMicStream();
             }
         };
 
         rec.start(250);
-        setStatus("Recording (high accuracy)…");
+        setStatus("Recording…");
 
         const max = Number(exercise.maxSeconds ?? 0);
         if (max > 0) {
@@ -541,11 +536,13 @@ export default function VoiceInputExerciseUI({
         canAny,
         canServer,
         clearStopTimeout,
+        ensureMicStream,
         exercise.maxSeconds,
         onChangeTranscript,
         speakBack,
         startVisualizer,
-        stopVisualizer,
+        stopMicStream,
+        stopVizOnly,
         transcribeOnServer,
     ]);
 
@@ -565,10 +562,10 @@ export default function VoiceInputExerciseUI({
         setStatus(null);
 
         try {
-            try {
-                await startVisualizer();
-            } catch (e: any) {
-                setStatus(`Mic visualizer unavailable: ${String(e?.message ?? e)}`);
+            // only acquire stream for viz (SpeechRecognition itself handles mic)
+            if (showViz) {
+                const stream = await ensureMicStream();
+                await startVisualizer(stream);
             }
 
             const R = Rec;
@@ -577,9 +574,9 @@ export default function VoiceInputExerciseUI({
             const r = new R();
             recRef.current = r;
 
-            const lang = normalizeSpeechLang(exercise.locale ?? "ht");
+            const lang2 = normalizeSpeechLang(exercise.locale ?? "ht");
 
-            r.lang = lang;
+            r.lang = lang2;
             r.interimResults = true;
             r.continuous = false;
             r.maxAlternatives = 5;
@@ -602,23 +599,23 @@ export default function VoiceInputExerciseUI({
 
             r.onstart = () => {
                 setIsRecording(true);
-                setStatus(lang === "ht" ? "Koute…" : "Listening…");
+                setStatus(lang2 === "ht" ? "Koute…" : "Listening…");
             };
 
             r.onerror = (e: any) => {
                 setStatus(`Mic error: ${String(e?.error ?? "unknown")}`);
                 setIsRecording(false);
-                stopVisualizer();
+                stopVizOnly();
+                stopMicStream();
             };
 
-            r.onnomatch = () => {
-                setStatus("I couldn’t catch that. Try again (slower / closer).");
-            };
+            r.onnomatch = () => setStatus("Couldn’t catch that. Try again.");
 
             r.onend = () => {
                 setIsRecording(false);
                 setStatus(null);
-                stopVisualizer();
+                stopVizOnly();
+                stopMicStream();
             };
 
             r.onresult = (event: any) => {
@@ -653,20 +650,24 @@ export default function VoiceInputExerciseUI({
         } catch (e: any) {
             setStatus(`Speech not available: ${String(e?.message ?? e)}`);
             setIsRecording(false);
-            stopVisualizer();
+            stopVizOnly();
+            stopMicStream();
         }
     }, [
         Rec,
         canAny,
         canBrowser,
         clearStopTimeout,
+        ensureMicStream,
         exercise.hint,
         exercise.locale,
         exercise.maxSeconds,
         exercise.targetText,
         onChangeTranscript,
+        showViz,
         startVisualizer,
-        stopVisualizer,
+        stopMicStream,
+        stopVizOnly,
     ]);
 
     const stopBrowserMode = useCallback(() => {
@@ -676,8 +677,9 @@ export default function VoiceInputExerciseUI({
         } catch {}
         setIsRecording(false);
         setStatus(null);
-        stopVisualizer();
-    }, [clearStopTimeout, stopVisualizer]);
+        stopVizOnly();
+        stopMicStream();
+    }, [clearStopTimeout, stopMicStream, stopVizOnly]);
 
     /* -------------------------- unified controls -------------------------- */
 
@@ -685,6 +687,16 @@ export default function VoiceInputExerciseUI({
         if (!canAny || disabled || isUploading || isRecording) return;
 
         setStatus(null);
+
+        // ✅ Haitian: server-only, no browser fallback (prevents English drift)
+        if (isHaitian) {
+            try {
+                await startServerMode();
+            } catch (e: any) {
+                setStatus(`High accuracy unavailable: ${String(e?.message ?? e)}.`);
+            }
+            return;
+        }
 
         if (mode === "server") {
             try {
@@ -717,229 +729,153 @@ export default function VoiceInputExerciseUI({
         disabled,
         isUploading,
         isRecording,
+        isHaitian,
         mode,
-        startServerMode,
         startBrowserMode,
+        startServerMode,
     ]);
 
     const stop = useCallback(() => {
-        if (mode === "server") stopServerMode();
+        if (mode === "server" || isHaitian) stopServerMode();
         else stopBrowserMode();
-    }, [mode, stopServerMode, stopBrowserMode]);
+    }, [isHaitian, mode, stopBrowserMode, stopServerMode]);
 
     /* --------------------------------- ui --------------------------------- */
-
-    const shell = [
-        "rounded-2xl border p-4",
-        "border-neutral-200/70 bg-white/70",
-        "dark:border-white/10 dark:bg-white/[0.04]",
-    ].join(" ");
 
     const muted = "text-neutral-600 dark:text-white/60";
     const text = "text-neutral-900 dark:text-white/90";
 
-    const pillBase = "rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums";
-    const pillOk =
-        "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200";
+    const pillBase = "rounded-full border px-2.5 py-1 text-[11px] font-extrabold tabular-nums";
+    const pillOk = "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200";
     const pillBad = "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-200";
 
-    const btnBase =
-        "rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed";
-    const btnIdle =
-        "border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-900 " +
-        "dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] dark:text-white/90";
-    const btnDanger =
-        "border-rose-500/25 bg-rose-500/10 hover:bg-rose-500/15 text-rose-700 dark:text-rose-200";
+    const btnPrimary = "ui-btn ui-btn-primary";
+    const btnSecondary = "ui-btn ui-btn-secondary";
+    const btnGhost = "ui-btn ui-btn-ghost";
 
-    const modePill = (active: boolean) =>
-        [
-            "rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-            active
-                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-                : "border-neutral-200 bg-white text-neutral-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70",
-        ].join(" ");
-
-    const startLabel = !canAny
-        ? "No mic"
-        : isUploading
-            ? "Transcribing…"
-            : isRecording
-                ? mode === "server"
-                    ? "Recording…"
-                    : "Listening…"
-                : "Start";
+    const startLabel = !canAny ? "No mic" : isUploading ? "Transcribing…" : isRecording ? "Recording…" : "Start";
 
     return (
-        <div className={shell}>
-            {/* Header */}
+        <div className="ui-card p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <ExercisePrompt exercise={exercise} />
-
                 {checked ? (
-                    <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>
-                        {ok ? "Correct" : "Try again"}
+                    <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>{ok ? "Correct" : "Try again"}</div>
+                ) : null}
+            </div>
+
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className={`text-xs font-extrabold ${muted}`}>
+                    Speak clearly. You can edit the transcript anytime.
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        className={btnSecondary}
+                        disabled={disabled || isRecording || isUploading || isHaitian}
+                        onClick={() => setMode((m) => (m === "server" ? "browser" : "server"))}
+                        title={isHaitian ? "Haitian uses high accuracy only" : mode === "server" ? "High accuracy (server)" : "Fast (browser)"}
+                    >
+                        {isHaitian ? "High accuracy" : mode === "server" ? "High accuracy" : "Fast"}
+                    </button>
+
+                    <button
+                        type="button"
+                        className={btnSecondary}
+                        disabled={disabled || isRecording || isUploading}
+                        onClick={() => setShowViz((v) => !v)}
+                        aria-pressed={showViz}
+                    >
+                        {showViz ? "Hide mic" : "Show mic"}
+                    </button>
+
+                    <label className={`ml-1 inline-flex items-center gap-2 text-[11px] font-extrabold ${muted}`}>
+                        <input type="checkbox" checked={autoReadBack} onChange={(e) => setAutoReadBack(e.target.checked)} />
+                        Read-back
+                    </label>
+                </div>
+            </div>
+
+            {status ? <div className={`mt-2 text-xs font-extrabold ${muted}`}>{status}</div> : null}
+            {ttsStatus ? <div className={`mt-2 text-xs font-extrabold ${muted}`}>{ttsStatus}</div> : null}
+
+            {showViz ? (
+                <div className="mt-3 ui-soft p-3">
+                    <div className="flex items-center justify-between">
+                        <div className={`text-xs font-extrabold ${muted}`}>Mic</div>
+                        <div className={`text-[11px] font-extrabold ${muted}`}>
+                            Amp <span ref={ampTextRef}>0%</span> · Pitch <span ref={pitchTextRef}>—</span>
+                        </div>
+                    </div>
+                    <canvas ref={canvasRef} className="mt-2 h-[64px] w-full rounded-xl bg-black/5 dark:bg-white/[0.05]" />
+                </div>
+            ) : null}
+
+            <div className="mt-3 ui-soft p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className={`text-xs font-extrabold ${muted}`}>Transcript</div>
+
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" className={btnPrimary} disabled={!canAny || disabled || isRecording || isUploading} onClick={start}>
+                            {startLabel}
+                        </button>
+
+                        <button type="button" className={btnSecondary} disabled={!isRecording} onClick={stop}>
+                            Stop
+                        </button>
+
+                        <button type="button" className={btnGhost} disabled={disabled || isRecording || isUploading} onClick={() => onChangeTranscript("")}>
+                            Clear
+                        </button>
+
+                        <button
+                            type="button"
+                            className={btnSecondary}
+                            disabled={disabled || isRecording || isUploading || !transcript?.trim()}
+                            onClick={() => speakBack(transcript)}
+                        >
+                            Play back
+                        </button>
+                    </div>
+                </div>
+
+                <textarea
+                    value={transcript ?? ""}
+                    disabled={disabled}
+                    onChange={(e) => onChangeTranscript(e.target.value)}
+                    placeholder={isHaitian ? "Pale an kreyòl… oswa tape…" : "Speak or type…"}
+                    className={[
+                        "mt-2 w-full rounded-2xl border px-3 py-3 text-sm outline-none transition",
+                        "min-h-[110px] sm:min-h-[130px]",
+                        "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300",
+                        "dark:border-white/10 dark:bg-white/[0.04] dark:text-white/90 dark:placeholder:text-white/40 dark:focus:border-white/20",
+                        disabled ? "opacity-70" : "",
+                    ].join(" ")}
+                />
+
+                <div className={`mt-2 flex items-center justify-between text-[11px] font-extrabold ${muted}`}>
+                    <span>{exercise.maxSeconds ? `Auto-stop ${exercise.maxSeconds}s` : "Auto-stop off"}</span>
+                    <span className="tabular-nums">{transcript?.length ?? 0}</span>
+                </div>
+            </div>
+
+            <div className="mt-3 ui-soft p-3">
+                <div className={`text-xs font-extrabold ${muted}`}>Target</div>
+                <div className={`mt-1 text-sm font-extrabold ${text}`}>{exercise.targetText}</div>
+                {exercise.hint ? (
+                    <div className={`mt-1 text-xs font-extrabold ${muted}`}>
+                        Hint: <span className="text-neutral-700 dark:text-white/70">{exercise.hint}</span>
                     </div>
                 ) : null}
             </div>
 
-            {/* TTS controls */}
-            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <label className="flex items-center gap-2 text-[11px] font-semibold text-neutral-500 dark:text-white/50">
-                    <input
-                        type="checkbox"
-                        checked={autoReadBack}
-                        onChange={(e) => setAutoReadBack(e.target.checked)}
-                    />
-                    Read back after speaking (AI voice)
-                </label>
-
-                <div className="flex gap-2">
-                    <button
-                        type="button"
-                        disabled={disabled || isRecording || isUploading || !transcript?.trim()}
-                        onClick={() => speakBack(transcript)}
-                        className={[btnBase, btnIdle].join(" ")}
-                    >
-                        Play back
-                    </button>
-                </div>
-            </div>
-
-            {ttsStatus ? (
-                <div className="mt-2 text-xs font-semibold text-neutral-600 dark:text-white/60">
-                    {ttsStatus}
+            {checked && ok === false && reviewCorrectTranscript ? (
+                <div className="mt-3 ui-soft p-3">
+                    <div className={`text-xs font-extrabold ${muted}`}>Correct</div>
+                    <div className={`mt-1 text-sm font-extrabold ${text}`}>{reviewCorrectTranscript}</div>
                 </div>
             ) : null}
-
-            {/* Content */}
-            <div className="mt-4 grid gap-4 lg:grid-cols-2 lg:gap-3">
-                {/* Target */}
-                <div className="rounded-2xl border border-neutral-200/70 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                    <div className={`text-xs font-semibold ${muted}`}>Target</div>
-                    <div className={`mt-2 text-lg font-semibold ${text}`}>{exercise.targetText}</div>
-
-                    {exercise.hint ? (
-                        <div className={`mt-3 text-xs ${muted}`}>
-                            Hint:{" "}
-                            <span className="font-semibold text-neutral-700 dark:text-white/70">
-                {exercise.hint}
-              </span>
-                        </div>
-                    ) : null}
-
-                    {/* Mic strip */}
-                    <div className="mt-4 rounded-2xl border border-neutral-200/70 bg-neutral-900 p-3 dark:border-white/10 dark:bg-black/50">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="text-[11px] font-semibold text-white/70">Mic</div>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-white/70">
-                <span className="min-w-[88px] tabular-nums">
-                  Amp: <span ref={ampTextRef}>0%</span>
-                </span>
-                                <span className="min-w-[104px] tabular-nums">
-                  Pitch: <span ref={pitchTextRef}>—</span>
-                </span>
-                            </div>
-                        </div>
-
-                        <canvas
-                            ref={canvasRef}
-                            className="mt-2 h-[64px] w-full rounded-xl bg-white/5 sm:h-[80px]"
-                        />
-                    </div>
-                </div>
-
-                {/* Transcript */}
-                <div className="rounded-2xl border border-neutral-200/70 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className={`text-xs font-semibold ${muted}`}>Transcript</div>
-
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                            {/* Mode toggle */}
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    disabled={disabled || isRecording || isUploading}
-                                    onClick={() => setMode("server")}
-                                    className={modePill(mode === "server")}
-                                    title="Server transcription (best accuracy)"
-                                >
-                                    High accuracy
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={disabled || isRecording || isUploading}
-                                    onClick={() => setMode("browser")}
-                                    className={modePill(mode === "browser")}
-                                    title="Browser SpeechRecognition (fast, less consistent)"
-                                >
-                                    Fast (browser)
-                                </button>
-                            </div>
-
-                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                                <button
-                                    type="button"
-                                    disabled={!canAny || disabled || isRecording || isUploading}
-                                    onClick={start}
-                                    className={[btnBase, btnIdle, "w-full sm:w-auto sm:min-w-[120px]"].join(" ")}
-                                >
-                                    {startLabel}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    disabled={!isRecording}
-                                    onClick={stop}
-                                    className={[btnBase, btnDanger, "w-full sm:w-auto sm:min-w-[72px]"].join(" ")}
-                                >
-                                    Stop
-                                </button>
-
-                                <button
-                                    type="button"
-                                    disabled={disabled || isRecording || isUploading}
-                                    onClick={() => onChangeTranscript("")}
-                                    className={[btnBase, btnIdle, "w-full sm:w-auto sm:min-w-[72px]"].join(" ")}
-                                >
-                                    Clear
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {status ? (
-                        <div className="mt-2 text-xs font-semibold text-neutral-600 dark:text-white/60">
-                            {status}
-                        </div>
-                    ) : null}
-
-                    <textarea
-                        value={transcript ?? ""}
-                        disabled={disabled}
-                        onChange={(e) => onChangeTranscript(e.target.value)}
-                        placeholder="Speak or type…"
-                        className={[
-                            "mt-3 w-full rounded-2xl border px-3 py-3 text-sm outline-none transition",
-                            "min-h-[120px] sm:min-h-[140px] md:min-h-[160px]",
-                            "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300",
-                            "dark:border-white/10 dark:bg-white/[0.04] dark:text-white/90 dark:placeholder:text-white/40 dark:focus:border-white/20",
-                            disabled ? "opacity-70" : "",
-                        ].join(" ")}
-                    />
-
-                    <div className="mt-2 flex flex-col gap-1 text-[11px] font-semibold text-neutral-500 dark:text-white/50 sm:flex-row sm:items-center sm:justify-between">
-                        <span>{exercise.maxSeconds ? `Auto-stop: ${exercise.maxSeconds}s` : "Auto-stop: off"}</span>
-                        <span className="tabular-nums">{transcript?.length ?? 0} chars</span>
-                    </div>
-
-                    {checked && ok === false && reviewCorrectTranscript ? (
-                        <div className="mt-4 rounded-2xl border border-neutral-200/70 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.04]">
-                            <div className={`text-xs font-semibold ${muted}`}>Correct</div>
-                            <div className={`mt-1 text-sm font-semibold ${text}`}>{reviewCorrectTranscript}</div>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
         </div>
     );
 }

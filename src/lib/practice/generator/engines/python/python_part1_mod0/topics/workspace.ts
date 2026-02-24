@@ -1,15 +1,13 @@
-// src/lib/practice/generator/engines/python/python_part1_mod0/topics/workspace.ts
-import type { Handler } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
 
 export const M0_WORKSPACE_POOL = [
-    { key: "m0_workspace_run_button", w: 1, kind: "single_choice", purpose:"quiz" },
-    { key: "m0_workspace_terminal_output", w: 1, kind: "single_choice", purpose:"quiz" },
-    { key: "m0_workspace_editor_area", w: 1, kind: "single_choice", purpose:"quiz" },
+    { key: "m0_workspace_run_button", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_workspace_terminal_output", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_workspace_editor_area", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
 export type M0WorkspaceKey = (typeof M0_WORKSPACE_POOL)[number]["key"];
-export const M0_WORKSPACE_VALID_KEYS = M0_WORKSPACE_POOL.map((p) => p.key) as M0WorkspaceKey[];
 
 export const M0_WORKSPACE_HANDLERS: Record<M0WorkspaceKey, Handler> = {
     m0_workspace_run_button: ({ diff, id, topic }) =>
@@ -63,3 +61,9 @@ export const M0_WORKSPACE_HANDLERS: Record<M0WorkspaceKey, Handler> = {
             hint: "You write code in the editor, then run it.",
         }),
 };
+
+export const M0_WORKSPACE_TOPIC: TopicBundle = defineTopic(
+    "editor_workspace_overview",
+    M0_WORKSPACE_POOL as any,
+    M0_WORKSPACE_HANDLERS as any,
+);

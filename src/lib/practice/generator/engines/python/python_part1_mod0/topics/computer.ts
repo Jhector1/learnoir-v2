@@ -1,19 +1,14 @@
-// src/lib/practice/generator/engines/python/python_part1_mod0/topics/computer.ts
-import type { Handler } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
 
-// ✅ Source of truth: key + weight + kind
 export const M0_COMPUTER_POOL = [
-    { key: "m0_computer_ipo_order", w: 1, kind: "single_choice",purpose: "quiz" },
-    { key: "m0_computer_algorithm_definition", w: 1, kind: "single_choice",purpose: "quiz" },
-    { key: "m0_computer_input_examples", w: 1, kind: "single_choice",purpose: "quiz" },
+    { key: "m0_computer_ipo_order", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_computer_algorithm_definition", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_computer_input_examples", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
-// ✅ Derive keys from pool (for routing/validation)
 export type M0ComputerKey = (typeof M0_COMPUTER_POOL)[number]["key"];
-export const M0_COMPUTER_VALID_KEYS = M0_COMPUTER_POOL.map((p) => p.key) as M0ComputerKey[];
 
-// ✅ Handlers keyed by derived key union
 export const M0_COMPUTER_HANDLERS: Record<M0ComputerKey, Handler> = {
     m0_computer_ipo_order: ({ diff, id, topic }) =>
         makeSingleChoiceOut({
@@ -66,3 +61,9 @@ export const M0_COMPUTER_HANDLERS: Record<M0ComputerKey, Handler> = {
             hint: "Input = what you give the computer (keyboard, mouse, mic).",
         }),
 };
+
+export const M0_COMPUTER_TOPIC: TopicBundle = defineTopic(
+    "computer_intro",
+    M0_COMPUTER_POOL as any,
+    M0_COMPUTER_HANDLERS as any,
+);

@@ -1,15 +1,13 @@
-// src/lib/practice/generator/engines/python/python_part1_mod0/topics/syntax.ts
-import type { Handler } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
 
 export const M0_SYNTAX_POOL = [
-    { key: "m0_syntax_definition", w: 1, kind: "single_choice" ,purpose: "quiz"},
-    { key: "m0_syntax_syntaxerror", w: 1, kind: "single_choice" ,purpose: "quiz"},
-    { key: "m0_syntax_indentation_rule", w: 1, kind: "single_choice" ,purpose: "quiz"},
+    { key: "m0_syntax_definition", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_syntax_syntaxerror", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_syntax_indentation_rule", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
 export type M0SyntaxKey = (typeof M0_SYNTAX_POOL)[number]["key"];
-export const M0_SYNTAX_VALID_KEYS = M0_SYNTAX_POOL.map((p) => p.key) as M0SyntaxKey[];
 
 export const M0_SYNTAX_HANDLERS: Record<M0SyntaxKey, Handler> = {
     m0_syntax_definition: ({ diff, id, topic }) =>
@@ -63,3 +61,9 @@ export const M0_SYNTAX_HANDLERS: Record<M0SyntaxKey, Handler> = {
             hint: "Indentation is part of Python’s structure, not just style.",
         }),
 };
+
+export const M0_SYNTAX_TOPIC: TopicBundle = defineTopic(
+    "syntax_intro",
+    M0_SYNTAX_POOL as any,
+    M0_SYNTAX_HANDLERS as any,
+);

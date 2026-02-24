@@ -20,6 +20,11 @@ import VoiceInputExerciseUI from "./kinds/VoiceInputExerciseUI";
 import type {QItem} from "./practiceType";
 import MatrixInputPanel from "./MatrixInputPanel";
 import {resizeGrid} from "@/lib/practice/matrixHelpers";
+import FillBlankChoiceExerciseUI from "@/components/practice/kinds/FillBlankChoiceExerciseUI";
+import ListenBuildExerciseUI from "@/components/practice/kinds/ListenBuildExerciseUI";
+import WordBankArrangeExerciseUI from "@/components/practice/kinds/WordBankArrangeExerciseUI";
+import {TFn} from "@/components/practice/PracticeShell";
+import {useTranslations} from "next-intl";
 
 // ✅ minimal tools API (don’t import review context from practice layer)
 // ...imports unchanged
@@ -159,22 +164,18 @@ export default function ExerciseRenderer({
                                              padRef,
                                              updateCurrent,
                                              readOnly = false,
-
-                                             // ✅ NEW (optional): provide correct item (built from expected) during review
                                              reviewCorrectItem = null,
-
-                                             // ✅ NEW (optional): route code_input to Tools panel
                                              codeRunnerMode = "embedded",
                                              codeTools = null,
                                              codeInputId,
-                                             // ✅ NEW
                                              showPrompt = true,
+
                                          }: {
     exercise: Exercise;
     current: QItem;
     busy: boolean;
     isAssignmentRun: boolean;
-    maxAttempts: number;
+    maxAttempts: number | null; // ✅ CHANGED
     padRef: React.MutableRefObject<VectorPadState>;
     updateCurrent: (patch: Partial<QItem>) => void;
     readOnly?: boolean;
@@ -184,30 +185,68 @@ export default function ExerciseRenderer({
     codeRunnerMode?: "embedded" | "tools";
     codeTools?: CodeToolsApi | null;
     codeInputId?: string;
-    // ✅ NEW
     showPrompt?: boolean;
+
 }) {
-    const attempts = current.attempts ?? 0;
+    // const attempts = current.attempts ?? 0;
+    //
+    // // ✅ "any result exists" includes reveal result objects (even when ok=null)
+    // const hasAnyResult = Boolean(current.submitted || current.result);
+    //
+    // // ✅ only treat ok as graded when boolean (reveal often sets ok=null)
+    // const ok: boolean | null = typeof current.result?.ok === "boolean" ? current.result.ok : null;
+    //
+    // // ✅ checked for STYLING should mean "graded", not merely "result object exists"
+    // // (prevents Reveal from forcing red/green states)
+    // const checked = Boolean(current.submitted || ok !== null);
+    //
+    // const outOfAttempts = isAssignmentRun && attempts >= maxAttempts && ok !== true;
+    //
+    // // lock if readOnly, busy, already correct, or no attempts left
+    // const lockInputs = readOnly || busy || ok === true || outOfAttempts;
 
-    // ✅ "any result exists" includes reveal result objects (even when ok=null)
-    const hasAnyResult = Boolean(current.submitted || current.result);
 
-    // ✅ only treat ok as graded when boolean (reveal often sets ok=null)
-    const ok: boolean | null = typeof current.result?.ok === "boolean" ? current.result.ok : null;
+    const t = useTranslations("ExerciseRenderer");
 
-    // ✅ checked for STYLING should mean "graded", not merely "result object exists"
-    // (prevents Reveal from forcing red/green states)
-    const checked = Boolean(current.submitted || ok !== null);
 
-    const outOfAttempts = isAssignmentRun && attempts >= maxAttempts && ok !== true;
 
-    // lock if readOnly, busy, already correct, or no attempts left
+
+
+
+
+
+
+
+    const maxA =
+        maxAttempts == null || !Number.isFinite(maxAttempts)
+            ? Number.POSITIVE_INFINITY
+            : Math.max(1, Math.floor(maxAttempts));
+
+    const attempts = (current as any).attempts ?? 0;
+
+// any result exists (including reveal objects)
+    const hasAnyResult = Boolean((current as any).submitted || (current as any).result);
+
+// ok graded only when boolean
+    const ok: boolean | null =
+        typeof (current as any).result?.ok === "boolean" ? (current as any).result.ok : null;
+
+// checked for styling = graded (or submitted)
+    const checked = Boolean((current as any).submitted || ok !== null);
+
+// ✅ server truth for locking
+    const finalized = Boolean((current as any)?.result?.finalized);
+
+// out of attempts if server finalized OR finite cap reached
+    const outOfAttempts =
+        finalized || (maxA !== Number.POSITIVE_INFINITY && attempts >= maxA && ok !== true);
+
+// lock if readOnly/busy/correct/finalized
     const lockInputs = readOnly || busy || ok === true || outOfAttempts;
 
-    // when user edits after checking/reveal, clear result/submitted (back to “unchecked” look)
     function resetCheckPatch() {
-        if (readOnly) return {}; // ✅ don't mutate in summary/review
-        return hasAnyResult ? {submitted: false, result: null} : {};
+        if (readOnly) return {};
+        return hasAnyResult ? { submitted: false, result: null } : {};
     }
 
     // -----------------------------
@@ -244,6 +283,7 @@ export default function ExerciseRenderer({
                 checked={checked}
                 ok={ok}
                 reviewCorrectId={reviewCorrectId}
+                t={t}
             />
         );
     }
@@ -398,7 +438,68 @@ export default function ExerciseRenderer({
             />
         );
     }
+// -----------------------------
+// word_bank_arrange ✅
+// -----------------------------
+//     if (exercise.kind === "word_bank_arrange") {
+//         const reviewCorrectValue =
+//             reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
+//                 ? String((reviewCorrectItem as any).text)
+//                 : (exercise as any).targetText ?? null;
+//
+//         return (
+//             <WordBankArrangeExerciseUI
+//                 exercise={exercise as any}
+//                 value={(current as any).text ?? ""} // ✅ store assembled sentence here
+//                 onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+//                 disabled={lockInputs}
+//                 checked={checked}
+//                 ok={ok}
+//                 reviewCorrectValue={reviewCorrectValue}
+//             />
+//         );
+//     }
 
+// -----------------------------
+// listen_build ✅
+// -----------------------------
+    if (exercise.kind === "listen_build") {
+        return (
+            <ListenBuildExerciseUI
+                exercise={exercise as any}
+                value={(current as any).text ?? ""} // ✅ store assembled sentence here
+                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+                disabled={lockInputs}
+                checked={checked}
+                showTargetWhen={"never"}
+                ok={ok}
+            />
+        );
+    }
+
+// -----------------------------
+// fill_blank_choice ✅
+// -----------------------------
+    if (exercise.kind === "fill_blank_choice") {
+        const reviewCorrectValue =
+            reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
+                ? String((reviewCorrectItem as any).text)
+                : typeof (exercise as any).correct === "string"
+                    ? String((exercise as any).correct)
+                    : null;
+
+        return (
+            <FillBlankChoiceExerciseUI
+                exercise={exercise as any}
+                value={(current as any).text ?? ""} // ✅ store selected choice here
+                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+                disabled={lockInputs}
+                checked={checked}
+                ok={ok}
+                reviewCorrectValue={reviewCorrectValue}
+            />
+        );
+    }
     // -----------------------------
     // vector_drag_dot
     // -----------------------------

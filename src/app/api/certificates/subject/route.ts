@@ -11,7 +11,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
+import { CERT_REQUIRE_ASSIGNMENT } from "@/lib/certificates/policy";
 function jsonOk(data: any, setGuestId?: string) {
     const res = NextResponse.json(data, { status: 200 });
     return attachGuestCookie(res, setGuestId);
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
     const progressByModule = new Map(progressRows.map((r) => [r.moduleId, r as any]));
 
     // ✅ Decide whether assignment is required for certificate
-    const requireAssignment = true;
+    const requireAssignment = CERT_REQUIRE_ASSIGNMENT;
 
     const modules = await Promise.all(
         reviewModules.map(async (m) => {
@@ -122,7 +122,17 @@ export async function GET(req: Request) {
         },
         select: { id: true, issuedAt: true, completedAt: true },
     });
-
+// Name on certificate (same as PDF route)
+    let displayName = "Learner";
+    if (actor.userId) {
+        const u = await prisma.user.findUnique({
+            where: { id: actor.userId },
+            select: { name: true, email: true },
+        });
+        displayName = (u?.name || u?.email || "Learner").trim();
+    } else {
+        displayName = "Guest Learner";
+    }
     return jsonOk(
         {
             eligible,
@@ -132,6 +142,8 @@ export async function GET(req: Request) {
             completedAt,
             modules,
             certificate, // null until PDF route issues it
+            displayName, // ✅ add this
+
             actor: {
                 isGuest: Boolean(actor.guestId && !actor.userId),
                 userId: actor.userId ?? null,

@@ -240,20 +240,18 @@ export const GENERATED_CATALOG = {
         "genKey": "haitian_creole_part1",
         "prefix": "hc0",
         "topicIds": [
-          "greetings",
-          "pronouns",
-          "simple_sentences",
-          "numbers",
-          "everyday_phrases",
-          "foundations"
+          "hc_greetings",
+          "hc_pronouns",
+          "hc_sentences",
+          "hc_questions",
+          "hc_numbers"
         ],
         "topics": {
-          "greetings": "hc0.greetings",
-          "pronouns": "hc0.pronouns",
-          "simple_sentences": "hc0.simple_sentences",
-          "numbers": "hc0.numbers",
-          "everyday_phrases": "hc0.everyday_phrases",
-          "foundations": "hc0.foundations"
+          "hc_greetings": "hc0.hc_greetings",
+          "hc_pronouns": "hc0.hc_pronouns",
+          "hc_sentences": "hc0.hc_sentences",
+          "hc_questions": "hc0.hc_questions",
+          "hc_numbers": "hc0.hc_numbers"
         }
       }
     }

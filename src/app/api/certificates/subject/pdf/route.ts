@@ -88,7 +88,7 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
     const progressByModule = new Map(progressRows.map((r) => [r.moduleId, r as any]));
 
     // ✅ decide whether assignment is required for certificate
-    const requireAssignment = true;
+    const requireAssignment = false;
 
     const modules = await Promise.all(
         reviewModules.map(async (m) => {
@@ -231,11 +231,15 @@ export async function GET(req: Request) {
     });
 
     try {
-        // Fonts (keep these to avoid Helvetica.afm issues in Next bundling)
+        // Fonts
         const interRegular = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Regular.ttf");
         const interBold = await loadPublicAsset(req, "/fonts/inter/Inter_18pt-Bold.ttf");
 
-        // PDF (lightweight vector layout, no images)
+// ✅ New fonts
+        const playfairBold = await loadPublicAsset(req, "/fonts/playfair/PlayfairDisplay-Bold.ttf");
+        const greatVibes = await loadPublicAsset(req, "/fonts/greatvibes/GreatVibes-Regular.ttf");
+
+// PDF
         const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 36 });
 
         const chunks: Buffer[] = [];
@@ -244,99 +248,206 @@ export async function GET(req: Request) {
 
         doc.registerFont("Inter", interRegular);
         doc.registerFont("Inter-Bold", interBold);
+        doc.registerFont("Playfair-Bold", playfairBold);
+        doc.registerFont("GreatVibes", greatVibes);
 
         const W = doc.page.width;
         const H = doc.page.height;
 
-        // Colors
-        const ink = "#0F172A";
+// Palette (closer to your sample)
+        const ink = "#0B1220";
         const sub = "#334155";
         const muted = "#64748B";
-        const border = "#CBD5E1";
+        const gold = "#C9A227";
+        const gold2 = "#B88B1D";
+        const line = "#D8DEE9";
+        const wave = "#CBD5E1";
 
-        // Frame
-        doc.save();
-        doc.lineWidth(2).strokeColor(border).roundedRect(18, 18, W - 36, H - 36, 18).stroke();
-        doc.lineWidth(1).strokeColor(border).roundedRect(32, 32, W - 64, H - 64, 14).stroke();
-        doc.restore();
+// Helpers
+        const boxX = 78;
+        const boxW = W - 156;
 
-        // Content box
-        const boxX = 72;
-        const boxW = W - 144;
-
-        const courseTitle = status.subject.title;
-        const completionDateStr = fmtDate(status.completedAt);
-        const issuedDateStr = cert.issuedAt.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-
-        function center(
-            text: string,
-            y: number,
-            font: string,
-            size: number,
-            color: string,
-            opts?: { lineGap?: number },
-        ) {
+        function center(text: string, y: number, font: string, size: number, color: string, opts?: any) {
             doc.fillColor(color).font(font).fontSize(size);
-            doc.text(text, boxX, y, { width: boxW, align: "center", lineGap: opts?.lineGap ?? 0 });
+            doc.text(text, boxX, y, { width: boxW, align: "center", ...opts });
         }
 
-        // Header
-        center("Certificate of Completion", 92, "Inter-Bold", 34, ink);
-        center("This certifies that", 148, "Inter", 14, sub);
+        function drawCorner(doc: PDFKit.PDFDocument, x: number, y: number, s: number) {
+            // small square + inner diamond mark
+            doc.save();
+            doc.strokeColor(gold2).lineWidth(1);
+            doc.rect(x, y, s, s).stroke();
+            doc.moveTo(x + s * 0.2, y + s * 0.5).lineTo(x + s * 0.5, y + s * 0.2).stroke();
+            doc.moveTo(x + s * 0.5, y + s * 0.2).lineTo(x + s * 0.8, y + s * 0.5).stroke();
+            doc.moveTo(x + s * 0.8, y + s * 0.5).lineTo(x + s * 0.5, y + s * 0.8).stroke();
+            doc.moveTo(x + s * 0.5, y + s * 0.8).lineTo(x + s * 0.2, y + s * 0.5).stroke();
+            doc.restore();
+        }
 
-        // Name (auto-fit)
+        function drawWaves(doc: PDFKit.PDFDocument) {
+            // subtle background curves (vector; no image)
+            doc.save();
+            doc.opacity(0.18);
+            doc.strokeColor(wave).lineWidth(1);
+
+            const left = 30;
+            const right = W - 30;
+
+            for (let i = 0; i < 12; i++) {
+                const y = 70 + i * 34;
+                doc.moveTo(left, y);
+                doc.bezierCurveTo(
+                    W * 0.30,
+                    y - 40,
+                    W * 0.70,
+                    y + 40,
+                    right,
+                    y,
+                );
+                doc.stroke();
+            }
+
+            doc.opacity(1);
+            doc.restore();
+        }
+
+        function drawFrame(doc: PDFKit.PDFDocument) {
+            doc.save();
+
+            // Outer gold frame
+            doc.lineWidth(3).strokeColor(gold).roundedRect(18, 18, W - 36, H - 36, 16).stroke();
+
+            // Inner thin frame
+            doc.lineWidth(1).strokeColor(line).roundedRect(34, 34, W - 68, H - 68, 14).stroke();
+
+            // Corner ornaments
+            const s = 12;
+            drawCorner(doc, 22, 22, s);
+            drawCorner(doc, W - 22 - s, 22, s);
+            drawCorner(doc, 22, H - 22 - s, s);
+            drawCorner(doc, W - 22 - s, H - 22 - s, s);
+
+            doc.restore();
+        }
+
+        function fitTextBox(
+            doc: PDFKit.PDFDocument,
+            text: string,
+            opts: { font: string; maxSize: number; minSize: number; width: number; maxHeight: number; lineGap?: number },
+        ) {
+            const { font, maxSize, minSize, width, maxHeight, lineGap = 0 } = opts;
+            for (let size = maxSize; size >= minSize; size -= 1) {
+                doc.font(font).fontSize(size);
+                const h = doc.heightOfString(text, { width, align: "center", lineGap });
+                if (h <= maxHeight) return size;
+            }
+            return minSize;
+        }
+
+// Background + Frame
+        drawWaves(doc);
+        drawFrame(doc);
+
+// Optional watermark (very subtle)
+        doc.save();
+        doc.opacity(0.06);
+        doc.fillColor("#0B1220");
+        doc.font("Playfair-Bold").fontSize(90);
+        doc.rotate(-12, { origin: [W * 0.25, H * 0.55] });
+        doc.text("LEARNOIR", W * 0.06, H * 0.45, { width: W * 0.88, align: "center" });
+        doc.rotate(12, { origin: [W * 0.25, H * 0.55] });
+        doc.opacity(1);
+        doc.restore();
+
+// Content
+        const courseTitle = status.subject.title;
+        const completionDateStr = fmtDate(status.completedAt);
+        const issuedDateStr = cert.issuedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+// Top small line
+        center("Learnoir", 62, "Inter-Bold", 12, sub, { characterSpacing: 1 });
+        center(courseTitle, 82, "Inter", 12, muted);
+
+// Big certificate title (serif)
+        center("CERTIFICATE", 120, "Playfair-Bold", 54, ink);
+        center("OF COMPLETION", 176, "Playfair-Bold", 22, ink);
+
+// Gold separator
+        doc.save();
+        doc.strokeColor(gold).lineWidth(2);
+        doc.moveTo(boxX + boxW * 0.38, 210).lineTo(boxX + boxW * 0.62, 210).stroke();
+        doc.restore();
+
+        center("This certificate is proudly presented to", 240, "Inter", 13, sub);
+
+// Name (script)
         const nameSize = fitTextBox(doc, displayName, {
-            font: "Inter-Bold",
-            maxSize: 46,
-            minSize: 22,
+            font: "GreatVibes",
+            maxSize: 56,
+            minSize: 28,
             width: boxW,
             maxHeight: 90,
-            lineGap: -2,
+            lineGap: -4,
         });
-        center(displayName, 176, "Inter-Bold", nameSize, ink, { lineGap: -2 });
+        center(displayName, 268, "GreatVibes", nameSize, ink, { lineGap: -4 });
 
-        // Body
-        center("has successfully completed the course", 260, "Inter", 14, sub);
+// Dotted gold line under name
+        doc.save();
+        doc.strokeColor(gold).dash(2, { space: 4 }).lineWidth(1);
+        doc.moveTo(boxX + boxW * 0.18, 352).lineTo(boxX + boxW * 0.82, 352).stroke();
+        doc.undash();
+        doc.restore();
 
-        // Course title (auto-fit)
+        center("for the successful completion of", 370, "Inter", 13, sub);
+
+// Course (bold, fits)
         const courseSize = fitTextBox(doc, courseTitle, {
             font: "Inter-Bold",
-            maxSize: 30,
+            maxSize: 26,
             minSize: 16,
             width: boxW,
-            maxHeight: 70,
+            maxHeight: 58,
             lineGap: -1,
         });
-        center(courseTitle, 292, "Inter-Bold", courseSize, ink, { lineGap: -1 });
+        center(courseTitle, 395, "Inter-Bold", courseSize, ink, { lineGap: -1 });
 
-        // Divider
+// Signature + date lines (more “official”)
+        const yLine = H - 130;
+
         doc.save();
-        doc.strokeColor(border).lineWidth(1);
-        doc.moveTo(boxX + 140, 382).lineTo(boxX + boxW - 140, 382).stroke();
-        doc.restore();
+        doc.strokeColor(line).lineWidth(1);
 
-        // Dates
-        center(`Completion date: ${completionDateStr}`, 402, "Inter", 12, muted);
-        center(`Issued: ${issuedDateStr}`, 422, "Inter", 12, muted);
-
-        // Simple “seal” (vector, no image)
-        doc.save();
-        doc.strokeColor(border).lineWidth(2);
-        doc.circle(W - 120, H - 110, 42).stroke();
-        doc.fillColor(muted).font("Inter-Bold").fontSize(10);
-        doc.text("LEARNOIR", W - 168, H - 118, { width: 96, align: "center" });
-        doc.restore();
-
-        // Footer meta
+// left
+        doc.moveTo(110, yLine).lineTo(310, yLine).stroke();
         doc.fillColor(muted).font("Inter").fontSize(10);
-        doc.text("Learnoir • Verified by course progress records", 54, H - 54, {
-            width: W - 108,
-            align: "left",
-        });
+        doc.text("Date awarded", 110, yLine + 8, { width: 200, align: "left" });
+        doc.fillColor(ink).font("Inter-Bold").fontSize(11);
+        doc.text(completionDateStr, 110, yLine - 18, { width: 200, align: "left" });
+
+// right
+        doc.strokeColor(line).lineWidth(1);
+        doc.moveTo(W - 310, yLine).lineTo(W - 110, yLine).stroke();
+        doc.fillColor(muted).font("Inter").fontSize(10);
+        doc.text("Name / Position", W - 310, yLine + 8, { width: 200, align: "right" });
+        doc.fillColor(ink).font("Inter-Bold").fontSize(11);
+        doc.text("Program Director", W - 310, yLine - 18, { width: 200, align: "right" });
+
+        doc.restore();
+
+// Seal (cleaner)
+        doc.save();
+        doc.strokeColor(gold).lineWidth(2);
+        doc.fillColor("#FFF8E1");
+        doc.circle(W / 2, H - 118, 40).fillAndStroke();
+        doc.fillColor(gold2).font("Inter-Bold").fontSize(10);
+        doc.text("VERIFIED", W / 2 - 45, H - 126, { width: 90, align: "center" });
+        doc.fillColor(muted).font("Inter").fontSize(8);
+        doc.text("LEARNOIR", W / 2 - 45, H - 112, { width: 90, align: "center" });
+        doc.restore();
+
+// Footer meta
+        doc.fillColor(muted).font("Inter").fontSize(9);
+        doc.text(`Issued: ${issuedDateStr}`, 54, H - 54, { width: W - 108, align: "left" });
         doc.text(`Certificate ID: ${cert.id}`, 54, H - 54, { width: W - 108, align: "right" });
 
         doc.end();

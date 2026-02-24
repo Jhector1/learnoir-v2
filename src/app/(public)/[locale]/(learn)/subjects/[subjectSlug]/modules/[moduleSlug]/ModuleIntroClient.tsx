@@ -5,14 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { useReviewProgressMany } from "@/components/review/module/hooks/useReviewProgressMany";
 import { ROUTES } from "@/utils";
-
-type ModuleMeta = {
-    outcomes?: string[];
-    why?: string[];
-    prereqs?: string[];
-    videoUrl?: string | null;
-    estimatedMinutes?: number;
-};
+import type { ModuleMeta } from "@/seed/data/subjects/_types"; // ✅ reuse shared type
 
 type Props = {
     locale: string;
@@ -31,7 +24,7 @@ type Props = {
         order: number;
         weekStart: number | null;
         weekEnd: number | null;
-        meta?: ModuleMeta | null; // ✅ NEW
+        meta: ModuleMeta | null; // ✅ not optional
     };
     stats: { sectionsCount: number; topicsCount: number };
 };
@@ -107,23 +100,15 @@ function BulletList({
     );
 }
 
-function VideoEmbed({
-                        url,
-                        title,
-                    }: {
-    url: string;
-    title: string;
-}) {
-    // supports YouTube / Vimeo / direct mp4
+function VideoEmbed({ url, title }: { url: string; title: string }) {
     const isYouTube =
-        /youtube\.com\/watch\?v=|youtu\.be\//.test(url) ||
-        /youtube\.com\/embed\//.test(url);
-    const isVimeo = /vimeo\.com\/\d+/.test(url) || /player\.vimeo\.com\/video\//.test(url);
+        /youtube\.com\/watch\?v=|youtu\.be\//.test(url) || /youtube\.com\/embed\//.test(url);
+    const isVimeo =
+        /vimeo\.com\/\d+/.test(url) || /player\.vimeo\.com\/video\//.test(url);
     const isMp4 = /\.mp4(\?|#|$)/i.test(url);
 
     const embedUrl = (() => {
         if (isYouTube) {
-            // normalize to embed
             if (url.includes("youtube.com/embed/")) return url;
             const m = url.match(/v=([^&]+)/);
             const vid = m?.[1] ?? url.split("youtu.be/")[1]?.split(/[?&]/)[0];
@@ -150,9 +135,7 @@ function VideoEmbed({
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                         <Kicker>Intro video</Kicker>
-                        <div className="mt-1 text-base font-black tracking-tight truncate">
-                            {title}
-                        </div>
+                        <div className="mt-1 text-base font-black tracking-tight truncate">{title}</div>
                         <div className="mt-1 text-xs text-neutral-600 dark:text-white/60">
                             Watch first if you want the big picture before practice.
                         </div>
@@ -197,15 +180,17 @@ function VideoEmbed({
 }
 
 export default function ModuleIntroClient({ locale, subject, module, stats }: Props) {
+    // ✅ MUST pass DB module id, not slug
     const { byModuleId, loading } = useReviewProgressMany({
         subjectSlug: subject.slug,
         locale,
-        moduleIds: [module.slug],
+        moduleIds: [module.id],
         enabled: true,
         refreshMs: 0,
     });
 
-    const mp = byModuleId[module.slug];
+    // ✅ MUST index by DB module id
+    const mp = byModuleId[module.id];
     const completed = Boolean(mp?.moduleCompleted);
     const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0;
 
@@ -223,7 +208,8 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
 
     const backHref = `/${encodeURIComponent(locale)}/subjects/${encodeURIComponent(subject.slug)}/modules`;
 
-    const meta = (module.meta ?? {}) as ModuleMeta;
+    // ✅ no cast, meta already validated server-side
+    const meta: ModuleMeta = module.meta ?? {};
 
     const outcomes = useMemo(() => {
         const xs = meta.outcomes?.filter(Boolean) ?? [];
@@ -247,7 +233,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
             ];
     }, [meta.why]);
 
-    const prereqs = useMemo(() => (meta.prereqs?.filter(Boolean) ?? []), [meta.prereqs]);
+    const prereqs = useMemo(() => meta.prereqs?.filter(Boolean) ?? [], [meta.prereqs]);
     const est = meta.estimatedMinutes ?? null;
     const videoUrl = meta.videoUrl ?? null;
 
@@ -284,6 +270,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                             <Kicker>
                                 {subject.title} • Module {module.order + 1}
                             </Kicker>
+
                             <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">
                                 {module.title}
                             </div>
@@ -297,6 +284,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <StatPill label="Sections" value={stats.sectionsCount} />
                                 <StatPill label="Topics" value={stats.topicsCount} />
+
                                 {module.weekStart != null || module.weekEnd != null ? (
                                     <StatPill
                                         label="Weeks"
@@ -307,7 +295,9 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                                         }
                                     />
                                 ) : null}
+
                                 {est != null ? <StatPill label="Est." value={`${est} min`} /> : null}
+
                                 <StatPill
                                     label="Status"
                                     value={
@@ -347,16 +337,8 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                             {ctaLabel}
                         </Link>
 
-                        {/*<Link*/}
-                        {/*    href={practiceHref}*/}
-                        {/*    className={cn(*/}
-                        {/*        "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-extrabold",*/}
-                        {/*        "bg-white/70 text-neutral-900 ring-1 ring-black/5 hover:bg-white/80 transition",*/}
-                        {/*        "dark:bg-white/[0.06] dark:text-white/90 dark:ring-white/10 dark:hover:bg-white/[0.08]",*/}
-                        {/*    )}*/}
-                        {/*>*/}
-                        {/*    Practice →*/}
-                        {/*</Link>*/}
+                        {/* Optional practice button */}
+                        {/* <Link href={practiceHref} ...>Practice →</Link> */}
                     </div>
 
                     {prereqs.length ? (

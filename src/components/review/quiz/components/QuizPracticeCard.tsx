@@ -48,19 +48,27 @@ export default function QuizPracticeCard(props: {
   } = props;
 
   const tools = useReviewTools();
+  const excused = Boolean(props.excused);
+  const revealed = Boolean(ps?.item?.revealed);
 
   // ✅ stable patch function (prevents register thrash downstream)
   const updateItemSafe = useCallback(
       (patch: any) => {
-        if (!unlocked || isCompleted || locked) return;
+        if (!unlocked || isCompleted || locked || excused) return;
         onUpdateItem(patch);
       },
-      [unlocked, isCompleted, locked, onUpdateItem],
+      [unlocked, isCompleted, locked, excused, onUpdateItem],
   );
 
-  const outOfAttempts = useMemo(() => {
+  // ✅ attempts cap that respects null(unlimited)
+  const attemptsCapped = useMemo(() => {
     if (!ps) return false;
-    return !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+    if (unlimitedAttempts) return false;
+
+    const max = ps.maxAttempts; // number | null
+    if (max == null) return false;
+
+    return ps.attempts >= max;
   }, [ps, unlimitedAttempts]);
 
   const hasInput = useMemo(() => {
@@ -68,27 +76,16 @@ export default function QuizPracticeCard(props: {
     return !isEmptyPracticeAnswer(ps.exercise, ps.item, padRef?.current);
   }, [ps?.exercise, ps?.item, padRef]);
 
-  const revealed = Boolean(ps?.item?.revealed);
-  const excused = Boolean(props.excused);
-
   // ✅ Deterministic binding: report status to provider
   useEffect(() => {
     if (!tools) return;
     if (!ps?.exercise) return;
     if (ps.exercise.kind !== "code_input") return;
 
-    // "done" for binding:
-    // - ok === true: completed
-    // - excused: skip
-    // - non-strict + outOfAttempts: you are allowed to proceed -> treat as flow-done
     const doneForFlow =
-        ps.ok === true || excused || (!strictSequential && outOfAttempts);
+        ps.ok === true || excused || (!strictSequential && attemptsCapped);
 
-    const eligible =
-        unlocked &&
-        !locked &&
-        !isCompleted &&
-        !excused; // (even if outOfAttempts, we treat doneForFlow above)
+    const eligible = unlocked && !locked && !isCompleted && !excused;
 
     tools.setCodeInputMeta(q.id, {
       order: seqOrder,
@@ -105,7 +102,7 @@ export default function QuizPracticeCard(props: {
     isCompleted,
     excused,
     strictSequential,
-    outOfAttempts,
+    attemptsCapped,
     seqOrder,
   ]);
 
@@ -113,21 +110,22 @@ export default function QuizPracticeCard(props: {
       !unlocked ||
       isCompleted ||
       locked ||
+      excused ||
       (ps?.busy ?? false) ||
-      outOfAttempts ||
+      attemptsCapped ||
       ps?.ok === true ||
-      !hasInput ||
-      excused;
+      !hasInput;
 
   const disableReveal =
       !unlocked ||
       isCompleted ||
       locked ||
-      ps?.ok === true ||
+      excused ||
       (ps?.busy ?? false) ||
-      excused;
+      ps?.ok === true;
 
-  const disableSkip = !unlocked || isCompleted || locked || excused || ps?.ok === true;
+  const disableSkip =
+      !unlocked || isCompleted || locked || excused || ps?.ok === true;
 
   const btnLabel = ps?.busy ? (
       <span className="inline-flex items-center gap-2">
@@ -137,6 +135,8 @@ export default function QuizPracticeCard(props: {
   ) : (
       "Check this answer"
   );
+
+  const maxForRenderer = ps?.maxAttempts ?? Number.POSITIVE_INFINITY;
 
   return (
       <div className={["ui-quiz-card", !unlocked ? "opacity-70" : ""].join(" ")}>
@@ -173,11 +173,10 @@ export default function QuizPracticeCard(props: {
                     current={ps.item}
                     busy={ps.busy || !unlocked || isCompleted || locked}
                     isAssignmentRun={false}
-                    maxAttempts={ps.maxAttempts}
+                    maxAttempts={maxForRenderer} // ✅ keep renderer happy even if it expects number
                     padRef={padRef as any}
                     updateCurrent={updateItemSafe}
                     readOnly={!unlocked || isCompleted || locked}
-                    // ✅ review quiz uses ToolsPanel for code_input
                     codeRunnerMode="tools"
                     codeTools={tools ?? null}
                     codeInputId={q.id}
@@ -191,7 +190,6 @@ export default function QuizPracticeCard(props: {
                       onClick={onSubmit}
                       disabled={disableCheck}
                       data-flow-focus="1"
-
                       className={[
                         "ui-quiz-action",
                         disableCheck ? "ui-quiz-action--disabled" : "ui-quiz-action--primary",
@@ -215,7 +213,8 @@ export default function QuizPracticeCard(props: {
 
                 <div className="min-w-0 text-xs font-extrabold text-neutral-600 dark:text-white/60 sm:text-right">
               <span className="whitespace-normal">
-                Attempts: {ps.attempts}/{Number.isFinite(ps.maxAttempts) ? ps.maxAttempts : "∞"}
+                Attempts: {ps.attempts}/
+                {ps.maxAttempts == null ? "∞" : ps.maxAttempts}
               </span>
 
                   {ps.ok === true ? (

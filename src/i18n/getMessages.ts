@@ -6,6 +6,7 @@ import practiceSection from "@/i18n/messages/en/practiceSection.json";
 import sketchesVectorPart1 from "@/i18n/messages/en/sketchesVectorPart1.json";
 import { matricesPart2Landing } from "@/components/practice/sections/landingCatalog";
 import home from "@/i18n/messages/en/home.json";
+import exerciseRenderer from "@/i18n/messages/en/exerciseRenderer.json";
 
 export const messages = {
   ...common,
@@ -15,5 +16,6 @@ export const messages = {
   ...matricesPart2Landing,
     ...practiceSection,
     ...sketchesVectorPart1,
-    ...home
+    ...home,
+        ...exerciseRenderer
 };

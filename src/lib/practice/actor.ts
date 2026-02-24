@@ -1,7 +1,8 @@
+// src/lib/practice/actor.ts
 import "server-only";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth"; // from your src/lib/auth.ts
+import type { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export type Actor = { userId: string | null; guestId: string | null };
 
@@ -9,27 +10,35 @@ const GUEST_COOKIE = "guestId";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export async function getActor(): Promise<Actor> {
-  const session = await auth(); // ✅ reads NextAuth session (JWT)
+  const session = await auth();
   const userId = (session?.user as any)?.id ?? null;
 
   const jar = await cookies();
   const guestId = jar.get(GUEST_COOKIE)?.value ?? null;
 
-  // ✅ IMPORTANT: even if guest cookie exists, user wins if logged in
   return { userId, guestId };
 }
 
-export function ensureGuestId(actor: Actor) {
-  // ✅ if logged in, do NOT force/assign guest id
-  if (actor.userId) return { actor, setGuestId: undefined as string | undefined };
+/**
+ * ✅ Returns:
+ * - { actor } if user is logged in OR guestId already exists
+ * - { actor, setGuestId } if we created a new guest id
+ */
+export function ensureGuestId(actor: Actor): { actor: Actor; setGuestId?: string } {
+  // logged in => no guest assignment
+  if (actor.userId) return { actor };
 
-  if (actor.guestId) return { actor, setGuestId: undefined as string | undefined };
+  // already has guest id => no change
+  if (actor.guestId) return { actor };
 
-  const newId = crypto.randomUUID(); // ✅ unique per guest
+  const newId = crypto.randomUUID();
   return { actor: { ...actor, guestId: newId }, setGuestId: newId };
 }
 
-export function attachGuestCookie(res: NextResponse, setGuestId?: string) {
+/**
+ * ✅ Accepts null safely (common when values come from DB/state)
+ */
+export function attachGuestCookie(res: NextResponse, setGuestId?: string | null) {
   if (setGuestId) {
     res.cookies.set(GUEST_COOKIE, setGuestId, {
       httpOnly: true,

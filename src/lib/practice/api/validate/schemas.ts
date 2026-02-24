@@ -87,7 +87,20 @@ const TextInputAnswerSchema = z.object({
   kind: z.literal("text_input"),
   value: z.string().min(1),
 });
+const WordBankArrangeAnswerSchema = z.object({
+    kind: z.literal("word_bank_arrange"),
+    value: z.string().min(1),
+});
 
+const ListenBuildAnswerSchema = z.object({
+    kind: z.literal("listen_build"),
+    value: z.string().min(1),
+});
+
+const FillBlankChoiceAnswerSchema = z.object({
+    kind: z.literal("fill_blank_choice"),
+    value: z.string().min(1),
+});
 const DragReorderAnswerSchema = z.object({
   kind: z.literal("drag_reorder"),
   order: z.array(z.string().min(1)).min(1),
@@ -139,7 +152,10 @@ const SubmitAnswerSchema = z.discriminatedUnion("kind", [
 
   TextInputAnswerSchema,
   DragReorderAnswerSchema,
-  VoiceInputAnswerSchema,
+  VoiceInputAnswerSchema,  // ✅ ADD
+    WordBankArrangeAnswerSchema,
+    ListenBuildAnswerSchema,
+    FillBlankChoiceAnswerSchema,
 ]);
 
 export const BodySchema = z
@@ -171,3 +187,4 @@ export function normalizeKey(input: unknown): string | null {
   }
   return null;
 }
+

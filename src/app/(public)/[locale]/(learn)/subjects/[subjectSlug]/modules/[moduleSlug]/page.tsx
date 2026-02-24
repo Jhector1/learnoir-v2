@@ -2,24 +2,30 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ModuleIntroClient from "./ModuleIntroClient";
+import { parseModuleMeta } from "@/lib/practice/parseModuleMeta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// import { notFound } from "next/navigation";
-
-export default async function ModuleIntroPage({ params }: Promise<{ params: any }>) {
-    const {locale} = await params
-    const {subjectSlug} =await  params
-    const {moduleSlug} = await  params
+export default async function ModuleIntroPage({
+                                                  params,
+                                              }: {
+    params: { locale: string; subjectSlug: string; moduleSlug: string };
+}) {
+    const { locale, subjectSlug, moduleSlug } = params;
 
     if (!subjectSlug || !moduleSlug) notFound();
 
     const subject = await prisma.practiceSubject.findUnique({
         where: { slug: subjectSlug },
-        select: { slug: true, title: true, description: true, imagePublicId: true, imageAlt: true },
+        select: {
+            slug: true,
+            title: true,
+            description: true,
+            imagePublicId: true,
+            imageAlt: true,
+        },
     });
-    console.log(subject,subjectSlug, moduleSlug)
 
     if (!subject) notFound();
 
@@ -33,10 +39,10 @@ export default async function ModuleIntroPage({ params }: Promise<{ params: any 
             order: true,
             weekStart: true,
             weekEnd: true,
-            // If you later add meta Json? on PracticeModule, include it here:
-             meta: true,
+            meta: true, // ✅ exists in schema
         },
     });
+
     if (!module) notFound();
 
     const [sectionsCount, topicsCount] = await Promise.all([
@@ -62,7 +68,7 @@ export default async function ModuleIntroPage({ params }: Promise<{ params: any 
                 order: module.order ?? 0,
                 weekStart: module.weekStart ?? null,
                 weekEnd: module.weekEnd ?? null,
-                meta: module.meta?? null
+                meta: parseModuleMeta(module.meta), // ✅ typed + safe
             }}
             stats={{ sectionsCount, topicsCount }}
         />

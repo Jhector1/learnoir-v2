@@ -1,5 +1,9 @@
-// src/lib/practice/validate/policies.ts
+// src/lib/practice/api/validate/policies.ts
 import type { PrismaClient } from "@prisma/client";
+import {
+  computeMaxAttemptsCore,
+  type RunMode,
+} from "@/lib/practice/policies/attempts";
 
 export function computeCanReveal(args: {
   isAssignment: boolean;
@@ -7,31 +11,31 @@ export function computeCanReveal(args: {
   allowRevealFromAssignment: boolean;
 }) {
   return args.isAssignment
-    ? args.allowRevealFromAssignment && args.allowRevealFromKey
-    : args.allowRevealFromKey;
+      ? args.allowRevealFromAssignment && args.allowRevealFromKey
+      : args.allowRevealFromKey;
 }
 
 /**
- * Attempts policy:
- * - locked runs (assignment OR session): default 3 (assignment may override)
- * - free practice: default 5
+ * Attempts policy (server truth):
+ * - assignment: finite (default 3, override by assignment.maxAttempts)
+ * - session: finite (default 3) [optionally override later]
+ * - practice: unlimited (null)
  */
 export function computeMaxAttempts(args: {
-  isLockedRun: boolean;
-  assignmentMaxAttempts: number | null;
+  mode: RunMode;
+  assignmentMaxAttempts?: any; // number | null | string
+  sessionMaxAttempts?: any;
+  practiceMaxAttempts?: any;
 }) {
-  if (args.isLockedRun) {
-    return args.assignmentMaxAttempts ?? 3;
-  }
-  return 5;
+  return computeMaxAttemptsCore(args);
 }
 
 export async function countPriorNonRevealAttempts(
-  prisma: PrismaClient,
-  args: {
-    instanceId: string;
-    actor: { userId?: string | null; guestId?: string | null };
-  },
+    prisma: PrismaClient,
+    args: {
+      instanceId: string;
+      actor: { userId?: string | null; guestId?: string | null };
+    },
 ) {
   const OR = [
     args.actor.userId ? { userId: args.actor.userId } : null,
@@ -46,3 +50,5 @@ export async function countPriorNonRevealAttempts(
     },
   });
 }
+
+export type { RunMode };

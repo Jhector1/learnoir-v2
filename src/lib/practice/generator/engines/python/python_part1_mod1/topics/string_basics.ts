@@ -1,12 +1,13 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/string_basics.ts
 import type { CodeInputExercise, SingleChoiceExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, pickName } from "../../python_shared/_shared";
+import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {makeCodeExpected, pickName } from "../../_shared";
 
 export const M1_STRINGS_POOL = [
-    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice",purpose: "quiz" },
-    { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m1_str_username_code", w: 1, kind: "code_input",purpose: "project" },
+    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice", purpose: "project" },
+    // ✅ make these quiz if practice is quiz-only
+    { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input", purpose: "project" },
+    { key: "m1_str_username_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
 export type M1StringsKey = (typeof M1_STRINGS_POOL)[number]["key"];
@@ -32,7 +33,7 @@ export const M1_STRINGS_HANDLERS: Record<M1StringsKey, Handler> = {
                 { id: "b", text: "`print(\"age:\", age)`" },
                 { id: "c", text: "`print(\"age: \" + 16)`" },
             ],
-            hint: "Commas in print work with numbers. Using + requires strings on both sides.",
+            hint: "Commas work with numbers. Using + requires strings on both sides.",
         };
 
         return {
@@ -51,27 +52,11 @@ export const M1_STRINGS_HANDLERS: Record<M1StringsKey, Handler> = {
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: f-string greeting",
-            prompt: String.raw`
-Read **ONE input** (a name).
-
-Print exactly:
-Hello, <name>!
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-Maya
-
-$ output
-Hello, Maya!
-~~~
-`.trim(),
+            title: "f-string greeting",
+            prompt: `Read ONE input (name). Print: Hello, <name>!`,
             language: "python",
-            starterCode: String.raw`# TODO: read name
-# TODO: print greeting using an f-string
-`,
-            hint: `Use: print(f"Hello, {name}!")`,
+            starterCode: `# TODO`,
+            hint: `print(f"Hello, {name}!")`,
         };
 
         const expected = makeCodeExpected({
@@ -105,37 +90,10 @@ Hello, Maya!
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Username generator",
-            prompt: String.raw`
-Read **TWO inputs**:
-1) first name
-2) last name
-
-Build a username:
-- first letter of the FIRST name
-- plus the LAST name
-- remove extra spaces (use strip())
-- make it lowercase
-
-Print ONLY the username.
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ input
-  Maya  
- JOHNSON 
-
-$ output
-mjohnson
-~~~
-`.trim(),
+            title: "Username generator",
+            prompt: `Read TWO inputs (first, last). Print first letter of first + last (strip, lowercase).`,
             language: "python",
-            starterCode: String.raw`first = input()
-last = input()
-# TODO: strip spaces
-# TODO: build username
-# TODO: print username
-`,
+            starterCode: `# TODO`,
             hint: `username = (first.strip()[0] + last.strip()).lower()`,
         };
 
@@ -155,3 +113,9 @@ last = input()
         return { archetype: "m1_str_username_code", exercise, expected };
     },
 };
+
+export const M1_STRINGS_TOPIC: TopicBundle = defineTopic(
+    "string_basics",
+    M1_STRINGS_POOL as any,
+    M1_STRINGS_HANDLERS as any,
+);

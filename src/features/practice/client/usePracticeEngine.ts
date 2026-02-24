@@ -38,6 +38,7 @@ export type Phase = "practice" | "summary";
 // import type { Exercise } from "@/lib/practice/types";
 // import { initItemFromExercise } from "@/lib/practice/uiHelpers";
 import type { SessionHistoryRow } from "./sessionStatus";
+import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
 
 function applyAnswerPayloadToItem(item: QItem, payload: any) {
   if (!payload || typeof payload !== "object") return;
@@ -178,7 +179,9 @@ export function usePracticeEngine(args: {
   allowReveal: boolean;
   maxAttempts: number;
   returnUrlFromQuery: string | null;
-
+  // ✅ NEW
+  preferPurpose?: PurposeMode;      // "quiz" | "project" | "mixed"
+  purposePolicy?: PurposePolicy;    // "strict" | "fallback"
   // hydrated + sid resolution
   hydrated: boolean;
   resolvedSessionIdRef: MutableRefObject<string | null>;
@@ -248,7 +251,8 @@ export function usePracticeEngine(args: {
     setSessionSize,
     sessionId,
     setSessionId,
-
+    preferPurpose,
+    purposePolicy,
     phase,
     setPhase,
     autoSummarized,
@@ -451,7 +455,8 @@ export function usePracticeEngine(args: {
       const effectiveSid = getEffectiveSid({ sessionId, resolvedSessionIdRef });
       const sid = opts?.forceNew ? null : effectiveSid;
       const useSession = Boolean(sid);
-
+      const pp = preferPurpose ?? "quiz";
+      const pol = purposePolicy ?? "fallback";
       const res: PracticeGetResponse = await fetchPracticeExercise({
         sessionId: useSession ? (sid ?? undefined) : undefined,
         allowReveal: allowReveal ? true : undefined,
@@ -466,6 +471,9 @@ export function usePracticeEngine(args: {
             ? undefined
             : difficulty,
         section: useSession ? undefined : (section ?? undefined),
+        // ✅ NEW: purpose routing (works for session + non-session)
+        preferPurpose: pp,
+        purposePolicy: pol,
       } as any);
 
       const runFromApi = (res as any)?.run;

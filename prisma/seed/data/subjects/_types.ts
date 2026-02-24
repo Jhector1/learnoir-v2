@@ -11,7 +11,9 @@ export type SubjectSeed = {
   order: number;
   title: string;
   description?: string;
-  meta?: any;
+  imagePublicId?:string;
+  imageAlt?:string;
+      meta?: any;
 };
 
 export type ModuleSeed = {
@@ -46,6 +48,9 @@ export type TopicSeed = {
   meta?: any;
 };
 // ✅ define ModuleMeta first (before ModuleSeed uses it)
+// prisma/seed/data/subjects/_types.ts
+// import { z } from "zod";
+
 export const ModuleMetaSchema = z.object({
   outcomes: z.array(z.string().min(1)).optional(),
   why: z.array(z.string().min(1)).optional(),
@@ -53,8 +58,8 @@ export const ModuleMetaSchema = z.object({
   videoUrl: z.string().url().nullable().optional(),
   estimatedMinutes: z.number().int().positive().optional(),
 });
-export type ModuleMeta = z.infer<typeof ModuleMetaSchema>;
 
+export type ModuleMeta = z.infer<typeof ModuleMetaSchema>;
 export type SectionSeed = {
   slug: SectionSlug;
   subjectSlug: SubjectSlug;

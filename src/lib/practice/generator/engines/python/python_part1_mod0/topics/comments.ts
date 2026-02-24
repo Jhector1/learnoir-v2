@@ -1,19 +1,15 @@
 // src/lib/practice/generator/engines/python/python_part1_mod0/topics/comments.ts
-import type { Handler } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
 
-// ✅ Source of truth: includes key + weight + kind
 export const M0_COMMENTS_POOL = [
     { key: "m0_comments_symbol", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice" , purpose: "quiz"},
+    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m0_comments_best_reason", w: 1, kind: "single_choice", purpose: "quiz" },
 ] as const;
 
-// ✅ Derive keys from pool (for routing + validation)
 export type M0CommentsKey = (typeof M0_COMMENTS_POOL)[number]["key"];
-export const M0_COMMENTS_VALID_KEYS = M0_COMMENTS_POOL.map((p) => p.key) as M0CommentsKey[];
 
-// ✅ Handlers keyed by the derived key union
 export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
     m0_comments_symbol: ({ diff, id, topic }) =>
         makeSingleChoiceOut({
@@ -66,3 +62,9 @@ export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
             hint: "Good comments explain intent (the why), not obvious code (the what).",
         }),
 };
+
+export const M0_COMMENTS_TOPIC: TopicBundle = defineTopic(
+    "comments_intro",
+    M0_COMMENTS_POOL as any,
+    M0_COMMENTS_HANDLERS as any,
+);

@@ -1,143 +1,132 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/variables_types.ts
-import type { CodeInputExercise } from "../../../../../types";
-import type { Handler } from "../../python_shared/_shared";
-import { makeCodeExpected, safeInt, pickName } from "../../python_shared/_shared";
-import { makeSingleChoiceOut } from "../../python_shared/_shared";
+import type { SingleChoiceExercise, CodeInputExercise } from "../../../../../types";
+import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {  makeCodeExpected, pickName, safeInt } from "../../_shared";
 
-export const M1_VARIABLES_TYPES_POOL = [
-    { key: "m1_vars_boxes_print_code", w: 1, kind: "code_input",purpose: "project" },
-    { key: "m1_types_convert_next_year_code", w: 1, kind: "code_input" ,purpose: "project"},
-    { key: "m1_types_errors_sc", w: 1, kind: "single_choice" ,purpose: "quiz"},
+/**
+ * ✅ QUIZ-ONLY pool (purpose: "quiz")
+ * If you later want “projects”, add purpose:"project" items too,
+ * but quiz practice will only pick the quiz ones.
+ */
+export const M1_VARIABLES_POOL = [
+    { key: "m1_vars_what_is_variable_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m1_vars_assignment_operator_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m1_vars_type_guessing_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    // optional: code_input but still “quiz” (short check, not a “project”)
+    { key: "m1_vars_swap_values_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
 
-export type M1VarsTypesKey = (typeof M1_VARIABLES_TYPES_POOL)[number]["key"];
-export const M1_VARIABLES_TYPES_VALID_KEYS = M1_VARIABLES_TYPES_POOL.map((p) => p.key) as M1VarsTypesKey[];
+export type M1VariablesKey = (typeof M1_VARIABLES_POOL)[number]["key"];
 
-function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
-    let x = safeInt(rng, lo, hi);
-    for (let i = 0; i < 6 && x === avoid; i++) x = safeInt(rng, lo, hi);
-    return x;
-}
+export const M1_VARIABLES_TYPES_HANDLERS: Record<M1VariablesKey, Handler> = {
+    m1_vars_what_is_variable_sc: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m1_vars_what_is_variable_sc",
+            id,
+            topic,
+            diff,
+            title: "Variables = labeled boxes",
+            prompt: "In Python, a variable is best described as:",
+            options: [
+                { id: "a", text: "A place to store a value (with a name)" },
+                { id: "b", text: "A special kind of comment" },
+                { id: "c", text: "A function that prints text" },
+            ],
+            answerOptionId: "a",
+            hint: "A variable holds a value so you can reuse it later by name.",
+        }),
 
-export const M1_VARIABLES_TYPES_HANDLERS: Record<M1VarsTypesKey, Handler> = {
-    m1_vars_boxes_print_code: ({ rng, diff, id, topic }) => {
-        const name = pickName(rng);
-        const score = safeInt(rng, 5, 100);
+    m1_vars_assignment_operator_sc: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m1_vars_assignment_operator_sc",
+            id,
+            topic,
+            diff,
+            title: "Assignment uses =",
+            prompt: "Which line correctly assigns the number 5 to a variable named `x`?",
+            options: [
+                { id: "a", text: "`x == 5`" },
+                { id: "b", text: "`x = 5`" },
+                { id: "c", text: "`5 = x`" },
+            ],
+            answerOptionId: "b",
+            hint: "`=` assigns. `==` compares.",
+        }),
+
+    m1_vars_type_guessing_sc: ({ diff, id, topic }) =>
+        makeSingleChoiceOut({
+            archetype: "m1_vars_type_guessing_sc",
+            id,
+            topic,
+            diff,
+            title: "Types: str vs int",
+            prompt: "Which value is a **string** in Python?",
+            options: [
+                { id: "a", text: "`42`" },
+                { id: "b", text: "`\"42\"`" },
+                { id: "c", text: "`3.14`" },
+            ],
+            answerOptionId: "b",
+            hint: "Quotes make it a string.",
+        }),
+
+    m1_vars_swap_values_code: ({ rng, diff, id, topic }) => {
+        const a1 = safeInt(rng, 1, 9);
+        const b1 = safeInt(rng, 1, 9);
+        const a2 = safeInt(rng, 10, 99);
+        const b2 = safeInt(rng, 10, 99);
 
         const exercise: CodeInputExercise = {
             id,
             topic,
             difficulty: diff,
             kind: "code_input",
-            title: "Mini-project: Boxes (variables) + clean print",
+            title: "Swap two values",
             prompt: String.raw`
-Create TWO variables:
-- name (a string)
-- score (an integer)
+Read **TWO integers** (a then b).
 
-Set them to:
-- name = ${JSON.stringify(name)}
-- score = ${score}
-
-Print **EXACTLY two lines**:
-name = <name>
-score = <score>
+Swap them, then print:
+1) the new a
+2) the new b
 
 ~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
-$ output
-name = ${name}
-score = ${score}
-~~~
-`.trim(),
-            language: "python",
-            starterCode: String.raw`# TODO: set name
-# TODO: set score
-# TODO: print two lines exactly
-`,
-            hint: "Use print with commas or f-strings. Match the output exactly.",
-        };
-
-        // ✅ single test is correct here (no input; values are part of the task)
-        const expected = makeCodeExpected({
-            language: "python",
-            tests: [{ stdin: ``, stdout: `name = ${name}\nscore = ${score}\n`, match: "exact" }],
-            solutionCode:
-                `name = ${JSON.stringify(name)}\n` +
-                `score = ${score}\n` +
-                `print(f"name = {name}")\n` +
-                `print(f"score = {score}")\n`,
-        });
-
-        return { archetype: "m1_vars_boxes_print_code", exercise, expected };
-    },
-
-    m1_types_convert_next_year_code: ({ rng, diff, id, topic }) => {
-        const age1 = safeInt(rng, 10, 70);
-        const age2 = pickDifferentInt(rng, 10, 70, age1);
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Mini-project: Convert to int + next year",
-            prompt: String.raw`
-Read **ONE input** (age).
-
-Convert it to an integer.
-
-Print exactly:
-Next year: <age + 1>
-
-~~~terminal
-@meta Idle • Accepted • 0.026s • 3MB
 $ input
-16
+2
+9
 
 $ output
-Next year: 17
+9
+2
 ~~~
 `.trim(),
             language: "python",
-            starterCode: String.raw`# TODO: read age
-# TODO: convert to int
-# TODO: print Next year: <age+1>
+            starterCode: String.raw`a = int(input())
+b = int(input())
+# TODO: swap a and b
+# TODO: print a then b
 `,
-            hint: "age = int(input())",
+            hint: "Python swap: a, b = b, a",
         };
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${age1}\n`, stdout: `Next year: ${age1 + 1}\n`, match: "exact" },
-                { stdin: `${age2}\n`, stdout: `Next year: ${age2 + 1}\n`, match: "exact" },
+                { stdin: `${a1}\n${b1}\n`, stdout: `${b1}\n${a1}\n`, match: "exact" },
+                { stdin: `${a2}\n${b2}\n`, stdout: `${b2}\n${a2}\n`, match: "exact" },
             ],
-            solutionCode: `age = int(input())\nprint(f"Next year: {age + 1}")\n`,
+            solutionCode: `a = int(input())\nb = int(input())\na, b = b, a\nprint(a)\nprint(b)\n`,
         });
 
-        return { archetype: "m1_types_convert_next_year_code", exercise, expected };
+        return { archetype: "m1_vars_swap_values_code", exercise, expected };
     },
-
-    m1_types_errors_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_types_errors_sc",
-            id,
-            topic,
-            diff,
-            title: "Reading errors",
-            prompt:
-                "What error is most likely from this code?\n\n" +
-                "~~~python\n" +
-                "age = input(\"Age: \")\n" +
-                "print(age + 1)\n" +
-                "~~~",
-            options: [
-                { id: "a", text: "NameError" },
-                { id: "b", text: "TypeError" },
-                { id: "c", text: "SyntaxError" },
-            ],
-            answerOptionId: "b",
-            hint: "input() returns a string, so age + 1 tries to add str and int.",
-        }),
 };
+
+/**
+ * ✅ Export bundle for module handler
+ */
+export const M1_VARIABLES_TOPIC: TopicBundle = defineTopic(
+    "variables_types_intro",
+    M1_VARIABLES_POOL as any,
+    M1_VARIABLES_TYPES_HANDLERS as any,
+);

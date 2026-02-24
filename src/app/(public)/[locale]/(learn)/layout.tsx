@@ -10,7 +10,7 @@ export default async function LearnLayout({
   return (
     // <html>
       <div >
-        <LearnHeaderSlick brand="Learnoir" badge="MVP" />
+        <LearnHeaderSlick  />
         {children}
       </div>
     // </html>

@@ -159,3 +159,5 @@ export type ReviewProjectSpec = {
 
     steps: ReviewProjectStep[];
 };
+export type PurposeMode = "quiz" | "project" | "mixed";
+export type PurposePolicy = "strict" | "fallback";

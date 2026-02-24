@@ -25,7 +25,21 @@ function buildExpectedAnswerPayload(kind: PracticeKind, expectedCanon: any) {
 
     return optionId ? { kind: "single_choice", optionId: String(optionId) } : null;
   }
+  if (
+      kind === PracticeKind.text_input ||
+      kind === PracticeKind.word_bank_arrange ||
+      kind === PracticeKind.listen_build ||
+      kind === PracticeKind.fill_blank_choice
+  ) {
+    const v =
+        typeof expectedCanon?.value === "string"
+            ? expectedCanon.value
+            : Array.isArray(expectedCanon?.answers) && typeof expectedCanon.answers[0] === "string"
+                ? expectedCanon.answers[0]
+                : null;
 
+    return v ? { kind: String(kind), value: String(v) } : null;
+  }
   if (kind === PracticeKind.multi_choice) {
     const ids =
         expectedCanon?.optionIds ??
@@ -89,12 +103,12 @@ export async function createInstance(args: {
 
   const kindEnum: PracticeKind = toPracticeKindOrThrow((exercise as any)?.kind);
 
-  if (expected?.kind && String(expected.kind) !== String(kindEnum)) {
-    throw new Error(`Expected.kind "${expected.kind}" != instance kind "${kindEnum}".`);
-  }
-
   const expectedCanon = normalizeExpectedForSave(kindEnum, expected);
 
+// ✅ validate AFTER normalization so compat coercions work
+  if (expectedCanon?.kind && String(expectedCanon.kind) !== String(kindEnum)) {
+    throw new Error(`Expected.kind "${expectedCanon.kind}" != instance kind "${kindEnum}".`);
+  }
   const publicPayload = { ...(exercise as any), topic: dbTopicSlug } as any;
 
   if (kindEnum === PracticeKind.matrix_input) {
@@ -115,8 +129,7 @@ export async function createInstance(args: {
   const dbPurpose = typeof purpose === "string" ? toDbPurpose(purpose) : (purpose ?? PracticePurpose.quiz);
 
   // helpful for client/debug if you want it
-  publicPayload.purpose = dbPurpose;
-
+  publicPayload.purpose = String(dbPurpose);
   return prisma.practiceQuestionInstance.create({
     data: {
       sessionId,

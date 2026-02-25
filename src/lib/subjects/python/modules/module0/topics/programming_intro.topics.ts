@@ -5,6 +5,7 @@ import { PY_MOD0 } from "../../../../../../../prisma/seed/data/subjects/python/c
 
 // ✅ import pool from generator (source of truth)
 import { M0_PROGRAMMING_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/programming";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "programming_intro" as const;
 const LABEL = "Programming Languages: Talking to Computers" as const;
@@ -46,7 +47,7 @@ export const PY_PROGRAMMING_INTRO = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -55,5 +56,5 @@ export const PY_PROGRAMMING_INTRO = {
             minutes: MINUTES,
             pool: M0_PROGRAMMING_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

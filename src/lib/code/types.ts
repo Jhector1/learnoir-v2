@@ -1,7 +1,5 @@
 import {CodeLanguage} from "@/lib/practice/types";
 
-export type Lang = "python" | "java" | "javascript" | "c" | "cpp";
-
 export type FileEntry = { path: string; content: string };
 
 // Backward compatible:

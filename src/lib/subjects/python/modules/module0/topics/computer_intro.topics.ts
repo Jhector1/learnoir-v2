@@ -5,6 +5,7 @@ import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects
 
 // ✅ import pool as source of truth
 import { M0_COMPUTER_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/computer";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "computer_intro" as const;
 const LABEL = "The Input → Processing → Output Model" as const;
@@ -55,7 +56,7 @@ export const PY_COMPUTER_INTRO = {
                 },
             },
         ],
-    } as const,
+    }satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -65,5 +66,5 @@ export const PY_COMPUTER_INTRO = {
             // ✅ populated; clone to avoid readonly friction
             pool: M0_COMPUTER_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+    }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

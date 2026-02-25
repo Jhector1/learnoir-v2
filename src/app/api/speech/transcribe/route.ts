@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     const extraPrompt = String(incoming.get("prompt") ?? "").slice(0, 1500);
 
     const haitianPrompt = [
-        "Lang: Haitian Creole / Kreyòl ayisyen. Pa tradui.",
+        "CodeLanguage: Haitian Creole / Kreyòl ayisyen. Pa tradui.",
         target ? `Fraz sib: ${target}` : null,
         extraPrompt || null,
         "Transkri egzakteman sa w tande a. Kenbe òtograf nòmal.",

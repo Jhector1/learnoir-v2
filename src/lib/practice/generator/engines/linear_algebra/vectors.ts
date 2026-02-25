@@ -12,10 +12,12 @@ import { RNG } from "../../shared/rng";
 
 // helpers
 function dot3(
-  a: { x: number; y: number; z: number },
-  b: { x: number; y: number; z: number },
+    a: { x: number; y: number; z?: number },
+    b: { x: number; y: number; z?: number },
 ) {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
+  const az = a.z ?? 0;
+  const bz = b.z ?? 0;
+  return a.x * b.x + a.y * b.y + az * bz;
 }
 
 export function genVectors(

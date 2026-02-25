@@ -64,10 +64,11 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
     });
     if (!subject) return { ok: false as const, status: 404, message: "Unknown subjectSlug." };
 
+    // ✅ include module DB id
     const dbModules = await prisma.practiceModule.findMany({
         where: { subjectId: subject.id },
         orderBy: { order: "asc" },
-        select: { slug: true, title: true, order: true },
+        select: { id: true, slug: true, title: true, order: true },
     });
 
     const reviewModules = dbModules.filter((m) => hasReviewModule(subjectSlug, m.slug));
@@ -75,28 +76,28 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
         return { ok: false as const, status: 404, message: "No review modules for this subject." };
     }
 
+    // ✅ ReviewProgress.moduleId is the module DB id
     const progressRows = await prisma.reviewProgress.findMany({
         where: {
             actorKey,
             subjectSlug,
             locale,
-            moduleId: { in: reviewModules.map((m) => m.slug) },
+            moduleId: { in: reviewModules.map((m) => m.id) },
         },
         select: { moduleId: true, state: true, updatedAt: true },
     });
 
-    const progressByModule = new Map(progressRows.map((r) => [r.moduleId, r as any]));
+    const progressByModuleId = new Map(progressRows.map((r) => [r.moduleId, r as any]));
 
     // ✅ decide whether assignment is required for certificate
     const requireAssignment = false;
 
     const modules = await Promise.all(
         reviewModules.map(async (m) => {
-            const row = progressByModule.get(m.slug);
+            const row = progressByModuleId.get(m.id);
             const state = (row?.state ?? null) as any;
 
             const moduleCompleted = Boolean(state?.moduleCompleted);
-
             const assignmentSessionId = state?.assignmentSessionId ? String(state.assignmentSessionId) : null;
 
             let assignmentCompleted = false;
@@ -109,7 +110,12 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
             }
 
             return {
+                // Keep slug for display/meta (nice for humans)
                 moduleId: m.slug,
+
+                // ✅ add db id for correctness/debugging
+                moduleDbId: m.id,
+
                 title: m.title,
                 order: m.order,
                 moduleCompleted,
@@ -133,7 +139,6 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
 
     return { ok: true as const, subject, requireAssignment, modules, eligible, completedAt };
 }
-
 // Fit text into a box by reducing font size until it fits height (and wraps within width)
 function fitTextBox(
     doc: PDFKit.PDFDocument,
@@ -452,17 +457,22 @@ export async function GET(req: Request) {
 
         doc.end();
 
+        // const pdf = await done;
+        // const filename = `${status.subject.slug}-certificate.pdf`;
+
+// Buffer -> ArrayBuffer (no extra copy)
         const pdf = await done;
         const filename = `${status.subject.slug}-certificate.pdf`;
 
-        const res = new NextResponse(pdf, {
-            status: 200,
-            headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `attachment; filename="${filename}"`,
-                "Cache-Control": "no-store",
-            },
-        });
+// ✅ Make a fresh no pdfUint8Array (backed by ArrayBuffer, not SharedArrayBuffer)
+        const bytes = new Uint8Array(pdf.byteLength);
+        bytes.set(pdf); // Buffer is a Uint8Array, so this copies cleanly
+
+        const res = new NextResponse(bytes);
+
+        res.headers.set("Content-Type", "application/pdf");
+        res.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
+        res.headers.set("Cache-Control", "no-store");
 
         return attachGuestCookie(res, setGuestId);
     } catch (e: any) {

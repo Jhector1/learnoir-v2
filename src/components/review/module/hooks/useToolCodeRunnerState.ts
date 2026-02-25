@@ -2,10 +2,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Lang } from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
+
 
 type BoundTarget = { id: string; onPatch: (patch: any) => void };
-type ToolSnap = { lang: Lang; code: string; stdin: string };
+type ToolSnap = { lang: CodeLanguage; code: string; stdin: string };
 
 function snapKey(s: ToolSnap) {
     // ✅ stable dedupe key
@@ -19,7 +20,7 @@ export function useToolCodeRunnerState(args: {
     viewTid: string;
 
     toolKey?: string;
-    defaultLang?: Lang;
+    defaultLang?: CodeLanguage;
     defaultCode?: string;
     defaultStdin?: string;
 
@@ -107,12 +108,12 @@ export function useToolCodeRunnerState(args: {
         return (progress as any)?.topics?.[viewTid]?.toolState?.[toolKey] ?? null;
     }, [progress, viewTid, toolKey]);
 
-    const initialLang = (saved?.lang as Lang) ?? defaultLang;
+    const initialLang = (saved?.lang as CodeLanguage) ?? defaultLang;
     const initialCode =
         typeof saved?.code === "string" && saved.code.trim().length ? saved.code : defaultCode;
     const initialStdin = typeof saved?.stdin === "string" ? saved.stdin : defaultStdin;
 
-    const [toolLang, setToolLang0] = useState<Lang>(initialLang);
+    const [toolLang, setToolLang0] = useState<CodeLanguage>(initialLang);
     const [toolCode, setToolCode0] = useState<string>(initialCode);
     const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
 
@@ -135,7 +136,7 @@ export function useToolCodeRunnerState(args: {
         if (boundRef.current) return;
 
         const s = (progress as any)?.topics?.[viewTid]?.toolState?.[toolKey] ?? null;
-        const nextLang = (s?.lang as Lang) ?? defaultLang;
+        const nextLang = (s?.lang as CodeLanguage) ?? defaultLang;
         const nextCode = typeof s?.code === "string" && s.code.trim().length ? s.code : defaultCode;
         const nextStdin = typeof s?.stdin === "string" ? s.stdin : defaultStdin;
 
@@ -163,7 +164,7 @@ export function useToolCodeRunnerState(args: {
     // Bind a specific code_input question into the Tools panel
     // -----------------------------
     const bindCodeInput = useCallback(
-        (args2: { id: string; lang: Lang; code: string; stdin?: string; onPatch: (patch: any) => void }) => {
+        (args2: { id: string; lang: CodeLanguage; code: string; stdin?: string; onPatch: (patch: any) => void }) => {
             const wasSameId = boundRef.current?.id === args2.id;
 
             boundRef.current = { id: args2.id, onPatch: args2.onPatch };
@@ -223,7 +224,7 @@ export function useToolCodeRunnerState(args: {
     }, [progressHydrated, setProgress, toolKey, viewTid]);
 
     const saveDebounced = useCallback(
-        (nextLang: Lang, nextCode: string, nextStdin?: string) => {
+        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string) => {
             if (!progressHydrated) return;
             clearPendingSave();
 
@@ -266,7 +267,7 @@ export function useToolCodeRunnerState(args: {
     // When tool changes AND bound -> patch question + reset checked state
     // (this ensures typed code is also stored in quizState via the question patch)
     // -----------------------------
-    const setToolLang = useCallback((l: Lang) => {
+    const setToolLang = useCallback((l: CodeLanguage) => {
         setToolLang0(l);
         latestRef.current = { ...latestRef.current, lang: l };
 

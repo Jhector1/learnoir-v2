@@ -8,6 +8,7 @@ import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/hait
 import { SketchEntry } from "@/components/sketches/subjects";
 import {HC_PRONOUNS_POOL} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/pronouns";
 import {TopicDefCompat} from "@/seed/data/subjects/_types";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "hc_pronouns" as const;
 const LABEL = "Pronouns (mwen, ou, li, nou, yo)" as const;
@@ -52,7 +53,8 @@ export const HC_PRONOUNS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
+
 
     def: {
         id: ID,
@@ -61,5 +63,5 @@ export const HC_PRONOUNS = {
             minutes: MINUTES,
             pool: HC_PRONOUNS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+    }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

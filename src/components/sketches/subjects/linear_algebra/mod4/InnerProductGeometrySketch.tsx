@@ -329,7 +329,7 @@ export default function InnerProductGeometrySketch({
 
                     <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-2 text-xs dark:border-white/10 dark:bg-white/[0.03]">
                         <MathMarkdown
-                            markdown={String.raw`
+                            content={String.raw`
 We are visualizing the *metric* defined by $A$.
 
 - $\langle x,y\rangle_A = x^\top A y$

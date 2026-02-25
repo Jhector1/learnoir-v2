@@ -5,6 +5,7 @@ import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects
 
 // ✅ pool source of truth
 import { M0_SYNTAX_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/syntax";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "syntax_intro" as const;
 const LABEL = "Syntax: Rules Computers Require" as const;
@@ -46,7 +47,7 @@ export const PY_SYNTAX = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -55,5 +56,5 @@ export const PY_SYNTAX = {
             minutes: MINUTES,
             pool: M0_SYNTAX_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

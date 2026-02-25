@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import type { Lang } from "@/lib/code/runCode";
+
 import CodeRunner from "@/components/code/runner/CodeRunner";
+import {CodeLanguage} from "@/lib/practice/types";
 
 export default function CodeToolPane(props: {
     height: number;
-    toolLang: Lang;
+    toolLang: CodeLanguage;
     toolCode: string;
     toolStdin: string;
     onChangeCode: (c: string) => void;
@@ -26,8 +27,8 @@ export default function CodeToolPane(props: {
             showLanguagePicker={false}
             code={toolCode}
             onChangeCode={onChangeCode}
-            stdin={toolStdin}
-            onChangeStdin={onChangeStdin}
+            // stdin={toolStdin}
+            // onChangeStdin={onChangeStdin}
         />
     );
 }

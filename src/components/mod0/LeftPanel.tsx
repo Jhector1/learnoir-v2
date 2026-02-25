@@ -5,7 +5,8 @@ import type { Mode } from "@/lib/math/vec3";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import LiveMathPanel from "./LiveMathPanel";
 import { Toggle, killEvent, StatusBox } from "./ui";
-import type { QuestionType } from "./usePracticeEngine";
+import {QuestionType} from "@/components/mod0/hooks/usePracticeEngine";
+// import type { QuestionType } from "./usePracticeEngine";
 
 export default React.memo(function LeftPanel({
                                                  mode,

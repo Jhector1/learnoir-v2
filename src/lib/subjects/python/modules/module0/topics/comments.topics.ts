@@ -5,6 +5,7 @@ import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects
 
 // ✅ import pool from generator topic (source of truth)
 import { M0_COMMENTS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/comments";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "comments_intro" as const;
 const LABEL = "Comments: Notes to Humans (Python Ignores Them)" as const;
@@ -43,7 +44,7 @@ export const PY_COMMENTS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -53,5 +54,5 @@ export const PY_COMMENTS = {
             // ✅ clone objects to avoid readonly friction in some TS setups
             pool: M0_COMMENTS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

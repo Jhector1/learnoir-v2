@@ -1,7 +1,8 @@
-import type { Lang } from "@/lib/code/runCode";
+
 import type { FSNode, WorkspaceStateV2 } from "./types";
 import { uid } from "./utils";
 import { defaultMainFile, defaultMainCode } from "./languageDefaults";
+import {CodeLanguage} from "@/lib/practice/types";
 
 export const STORAGE_KEY_V2 = "learnoir.ide.workspace.v2";
 export const STORAGE_KEY_V1 = "learnoir.ide.workspace.v1";
@@ -34,7 +35,7 @@ export function tryMigrateV1(): WorkspaceStateV2 | null {
         const v1 = JSON.parse(raw) as any;
         if (!v1?.files?.length) return null;
 
-        const language: Lang = v1.language ?? "python";
+        const language: CodeLanguage = v1.language ?? "python";
         const rootSrcId = uid();
 
         const nodes: FSNode[] = [

@@ -4,6 +4,7 @@ import { PY_SECTION_PART2, PY_TOPIC_MOD2 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M2_CONDITIONALS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod2/topics/conditionals";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "conditionals_basics" as const;
 const LABEL = "Conditionals: Teaching Your Program to Decide" as const;
@@ -101,7 +102,7 @@ export const PY_CONDITIONALS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -110,5 +111,5 @@ export const PY_CONDITIONALS = {
             minutes: MINUTES,
             pool: M2_CONDITIONALS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

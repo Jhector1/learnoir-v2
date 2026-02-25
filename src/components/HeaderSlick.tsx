@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSession, signIn, signOut, type SessionStatus } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 import UserMenuSlick from "./UserMenuSlick";
 
@@ -19,7 +19,7 @@ import {useSearchParams} from "next/navigation";
 import SoundToggle from "@/lib/sfx/SoundToggle";
 
 type NavItem = { href: string; label: string };
-
+type SessionStatus = "loading" | "authenticated" | "unauthenticated";
 type HeaderSlotCtx = {
   locale: string;
   pathname: string;
@@ -36,18 +36,28 @@ async function hardLogout(locale: string) {
       `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
 }
 
-function SettingsMenu({ title = "Settings" }: { title?: string }) {
+function SettingsMenu() {
+  const t = useTranslations("Header");
+
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
+
   useEffect(() => {
     function onDown(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+
+      // ✅ If click happened inside a modal, ignore it
+      if (target?.closest?.('[data-modal-root="true"]')) return;
+
       if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (!wrapRef.current.contains(target as Node)) setOpen(false);
     }
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -57,56 +67,55 @@ function SettingsMenu({ title = "Settings" }: { title?: string }) {
   }, []);
 
   return (
-      <div ref={wrapRef} className="relative">
+      <div ref={wrapRef} className="relative overflow-visible">
         <button
             type="button"
             className="ui-gearbtn"
             aria-haspopup="menu"
             aria-expanded={open}
-            aria-label="Open settings"
+            aria-label={t("openSettings")}
             onClick={() => setOpen((v) => !v)}
         >
           <Settings className="h-4 w-4" />
         </button>
 
         {open ? (
-            <div role="menu" className="ui-menu-panel">
+            <div role="menu" className={cn("ui-menu-panel", "overflow-visible")}>
               <div className="border-b border-neutral-200 px-4 py-3 dark:border-white/10">
                 <div className="text-sm font-black tracking-tight text-neutral-900 dark:text-white">
-                  {title}
+                  {t("settings")}
                 </div>
                 <div className="mt-0.5 text-xs text-neutral-600 dark:text-white/60">
-                  Appearance & language
+                  {t("settingsSubtitle")}
                 </div>
               </div>
 
-              <div className="grid gap-3 p-3">
-                <div className="ui-menu-section">
-                  <div className="ui-menu-label">Theme</div>
+              <div className="grid gap-3 p-3 overflow-visible">
+                <div className={cn("ui-menu-section", "overflow-visible")}>
+                  <div className="ui-menu-label">{t("theme")}</div>
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <div className="text-xs text-neutral-600 dark:text-white/60">
-                      Light / Dark
+                      {t("themeHint")}
                     </div>
                     <ThemeToggle />
                   </div>
                 </div>
 
-                <div className="ui-menu-section">
-                  <div className="ui-menu-label">Language</div>
-                  <div className="mt-2">
+                <div className={cn("ui-menu-section", "overflow-visible")}>
+                  <div className="ui-menu-label">{t("language")}</div>
+                  {/* ✅ extra top padding + overflow visible prevents “top cut” */}
+                  <div className="mt-2 pt-1 overflow-visible">
                     <LocaleSwitcher />
                   </div>
                 </div>
-                <div className="ui-menu-section">
-                  <div className="ui-menu-label">Sound</div>
+
+                <div className={cn("ui-menu-section", "overflow-visible")}>
+                  <div className="ui-menu-label">{t("sound")}</div>
                   <SoundToggle />
                 </div>
-                <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="ui-menu-closebtn"
-                >
-                  Close
+
+                <button type="button" onClick={() => setOpen(false)} className="ui-menu-closebtn">
+                  {t("close")}
                 </button>
               </div>
             </div>
@@ -114,7 +123,6 @@ function SettingsMenu({ title = "Settings" }: { title?: string }) {
       </div>
   );
 }
-
 export default function HeaderSlick({
                                       brand = "Learnoir",
                                       badge = "BETA",
@@ -269,7 +277,7 @@ export default function HeaderSlick({
 
   return (
       <header className="sticky top-0 z-50">
-        <div className={headerShell}>
+        <div className={headerShell} >
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="flex h-16 items-center justify-between gap-3">
               {/* ✅ LEFT GROUP (brand + badges + optional slot) */}
@@ -351,7 +359,7 @@ export default function HeaderSlick({
                     </Link>
                 )}
 
-                {isSetting && <SettingsMenu title={(t as any)("settings") ?? "Settings"} />}
+                {isSetting && <SettingsMenu  />}
 
                 {isUser &&
                     status !== "loading" &&
@@ -375,8 +383,7 @@ export default function HeaderSlick({
 
               {/* Mobile */}
               <div className="flex items-center gap-2 md:hidden">
-                {isSetting && <SettingsMenu title={(t as any)("settings") ?? "Settings"} />}
-
+                {isSetting && <SettingsMenu />}
                 {(isNav || isUser) && (
                     <button
                         className="ui-mobilebtn"
@@ -461,5 +468,5 @@ export default function HeaderSlick({
 }
 
 export function LearnHeaderSlick() {
-  return <HeaderSlick isBillingStatus={false} brand="Learnoir" badge="MVP" isUser={false} isNav={false} />;
+  return <HeaderSlick isBillingStatus={false} brand={process.env.NEXT_PUBLIC_APP_NAME} badge="MVP" isUser={false} isNav={false} />;
 }

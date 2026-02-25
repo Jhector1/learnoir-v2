@@ -35,7 +35,9 @@ async function loadBundles(locale: string) {
     import(`./messages/${locale}/sketchesVectorPart1.json`),
     import(`./messages/${locale}/matricesPart2Landing.json`),
         import(`./messages/${locale}/home.json`),
-    import(`./messages/${locale}/exerciseRenderer.json`)
+    import(`./messages/${locale}/exerciseRenderer.json`),
+    import(`./messages/${locale}/localeSwitcher.json`)
+
   ]);
 
   // Merge all bundle defaults into one big messages object

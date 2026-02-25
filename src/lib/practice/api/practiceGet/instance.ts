@@ -25,6 +25,7 @@ function buildExpectedAnswerPayload(kind: PracticeKind, expectedCanon: any) {
 
     return optionId ? { kind: "single_choice", optionId: String(optionId) } : null;
   }
+
   if (
       kind === PracticeKind.text_input ||
       kind === PracticeKind.word_bank_arrange ||
@@ -40,6 +41,7 @@ function buildExpectedAnswerPayload(kind: PracticeKind, expectedCanon: any) {
 
     return v ? { kind: String(kind), value: String(v) } : null;
   }
+
   if (kind === PracticeKind.multi_choice) {
     const ids =
         expectedCanon?.optionIds ??
@@ -92,23 +94,28 @@ export async function createInstance(args: {
 
   const dbTopicSlug = toDbTopicSlug(String(topicSlug)) as TopicSlug;
 
-  const topicId =
-      topicIdHint ??
-      (await prisma.practiceTopic
-          .findUnique({ where: { slug: dbTopicSlug }, select: { id: true } })
-          .then((t) => {
-            if (!t) throw new Error(`Topic slug "${dbTopicSlug}" not found in DB.`);
-            return t.id;
-          }));
+  // ✅ FIX: force topicId to be a string (never null)
+  let topicId: string;
+  if (typeof topicIdHint === "string" && topicIdHint.trim()) {
+    topicId = topicIdHint.trim();
+  } else {
+    const t = await prisma.practiceTopic.findUnique({
+      where: { slug: dbTopicSlug },
+      select: { id: true },
+    });
+    if (!t) throw new Error(`Topic slug "${dbTopicSlug}" not found in DB.`);
+    topicId = t.id;
+  }
 
   const kindEnum: PracticeKind = toPracticeKindOrThrow((exercise as any)?.kind);
 
   const expectedCanon = normalizeExpectedForSave(kindEnum, expected);
 
-// ✅ validate AFTER normalization so compat coercions work
+  // ✅ validate AFTER normalization so compat coercions work
   if (expectedCanon?.kind && String(expectedCanon.kind) !== String(kindEnum)) {
     throw new Error(`Expected.kind "${expectedCanon.kind}" != instance kind "${kindEnum}".`);
   }
+
   const publicPayload = { ...(exercise as any), topic: dbTopicSlug } as any;
 
   if (kindEnum === PracticeKind.matrix_input) {
@@ -126,15 +133,19 @@ export async function createInstance(args: {
               ? expected.rationale
               : null;
 
-  const dbPurpose = typeof purpose === "string" ? toDbPurpose(purpose) : (purpose ?? PracticePurpose.quiz);
+  const dbPurpose =
+      typeof purpose === "string"
+          ? toDbPurpose(purpose)
+          : (purpose ?? PracticePurpose.quiz);
 
   // helpful for client/debug if you want it
   publicPayload.purpose = String(dbPurpose);
+
   return prisma.practiceQuestionInstance.create({
     data: {
       sessionId,
       kind: kindEnum,
-      topicId,
+      topicId, // ✅ now guaranteed string
       difficulty: dbDifficulty,
 
       // ✅ NEW

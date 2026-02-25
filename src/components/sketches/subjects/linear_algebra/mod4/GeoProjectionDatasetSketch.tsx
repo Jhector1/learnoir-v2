@@ -71,7 +71,7 @@ export default function GeoProjectionDatasetSketch() {
                 s.push();
                 s.stroke("rgba(255,255,255,0.25)");
                 s.strokeWeight(2);
-                s.drawingContext.setLineDash([6, 6]);
+              
                 s.line(xs.x, xs.y, ps.x, ps.y);
                 (s.drawingContext as any).setLineDash([]);
 
@@ -117,7 +117,7 @@ export default function GeoProjectionDatasetSketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Projection onto the 1D subspace \(U=\mathrm{span}(b)\):
 
 $$\pi(x)=\frac{b^\top x}{b^\top b}\,b$$

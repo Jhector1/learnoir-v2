@@ -18,7 +18,7 @@ export default function GeoPlaceholder(props: {
             </div>
             {props.markdown ? (
                 <div className="mt-3 ui-soft p-3">
-                    <MathMarkdown markdown={props.markdown} />
+                    <MathMarkdown content={props.markdown} />
                 </div>
             ) : null}
         </div>

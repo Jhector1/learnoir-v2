@@ -1,8 +1,8 @@
 {
   "Home": {
     "meta": {
-      "title": "Learnoir — Apprendre l’algèbre linéaire et Python en pratiquant",
-      "description": "Pratique interactive pour l’algèbre linéaire et Python : feedback immédiat, devoirs, suivi de progression, et apprentissage multilingue (anglais, français, créole haïtien)."
+      "title": "{appName} — Apprendre en pratiquant, toutes matières",
+      "description": "Pratique interactive en maths, sciences, langues et plus : feedback immédiat, devoirs, suivi de progression et apprentissage multilingue (anglais, français, créole haïtien)."
     },
     "nav": {
       "product": "Produit",
@@ -12,43 +12,56 @@
       "signIn": "Connexion"
     },
     "hero": {
-      "badge": "Plateforme d’apprentissage interactive",
-      "title": "Maîtrisez l’algèbre linéaire et Python en pratiquant — pas seulement en regardant.",
-      "subtitle": "Learnoir combine visualisations, exercices ciblés et explications claires pour développer l’intuition et la confiance.",
+      "badge": "Plateforme d’apprentissage orientée pratique",
+      "title": "Apprenez en pratiquant — pas seulement en regardant.",
+      "subtitle": "{appName} combine exercices interactifs, entraînement ciblé et explications claires pour développer de vraies compétences dans n’importe quelle matière.",
       "ctaPrimary": "Commencer",
       "ctaSecondary": "Voir le catalogue",
-      "pills": ["Feedback immédiat", "Devoirs & révision", "Multilingue (EN/FR/HT)"]
+      "pills": [
+        "Feedback immédiat",
+        "Devoirs & révision",
+        "Multilingue (EN/FR/HT)"
+      ]
     },
     "trust": {
-      "kicker": "Conçu pour la manière dont les étudiants apprennent vraiment",
+      "kicker": "Conçu pour la manière dont on apprend vraiment",
       "title": "Rappel actif. Retour immédiat. Progrès réel.",
-      "subtitle": "Une plateforme orientée pratique pour transformer les notions en compétences.",
+      "subtitle": "Une plateforme orientée pratique pour transformer les notions en compétences utiles.",
       "items": [
-        { "k": "Interactif", "v": "Visuels type VectorPad + questions pratiques" },
-        { "k": "Structuré", "v": "Modules → sections → pratique → maîtrise" },
-        { "k": "Utile", "v": "Compétences utiles aux examens et aux projets" }
+        {
+          "k": "Interactif",
+          "v": "Questions concrètes et visuels légers quand c’est utile"
+        },
+        {
+          "k": "Structuré",
+          "v": "Modules → sections → pratique → maîtrise"
+        },
+        {
+          "k": "Utile",
+          "v": "Compétences utiles aux examens, au travail et aux projets"
+        }
       ]
     },
     "features": {
       "kicker": "Fonctionnalités",
       "title": "Une boucle de pratique complète",
-      "subtitle": "Tout ce qu’il faut pour passer de « je comprends à peu près » à « je sais résoudre sous pression ».",
+      "subtitle": "Tout ce qu’il faut pour passer de « je comprends à peu près » à « je sais faire sous pression ».",
       "items": [
         {
-          "title": "Visuels interactifs (Algèbre linéaire)",
-          "desc": "Manipulez des vecteurs, explorez produit scalaire, projections, espaces engendrés, bases, intuition du rang, etc."
+          "title": "Exercices interactifs",
+          "desc": "Des questions qui font réfléchir : réordonner, compléter, choix multiples, etc."
         },
         {
-          "title": "Pratique Python (avec structure)",
-          "desc": "Des bases aux patterns de résolution : consignes claires, vérification, progression régulière."
+          "title": "Pratique guidée (avec structure)",
+          "desc": "Consignes claires, progression régulière, et explications pour corriger vite."
         },
         {
           "title": "Devoirs & sessions",
-          "desc": "Des runs orientés objectifs pour garder l’élève sur la bonne trajectoire et revenir en révision."
+          "desc": "Des runs orientés objectifs pour garder l’apprenant sur la bonne trajectoire et revenir en révision."
         },
         {
           "title": "Progression persistante",
-          "desc": "Suivi de complétion, erreurs fréquentes, et continuité après rechargement."
+          "desc": "Suivi de complétion, points faibles et continuité après rechargement."
         },
         {
           "title": "Multilingue",
@@ -62,20 +75,52 @@
     },
     "subjects": {
       "kicker": "Matières",
-      "title": "Deux parcours essentiels pour démarrer",
-      "subtitle": "Modules et sections pour savoir exactement quoi faire ensuite.",
+      "title": "Explorez ce que vous voulez apprendre",
+      "subtitle": "Maths, sciences, langues et plus—organisés en modules et sections pour savoir exactement quoi faire ensuite.",
       "cards": [
         {
-          "title": "Algèbre linéaire",
-          "desc": "Vecteurs → systèmes linéaires → matrices → transformations et intuition via visuels.",
-          "bullets": ["Vecteurs & produit scalaire", "Espace engendré / base", "Intuition du rang", "Opérations matricielles"],
-          "cta": "Explorer l’algèbre linéaire"
+          "title": "Maths",
+          "desc": "Construisez des bases solides et de la fluidité grâce à la pratique, avec feedback.",
+          "bullets": [
+            "Fondations & résolution",
+            "Algèbre & géométrie",
+            "Bases en statistiques",
+            "Pratique qui reste"
+          ],
+          "cta": "Explorer les maths"
         },
         {
-          "title": "Python",
-          "desc": "Fondamentaux et pratique orientée résolution de problèmes avec vérifications immédiates.",
-          "bullets": ["Variables & conditions", "Fonctions", "Listes & dictionnaires", "Habitudes de debug"],
-          "cta": "Explorer Python"
+          "title": "Sciences",
+          "desc": "Comprenez en appliquant : notions clés, vocabulaire et raisonnement.",
+          "bullets": [
+            "Concepts essentiels",
+            "Vocabulaire",
+            "Cause / effet",
+            "Vérifs + révision"
+          ],
+          "cta": "Explorer les sciences"
+        },
+        {
+          "title": "Langues",
+          "desc": "Améliorez compréhension et expression avec répétition structurée.",
+          "bullets": [
+            "Vocabulaire",
+            "Grammaire",
+            "Phrases types",
+            "Rappel + révision"
+          ],
+          "cta": "Explorer les langues"
+        },
+        {
+          "title": "Informatique & compétences",
+          "desc": "Entraînez des compétences techniques avec des consignes claires et des checks.",
+          "bullets": [
+            "Fondamentaux",
+            "Exercices appliqués",
+            "Habitudes de debug",
+            "Pratique type projet"
+          ],
+          "cta": "Explorer les compétences"
         }
       ]
     },
@@ -83,19 +128,28 @@
       "kicker": "Méthode",
       "title": "Une boucle simple qui marche",
       "steps": [
-        { "title": "Choisir un module", "desc": "Démarrez au bon niveau, sans hésiter ni vous disperser." },
-        { "title": "Pratiquer avec feedback", "desc": "Répondez, utilisez les visuels, progressez grâce aux explications ciblées." },
-        { "title": "Réviser et consolider", "desc": "Revenez sur les points faibles et améliorez la rétention sur le long terme." }
+        {
+          "title": "Choisir un module",
+          "desc": "Démarrez au bon niveau, sans hésiter ni vous disperser."
+        },
+        {
+          "title": "Pratiquer avec feedback",
+          "desc": "Répondez, apprenez de vos erreurs, et gardez le rythme."
+        },
+        {
+          "title": "Réviser et consolider",
+          "desc": "Revenez sur les points faibles pour améliorer la rétention sur le long terme."
+        }
       ]
     },
     "educators": {
       "kicker": "Pour enseignants & équipes",
       "title": "Enseigner de façon cohérente, mesurer avec confiance",
-      "subtitle": "Une couche de pratique propre : devoirs, signaux de progression, expérience étudiante répétable.",
+      "subtitle": "Une couche de pratique propre : devoirs, signaux de progression et expérience répétable.",
       "bullets": [
         "Structure cohérente entre les langues",
         "Devoirs guidant section par section",
-        "Résultats clairs : ce que l’élève sait faire après"
+        "Résultats clairs : ce que l’apprenant sait faire après"
       ],
       "cta": "Nous contacter"
     },
@@ -104,9 +158,18 @@
       "title": "Remplacez ces textes par de vrais avis",
       "subtitle": "Placeholders sûrs pour la mise en page. Remplacez avant lancement public.",
       "items": [
-        { "quote": "Les visuels sur les vecteurs ont rendu les projections beaucoup plus concrètes.", "who": "Étudiant (placeholder)" },
-        { "quote": "La structure m’aide : je ne perds plus de temps à choisir quoi apprendre.", "who": "Autodidacte (placeholder)" },
-        { "quote": "Idéal en tutorat : feedback rapide, interface propre, progression claire.", "who": "Tuteur (placeholder)" }
+        {
+          "quote": "J’aime la structure : je ne perds plus de temps à décider quoi faire ensuite.",
+          "who": "Apprenant (placeholder)"
+        },
+        {
+          "quote": "Le feedback immédiat m’aide à corriger vite. Simple, focalisé, efficace.",
+          "who": "Étudiant (placeholder)"
+        },
+        {
+          "quote": "Idéal en tutorat : interface propre, checks rapides, progression facile à suivre.",
+          "who": "Tuteur (placeholder)"
+        }
       ]
     },
     "pricing": {
@@ -118,15 +181,23 @@
           "name": "Gratuit",
           "price": "0€",
           "desc": "Pour découvrir la plateforme.",
-          "features": ["Accès à la pratique de base", "Suivi de progression", "UI multilingue"],
+          "features": [
+            "Accès à la pratique de base",
+            "Suivi de progression",
+            "UI multilingue"
+          ],
           "cta": "Commencer",
           "highlight": false
         },
         {
           "name": "Pro",
           "price": "—",
-          "desc": "Pour les apprenants sérieux qui veulent plus de structure.",
-          "features": ["Devoirs & sessions de révision", "Plus de profondeur", "Mises à jour prioritaires"],
+          "desc": "Pour ceux qui veulent plus de structure.",
+          "features": [
+            "Devoirs & runs de révision",
+            "Plus de profondeur",
+            "Mises à jour prioritaires"
+          ],
           "cta": "Voir les tarifs",
           "highlight": true
         },
@@ -134,7 +205,11 @@
           "name": "Classe",
           "price": "—",
           "desc": "Pour enseignants, cohortes et équipes.",
-          "features": ["Workflow cohorte", "Reporting/export (option)", "Support déploiement"],
+          "features": [
+            "Workflow cohorte",
+            "Reporting/export (option)",
+            "Support déploiement"
+          ],
           "cta": "Contacter",
           "highlight": false
         }
@@ -145,22 +220,40 @@
       "kicker": "FAQ",
       "title": "Questions fréquentes",
       "items": [
-        { "q": "C’est un cours ?", "a": "C’est une plateforme de pratique. Elle complète cours/vidéos en transformant les notions en compétences." },
-        { "q": "Pour débutants ?", "a": "Oui. Les modules démarrent aux bases, avec progression guidée et feedback." },
-        { "q": "Multilingue comment ?", "a": "Même structure entre langues : anglais, français, créole haïtien." },
-        { "q": "Devoirs ?", "a": "Oui. Les runs de devoirs gardent l’élève focalisé et le ramènent au bon next step." },
-        { "q": "Progression après reload ?", "a": "C’est central : progression, erreurs, et résultats doivent rester cohérents." },
-        { "q": "Et la suite ?", "a": "Plus de modules, plus de types de questions, et une révision plus profonde." }
+        {
+          "q": "C’est un cours ?",
+          "a": "C’est une plateforme de pratique. Elle complète cours/vidéos en transformant les notions en compétences utiles."
+        },
+        {
+          "q": "Pour débutants ?",
+          "a": "Oui. Les modules démarrent aux bases et guident étape par étape avec feedback."
+        },
+        {
+          "q": "Le multilingue, comment ?",
+          "a": "{appName} garde la même structure entre langues : anglais, français, créole haïtien."
+        },
+        {
+          "q": "Devoirs ?",
+          "a": "Oui. Les runs de devoirs gardent l’apprenant focalisé et le ramènent au bon next step."
+        },
+        {
+          "q": "Progression après reload ?",
+          "a": "C’est central : progression, erreurs et résultats doivent rester cohérents dans le temps."
+        },
+        {
+          "q": "Et la suite ?",
+          "a": "Plus de matières, plus de types de questions, et une révision plus profonde—sans sacrifier la clarté."
+        }
       ]
     },
     "finalCta": {
-      "title": "Prêt à construire une vraie intuition ?",
+      "title": "Prêt à construire de vraies compétences ?",
       "subtitle": "Choisissez un module, pratiquez avec feedback, et gagnez en confiance.",
       "primary": "Commencer",
       "secondary": "Voir le catalogue"
     },
     "footer": {
-      "rights": "© {year} Learnoir. Tous droits réservés.",
+      "rights": "© {year} {appName}. Tous droits réservés.",
       "links": {
         "catalog": "Catalogue",
         "review": "Révision",
@@ -171,16 +264,50 @@
       }
     },
     "ui": {
-      "heroCard": {
-        "title": "Pratique interactive",
-        "subtitle": "VectorPad • Code • Vérifs",
-        "laLabel": "Algèbre linéaire",
-        "laText": "Manipulez des vecteurs → dot product & projection se mettent à jour instantanément.",
-        "assetNote": "Remplacez par une vraie capture/GIF plus tard.",
-        "pyLabel": "Python",
-        "pyText": "Pratiquez les bases avec vérification immédiate et consignes claires."
+      "demos": {
+        "tokens": [
+          "Range",
+          "ces",
+          "mots",
+          "dans",
+          "l’ordre"
+        ],
+        "quiz": {
+          "options": [
+            "Un check rapide",
+            "Aller plus loin",
+            "Passer pour l’instant"
+          ],
+          "selectedIndex": 0
+        },
+        "progress": {
+          "rows": [
+            {
+              "k": "Aujourd’hui",
+              "v": 72
+            },
+            {
+              "k": "Cette semaine",
+              "v": 46
+            },
+            {
+              "k": "Série",
+              "v": 60
+            }
+          ],
+          "suffix": "%"
+        }
       },
-      "tagline": "Pas de blabla. Pas de scroll infini. Juste de la pratique utile.",
+      "heroCard": {
+        "title": "Aperçu de la pratique",
+        "subtitle": "Exercices • Feedback • Progression",
+        "laLabel": "Check rapide",
+        "laText": "Répondez à une question courte et voyez tout de suite quoi corriger.",
+        "assetNote": "Remplacez par une vraie capture/GIF plus tard.",
+        "pyLabel": "Rappel & application",
+        "pyText": "Réordonnez, complétez ou choisissez la meilleure option pour consolider."
+      },
+      "tagline": "Pas de blabla. Pas de scroll infini. Juste de la pratique qui fait progresser.",
       "recommended": "Recommandé",
       "browseModules": "Voir les modules",
       "tryReview": "Essayer la révision"

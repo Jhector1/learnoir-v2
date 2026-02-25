@@ -47,6 +47,11 @@ function joinNice(tokens: string[]) {
         .trim();
 }
 
+function normalizeValue(s: string) {
+    // normalize external value into the same format joinNice produces
+    return joinNice(tokenize(String(s ?? "")));
+}
+
 function shuffle<T>(arr: T[]) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -155,22 +160,30 @@ export default function ListenBuildExerciseUI({
 
     const baseKey = useMemo(
         () => `${exercise.targetText}::${baseTexts.join("|")}`,
-        [exercise.targetText, baseTexts]
+        [exercise.targetText, baseTexts],
     );
 
     // stable seed order per exercise instance
     const seedRef = useRef<string[]>([]);
 
+    // ✅ prevents “sync → emit → sync → emit ...”
+    const applyingExternalRef = useRef(false);
+
     const [{ bank, answer }, setState] = useState<{ bank: Item[]; answer: Item[] }>(() => {
         const seed = shuffle(baseTexts);
         seedRef.current = seed;
-        const init = buildFromSeed(seed, value);
+        const init = buildFromSeed(seed, normalizeValue(value));
         return { bank: init.bankItems, answer: init.answerItems };
     });
 
     const [over, setOver] = useState<OverState>(null);
     const dragRef = useRef<DragRef>(null);
-    const [dragOverlay, setDragOverlay] = useState<{ text: string; x: number; y: number; active: boolean }>({
+    const [dragOverlay, setDragOverlay] = useState<{
+        text: string;
+        x: number;
+        y: number;
+        active: boolean;
+    }>({
         text: "",
         x: 0,
         y: 0,
@@ -181,35 +194,46 @@ export default function ListenBuildExerciseUI({
     useEffect(() => {
         const seed = shuffle(baseTexts);
         seedRef.current = seed;
-        const init = buildFromSeed(seed, value);
 
+        applyingExternalRef.current = true; // ✅ don't echo back immediately
+        const init = buildFromSeed(seed, normalizeValue(value));
         setState({ bank: init.bankItems, answer: init.answerItems });
+
         setOver(null);
         dragRef.current = null;
         setDragOverlay({ text: "", x: 0, y: 0, active: false });
+        // intentionally only keyed by baseKey (avoid running from array identity churn)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [baseKey]);
 
     // if parent externally changes value (hydrate/reset), sync local state (without reshuffling)
     useEffect(() => {
         const localStr = joinNice(answer.map((x) => x.text));
-        const incoming = String(value ?? "");
-        if (incoming === localStr) return;
+        const incomingNorm = normalizeValue(value);
+
+        if (incomingNorm === localStr) return;
 
         const seed = seedRef.current.length ? seedRef.current : shuffle(baseTexts);
         if (!seedRef.current.length) seedRef.current = seed;
 
-        const next = buildFromSeed(seed, incoming);
+        applyingExternalRef.current = true; // ✅ prevents ping-pong
+        const next = buildFromSeed(seed, incomingNorm);
         setState({ bank: next.bankItems, answer: next.answerItems });
         setOver(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
 
-    // ✅ emit to parent AFTER commit (prevents “update parent while rendering child”)
+    // ✅ emit to parent AFTER commit, but skip if we just applied an external sync
     useEffect(() => {
+        if (applyingExternalRef.current) {
+            applyingExternalRef.current = false;
+            return;
+        }
+
         const nextStr = joinNice(answer.map((x) => x.text));
-        const cur = String(value ?? "");
-        if (nextStr === cur) return;
+        const curNorm = normalizeValue(value);
+        if (nextStr === curNorm) return;
+
         onChangeValue(nextStr);
     }, [answer, value, onChangeValue]);
 
@@ -243,7 +267,7 @@ export default function ListenBuildExerciseUI({
                 return { bank: nextBank, answer: nextAnswer };
             });
         },
-        [disabled]
+        [disabled],
     );
 
     const tapRemove = useCallback(
@@ -260,7 +284,7 @@ export default function ListenBuildExerciseUI({
                 return { bank: nextBank, answer: nextAnswer };
             });
         },
-        [disabled]
+        [disabled],
     );
 
     const commitDrop = useCallback((to: { zone: ZoneId; index: number; side: "before" | "after" }) => {
@@ -285,7 +309,6 @@ export default function ListenBuildExerciseUI({
             const baseTo = toZone === fromZone ? fromNext : toArr;
 
             const rawIndex = to.index === -1 ? baseTo.length : to.index + (to.side === "after" ? 1 : 0);
-
             const adjustedIndex = toZone === fromZone && fromIdx < rawIndex ? rawIndex - 1 : rawIndex;
 
             const toNext = insertAt(baseTo, moved, adjustedIndex);
@@ -376,7 +399,11 @@ export default function ListenBuildExerciseUI({
     }
 
     const statusRing =
-        checked && ok === true ? "ring-2 ring-emerald-300/40" : checked && ok === false ? "ring-2 ring-rose-300/40" : "";
+        checked && ok === true
+            ? "ring-2 ring-emerald-300/40"
+            : checked && ok === false
+                ? "ring-2 ring-rose-300/40"
+                : "";
 
     const muted = "text-neutral-600 dark:text-white/60";
     const text = "text-neutral-900 dark:text-white/90";
@@ -390,7 +417,12 @@ export default function ListenBuildExerciseUI({
     const showTarget = showTargetWhen === "checked" ? checked : false;
 
     return (
-        <div className={`ui-card p-4 ${statusRing}`} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}>
+        <div
+            className={`ui-card p-4 ${statusRing}`}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerCancel}
+        >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <ExercisePrompt exercise={exercise} />
                 <div className={`text-xs font-extrabold ${muted}`}>Tap or drag words to build the sentence.</div>
@@ -444,7 +476,9 @@ export default function ListenBuildExerciseUI({
                                 >
                                     {showBefore ? <span className="ui-drag-indicator ui-drag-indicator--before" /> : null}
                                     {showAfter ? <span className="ui-drag-indicator ui-drag-indicator--after" /> : null}
-                                    <span className="ui-drag-handle" aria-hidden>⋮⋮</span>
+                                    <span className="ui-drag-handle" aria-hidden>
+                    ⋮⋮
+                  </span>
                                     <span>{it.text}</span>
                                 </button>
                             );
@@ -455,8 +489,7 @@ export default function ListenBuildExerciseUI({
                 </div>
 
                 <div className={`mt-2 text-xs ${muted}`}>
-                    Preview:{" "}
-                    <span className={`font-extrabold ${text}`}>{joinNice(answer.map((x) => x.text)) || "—"}</span>
+                    Preview: <span className={`font-extrabold ${text}`}>{joinNice(answer.map((x) => x.text)) || "—"}</span>
                 </div>
             </div>
 
@@ -482,7 +515,9 @@ export default function ListenBuildExerciseUI({
                             >
                                 {showBefore ? <span className="ui-drag-indicator ui-drag-indicator--before" /> : null}
                                 {showAfter ? <span className="ui-drag-indicator ui-drag-indicator--after" /> : null}
-                                <span className="ui-drag-handle" aria-hidden>⋮⋮</span>
+                                <span className="ui-drag-handle" aria-hidden>
+                  ⋮⋮
+                </span>
                                 <span>{it.text}</span>
                             </button>
                         );
@@ -497,7 +532,9 @@ export default function ListenBuildExerciseUI({
             {dragOverlay.active ? (
                 <div className="fixed z-[9999] pointer-events-none" style={{ left: dragOverlay.x, top: dragOverlay.y }}>
                     <div className="ui-drag-chip ui-drag-chip--dragging opacity-90">
-                        <span className="ui-drag-handle" aria-hidden>⋮⋮</span>
+            <span className="ui-drag-handle" aria-hidden>
+              ⋮⋮
+            </span>
                         <span>{dragOverlay.text}</span>
                     </div>
                 </div>

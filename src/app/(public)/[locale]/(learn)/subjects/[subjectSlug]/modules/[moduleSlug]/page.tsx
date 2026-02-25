@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function ModuleIntroPage({
                                                   params,
                                               }: {
-    params: { locale: string; subjectSlug: string; moduleSlug: string };
+    params: Promise<{ locale: string; subjectSlug: string; moduleSlug: string }>;
 }) {
-    const { locale, subjectSlug, moduleSlug } = params;
+    const { locale, subjectSlug, moduleSlug } = await params;
 
     if (!subjectSlug || !moduleSlug) notFound();
 

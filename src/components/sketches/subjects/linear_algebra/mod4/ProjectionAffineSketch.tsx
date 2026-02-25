@@ -116,7 +116,7 @@ export default function ProjectionAffineSketch({ height = 460 }: { height?: numb
             s.push();
             s.stroke("rgba(34,197,94,0.85)");
             s.strokeWeight(3);
-            s.drawingContext.setLineDash([6, 6]);
+          
             s.line(X.x, X.y, P.x, P.y);
             s.drawingContext.setLineDash([]);
             s.pop();

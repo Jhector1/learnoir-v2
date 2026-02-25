@@ -100,7 +100,7 @@ export default function SummaryView(props: PracticeShellProps) {
               </div>
 
               <PracticeReviewList
-                  t={t}
+                  // t={t}
                   stack={list}
                   showOnlyIncorrect={showMissed}
                   maxAttempts={maxAttempts}

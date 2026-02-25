@@ -2,15 +2,16 @@
 "use client";
 
 import * as React from "react";
-import type { Lang, RunResult } from "@/lib/code/runCode";
+import type { RunResult } from "@/lib/code/runCode";
 import type { TermLine, OnRun } from "../types";
 import { cleanTermText, toLines } from "../utils/text";
 import { inferInputPlan } from "../utils/input";
 import { expandPrompts, prettyPrompt, splitStdoutByPrompts } from "../utils/prompts";
+import {CodeLanguage} from "@/lib/practice/types";
 
 // ---- helpers ----
 
-function needsMoreInput(lang: Lang, r: RunResult) {
+function needsMoreInput(lang: CodeLanguage, r: RunResult) {
     const blob = cleanTermText(
         (r.compile_output ?? "") +
         "\n" +
@@ -82,7 +83,7 @@ function unescapeCStringContent(x: string) {
     return out;
 }
 
-function extractPreOutputForCCpp(lang: Lang, code: string, prompts: string[]) {
+function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: string[]) {
     const src = String(code ?? "");
 
     const firstInputIdx =
@@ -126,7 +127,7 @@ function extractPreOutputForCCpp(lang: Lang, code: string, prompts: string[]) {
 // ---- main hook ----
 
 export function useTerminalRunner(args: {
-    lang: Lang;
+    lang: CodeLanguage;
     code: string;
     disabled: boolean;
     allowRun: boolean;

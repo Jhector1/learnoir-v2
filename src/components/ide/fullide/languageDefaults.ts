@@ -1,6 +1,7 @@
-import type { Lang } from "@/lib/code/runCode";
 
-export function defaultExt(lang: Lang) {
+import {CodeLanguage} from "@/lib/practice/types";
+
+export function defaultExt(lang: CodeLanguage) {
     switch (lang) {
         case "python": return ".py";
         case "java": return ".java";
@@ -10,7 +11,7 @@ export function defaultExt(lang: Lang) {
     }
 }
 
-export function defaultMainFile(lang: Lang) {
+export function defaultMainFile(lang: CodeLanguage) {
     switch (lang) {
         case "python": return "main.py";
         case "java": return "Main.java";
@@ -20,7 +21,7 @@ export function defaultMainFile(lang: Lang) {
     }
 }
 
-export function defaultMainCode(lang: Lang) {
+export function defaultMainCode(lang: CodeLanguage) {
     switch (lang) {
         case "python":
             return `print("Hello from Python!")\n`;

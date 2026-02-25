@@ -10,10 +10,11 @@ import React, {
     useRef,
     useState,
 } from "react";
-import type { Lang } from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
+
 
 export type RegisterArgs = {
-    lang: Lang;
+    lang: CodeLanguage;
     code: string;
     stdin?: string;
     onPatch: (patch: any) => void;

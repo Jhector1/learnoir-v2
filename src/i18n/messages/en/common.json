@@ -14,6 +14,13 @@
     "logout": "Log out",
     "menu": "Menu",
     "close": "Close",
+    "openSettings": "Open settings",
+
+    "settingsSubtitle": "Appearance & language",
+    "theme": "Theme",
+    "themeHint": "Light / Dark",
+
+    "sound": "Sound",
     "tip": "Tip: Use Practice to track attempts, correct answers, and missed questions."
   },
   "UserMenu": {

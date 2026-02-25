@@ -141,7 +141,7 @@ export default function GeoRotationsGivensSketch() {
                 </div>
 
                 <MathMarkdown
-                    markdown={String.raw`
+                    content={String.raw`
 Rotation matrix:
 
 $$R(\theta)=\begin{bmatrix}\cos\theta & -\sin\theta\\ \sin\theta & \cos\theta\end{bmatrix}$$
@@ -191,7 +191,7 @@ Drag \(v\) and change \(\theta\). The bright arrow is \(Rv\).
                 </div>
 
                 <MathMarkdown
-                    markdown={String.raw`
+                    content={String.raw`
 A **Givens rotation** rotates only two coordinates \((i,j)\) and leaves the rest unchanged.
 
 In that plane:

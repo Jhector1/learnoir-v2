@@ -1,9 +1,11 @@
-import {PracticeKind, PracticePurpose} from "@prisma/client";
+// import {PracticeKind, PracticePurpose} from "@prisma/client";
 import {RNG} from "@/lib/practice/generator/shared/rng";
 import {Difficulty, ExerciseKind, SingleChoiceExercise} from "@/lib/practice/types";
 import {GenOut} from "@/lib/practice/generator/shared/expected";
 // import {Handler} from "@/lib/practice/generator/engines/python/_shared";
 import {TopicContext} from "@/lib/practice/generator/generatorTypes";
+import {PracticeKind} from "@prisma/client";
+export type PracticePurpose = "quiz" | "project";
 
 export type PoolItem = {
     key: string;
@@ -12,7 +14,6 @@ export type PoolItem = {
     purpose?: PracticePurpose;
 };
 
-export type PracticePurpose = "quiz" | "project";
 export function parseTopicSlug(raw: string) {
     const s = String(raw ?? "").trim();
     const parts = s.split(".").filter(Boolean);

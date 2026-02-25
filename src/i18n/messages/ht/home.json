@@ -1,8 +1,8 @@
 {
   "Home": {
     "meta": {
-      "title": "Learnoir — Aprann Aljèb Lineyè ak Python lè w pratike",
-      "description": "Pratik entèaktif pou Aljèb Lineyè ak Python: fidbak touswit, devwa, suiv pwogrè, epi plizyè lang (Anglè, Franse, Kreyòl Ayisyen)."
+      "title": "{appName} — Aprann lè w pratike, pou nenpòt sijè",
+      "description": "Pratik entèaktif pou matematik, syans, lang, ak plis ankò: fidbak touswit, devwa, suiv pwogrè, epi aprantisaj plizyè lang (Anglè, Franse, Kreyòl Ayisyen)."
     },
     "nav": {
       "product": "Pwodwi",
@@ -12,43 +12,56 @@
       "signIn": "Konekte"
     },
     "hero": {
-      "badge": "Platfòm aprantisaj entèaktif",
-      "title": "Aprann Aljèb Lineyè ak Python lè w pratike — pa sèlman gade videyo.",
-      "subtitle": "Learnoir mete vizyèl entèaktif, egzèsis byen vize, ak eksplikasyon klè pou w devlope entisyon ak konfyans.",
+      "badge": "Platfòm aprantisaj ki mete pratik an premye",
+      "title": "Aprann lè w pratike — pa sèlman gade.",
+      "subtitle": "{appName} mete egzèsis entèaktif, pratik byen vize, ak eksplikasyon klè pou ede w bati vrè konpetans nan nenpòt sijè.",
       "ctaPrimary": "Kòmanse",
       "ctaSecondary": "Gade katalòg la",
-      "pills": ["Fidbak touswit", "Devwa & revizyon", "Plizyè lang (EN/FR/HT)"]
+      "pills": [
+        "Fidbak touswit",
+        "Devwa & revizyon",
+        "Plizyè lang (EN/FR/HT)"
+      ]
     },
     "trust": {
-      "kicker": "Fèt pou jan elèv yo aprann toutbon",
+      "kicker": "Fèt pou jan moun aprann toutbon",
       "title": "Rapèl aktif. Fidbak imedyat. Pwogrè reyèl.",
-      "subtitle": "Yon platfòm ki mete pratik an premye pou fè konsèp yo tounen konpetans.",
+      "subtitle": "Yon platfòm ki mete pratik an premye pou fè konsèp yo tounen konpetans itil.",
       "items": [
-        { "k": "Entèaktif", "v": "Vizyèl tankou VectorPad + kestyon pratik" },
-        { "k": "Estriktire", "v": "Modil → seksyon → pratik → metrize" },
-        { "k": "Pratik", "v": "Konpetans pou egzamen ak pwojè reyèl" }
+        {
+          "k": "Entèaktif",
+          "v": "Kestyon pratik ak ti vizyèl senp lè sa itil"
+        },
+        {
+          "k": "Estriktire",
+          "v": "Modil → seksyon → pratik → metrize"
+        },
+        {
+          "k": "Pratik",
+          "v": "Konpetans pou egzamen, travay, ak pwojè reyèl"
+        }
       ]
     },
     "features": {
       "kicker": "Sa w jwenn",
       "title": "Yon bouk pratik konplè",
-      "subtitle": "Tout sa w bezwen pou pase de “mwen prèske konprann” pou rive “mwen ka rezoud li anba presyon.”",
+      "subtitle": "Tout sa w bezwen pou pase de “mwen prèske konprann” pou rive “mwen ka fè li anba presyon.”",
       "items": [
         {
-          "title": "Vizyèl entèaktif (Aljèb Lineyè)",
-          "desc": "Trennen vektè, wè dot product, pwjèksyon, span, baz, entisyon sou rank, elatriye."
+          "title": "Egzèsis entèaktif",
+          "desc": "Kestyon ki fè w reflechi: ranje lòd, ranpli vid, chwazi repons, elatriye."
         },
         {
-          "title": "Pratik Python (ak estrikti)",
-          "desc": "Soti nan fondasyon rive nan modèl rezolisyon pwoblèm: kestyon klè, tchek rapid, bon pwogresyon."
+          "title": "Pratik gide (ak estrikti)",
+          "desc": "Kestyon klè, bon pwogresyon, ak eksplikasyon pou w korije vit."
         },
         {
           "title": "Devwa & sesyon",
-          "desc": "Fè devwa ki byen vize, kenbe elèv la sou bon chemen, epi retounen sou revizyon lè sa nesesè."
+          "desc": "Fè devwa ki byen vize, kenbe w sou bon chemen, epi retounen sou revizyon lè sa nesesè."
         },
         {
           "title": "Pwogrè ki rete",
-          "desc": "Swiv konbyen ou fin fè, sa ou rate, ak momantòm—pou reload pa kraze eksperyans la."
+          "desc": "Swiv sa w fin fè, sa w rate, ak momantòm—pou reload pa kraze eksperyans la."
         },
         {
           "title": "Plizyè lang",
@@ -62,20 +75,52 @@
     },
     "subjects": {
       "kicker": "Sijè",
-      "title": "Kòmanse ak 2 chemen prensipal",
-      "subtitle": "Modil ak seksyon pou ou toujou konnen kisa pou w fè apre.",
+      "title": "Chwazi sa ou vle aprann",
+      "subtitle": "Matematik, syans, lang, ak plis ankò—modil ak seksyon pou ou toujou konnen kisa pou w fè apre.",
       "cards": [
         {
-          "title": "Aljèb Lineyè",
-          "desc": "Vektè → sistèm lineyè → matris → transfòmasyon ak vizyèl pou bati entisyon.",
-          "bullets": ["Vektè & dot product", "Span / baz", "Entisyon sou rank", "Operasyon matris"],
-          "cta": "Gade Aljèb Lineyè"
+          "title": "Matematik",
+          "desc": "Bati bon fondasyon ak bon vitès gras ak pratik ak fidbak.",
+          "bullets": [
+            "Fondasyon & rezolisyon",
+            "Aljèb & jeyometri",
+            "Baz estatistik",
+            "Pratik ki rete"
+          ],
+          "cta": "Gade Matematik"
         },
         {
-          "title": "Python",
-          "desc": "Fondasyon ak pratik pou rezoud pwoblèm ak tchek rapid.",
-          "bullets": ["Varyab & kondisyon", "Fonksyon", "Lis & diksyonè", "Bon abitid debug"],
-          "cta": "Gade Python"
+          "title": "Syans",
+          "desc": "Aprann konsèp yo lè w aplike yo: tèm kle, modèl, ak rezònman.",
+          "bullets": [
+            "Konsèp esansyèl",
+            "Vokabilè",
+            "Kòz / efè",
+            "Tchek + revizyon"
+          ],
+          "cta": "Gade Syans"
+        },
+        {
+          "title": "Lang",
+          "desc": "Amelyore konpreyansyon ak pale/ekri ak repetisyon byen òganize.",
+          "bullets": [
+            "Vokabilè",
+            "Gramè",
+            "Modèl fraz",
+            "Rapèl + revizyon"
+          ],
+          "cta": "Gade Lang"
+        },
+        {
+          "title": "Enfòmatik & ladrès",
+          "desc": "Pratike ladrès teknik ak kestyon klè ak tchek rapid.",
+          "bullets": [
+            "Fondamantal",
+            "Egzèsis aplike",
+            "Bon abitid debug",
+            "Pratik tankou pwojè"
+          ],
+          "cta": "Gade Ladrès"
         }
       ]
     },
@@ -83,19 +128,28 @@
       "kicker": "Kijan li mache",
       "title": "Yon bouk senp ki mache",
       "steps": [
-        { "title": "Chwazi yon modil", "desc": "Kòmanse nan bon nivo a, san konfizyon ni twòp chaj." },
-        { "title": "Pratike ak fidbak", "desc": "Reponn kestyon, sèvi ak vizyèl, epi aprann ak eksplikasyon ki vize." },
-        { "title": "Revize pou w kenbe", "desc": "Retounen sou sa ou rate pou w kenbe konesans la alontèm." }
+        {
+          "title": "Chwazi yon modil",
+          "desc": "Kòmanse nan bon nivo a, san konfizyon ni twòp chaj."
+        },
+        {
+          "title": "Pratike ak fidbak",
+          "desc": "Reponn kestyon, aprann nan erè yo, epi kenbe ritm la."
+        },
+        {
+          "title": "Revize pou w kenbe",
+          "desc": "Retounen sou sa ou rate pou w kenbe konesans la alontèm."
+        }
       ]
     },
     "educators": {
       "kicker": "Pou pwofesè & ekip",
       "title": "Anseye regilye, mezire ak konfyans",
-      "subtitle": "Yon kouch pratik pwòp: devwa, siyal pwogrè, epi yon eksperyans elèv ki repete byen.",
+      "subtitle": "Yon kouch pratik pwòp: devwa, siyal pwogrè, epi yon eksperyans aprenan ki repete byen.",
       "bullets": [
         "Menm estrikti atravè lang yo",
-        "Devwa ki gide elèv pa seksyon",
-        "Rezilta klè: sa elèv la ka fè apre"
+        "Devwa ki gide moun pa seksyon",
+        "Rezilta klè: sa moun nan ka fè apre"
       ],
       "cta": "Kontakte nou"
     },
@@ -104,9 +158,18 @@
       "title": "Ranplase sa yo ak temwayaj reyèl lè ou pare",
       "subtitle": "Placeholders pou layout la. Mete temwayaj verifye avan ou lanse piblikman.",
       "items": [
-        { "quote": "Vizyèl vektè yo fè pwjèksyon yo vin klè pou mwen. Mwen aprann pi vit.", "who": "Elèv (placeholder)" },
-        { "quote": "Mwen renmen estrikti a. Mwen pa gaspiye tan ap chèche kisa pou m fè apre.", "who": "Oto-aprantis (placeholder)" },
-        { "quote": "Bon pou tutorat: fidbak rapid, UI pwòp, epi pwogrè fasil pou swiv.", "who": "Tutor (placeholder)" }
+        {
+          "quote": "Mwen renmen estrikti a. Mwen pa gaspiye tan ap chèche kisa pou m fè apre.",
+          "who": "Aprenan (placeholder)"
+        },
+        {
+          "quote": "Fidbak touswit la ede m korije vit. Senp, klè, epi efikas.",
+          "who": "Elèv (placeholder)"
+        },
+        {
+          "quote": "Bon pou tutorat: UI pwòp, tchek rapid, epi pwogrè fasil pou swiv.",
+          "who": "Tutor (placeholder)"
+        }
       ]
     },
     "pricing": {
@@ -116,9 +179,13 @@
       "tiers": [
         {
           "name": "Gratis",
-          "price": "0 HTG",
+          "price": "0",
           "desc": "Bon pou teste platfòm la.",
-          "features": ["Pratik debaz", "Swiv pwogrè", "UI plizyè lang"],
+          "features": [
+            "Pratik debaz",
+            "Swiv pwogrè",
+            "UI plizyè lang"
+          ],
           "cta": "Kòmanse",
           "highlight": false
         },
@@ -126,7 +193,11 @@
           "name": "Pro",
           "price": "—",
           "desc": "Pou moun ki vle plis estrikti.",
-          "features": ["Devwa & revizyon", "Plis pwofondè", "Mizajou priyorite"],
+          "features": [
+            "Devwa & run revizyon",
+            "Plis pwofondè",
+            "Mizajou priyorite"
+          ],
           "cta": "Gade pri",
           "highlight": true
         },
@@ -134,7 +205,11 @@
           "name": "Klas",
           "price": "—",
           "desc": "Pou pwofesè, gwoup, ak ekip.",
-          "features": ["Workflow pou gwoup", "Rapò/export (opsyon)", "Sipò deplwaman"],
+          "features": [
+            "Workflow pou gwoup",
+            "Rapò/export (opsyon)",
+            "Sipò deplwaman"
+          ],
           "cta": "Kontakte nou",
           "highlight": false
         }
@@ -145,22 +220,40 @@
       "kicker": "FAQ",
       "title": "Kesyon moun poze souvan",
       "items": [
-        { "q": "Se kou oubyen pratik?", "a": "Se pratik an premye. Li konplete kou/videyo lè li fè ou rezoud kestyon pou w metrize." },
-        { "q": "Li bon pou debutan?", "a": "Wi. Modil yo kòmanse ak fondasyon, epi yo gide ou etap pa etap." },
-        { "q": "Kijan plizyè lang la mache?", "a": "Menm estrikti atravè lang yo: Anglè, Franse, Kreyòl Ayisyen." },
-        { "q": "Gen devwa?", "a": "Wi. Devwa yo kenbe moun nan fokis epi yo mennen ou nan bon pwochen etap la." },
-        { "q": "Pwogrè rete apre reload?", "a": "Sa se yon prensip: pwogrè, sa ou rate, ak rezilta yo dwe rete konsistan." },
-        { "q": "Kisa k ap vini apre?", "a": "Plis modil, plis kalite kestyon, ak revizyon pi fon." }
+        {
+          "q": "Se kou oubyen pratik?",
+          "a": "{appName} se pratik an premye. Li konplete kou/videyo lè li fè konsèp yo tounen konpetans itil."
+        },
+        {
+          "q": "Li bon pou debutan?",
+          "a": "Wi. Modil yo kòmanse ak baz yo epi yo gide etap pa etap ak fidbak."
+        },
+        {
+          "q": "Kijan plizyè lang la mache?",
+          "a": "{appName} kenbe menm estrikti a atravè lang yo: Anglè, Franse, Kreyòl Ayisyen."
+        },
+        {
+          "q": "Gen devwa?",
+          "a": "Wi. Run devwa yo kenbe moun nan fokis epi yo mennen w nan bon pwochen etap la."
+        },
+        {
+          "q": "Pwogrè rete apre reload?",
+          "a": "Sa se yon objektif kle: pwogrè, sa ou rate, ak rezilta yo dwe rete konsistan."
+        },
+        {
+          "q": "Kisa k ap vini apre?",
+          "a": "Plis sijè, plis kalite kestyon, ak revizyon pi fon—san n pa pèdi klète UI a."
+        }
       ]
     },
     "finalCta": {
-      "title": "Ou pare pou bati entisyon reyèl?",
-      "subtitle": "Kòmanse ak yon modil, pratike ak fidbak, epi fè konsèp yo vin fasil pou ou.",
+      "title": "Ou pare pou bati vrè konpetans?",
+      "subtitle": "Chwazi yon modil, pratike ak fidbak, epi fè aprantisaj la vin konfyans.",
       "primary": "Kòmanse",
       "secondary": "Gade katalòg la"
     },
     "footer": {
-      "rights": "© {year} Learnoir. Tout dwa rezève.",
+      "rights": "© {year} {appName}. Tout dwa rezève.",
       "links": {
         "catalog": "Katalòg",
         "review": "Revizyon",
@@ -171,16 +264,51 @@
       }
     },
     "ui": {
-      "heroCard": {
-        "title": "Pratik entèaktif",
-        "subtitle": "VectorPad • Kòd • Tchek",
-        "laLabel": "Aljèb Lineyè",
-        "laText": "Trennen vektè → dot product & pwjèksyon chanje touswit.",
-        "assetNote": "Ranplase ak yon foto/GIF reyèl pita.",
-        "pyLabel": "Python",
-        "pyText": "Pratike baz yo ak tchek rapid ak kestyon klè."
+      "demos": {
+        "tokens": [
+          "Ranje",
+          "mo",
+          "sa",
+          "yo",
+          "nan",
+          "lòd"
+        ],
+        "quiz": {
+          "options": [
+            "Yon tchek rapid",
+            "Ale pi fon",
+            "Sote pou kounye a"
+          ],
+          "selectedIndex": 0
+        },
+        "progress": {
+          "rows": [
+            {
+              "k": "Jodi a",
+              "v": 72
+            },
+            {
+              "k": "Semèn sa",
+              "v": 46
+            },
+            {
+              "k": "Chèn",
+              "v": 60
+            }
+          ],
+          "suffix": "%"
+        }
       },
-      "tagline": "Pa gen bla bla. Pa gen scroll san fen. Se pratik ki fè ou vin pi bon.",
+      "heroCard": {
+        "title": "Ti gade sou pratik",
+        "subtitle": "Egzèsis • Fidbak • Pwogrè",
+        "laLabel": "Tchek rapid",
+        "laText": "Reponn yon kestyon kout epi wè touswit sa pou w korije.",
+        "assetNote": "Ranplase ak yon foto/GIF reyèl pita.",
+        "pyLabel": "Rapèl & aplike",
+        "pyText": "Ranje lòd, ranpli vid, oswa chwazi pi bon opsyon pou w kenbe sa w aprann."
+      },
+      "tagline": "Pa gen bla bla. Pa gen scroll san fen. Se pratik ki fè w vin pi bon.",
       "recommended": "Rekòmande",
       "browseModules": "Gade modil yo",
       "tryReview": "Teste revizyon"

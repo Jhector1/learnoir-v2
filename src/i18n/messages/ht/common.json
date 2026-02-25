@@ -1,10 +1,16 @@
 {
   "Header": {
     "language": "Lang",
+    "openSettings": "Louvri reglaj yo",
+    "settings": "Reglaj",
+    "settingsSubtitle": "Aparans ak lang",
+    "theme": "Tèm",
+    "themeHint": "Klè / Fènwa",
 
+    "sound": "Son",
     "home": "Akèy",
     "billing": "Pri",
-     "settings": "Paramet",
+
     "practice": "Aprann & Pratik",
     "assignments": "Devwa",
     "subjects": "Matyè",

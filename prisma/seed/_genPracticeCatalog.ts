@@ -1,3 +1,4 @@
+// prisma/seed/_genPracticeCatalog.ts
 import fs from "node:fs";
 import path from "node:path";
 
@@ -7,13 +8,12 @@ import { PY_SUBJECT_SLUG as PY_SUBJECT } from "./data/subjects/python/constants"
 
 import { LA_SECTIONS } from "./data/subjects/linear-algebra/sections";
 import { LA_SUBJECT_SLUG as LA_SUBJECT } from "./data/subjects/linear-algebra/constants";
-import { HC_SUBJECT_SLUG as HC_SUBJECT } from "./data/subjects/haitian-creole/constants";
-
 
 import { HC_SECTIONS } from "./data/subjects/haitian-creole/sections";
+import { HC_SUBJECT_SLUG as HC_SUBJECT } from "./data/subjects/haitian-creole/constants";
 
-import { AI_SUBJECT_SLUG as AI_SUBJECT } from "./data/subjects/ai/constants";
 import { AI_SECTIONS } from "./data/subjects/ai/sections";
+import { AI_SUBJECT_SLUG as AI_SUBJECT } from "./data/subjects/ai/constants";
 
 type GenModule = {
   moduleSlug: string;
@@ -33,6 +33,21 @@ type GenSubject = {
 
 type GenCatalog = Record<string, GenSubject>;
 
+// ✅ IMPORTANT: match "as const" (readonly arrays) so `satisfies` won't fail.
+const GENERATED_SHAPE_TS = `Record<string, {
+  subjectSlug: string;
+  modulesBySlug: Record<string, {
+    moduleSlug: string;
+    sectionSlug: string;
+    sectionTitle: string;
+    sectionOrder: number;
+    genKey: string;
+    prefix: string;
+    topicIds: readonly string[];
+    topics: Record<string, string>;
+  }>;
+}>`;
+
 function buildSubject(subjectSlug: string, sections: any[]): GenSubject {
   const modulesBySlug: Record<string, GenModule> = {};
 
@@ -46,8 +61,8 @@ function buildSubject(subjectSlug: string, sections: any[]): GenSubject {
     const sectionOrder = Number(s.section?.order ?? 0);
 
     const topicIds: string[] = Array.isArray(s.topics)
-      ? s.topics.map((t: any) => String(t.id))
-      : [];
+        ? s.topics.map((t: any) => String(t.id))
+        : [];
 
     const topics: Record<string, string> = {};
     for (const id of topicIds) topics[id] = `${prefix}.${id}`;
@@ -67,10 +82,6 @@ function buildSubject(subjectSlug: string, sections: any[]): GenSubject {
   return { subjectSlug, modulesBySlug };
 }
 
-function stableStringify(obj: any) {
-  return JSON.stringify(obj, null, 2) + "\n";
-}
-
 /**
  * Generates a tiny UI-safe catalog into:
  *   src/lib/practice/catalog/generatedCatalog.ts
@@ -79,7 +90,7 @@ export async function genPracticeCatalog() {
   const catalog: GenCatalog = {
     [PY_SUBJECT]: buildSubject(PY_SUBJECT, PY_SECTIONS as any),
     [LA_SUBJECT]: buildSubject(LA_SUBJECT, LA_SECTIONS as any),
-        [HC_SUBJECT]: buildSubject(HC_SUBJECT, HC_SECTIONS as any),
+    [HC_SUBJECT]: buildSubject(HC_SUBJECT, HC_SECTIONS as any),
     [AI_SUBJECT]: buildSubject(AI_SUBJECT, AI_SECTIONS as any),
   };
 
@@ -94,10 +105,17 @@ export async function genPracticeCatalog() {
  */
 `;
 
+  // ✅ CRITICAL: keep `as const` on SAME LINE (no newline before `as`)
+  const json = JSON.stringify(catalog, null, 2);
+
   const content =
-    banner +
-    `export const GENERATED_CATALOG = ${stableStringify(catalog)};\n` +
-    `export type GeneratedCatalog = typeof GENERATED_CATALOG;\n`;
+      banner +
+      `export type GeneratedCatalogShape = ${GENERATED_SHAPE_TS};\n` +
+      `export const GENERATED_CATALOG = ${json} as const satisfies GeneratedCatalogShape;\n` +
+      `export type GeneratedCatalog = typeof GENERATED_CATALOG;\n`;
 
   fs.writeFileSync(outFile, content, "utf8");
 }
+
+// ✅ ALSO export default (prevents import mismatch errors)
+export default genPracticeCatalog;

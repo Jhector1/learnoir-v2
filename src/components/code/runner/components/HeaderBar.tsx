@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Lang } from "@/lib/code/runCode";
+
 import type { TerminalDock } from "../types";
 
 import Tooltip from "@/components/ui/Tooltip";
@@ -17,9 +17,10 @@ import {
 } from "react-icons/fi";
 import { SiPython, SiJavascript, SiC, SiCplusplus } from "react-icons/si";
 import { FaJava } from "react-icons/fa";
+import {CodeLanguage} from "@/lib/practice/types";
 
 const LANG_META: Record<
-    Lang,
+    CodeLanguage,
     { label: string; Icon: React.ComponentType<{ className?: string }> }
 > = {
     python: { label: "Python", Icon: SiPython },
@@ -60,9 +61,9 @@ export default function HeaderBar(props: {
     showDockToggle: boolean;
 
     showPicker: boolean;
-    allowedLangs: Lang[];
-    lang: Lang;
-    onSwitchLang: (l: Lang) => void;
+    allowedLangs: CodeLanguage[];
+    lang: CodeLanguage;
+    onSwitchLang: (l: CodeLanguage) => void;
 
     allowReset: boolean;
     onReset: () => void;

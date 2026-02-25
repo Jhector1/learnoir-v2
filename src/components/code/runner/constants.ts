@@ -1,8 +1,9 @@
-import type { Lang } from "@/lib/code/runCode";
 
-export const DEFAULT_LANGS: Lang[] = ["python", "java", "javascript", "c", "cpp"];
+import {CodeLanguage} from "@/lib/practice/types";
 
-export const DEFAULT_CODE: Record<Lang, string> = {
+export const DEFAULT_LANGS: CodeLanguage[] = ["python", "java", "javascript", "c", "cpp"];
+
+export const DEFAULT_CODE: Record<CodeLanguage, string> = {
     python: `print("Hello from Python!")\n`,
     java: `public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from Java!");\n  }\n}\n`,
     javascript: `console.log("Hello from JavaScript!");\n`,

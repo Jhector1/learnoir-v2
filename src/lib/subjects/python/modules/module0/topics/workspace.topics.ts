@@ -5,6 +5,7 @@ import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects
 
 // ✅ pool source of truth
 import { M0_WORKSPACE_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/workspace";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "editor_workspace_overview" as const;
 const LABEL = "Understanding the editor, Run button, and terminal" as const;
@@ -54,7 +55,7 @@ export const PY_WORKSPACE = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -63,5 +64,5 @@ export const PY_WORKSPACE = {
             minutes: MINUTES,
             pool: M0_WORKSPACE_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

@@ -1,4 +1,5 @@
-import type { Lang } from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
+
 
 export type NodeId = string;
 
@@ -25,7 +26,7 @@ export type FSNode = FolderNode | FileNode;
 
 export type WorkspaceStateV2 = {
     version: 2;
-    language: Lang;
+    language: CodeLanguage;
     nodes: FSNode[];
     openTabs: NodeId[];
     activeFileId: NodeId;

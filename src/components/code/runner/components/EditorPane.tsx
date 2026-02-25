@@ -2,13 +2,14 @@
 
 import React, { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import type { Lang } from "@/lib/code/runCode";
+
 import { monacoLang } from "../utils/monaco";
+import {CodeLanguage} from "@/lib/practice/types";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 export default function EditorPane(props: {
-    lang: Lang;
+    lang: CodeLanguage;
     code: string;
     onChange: (v: string) => void;
     theme: "vs" | "vs-dark";

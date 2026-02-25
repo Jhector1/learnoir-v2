@@ -43,7 +43,7 @@ export default function GeoGramSchmidtSketch() {
             s.push();
             s.stroke("rgba(255,255,255,0.3)");
             s.strokeWeight(2);
-            s.drawingContext.setLineDash([6, 6]);
+          
             s.line(pB2.x, pB2.y, pProj.x, pProj.y);
             (s.drawingContext as any).setLineDash([]);
             s.pop();
@@ -103,7 +103,7 @@ export default function GeoGramSchmidtSketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Gram–Schmidt:
 
 $$u_1=b_1$$

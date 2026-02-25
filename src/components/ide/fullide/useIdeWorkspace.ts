@@ -1,21 +1,36 @@
+// src/components/ide/fullide/useIdeWorkspace.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Lang } from "@/lib/code/runCode";
-import type { FileNode, FolderNode, FSNode, InlineEdit, NodeId, Toast, WorkspaceStateV2 } from "./types";
+
+import type {
+    FileNode,
+    FolderNode,
+    FSNode,
+    InlineEdit,
+    NodeId,
+    Toast,
+    WorkspaceStateV2,
+} from "./types";
+
 import { clamp, uid } from "./utils";
 import { defaultExt, defaultMainCode, defaultMainFile } from "./languageDefaults";
-import { childrenOf, ensureUniqueSiblingName, findFile, subtreeIds } from "./fsTree";
-import { loadV2, saveV2, tryMigrateV1 } from "./storage";
+import { ensureUniqueSiblingName, findFile, subtreeIds } from "./fsTree";
+import { loadV2, saveV2, tryMigrateV1, STORAGE_KEY_V2 } from "./storage";
+import {CodeLanguage} from "@/lib/practice/types";
 
-export function useIdeWorkspace(opts?: {
-    forcedLanguage?: Lang;
+export type UseIdeWorkspaceOpts = {
+    storageKey?: string; // ✅ NEW
+    forcedLanguage?: CodeLanguage;
     resetOnForcedLanguageChange?: boolean;
-}) {
+};
+
+export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
+    const storageKey = opts?.storageKey ?? STORAGE_KEY_V2; // ✅ NEW
     const forcedLanguage = opts?.forcedLanguage;
     const resetOnForcedLanguageChange = !!opts?.resetOnForcedLanguageChange;
 
-    const [language, setLanguage] = useState<Lang>("python");
+    const [language, setLanguage] = useState<CodeLanguage>("python");
     const [nodes, setNodes] = useState<FSNode[]>([]);
     const [openTabs, setOpenTabs] = useState<NodeId[]>([]);
     const [activeFileId, setActiveFileId] = useState<NodeId>("");
@@ -37,9 +52,10 @@ export function useIdeWorkspace(opts?: {
         return () => clearTimeout(t);
     }, [toast]);
 
-    const resetWorkspaceForLanguage = useCallback((next: Lang) => {
+    const resetWorkspaceForLanguage = useCallback((next: CodeLanguage) => {
         const srcId = uid();
         const mainId = uid();
+
         const fresh: FSNode[] = [
             {
                 id: srcId,
@@ -74,11 +90,18 @@ export function useIdeWorkspace(opts?: {
         setPendingDeleteId(null);
     }, []);
 
-    // init (load v2 -> migrate v1 -> fresh)
+    // ✅ init / re-init when storageKey changes
+    const prevStorageKeyRef = useRef<string | null>(null);
     useEffect(() => {
         const wanted = forcedLanguage ?? "python";
 
-        const v2 = loadV2();
+        // If storageKey changes, reload workspace from that key
+        const keyChanged =
+            prevStorageKeyRef.current !== null && prevStorageKeyRef.current !== storageKey;
+        prevStorageKeyRef.current = storageKey;
+
+        // 1) load v2 for this key
+        const v2 = loadV2(storageKey);
         if (v2) {
             if (forcedLanguage && resetOnForcedLanguageChange && v2.language !== forcedLanguage) {
                 resetWorkspaceForLanguage(forcedLanguage);
@@ -96,29 +119,73 @@ export function useIdeWorkspace(opts?: {
             return;
         }
 
-        const migrated = tryMigrateV1();
-        if (migrated) {
-            if (forcedLanguage && resetOnForcedLanguageChange && migrated.language !== forcedLanguage) {
-                resetWorkspaceForLanguage(forcedLanguage);
+        // 2) Only migrate v1 when using the default v2 key and only on first init
+        // (If you use per-language keys, you generally don’t want to migrate v1 into every key.)
+        if (!keyChanged && storageKey === STORAGE_KEY_V2) {
+            const migrated = tryMigrateV1();
+            if (migrated) {
+                // ✅ write migrated into the current key (your tryMigrateV1 doesn't do that)
+                saveV2(storageKey, migrated);
+
+                if (forcedLanguage && resetOnForcedLanguageChange && migrated.language !== forcedLanguage) {
+                    resetWorkspaceForLanguage(forcedLanguage);
+                    return;
+                }
+
+                setLanguage(migrated.language);
+                setNodes(migrated.nodes);
+                setOpenTabs(migrated.openTabs);
+                setActiveFileId(migrated.activeFileId);
+                setEntryFileId(migrated.entryFileId);
+                setStdin(migrated.stdin ?? "");
+                setExpanded(new Set(migrated.expanded ?? []));
+                setLeftPct(migrated.leftPct ?? 26);
                 return;
             }
-
-            setLanguage(migrated.language);
-            setNodes(migrated.nodes);
-            setOpenTabs(migrated.openTabs);
-            setActiveFileId(migrated.activeFileId);
-            setEntryFileId(migrated.entryFileId);
-            setStdin(migrated.stdin);
-            setExpanded(new Set(migrated.expanded ?? []));
-            setLeftPct(migrated.leftPct ?? 26);
-            return;
         }
 
+        // 3) fresh
         resetWorkspaceForLanguage(wanted);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [storageKey, forcedLanguage, resetOnForcedLanguageChange, resetWorkspaceForLanguage]);
 
-    // react to forced language changes (sandbox sidebar)
-    const prevForcedRef = useRef<Lang | null>(null);
+    // ✅ soft switch: if workspace is still basically fresh, update main file name+template
+    function switchLanguage(next: CodeLanguage) {
+        setLanguage(next);
+
+        setNodes((prev) => {
+            const files = prev.filter((n): n is FileNode => n.kind === "file");
+            const folders = prev.filter((n): n is FolderNode => n.kind === "folder");
+
+            const looksFresh =
+                folders.length === 1 &&
+                folders[0].name === "src" &&
+                folders[0].parentId === null &&
+                files.length === 1 &&
+                files[0].parentId === folders[0].id;
+
+            if (!looksFresh) return prev;
+
+            const f = files[0];
+
+            const isEmpty = !(f.content ?? "").trim().length;
+            const isOldDefault = (f.content ?? "") === defaultMainCode(language);
+
+            if (!isEmpty && !isOldDefault) return prev;
+
+            return prev.map((n) => {
+                if (n.id !== f.id || n.kind !== "file") return n;
+                return {
+                    ...(n as FileNode),
+                    name: defaultMainFile(next),
+                    content: defaultMainCode(next),
+                    updatedAt: Date.now(),
+                };
+            });
+        });
+    }
+
+    // ✅ react to forced language changes (ONLY ONE effect — removed duplicates)
+    const prevForcedRef = useRef<CodeLanguage | null>(null);
     useEffect(() => {
         if (!forcedLanguage) return;
 
@@ -129,12 +196,13 @@ export function useIdeWorkspace(opts?: {
 
         if (forcedLanguage !== prevForcedRef.current) {
             prevForcedRef.current = forcedLanguage;
+
             if (resetOnForcedLanguageChange) resetWorkspaceForLanguage(forcedLanguage);
-            else setLanguage(forcedLanguage);
+            else switchLanguage(forcedLanguage);
         }
     }, [forcedLanguage, resetOnForcedLanguageChange, resetWorkspaceForLanguage]);
 
-    // persist
+    // ✅ persist using the provided key
     useEffect(() => {
         if (!nodes.length || !activeFileId || !entryFileId) return;
 
@@ -149,8 +217,9 @@ export function useIdeWorkspace(opts?: {
             expanded: Array.from(expanded),
             leftPct,
         };
-        saveV2(ws);
-    }, [language, nodes, openTabs, activeFileId, entryFileId, stdin, expanded, leftPct]);
+
+        saveV2(storageKey, ws); // ✅ matches your storage.ts signature
+    }, [storageKey, language, nodes, openTabs, activeFileId, entryFileId, stdin, expanded, leftPct]);
 
     const activeFile = useMemo(() => findFile(nodes, activeFileId), [nodes, activeFileId]);
     const entryFile = useMemo(() => findFile(nodes, entryFileId), [nodes, entryFileId]);
@@ -165,7 +234,9 @@ export function useIdeWorkspace(opts?: {
     }, [nodes, openTabs]);
 
     const rootSrc = useMemo(() => {
-        return nodes.find((n) => n.kind === "folder" && n.name === "src" && n.parentId === null) as FolderNode | undefined;
+        return nodes.find(
+            (n) => n.kind === "folder" && n.name === "src" && n.parentId === null,
+        ) as FolderNode | undefined;
     }, [nodes]);
 
     function openFile(id: NodeId) {
@@ -206,63 +277,6 @@ export function useIdeWorkspace(opts?: {
         });
     }
 
-    // soft switch: only replace sample if workspace looks fresh
-    // ✅ soft switch: if workspace is still basically "fresh", update main file name+template
-    function switchLanguage(next: Lang) {
-        setLanguage(next);
-
-        setNodes((prev) => {
-            const files = prev.filter((n): n is FileNode => n.kind === "file");
-            const folders = prev.filter((n): n is FolderNode => n.kind === "folder");
-
-            const looksFresh =
-                folders.length === 1 &&
-                folders[0].name === "src" &&
-                folders[0].parentId === null &&
-                files.length === 1 &&
-                files[0].parentId === folders[0].id;
-
-            if (!looksFresh) return prev;
-
-            const f = files[0];
-
-            // also allow swapping template if file is empty OR still the old default
-            const isEmpty = !(f.content ?? "").trim().length;
-            const isOldDefault =
-                (f.content ?? "") === defaultMainCode(language); // language = previous language from state closure
-
-            if (!isEmpty && !isOldDefault) return prev;
-
-            return prev.map((n) => {
-                if (n.id !== f.id || n.kind !== "file") return n;
-                return {
-                    ...(n as FileNode),
-                    name: defaultMainFile(next),
-                    content: defaultMainCode(next),
-                    updatedAt: Date.now(),
-                };
-            });
-        });
-    }
-
-// ✅ react to forced language changes (sidebar)
-//     const prevForcedRef = useRef<Lang | null>(null);
-    useEffect(() => {
-        if (!forcedLanguage) return;
-
-        if (prevForcedRef.current === null) {
-            prevForcedRef.current = forcedLanguage;
-            return;
-        }
-
-        if (forcedLanguage !== prevForcedRef.current) {
-            prevForcedRef.current = forcedLanguage;
-
-            if (resetOnForcedLanguageChange) resetWorkspaceForLanguage(forcedLanguage);
-            else switchLanguage(forcedLanguage); // ✅ NOT setLanguage(forcedLanguage)
-        }
-    }, [forcedLanguage, resetOnForcedLanguageChange, resetWorkspaceForLanguage]);
-
     // inline create/rename
     function startNewFile(parentId: NodeId | null) {
         const desired = ensureUniqueSiblingName(nodes, parentId, `untitled${defaultExt(language)}`);
@@ -297,11 +311,7 @@ export function useIdeWorkspace(opts?: {
                 const cur = prev.find((x) => x.id === id);
                 if (!cur) return prev;
 
-                const safe = ensureUniqueSiblingName(
-                    prev.filter((x) => x.id !== id),
-                    cur.parentId,
-                    raw,
-                );
+                const safe = ensureUniqueSiblingName(prev.filter((x) => x.id !== id), cur.parentId, raw);
 
                 return prev.map((x) => (x.id === id ? { ...(x as any), name: safe, updatedAt: Date.now() } : x));
             });
@@ -404,11 +414,9 @@ export function useIdeWorkspace(opts?: {
     }
 
     // divider drag
-    // useIdeWorkspace.ts (replace your onMouseDownDivider with this)
-
-    const SPLIT_PX = 8;         // matches w-2 splitter
-    const MIN_LEFT_PX = 240;    // explorer min width
-    const MIN_RIGHT_PX = 520;   // editor min width
+    const SPLIT_PX = 8;
+    const MIN_LEFT_PX = 240;
+    const MIN_RIGHT_PX = 520;
 
     function onMouseDownDivider(e: React.MouseEvent, rootEl: HTMLElement | null) {
         if (!rootEl) return;
@@ -430,7 +438,6 @@ export function useIdeWorkspace(opts?: {
 
             const nextPctRaw = d.startPct + (dx / rect.width) * 100;
 
-            // ✅ clamp by px minimums (CodeRunner style)
             const minPct = (MIN_LEFT_PX / rect.width) * 100;
             const maxPct = ((rect.width - SPLIT_PX - MIN_RIGHT_PX) / rect.width) * 100;
 
@@ -438,8 +445,6 @@ export function useIdeWorkspace(opts?: {
             const safeMax = Math.max(safeMin, maxPct);
 
             setLeftPct(clamp(nextPctRaw, safeMin, safeMax));
-
-            // ✅ help Monaco reflow during drag
             requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
         };
 
@@ -458,7 +463,6 @@ export function useIdeWorkspace(opts?: {
         window.addEventListener("mouseup", onUp);
     }
 
-    // convenience
     const setEntry = (id: NodeId) => setEntryFileId(id);
 
     return {

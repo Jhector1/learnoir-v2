@@ -6,13 +6,17 @@ import type {
     SingleChoiceExercise,
     MultiChoiceExercise,
     TextInputExercise,
-    DragReorderExercise,
-} from "../../../types";
-import type { GenOut } from "../../shared/expected";
-import type { RNG } from "../../shared/rng";
-import type { TopicContext } from "../../generatorTypes";
+    // DragReorderExercise,
+} from "@/lib/practice/types";
+// import type { GenOut } from "../../shared/expected";
+// import type { RNG } from "../../shared/rng";
+// import type { TopicContext } from "../../generatorTypes";
 
 import type { PracticeKind } from "@prisma/client";
+import {DragReorderExercise} from "@/lib/practice/types";
+import {RNG} from "@/lib/practice/generator/shared/rng";
+import {GenOut} from "@/lib/practice/generator/shared/expected";
+import {TopicContext} from "@/lib/practice/generator/generatorTypes";
 
 type HandlerArgs = {
     rng: RNG;

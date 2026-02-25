@@ -1,6 +1,5 @@
 // src/app/api/practice/validate/route.ts
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { attachGuestCookie } from "@/lib/practice/actor";
@@ -57,6 +56,12 @@ export async function POST(req: Request) {
   const body: ValidateBody = parsed.data;
   const isReveal = Boolean(body.reveal);
   const answer = body.answer;
+
+  // ✅ FIX: Prisma.InputJsonValue does NOT accept Prisma.JsonNull.
+  // If not revealing, answer must exist (so we can persist real JSON).
+  if (!isReveal && !answer) {
+    return json("Missing answer.", 400);
+  }
 
   const key = normalizeKey(body.key);
   if (!key) return json("Missing key.", 400);
@@ -128,12 +133,9 @@ export async function POST(req: Request) {
   // --- 7) Attempts policy (server truth)
   const mode: RunMode = isAssignment ? "assignment" : hasSession ? "session" : "practice";
 
-  // null => unlimited
   const maxAttempts = computeMaxAttempts({
     mode,
     assignmentMaxAttempts: sess?.assignment?.maxAttempts ?? null,
-    // sessionMaxAttempts: (sess as any)?.maxAttempts ?? null, // add later if you want
-    // practiceMaxAttempts: null, // override later if you want global cap
   });
 
   // block submitting new attempts when already finalized (answeredAt set)
@@ -170,7 +172,6 @@ export async function POST(req: Request) {
     return attachGuestCookie(res, setGuestId);
   }
 
-  // optional sanity check: instance.kind must match expected.kind (if present)
   if ((expectedCanon as any).kind && (expectedCanon as any).kind !== instance.kind) {
     const res = json("Server bug: expected.kind mismatch.", 500, {
       debug: { instanceKind: instance.kind, expectedKind: (expectedCanon as any).kind },
@@ -184,7 +185,7 @@ export async function POST(req: Request) {
   const graded = await gradeInstance({
     instance,
     expectedCanon,
-    answer: isReveal ? null : (answer ?? null),
+    answer: isReveal ? null : answer!, // ✅ guaranteed above
     isReveal,
     showDebug,
   });
@@ -192,25 +193,22 @@ export async function POST(req: Request) {
   // --- 10) Finalization + persist attempt + session updates
   const nextNonRevealAttempts = isReveal ? priorNonRevealAttempts : priorNonRevealAttempts + 1;
 
-  // Practice finalizes ONLY when correct.
-  // Locked runs (assignment/session) can finalize on exhaustion.
   const finalizeOnExhaust = mode === "assignment" || mode === "session";
   const exhausted = maxAttempts != null && nextNonRevealAttempts >= maxAttempts;
 
-  const finalized = isReveal
-      ? false
-      : Boolean(graded.ok) || (finalizeOnExhaust && exhausted);
+  const finalized = isReveal ? false : Boolean(graded.ok) || (finalizeOnExhaust && exhausted);
 
   const persisted = await persistAttemptAndFinalize(prisma, {
     instance,
     actor,
     isReveal,
-    answerPayload: isReveal ? { reveal: true } : (answer ?? Prisma.JsonNull),
+    // ✅ NO Prisma.JsonNull ever. Must be real JSON.
+    answerPayload: isReveal ? { reveal: true } : answer!,
     ok: isReveal ? false : Boolean(graded.ok),
     finalized,
   });
 
-  // --- 11) Response shaping (avoid leaking expected when not revealing)
+  // --- 11) Response shaping
   const includeExpected = isReveal;
 
   let publicExplanation = graded.explanation;
@@ -226,16 +224,12 @@ export async function POST(req: Request) {
     revealAnswer: isReveal ? graded.revealAnswer : null,
     expected: null,
     explanation: includeExpected ? graded.explanation : publicExplanation,
-
-    // ✅ server truth for UI locking
     finalized,
-
     attempts: {
       used: nextNonRevealAttempts,
-      max: maxAttempts, // null => unlimited
-      left,             // null => unlimited
+      max: maxAttempts,
+      left,
     },
-
     sessionComplete: persisted.sessionComplete,
     summary: persisted.sessionSummary,
     returnUrl,

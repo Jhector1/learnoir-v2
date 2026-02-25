@@ -169,7 +169,7 @@ export default function GeoInnerProductGeometrySketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Weighted inner product:
 
 $$\langle x,y\rangle_A = x^\top A y$$

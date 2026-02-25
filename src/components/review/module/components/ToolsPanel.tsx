@@ -4,7 +4,7 @@ export * from "@/components/tools/ToolsPanel";
 // "use client";
 //
 // import React from "react";
-// import type { Lang } from "@/lib/code/runCode";
+// 
 // import CodeRunner from "@/components/code/runner/CodeRunner";
 // import {ListIcon} from "lucide-react";
 //
@@ -31,11 +31,11 @@ export * from "@/components/tools/ToolsPanel";
 //     rightBodyRef: React.RefObject<HTMLDivElement | null>;
 //     codeRunnerRegionH: number;
 //
-//     toolLang: Lang;
+//     toolLang: CodeLanguage;
 //     toolCode: string;
 //     toolStdin: string;
 //
-//     onChangeLang: (l: Lang) => void;
+//     onChangeLang: (l: CodeLanguage) => void;
 //     onChangeCode: (c: string) => void;
 //     onChangeStdin: (s: string) => void;
 // }) {

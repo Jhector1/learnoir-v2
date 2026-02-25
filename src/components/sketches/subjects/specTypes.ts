@@ -1,6 +1,7 @@
 // src/components/review/sketches/specTypes.ts
 import type { SketchTone } from "./types";
-import type { Lang } from "@/lib/code/types";
+
+import {CodeLanguage} from "@/lib/practice/types";
 
 export type ArchetypeId =
     | "intro_stepper"
@@ -18,7 +19,7 @@ export type ArchetypeId =
     | "ui_path_guide"
     | "code_runner"
     // keep these because you already render them
-    | "paragraph"
+    | "paragraph"|"video_lesson"
     // NEW
     | "image"
     // backward-compat (you currently have this in CodeSketchSpec)
@@ -43,7 +44,7 @@ export type SketchSpecBase = {
 export type CodeSketchSpec = SketchSpecBase & {
     archetype: "code_runner" | "code_sketch"; // support both
     starterCode: string;
-    language: Lang;
+    language: CodeLanguage;
     hint: string;
     instructionsMarkdown?: string;
 };

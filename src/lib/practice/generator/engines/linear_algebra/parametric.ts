@@ -1,8 +1,10 @@
 // src/lib/practice/generator/topics/parametric.ts
 import type { Difficulty, Exercise, ExerciseKind, SingleChoiceExercise } from "../../../types";
-import type { GenOut } from "../../expected";
-import type { RNG } from "../../rng";
+// import type { GenOut } from "../../expected";
+// import type { RNG } from "../../rng";
 import { randNonZeroInt } from "../../utils";
+import {GenOut} from "@/lib/practice/generator/shared/expected";
+import {RNG} from "@/lib/practice/generator/shared/rng";
 
 // ---------------- LaTeX helpers ----------------
 function signedLin(coef: number, sym = "t") {

@@ -1,5 +1,5 @@
 {
-  "name": "Learnoir",
+  "name": "{appName}",
   "short_name": "Learnoir",
   "start_url": "/",
   "display": "standalone",

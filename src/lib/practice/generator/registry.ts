@@ -79,7 +79,14 @@ export const TOPIC_GENERATORS: Record<GenKey, TopicGeneratorFactory> = {
   matrix_ops: wrapGenFn(genMatrixOps as any),
   matrix_inverse: wrapGenFn(genMatrixInverse as any),
   matrix_properties: wrapGenFn(genMatrixProperties as any),
+  vectors_part1: (ctx) => (rng, diff, id) =>
+      wrapGenFn(genVectorsPart1 as any)(ctx)(rng, diff, id),
 
+  vectors_part2: (ctx) => (rng, diff, id) =>
+      wrapGenFn(genVectorsPart2 as any)(ctx)(rng, diff, id),
+
+  matrices_part1: (ctx) => makeGenMatricesPart1(ctx),
+  matrices_part2: (ctx) => makeGenMatricesPart2(ctx),
   // ✅ true ctx factories (so matrices generators can read ctx.variant/subjectSlug if desired)
   linear_algebra_mod2: (ctx) => makeGenMatricesPart1(ctx),
   linear_algebra_mod3: (ctx) => makeGenMatricesPart2(ctx),

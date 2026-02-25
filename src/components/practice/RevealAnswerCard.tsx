@@ -48,7 +48,7 @@ export default function RevealAnswerCard({
   result,
   updateCurrent,
 }: {
-  exercise: Exercise;
+  exercise: Exercise | null;
   current: QItem;
   result: any;
   updateCurrent: (patch: Partial<QItem>) => void;
@@ -63,7 +63,7 @@ export default function RevealAnswerCard({
   const model = useMemo(() => {
     if (!reveal || typeof reveal !== "object") return null;
 
-    const kind = String(reveal.kind ?? exercise.kind);
+    const kind = String(reveal.kind ?? exercise?.kind);
 
     // Build:
     // - display node
@@ -258,8 +258,10 @@ if (kind === "drag_reorder") {
   const tokens = Array.isArray((exercise as any)?.tokens) ? (exercise as any).tokens : [];
   const byId = new Map(tokens.map((t: any) => [String(t.id), String(t.text ?? t.label ?? t.id)]));
 
-  const copyText = order.map((id) => byId.get(id) ?? id).join(" ");
-
+    const copyText = order.map((raw: any) => {
+        const sid = String(raw);
+        return byId.get(sid) ?? sid;
+    }).join(" ");
   return {
     title: "Correct order",
     copyText,
@@ -273,18 +275,22 @@ if (kind === "drag_reorder") {
       <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
         <div className="text-xs font-extrabold text-white/70">Correct order</div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {order.length ? (
-            order.map((id: string) => (
-              <span
-                key={id}
-                className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
-              >
-                {byId.get(id) ?? id}
-              </span>
-            ))
-          ) : (
-            <span className="text-xs text-white/60">—</span>
-          )}
+            {order.length ? (
+                order.map((raw: any) => {
+                    const sid = String(raw);
+                    const label = String(byId.get(sid) ?? sid);
+                    return (
+                        <span
+                            key={sid}
+                            className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                        >
+        {label}
+      </span>
+                    );
+                })
+            ) : (
+                <span className="text-xs text-white/60">—</span>
+            )}
         </div>
       </div>
     ),
@@ -377,15 +383,15 @@ if (kind === "drag_reorder") {
   if (!model) return null;
 
   async function onCopy() {
-    if (!model.copyText) return;
-    const ok = await copyToClipboard(model.copyText);
+    if (!model?.copyText) return;
+    const ok = await copyToClipboard(model?.copyText);
     if (!ok) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   }
 
   function onFill() {
-    if (!model.fillPatch) return;
+    if (!model?.fillPatch) return;
     updateCurrent({ ...model.fillPatch, submitted: false, result: null });
   }
 

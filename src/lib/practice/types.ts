@@ -67,19 +67,20 @@ export type ExerciseBase = {
     difficulty: Difficulty;
     title: string;
     prompt: string;
+    hint?: string; // ✅ put it h
 };
 
 export type SingleChoiceExercise = ExerciseBase & {
     kind: "single_choice";
     options: { id: string; text: string }[];
-    hint?: string;
+    // hint?: string;
 };
 export type MatrixInputExercise = ExerciseBase & {
     kind: "matrix_input";
     rows: number;
     cols: number;
     tolerance: number; // per-entry tolerance
-    hint?: string;
+    // hint?: string;
     /**
      * Optional display / UX flags:
      * - step: for input stepping
@@ -96,7 +97,7 @@ export type MultiChoiceExercise = ExerciseBase & {
 
 export type NumericExercise = ExerciseBase & {
     kind: "numeric";
-    hint?: string;
+    // hint?: string;
     tolerance?: number;
     /**
      * Optional; don’t include in production payloads if you don’t want to leak answers.
@@ -133,7 +134,7 @@ export type TextInputExercise = ExerciseBase & {
      * optional UI helper: "short" vs "long"
      */
     ui?: "short" | "long";
-    hint?: string | null;
+    // hint?: string | null;
 };
 
 export type DragToken = { id: string; text: string };
@@ -141,7 +142,7 @@ export type DragToken = { id: string; text: string };
 export type DragReorderExercise = ExerciseBase & {
     kind: "drag_reorder";
     tokens: DragToken[];
-    hint?: string | null;
+    // hint?: string | null;
 };
 
 export type VoiceInputExercise = ExerciseBase & {
@@ -155,7 +156,7 @@ export type VoiceInputExercise = ExerciseBase & {
      */
     locale?: string; // e.g. "ht-HT" (or "fr-FR", etc.)
     maxSeconds?: number;
-    hint?: string | null;
+    // hint?: string | null;
 };
 
 // ---------------- Existing exercises ----------------
@@ -165,12 +166,12 @@ export type VoiceInputExercise = ExerciseBase & {
 
 // src/lib/practice/types.ts (or wherever Exercise is defined)
 
-export type CodeLanguage =
-    | "python"
-    | "javascript"
-    | "typescript"
-    | "java"
-    | "csharp";
+// export type CodeLanguage =
+//     | "python"
+//     | "javascript"
+//     | "c"
+//     | "java" | "cpp";
+    // | "csharp";
 
 // export type CodeInputExercise = ExerciseBase & {
 
@@ -192,7 +193,7 @@ export type CodeInputExercise = ExerciseBase & {
     editorHeight?: number; // optional (defaults in UI)
     allowLanguageSwitch?: boolean; // optional (default true/false, your choice)
 
-    hint?: string; // optional hint shown like other exercises
+    // hint?: string; // optional hint shown like other exercises
 
     // Optional: if you want to show sample IO
     examples?: Array<{ stdin?: string; stdout: string }>;
@@ -202,7 +203,7 @@ export type WordBankArrangeExercise = ExerciseBase & {
     kind: "word_bank_arrange";
     targetText: string;
     locale?: string;
-    hint?: string | null;
+    // hint?: string | null;
     wordBank?: string[];
     distractors?: string[];
     ttsText?: string;
@@ -212,7 +213,7 @@ export type ListenBuildExercise = ExerciseBase & {
     kind: "listen_build";
     targetText: string;
     locale?: string;
-    hint?: string | null;
+    // hint?: string | null;
     wordBank?: string[];
     distractors?: string[];
 };
@@ -223,7 +224,7 @@ export type FillBlankChoiceExercise = ExerciseBase & {
     choices: string[];
     correct?: string; // (optional; ideally only in signed expected)
     locale?: string;
-    hint?: string | null;
+    // hint?: string | null;
 };
 // export type Exercise =
 //   | NumericExercise
@@ -304,3 +305,4 @@ export type ValidateResponse = {
     explanation?: string;
 };
 export type PoolKind = PracticeKind;
+export type CodeLanguage = "python" | "java" | "javascript" | "c" | "cpp";

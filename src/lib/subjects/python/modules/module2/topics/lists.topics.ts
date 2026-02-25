@@ -4,6 +4,7 @@ import { PY_SECTION_PART2, PY_TOPIC_MOD2 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M2_LISTS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod2/topics/lists";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "lists_basics" as const;
 const LABEL = "Lists: Store Many Values" as const;
@@ -80,7 +81,7 @@ export const PY_LISTS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -89,5 +90,5 @@ export const PY_LISTS = {
             minutes: MINUTES,
             pool: M2_LISTS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

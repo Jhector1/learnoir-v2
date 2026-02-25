@@ -1,5 +1,6 @@
 import JSZip from "jszip";
-import type { FileEntry, Lang } from "./types";
+import type { FileEntry } from "./types";
+import { CodeLanguage} from "@/lib/practice/types";
 
 function assertSafeRelPath(p: string) {
     if (!p || p.startsWith("/") || p.includes("..")) {
@@ -18,7 +19,7 @@ function pickJavaMainClass(entryPath: string, files: FileEntry[]): string {
     return pkg ? `${pkg}.${cls}` : cls;
 }
 
-function scriptsFor(lang: Lang, entry: string, files: FileEntry[]) {
+function scriptsFor(lang: CodeLanguage, entry: string, files: FileEntry[]) {
     const mainClass = lang === "java" ? pickJavaMainClass(entry, files) : "";
 
     const run = (() => {
@@ -82,7 +83,7 @@ g++ -O2 -std=c++17 -I. -o build/app $FILES
     return { compile, run };
 }
 
-export async function zipProject(lang: Lang, entry: string, files: FileEntry[]) {
+export async function zipProject(lang: CodeLanguage, entry: string, files: FileEntry[]) {
     assertSafeRelPath(entry);
     const zip = new JSZip();
 

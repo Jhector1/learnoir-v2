@@ -5,6 +5,7 @@ import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M1_VARIABLES_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables_types";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "variables_types_intro" as const;
 const LABEL = "Variables + Data Types: Boxes That Hold Real Values" as const;
@@ -79,7 +80,7 @@ export const PY_VARIABLES_TYPES = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -88,5 +89,5 @@ export const PY_VARIABLES_TYPES = {
             minutes: MINUTES,
             pool: M1_VARIABLES_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

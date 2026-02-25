@@ -97,7 +97,7 @@ export default function GeoGramSchmidtSketch() {
             </GeoPlane>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Gram–Schmidt in 2D:
 
 $$u_1=b_1$$

@@ -185,12 +185,8 @@ export default function DragReorderExerciseUI({
                   layout
                   transition={LAYOUT_SPRING}
                   draggable={!disabled}
-                  onDragStart={(e) => {
+                  onDragStart={() => {
                     if (disabled) return;
-                    try {
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("text/plain", id);
-                    } catch {}
                     setDraggingId(id);
                     setDraftOrder(order);
                   }}

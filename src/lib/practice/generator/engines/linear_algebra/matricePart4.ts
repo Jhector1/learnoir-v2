@@ -66,7 +66,7 @@ function randNonZeroVec(rng: RNG, n: number, lo: number, hi: number): number[] {
     return v;
 }
 
-function dot(x: number[], y: number[]) {
+function dot(x: readonly number[], y: readonly number[]) {
     let s = 0;
     for (let i = 0; i < Math.min(x.length, y.length); i++) s += x[i] * y[i];
     return s;
@@ -121,7 +121,7 @@ function xTAx(x: number[], A: number[][]) {
     return xTAy(x, A, x);
 }
 
-function vecToLatexCol(v: number[]) {
+function vecToLatexCol(v: readonly number[]) {
     return String.raw`\begin{bmatrix}${v.map((x) => String(x)).join(String.raw`\\`)}\end{bmatrix}`;
 }
 
@@ -410,12 +410,14 @@ $$A=${matToLatex(A)},\quad x=${vecToLatexCol(x)}$$`,
     // LENGTHS + DISTANCES
     // ============================================================
     dist_euclidean_2d: ({ rng, diff, id, topic }) => {
-        // pick points with a 3-4-5 difference often
-        const base = rng.pick([
+        const cases: Array<{ x: [number, number]; y: [number, number]; d: number }> = [
             { x: [2, 1], y: [5, 5], d: 5 },
             { x: [-1, 2], y: [2, 6], d: 5 },
             { x: [3, -2], y: [0, 2], d: 5 },
-        ] as any);
+        ];
+
+        const base = rng.pick(cases); // ✅ now typed
+
         return mkNumeric(
             id,
             topic,
@@ -428,7 +430,6 @@ $$x=${vecToLatexCol(base.x)},\quad y=${vecToLatexCol(base.y)}$$`,
             "Compute x−y, then its Euclidean norm.",
         );
     },
-
     dist_from_inner_product_definition: ({ rng, diff, id, topic }) => {
         return mkSingleChoice(
             id,

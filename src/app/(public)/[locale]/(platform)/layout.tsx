@@ -10,7 +10,7 @@ export default async function PlatformLayout({
   return (
     // <html>
       <div >
-        <HeaderSlick brand="Learnoir" badge="MVP" />
+        <HeaderSlick brand={process.env.APP_NAME} badge="MVP" />
         {children}
       </div>
     // </html>

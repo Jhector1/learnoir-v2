@@ -1,5 +1,4 @@
 // src/lib/practice/generator/topics/vectorsPart1.ts
-// import { PY_PREFIX0, PY_MOD0 } from "../../../../../../prisma/seed/data/subjects/linear-algebra/constants";
 
 import { PY_PREFIX0 } from "../../../../../../prisma/seed/data/subjects/python/constants";
 import type {
@@ -21,12 +20,15 @@ function fmtCol(v: number[]) {
 function fmtRow(v: number[]) {
   return String.raw`\begin{bmatrix}${v.map((x) => `${x}`).join(` & `)}\end{bmatrix}`;
 }
+
 function fmtVec2(x: number, y: number) {
   return String.raw`\begin{bmatrix}${x}\\ ${y}\end{bmatrix}`;
 }
+
 function fmtVecN(v: number[]) {
   return fmtCol(v); // math convention: column vector
 }
+
 function fmtShape(r: number, c?: number) {
   return c === undefined ? `(${r},)` : `(${r}, ${c})`;
 }
@@ -35,12 +37,15 @@ function fmtShape(r: number, c?: number) {
 function vecToColMatrix(v: number[]) {
   return v.map((x) => [x]); // n×1
 }
+
 function addVec(a: number[], b: number[]) {
   return a.map((x, i) => x + b[i]);
 }
+
 function subVec(a: number[], b: number[]) {
   return a.map((x, i) => x - b[i]);
 }
+
 function mulScalar(s: number, v: number[]) {
   return v.map((x) => s * x);
 }
@@ -51,24 +56,30 @@ function dot(a: number[], b: number[]) {
   for (let i = 0; i < a.length; i++) s += a[i] * b[i];
   return s;
 }
+
 function norm(a: number[]) {
   return Math.sqrt(dot(a, a));
 }
+
 function roundTo(x: number, d: number) {
   const p = 10 ** d;
   return Math.round(x * p) / p;
 }
+
 function randNonZeroInt(rng: RNG, lo: number, hi: number) {
   let v = 0;
   while (v === 0) v = rng.int(lo, hi);
   return v;
 }
+
 function coinFlip(rng: RNG) {
   return rng.int(0, 1) === 1;
 }
+
 function pickLen(rng: RNG, diff: Difficulty) {
   return diff === "easy" ? 3 : diff === "medium" ? 4 : 5;
 }
+
 function vecInts(rng: RNG, n: number, range: number, allowZero = true) {
   let v: number[] = Array.from({ length: n }, () => rng.int(-range, range));
 
@@ -81,10 +92,32 @@ function vecInts(rng: RNG, n: number, range: number, allowZero = true) {
   return v;
 }
 
+/**
+ * Strong, consistent expected builder for matrix_input.
+ * - Keeps expected rows/cols aligned with the exercise rows/cols.
+ * - In dev, asserts the provided values matrix matches those dims.
+ */
+function expectedFromMatrixExercise(
+    ex: Pick<MatrixInputExercise, "rows" | "cols">,
+    values: number[][],
+    tolerance: number,
+) {
+  if (process.env.NODE_ENV !== "production") {
+    const rows = values.length;
+    const cols = values[0]?.length ?? 0;
+    if (rows !== ex.rows || cols !== ex.cols) {
+      throw new Error(
+          `matrix_input expected shape mismatch: ex=${ex.rows}x${ex.cols} values=${rows}x${cols}`,
+      );
+    }
+  }
+  return { kind: "matrix_input" as const, rows: ex.rows, cols: ex.cols, values, tolerance };
+}
+
 export function genVectorsPart1(
-  rng: RNG,
-  diff: Difficulty,
-  id: string,
+    rng: RNG,
+    diff: Difficulty,
+    id: string,
 ): GenOut<ExerciseKind> {
   const range = diff === "easy" ? 5 : diff === "medium" ? 8 : 12;
 
@@ -103,28 +136,31 @@ export function genVectorsPart1(
     { value: "outer_product_entry" as const, w: diff === "hard" ? 4 : 2 },
     { value: "orth_proj_beta" as const, w: diff === "hard" ? 4 : 2 },
 
-    // ✅ NEW: vector input (as n×1 matrix_input)
+    // ✅ Vector input (as n×1 matrix_input)
     { value: "vector_input_add" as const, w: diff === "easy" ? 3 : 4 },
     { value: "vector_input_sub" as const, w: diff === "easy" ? 2 : 3 },
     { value: "vector_input_scalar_mult" as const, w: diff === "easy" ? 3 : 4 },
+
+    // ✅ Pull in vector-drag exercises (retagged)
     { value: "drag_target" as const, w: 3 },
-{ value: "drag_perp" as const, w: diff === "hard" ? 2 : 1 },
-{ value: "drag_parallel" as const, w: diff === "easy" ? 2 : 1 },
-{ value: "drag_antiparallel" as const, w: diff === "easy" ? 1 : 1 },
-{ value: "drag_target_swap" as const, w: 1 },
+    { value: "drag_perp" as const, w: diff === "hard" ? 2 : 1 },
+    { value: "drag_parallel" as const, w: diff === "easy" ? 2 : 1 },
+    { value: "drag_antiparallel" as const, w: diff === "easy" ? 1 : 1 },
+    { value: "drag_target_swap" as const, w: 1 },
   ]);
 
   const TOPIC = `${PY_PREFIX0}.vectors_part1` as const;
+
   // ------------------------------------------------------------
-  // ✅ NEW) Pull in vector-drag exercises from topics/vectors.ts
+  // Pull in vector-drag exercises from topics/vectors.ts
   // We only "retag" the topic so it saves under vectors_part1.
   // ------------------------------------------------------------
   if (
-    archetype === "drag_target" ||
-    archetype === "drag_perp" ||
-    archetype === "drag_parallel" ||
-    archetype === "drag_antiparallel" ||
-    archetype === "drag_target_swap"
+      archetype === "drag_target" ||
+      archetype === "drag_perp" ||
+      archetype === "drag_parallel" ||
+      archetype === "drag_antiparallel" ||
+      archetype === "drag_target_swap"
   ) {
     const out = genVectorDrags(rng, diff, id, TOPIC, "vectors_part1");
 
@@ -139,13 +175,13 @@ export function genVectorsPart1(
   }
 
   // ------------------------------------------------------------
-  // ✅ NEW) Vector input: a + b (enter as column vector)
+  // Vector input: a + b (enter as column vector)
   // ------------------------------------------------------------
   if (archetype === "vector_input_add") {
     const n = pickLen(rng, diff);
     const a = vecInts(rng, n, range, false);
     const b = vecInts(rng, n, range, false);
-    const out = addVec(a, b);
+    const outV = addVec(a, b);
 
     const prompt = String.raw`
 Let
@@ -181,18 +217,18 @@ and enter your answer as a **column vector** (shape $${n}\times 1$).
     return {
       archetype,
       exercise,
-      expected: { kind: "matrix_input", values: vecToColMatrix(out), tolerance: 0 },
+      expected: expectedFromMatrixExercise(exercise, vecToColMatrix(outV), 0),
     };
   }
 
   // ------------------------------------------------------------
-  // ✅ NEW) Vector input: a - b (enter as column vector)
+  // Vector input: a - b (enter as column vector)
   // ------------------------------------------------------------
   if (archetype === "vector_input_sub") {
     const n = pickLen(rng, diff);
     const a = vecInts(rng, n, range, false);
     const b = vecInts(rng, n, range, false);
-    const out = subVec(a, b);
+    const outV = subVec(a, b);
 
     const prompt = String.raw`
 Let
@@ -228,23 +264,23 @@ and enter your answer as a **column vector** (shape $${n}\times1$).
     return {
       archetype,
       exercise,
-      expected: { kind: "matrix_input", values: vecToColMatrix(out), tolerance: 0 },
+      expected: expectedFromMatrixExercise(exercise, vecToColMatrix(outV), 0),
     };
   }
 
   // ------------------------------------------------------------
-  // ✅ NEW) Vector input: γv (enter as column vector)
+  // Vector input: γv (enter as column vector)
   // ------------------------------------------------------------
   if (archetype === "vector_input_scalar_mult") {
     const n = pickLen(rng, diff);
     const v = vecInts(rng, n, range, false);
 
     const gamma =
-      diff === "easy"
-        ? rng.pick([-3, -2, -1, 2, 3] as const)
-        : rng.pick([-4, -3, -2, -1, 2, 3, 4] as const);
+        diff === "easy"
+            ? rng.pick([-3, -2, -1, 2, 3] as const)
+            : rng.pick([-4, -3, -2, -1, 2, 3, 4] as const);
 
-    const out = mulScalar(gamma, v);
+    const outV = mulScalar(gamma, v);
 
     const prompt = String.raw`
 Let
@@ -280,7 +316,7 @@ and enter your answer as a **column vector** (shape $${n}\times1$).
     return {
       archetype,
       exercise,
-      expected: { kind: "matrix_input", values: vecToColMatrix(out), tolerance: 0 },
+      expected: expectedFromMatrixExercise(exercise, vecToColMatrix(outV), 0),
     };
   }
 
@@ -328,8 +364,8 @@ $$
     };
 
     const idMap: Record<
-      "2D_row" | "2D_col" | "3D_row" | "3D_col" | "4D_row" | "4D_col" | "5D_row" | "5D_col",
-      string
+        "2D_row" | "2D_col" | "3D_row" | "3D_col" | "4D_row" | "4D_col" | "5D_row" | "5D_col",
+        string
     > = {
       "2D_row": "A",
       "2D_col": "B",
@@ -865,6 +901,7 @@ $$
     prompt: "Fallback exercise.",
     options: [{ id: "ok", text: "OK" }],
   };
+
   return {
     archetype: "fallback",
     exercise: fallback,

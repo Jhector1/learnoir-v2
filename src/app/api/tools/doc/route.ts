@@ -1,3 +1,4 @@
+// src/app/api/tools/doc/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -14,12 +15,12 @@ export const dynamic = "force-dynamic";
 
 /* -------------------------------- helpers -------------------------------- */
 
-function json(body: any, status = 200, setGuestId?: string) {
+function json(body: any, status = 200, setGuestId?: string | null) {
     const res = NextResponse.json(body, { status });
     return attachGuestCookie(res, setGuestId);
 }
 
-function jsonErr(message: string, status = 400, detail?: any, setGuestId?: string) {
+function jsonErr(message: string, status = 400, detail?: any, setGuestId?: string | null) {
     return json({ message, detail }, status, setGuestId);
 }
 
@@ -29,7 +30,7 @@ const KeySchema = z.object({
     subjectSlug: z.string().min(1),
     moduleId: z.string().min(1),
     locale: z.string().min(2),
-    toolId: z.string().min(1),   // "notes"
+    toolId: z.string().min(1), // "notes"
     scopeKey: z.string().min(1), // "general" | "exercise:<id>"
 });
 
@@ -51,9 +52,10 @@ export async function GET(req: Request) {
         scopeKey: url.searchParams.get("scopeKey") ?? "",
     });
 
-    const actor = await getActor();
-    const ensured = await ensureGuestId(actor);
-    const actorKey = actorKeyOf(ensured);
+    const actor0 = await getActor();
+    const ensured = ensureGuestId(actor0); // ✅ no await
+    const actor = ensured.actor;
+    const actorKey = actorKeyOf(actor); // ✅ pass Actor only
 
     if (!parsed.success) {
         return jsonErr("Invalid query", 400, parsed.error.flatten(), ensured.setGuestId);
@@ -75,16 +77,17 @@ export async function GET(req: Request) {
             updatedAt: doc?.updatedAt ?? null,
         },
         200,
-        ensured.setGuestId
+        ensured.setGuestId,
     );
 }
 
 /* -------------------------------- PUT -------------------------------- */
 
 export async function PUT(req: Request) {
-    const actor = await getActor();
-    const ensured = await ensureGuestId(actor);
-    const actorKey = actorKeyOf(ensured);
+    const actor0 = await getActor();
+    const ensured = ensureGuestId(actor0); // ✅ no await
+    const actor = ensured.actor;
+    const actorKey = actorKeyOf(actor); // ✅ pass Actor only
 
     let raw: unknown;
     try {

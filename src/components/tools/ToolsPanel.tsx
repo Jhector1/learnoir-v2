@@ -4,13 +4,14 @@ import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { ListIcon } from "lucide-react";
 
-import type { Lang } from "@/lib/code/runCode";
+
 
 import { cx } from "./utils/cx";
 import ToolTabs from "./ToolTabs";
 import { TOOL_SPECS } from "./registry";
 import type { ToolsCtx, ToolId } from "./types";
 import { useActiveTool } from "./hooks/useActiveTool";
+import {CodeLanguage} from "@/lib/practice/types";
 
 const PANE_ANIM = {
     show: { opacity: 1, scale: 1, y: 0, filter: "blur(0px)" },
@@ -27,11 +28,11 @@ export default function ToolsPanel(props: {
     rightBodyRef: React.RefObject<HTMLDivElement | null>;
     codeRunnerRegionH: number;
 
-    toolLang: Lang;
+    toolLang: CodeLanguage;
     toolCode: string;
     toolStdin: string;
 
-    onChangeLang: (l: Lang) => void;
+    onChangeLang: (l: CodeLanguage) => void;
     onChangeCode: (c: string) => void;
     onChangeStdin: (s: string) => void;
 

@@ -41,7 +41,8 @@ function isProtectedPath(pathname: string) {
   return (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/assignments") ||
-    pathname.startsWith("/profile")
+    pathname.startsWith("/profile") ||
+  pathname.startsWith("/subjects")
   );
 }
 

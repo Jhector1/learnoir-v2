@@ -18,8 +18,8 @@ function fmtSetVec2(vs: Array<{ x: number; y: number }>) {
 }
 function fmtSpan2(vs: Array<{ x: number; y: number }>) {
   return String.raw`\operatorname{span}\!\left\{${vs
-    .map((v) => fmtVec2(v.x, v.y))
-    .join(", ")}\right\}`;
+      .map((v) => fmtVec2(v.x, v.y))
+      .join(", ")}\right\}`;
 }
 
 // ---------------- matrix-input helpers ----------------
@@ -28,6 +28,28 @@ function vec2ToColMatrix(v: { x: number; y: number }) {
 }
 function coeffsToColMatrix(c1: number, c2: number) {
   return [[c1], [c2]]; // 2×1
+}
+
+/**
+ * Strong, consistent expected builder for matrix_input.
+ * - Keeps expected rows/cols aligned with the exercise rows/cols.
+ * - In dev, asserts the provided values matrix matches those dims.
+ */
+function expectedFromMatrixExercise(
+    ex: Pick<MatrixInputExercise, "rows" | "cols">,
+    values: number[][],
+    tolerance: number,
+) {
+  if (process.env.NODE_ENV !== "production") {
+    const rows = values.length;
+    const cols = values[0]?.length ?? 0;
+    if (rows !== ex.rows || cols !== ex.cols) {
+      throw new Error(
+          `matrix_input expected shape mismatch: ex=${ex.rows}x${ex.cols} values=${rows}x${cols}`,
+      );
+    }
+  }
+  return { kind: "matrix_input" as const, rows: ex.rows, cols: ex.cols, values, tolerance };
 }
 
 // ---------------- math helpers ----------------
@@ -57,9 +79,9 @@ function pickNonCollinearPair(rng: RNG, range: number) {
 }
 
 export function genVectorsPart2(
-  rng: RNG,
-  diff: Difficulty,
-  id: string,
+    rng: RNG,
+    diff: Difficulty,
+    id: string,
 ): GenOut<ExerciseKind> {
   const range = diff === "easy" ? 4 : diff === "medium" ? 7 : 10;
 
@@ -73,7 +95,7 @@ export function genVectorsPart2(
     { value: "basis_check_det" as const, w: 4 },
     { value: "basis_coordinates_one" as const, w: diff === "easy" ? 1 : 4 },
 
-    // ✅ NEW: vector input (matrix_input, 2×1)
+    // ✅ vector input (matrix_input, 2×1)
     { value: "vector_input_combo_full" as const, w: diff === "easy" ? 2 : 4 },
     { value: "vector_input_basis_coords_full" as const, w: diff === "hard" ? 4 : 2 },
   ]);
@@ -81,7 +103,7 @@ export function genVectorsPart2(
   const TOPIC = "vectors" as const;
 
   // ------------------------------------------------------------
-  // ✅ NEW) Vector input: compute full linear combination vector w (2×1)
+  // Vector input: compute full linear combination vector w (2×1)
   // ------------------------------------------------------------
   if (archetype === "vector_input_combo_full") {
     const v1 = { x: rng.int(-range, range), y: rng.int(-range, range) };
@@ -89,8 +111,8 @@ export function genVectorsPart2(
     const v3 = { x: rng.int(-range, range), y: rng.int(-range, range) };
 
     let l1 = 0,
-      l2 = 0,
-      l3 = 0;
+        l2 = 0,
+        l3 = 0;
     while (l1 === 0 && l2 === 0 && l3 === 0) {
       l1 = rng.int(-3, 3);
       l2 = rng.int(-3, 3);
@@ -135,12 +157,12 @@ Compute $$\vec w$$ and enter your answer as a **column vector** (shape $$2\times
     return {
       archetype,
       exercise,
-      expected: { kind: "matrix_input", values: vec2ToColMatrix(w), tolerance: 0 },
+      expected: expectedFromMatrixExercise(exercise, vec2ToColMatrix(w), 0),
     };
   }
 
   // ------------------------------------------------------------
-  // ✅ NEW) Vector input: solve for BOTH basis coordinates [c1;c2] (2×1)
+  // Vector input: solve for BOTH basis coordinates [c1;c2] (2×1)
   // ------------------------------------------------------------
   if (archetype === "vector_input_basis_coords_full") {
     const { a: b1, b: b2 } = pickNonCollinearPair(rng, Math.max(3, Math.floor(range / 2)));
@@ -192,7 +214,7 @@ Enter $$\vec c$$ as a **column vector** (shape $$2\times1$$).
     return {
       archetype,
       exercise,
-      expected: { kind: "matrix_input", values: coeffsToColMatrix(c1, c2), tolerance: 0 },
+      expected: expectedFromMatrixExercise(exercise, coeffsToColMatrix(c1, c2), 0),
     };
   }
 
@@ -272,8 +294,8 @@ $$
     const v3 = { x: rng.int(-range, range), y: rng.int(-range, range) };
 
     let l1 = 0,
-      l2 = 0,
-      l3 = 0;
+        l2 = 0,
+        l3 = 0;
     while (l1 === 0 && l2 === 0 && l3 === 0) {
       l1 = rng.int(-3, 3);
       l2 = rng.int(-3, 3);
@@ -525,11 +547,11 @@ Is $S$ a **subspace** of $\mathbb{R}^2$?
 
     const b1 = { x: randNonZeroInt(rng, -range, range), y: rng.int(-range, range) };
     const b2 = dependent
-      ? (() => {
+        ? (() => {
           const k = randNonZeroInt(rng, -4, 4);
           return { x: k * b1.x, y: k * b1.y };
         })()
-      : (() => {
+        : (() => {
           while (true) {
             const c = { x: rng.int(-range, range), y: rng.int(-range, range) };
             if (c.x === 0 && c.y === 0) continue;

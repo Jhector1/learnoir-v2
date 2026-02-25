@@ -1,13 +1,57 @@
+
+
+
+
+
+
+
+
 export type ReviewTopicId = string;
 
-
 export type ReviewTopic = {
-  id: ReviewTopicId;
-  label: string;
-  minutes?: number;
-  summary?: string;
-  cards: ReviewCard[];
+    id: ReviewTopicId;
+    label: string;
+    minutes?: number;
+    summary?: string;
+
+    // ✅ allow `as const` topics
+    cards: ReadonlyArray<ReviewCard>;
 };
+
+export type ReviewCard =
+    | { type: "text"; id: string; title?: string; markdown: string; spec?: any }
+    | { type: "sketch"; id: string; title?: string; sketchId: string; spec?: any; height?: number; props?: any }
+    | { type: "quiz"; id: string; title?: string; passScore?: number; spec: ReviewQuizSpec }
+    // ✅ project card in your code has passScore sometimes → allow it
+    | { type: "project"; id: string; title?: string; passScore?: number; spec: ReviewProjectSpec }
+    | ReviewVideoCard;
+
+export type ReviewModule = {
+    id: string;
+    title: string;
+    subtitle?: string;
+    startPracticeHref?: (topicSlug: string) => string;
+
+    // ✅ allow `as const` topic lists
+    topics: ReadonlyArray<{
+        id: string;
+        label: string;
+        minutes?: number;
+        summary?: string;
+        cards: ReadonlyArray<ReviewCard>;
+    }>;
+};
+
+export type ReviewTopicShape = ReviewModule["topics"][number];
+
+
+
+
+
+
+
+
+
 
 
 
@@ -85,65 +129,36 @@ export type ReviewVideoCard = {
 
   /** Optional caption/notes under the video */
   captionMarkdown?: string;
+  spec?: any;
 };
 
 // then include it in ReviewCard
 
 
-// export type ReviewCard =
-//   | { type: "text"; id: string; title?: string; markdown: string }
-//   | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
-//   | {
-//       type: "quiz";
-//       id: string;
-//       title?: string;
-//       passScore?: number;
-//       spec: ReviewQuizSpec; // ✅ spec, not questions
-//     }
-//   | ReviewVideoCard;
-export type ReviewCard =
-    | { type: "text"; id: string; title?: string; markdown: string }
-    | { type: "sketch"; id: string; title?: string; sketchId: string; height?: number; props?: any }
-    | { type: "quiz"; id: string; title?: string; passScore?: number; spec: ReviewQuizSpec }
-    | { type: "project"; id: string; title?: string; spec: ReviewProjectSpec }
-    | ReviewVideoCard;
 
-
-export type ReviewModule = {
-  id: string;
-  title: string;
-  subtitle?: string;
-  startPracticeHref?: (topicSlug: string) => string;
-  topics: Array<{
-    id: string;
-    label: string;
-    minutes?: number;
-    summary?: string;
-    cards: ReviewCard[];
-  }>;
-};
 
 
 
 
 export type SeedPolicy = "actor" | "global";
 
-export type ReviewProjectStep = {
-    id: string;                 // stable step id: "s1", "part_a"
-    title?: string;             // UI label ("Step 1 — ...")
 
-    // practice fetch target
-    topic: string;              // exact topic slug, not "all"
-    difficulty?: "easy" | "medium" | "hard";
+export type Difficulty = "easy" | "medium" | "hard";
+// export type SeedPolicy = "actor" | "global";
+
+export type ReviewProjectStep = {
+    id: string;
+    title?: string;
+
+    // ✅ allow inheriting from spec
+    topic?: string;
+    difficulty?: Difficulty;
     preferKind?: PracticeKind | null;
 
-    // determinism controls
-    exerciseKey?: string;       // optional: force a specific generator handler
-    seedPolicy?: SeedPolicy;    // "global" => same exercise for everyone
+    exerciseKey?: string;
+    seedPolicy?: SeedPolicy;
 
     maxAttempts?: number;
-
-    // optional: step i starter code can carry from previous step
     carryFromPrev?: boolean;
 };
 
@@ -154,10 +169,19 @@ export type ReviewProjectSpec = {
     module?: string;
     section?: string;
 
-    allowReveal?: boolean;      // usually false for projects
-    maxAttempts?: number;       // default per step if step.maxAttempts missing
+    // ✅ project-level defaults (optional)
+    topic?: string;
+    difficulty?: Difficulty;
+    preferKind?: PracticeKind | null;
+
+    allowReveal?: boolean;
+    maxAttempts?: number;
 
     steps: ReviewProjectStep[];
 };
 export type PurposeMode = "quiz" | "project" | "mixed";
 export type PurposePolicy = "strict" | "fallback";
+
+
+
+

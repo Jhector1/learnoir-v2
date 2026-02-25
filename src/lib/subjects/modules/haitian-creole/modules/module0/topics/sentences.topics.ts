@@ -6,6 +6,7 @@ import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/hait
 import { SketchEntry } from "@/components/sketches/subjects";
 import {TopicDefCompat} from "@/seed/data/subjects/_types";
 import { HC_MOD0 } from "@/seed/data/subjects/haitian-creole/constants";import {HC_SENTENCES_POOL} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/sentences";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "hc_sentences" as const;
 const LABEL = "Building simple sentences" as const;
@@ -50,7 +51,7 @@ export const HC_SENTENCES = {
                 },
             },
         ],
-    } as const,
+    }  satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -59,6 +60,6 @@ export const HC_SENTENCES = {
             minutes: MINUTES,
             pool: HC_SENTENCES_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+    }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };
 

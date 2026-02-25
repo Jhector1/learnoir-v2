@@ -1,9 +1,9 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef} from "react";
-import type {Exercise} from "@/lib/practice/types";
+import type { Exercise} from "@/lib/practice/types";
 import type {VectorPadState} from "@/components/vectorpad/types";
-import type {Lang} from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
 
 import NumericExerciseUI from "./kinds/NumericExerciseUI";
 import SingleChoiceExerciseUI from "./kinds/SingleChoiceExerciseUI";
@@ -38,7 +38,7 @@ type CodeToolsApi = {
     registerCodeInput: (
         id: string,
         args: {
-            lang: Lang;
+            lang: CodeLanguage;
             code: string;
             stdin?: string;
             onPatch: (patch: any) => void;
@@ -86,7 +86,7 @@ function CodeInputWithTools(props: {
         showPrompt
     } = props;
 
-    const curLang = ((current as any).codeLang ?? "python") as Lang;
+    const curLang = ((current as any).codeLang ?? "python") as CodeLanguage;
     const curCode = (current as any).code ?? "";
     const curStdin = (current as any).codeStdin ?? "";
 
@@ -283,7 +283,7 @@ export default function ExerciseRenderer({
                 checked={checked}
                 ok={ok}
                 reviewCorrectId={reviewCorrectId}
-                t={t}
+                // t={t}
             />
         );
     }
@@ -441,24 +441,24 @@ export default function ExerciseRenderer({
 // -----------------------------
 // word_bank_arrange ✅
 // -----------------------------
-//     if (exercise.kind === "word_bank_arrange") {
-//         const reviewCorrectValue =
-//             reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
-//                 ? String((reviewCorrectItem as any).text)
-//                 : (exercise as any).targetText ?? null;
-//
-//         return (
-//             <WordBankArrangeExerciseUI
-//                 exercise={exercise as any}
-//                 value={(current as any).text ?? ""} // ✅ store assembled sentence here
-//                 onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
-//                 disabled={lockInputs}
-//                 checked={checked}
-//                 ok={ok}
-//                 reviewCorrectValue={reviewCorrectValue}
-//             />
-//         );
-//     }
+    if (exercise.kind === "word_bank_arrange") {
+        const reviewCorrectValue =
+            reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
+                ? String((reviewCorrectItem as any).text)
+                : (exercise as any).targetText ?? null;
+
+        return (
+            <WordBankArrangeExerciseUI
+                exercise={exercise as any}
+                value={(current as any).text ?? ""} // ✅ store assembled sentence here
+                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+                disabled={lockInputs}
+                checked={checked}
+                ok={ok}
+                reviewCorrectValue={reviewCorrectValue}
+            />
+        );
+    }
 
 // -----------------------------
 // listen_build ✅
@@ -544,7 +544,7 @@ export default function ExerciseRenderer({
         }
 
         // ✅ embedded fallback (important)
-        const curLang = ((current as any).codeLang ?? "python") as Lang;
+        const curLang = ((current as any).codeLang ?? "python") as CodeLanguage;
         const curCode = (current as any).code ?? "";
         const curStdin = (current as any).codeStdin ?? "";
 

@@ -34,20 +34,26 @@ function toCodeTests(expected: any): CodeTest[] {
 
   if (rawTests) {
     return rawTests
-        .map((t: any) => ({
-          stdin: typeof t?.stdin === "string" ? t.stdin : "",
-          stdout: String(t?.stdout ?? ""),
-          match: t?.match === "includes" ? "includes" : "exact",
-        }))
-        .filter((t) => t.stdout.length > 0);
+        .map((t: any) => {
+          const match: CodeTest["match"] = t?.match === "includes" ? "includes" : "exact";
+          return {
+            stdin: typeof t?.stdin === "string" ? t.stdin : "",
+            stdout: String(t?.stdout ?? ""),
+            match,
+          };
+        })
+        .filter((t: CodeTest) => t.stdout.length > 0);
   }
 
   // fallback single-test shape
+  // fallback single-test shape
+  const match: CodeTest["match"] = expected?.match === "includes" ? "includes" : "exact";
+
   return [
     {
       stdin: typeof expected?.stdin === "string" ? expected.stdin : "",
       stdout: String(expected?.stdout ?? ""),
-      match: expected?.match === "includes" ? "includes" : "exact",
+      match,
     },
   ].filter((t) => t.stdout.length > 0);
 }

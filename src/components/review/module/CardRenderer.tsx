@@ -94,7 +94,9 @@ export default function CardRenderer(props: {
     const orderBase = cardIndex * 10000;
 
     function renderQuizLike(kind: "quiz" | "project") {
-        const key = buildReviewQuizKey(card.spec as any, card.id, versionStr);
+        // if (card.type !== "video") {
+            const key = buildReviewQuizKey(card.spec as any, card.id, versionStr);
+        // }
 
         // ✅ show banner ONLY when locked by prereqs and not already completed
         const showGate = !done && !prereqsMet;

@@ -14,6 +14,13 @@
     "logout": "Se déconnecter",
     "menu": "Menu",
     "close": "Fermer",
+    "openSettings": "Ouvrir les réglages",
+
+    "settingsSubtitle": "Apparence et langue",
+    "theme": "Thème",
+    "themeHint": "Clair / Sombre",
+
+    "sound": "Son",
     "tip": "Astuce : utilisez Exercices pour suivre vos tentatives, vos bonnes réponses et vos questions manquées."
   },
 

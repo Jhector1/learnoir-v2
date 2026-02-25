@@ -64,8 +64,12 @@ import {PoolItem} from "@/seed/data/subjects/_types";
 /* ---------------------------- expected helpers -------------------------- */
 
 export type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
-export type DragExpected = { kind: "drag_reorder"; order: string[] };
-export type VoiceExpected = { kind: "voice_input"; answers: string[]; match?: "exact" | "includes" };
+// in haitian_creole_mod0/_shared.ts
+export type DragExpected = { kind: "drag_reorder"; tokenIds: string[] };
+
+export function makeDragExpected(tokenIds: string[]): DragExpected {
+    return { kind: "drag_reorder", tokenIds };
+}export type VoiceExpected = { kind: "voice_input"; answers: string[]; match?: "exact" | "includes" };
 
 export function makeTextExpected(
     answers: string[],
@@ -74,9 +78,9 @@ export function makeTextExpected(
     return { kind: "text_input", answers, match };
 }
 
-export function makeDragExpected(order: string[]): DragExpected {
-    return { kind: "drag_reorder", order };
-}
+// export function makeDragExpected(order: string[]): DragExpected {
+//     return { kind: "drag_reorder", order };
+// }
 
 export function makeVoiceExpected(
     answers: string[],

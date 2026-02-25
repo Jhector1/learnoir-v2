@@ -63,7 +63,7 @@ export default function GeoAngleOrthogonalitySketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Angle from dot product:
 
 $$\cos(\theta)=\frac{a^\top b}{\|a\|\,\|b\|}$$

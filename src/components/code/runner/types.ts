@@ -1,4 +1,5 @@
-import type { Lang, RunResult } from "@/lib/code/runCode";
+import type { RunResult } from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
 
 export type TerminalDock = "bottom" | "right";
 
@@ -9,14 +10,14 @@ export type TermLine =
     | { type: "err"; text: string; runId?: number };
 
 export type OnRun = (args: {
-    language: Lang;
+    language: CodeLanguage;
     code: string;
     stdin: string;
 }) => Promise<RunResult>;
 
 export type ControlledProps = {
-    language: Lang;
-    onChangeLanguage: (l: Lang) => void;
+    language: CodeLanguage;
+    onChangeLanguage: (l: CodeLanguage) => void;
 
     code: string;
     onChangeCode: (code: string) => void;
@@ -26,7 +27,7 @@ export type ControlledProps = {
 };
 
 export type UncontrolledProps = {
-    initialLanguage?: Lang;
+    initialLanguage?: CodeLanguage;
     initialCode?: string;
 
     initialTerminalDock?: TerminalDock;
@@ -46,8 +47,8 @@ export type CommonProps = {
     showTerminal?: boolean;
     showHint?: boolean;
 
-    fixedLanguage?: Lang;
-    allowedLanguages?: Lang[];
+    fixedLanguage?: CodeLanguage;
+    allowedLanguages?: CodeLanguage[];
     showLanguagePicker?: boolean;
 
     allowReset?: boolean;

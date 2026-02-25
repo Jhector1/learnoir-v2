@@ -57,7 +57,7 @@ export default function GeoProjectionAffineSketch() {
             s.push();
             s.stroke("rgba(255,255,255,0.3)");
             s.strokeWeight(2);
-            s.drawingContext.setLineDash([6, 6]);
+            // s.drawingContext.setLineDash([6, 6]);
             s.line(xs.x, xs.y, ps.x, ps.y);
             (s.drawingContext as any).setLineDash([]);
             s.pop();
@@ -122,7 +122,7 @@ export default function GeoProjectionAffineSketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Affine subspace:
 
 $$L = x_0 + U,\quad U=\mathrm{span}(\mathrm{dir})$$

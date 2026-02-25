@@ -179,8 +179,7 @@ export async function upsertFromStripeSubscription(sub: Stripe.Subscription, use
       status: sub.status as any,
       priceId,
       // ✅ correct field for access window
-      currentPeriodEnd: toDate(sub.current_period_end),
-      cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+      currentPeriodEnd: toDate(sub.billing_cycle_anchor),      cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
       trialEnd: toDate(sub.trial_end),
     },
     update: {
@@ -188,8 +187,7 @@ export async function upsertFromStripeSubscription(sub: Stripe.Subscription, use
       stripeCustomerId: customerId,
       status: sub.status as any,
       priceId,
-      currentPeriodEnd: toDate(sub.current_period_end),
-      cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+      currentPeriodEnd: toDate(sub.billing_cycle_anchor),      cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
       trialEnd: toDate(sub.trial_end),
     },
   });

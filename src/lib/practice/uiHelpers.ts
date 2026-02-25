@@ -65,7 +65,7 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
         if (!orderIds.length || orderIds.length !== tokenIds.length) return undefined;
 
         const tokenSet = new Set(tokenIds);
-        if (orderIds.some((id) => !tokenSet.has(id))) return undefined;
+        if (orderIds.some((id:any) => !tokenSet.has(id))) return undefined;
         if (new Set(orderIds).size !== tokenIds.length) return undefined;
 
         return {kind: "drag_reorder", order: orderIds};

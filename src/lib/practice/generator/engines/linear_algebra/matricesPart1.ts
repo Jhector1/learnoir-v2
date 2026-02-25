@@ -44,8 +44,7 @@ function randMat(rng: RNG, r: number, c: number, lo = -3, hi = 3): number[][] {
     Array.from({ length: c }, () => safeInt(rng, lo, hi)),
   );
   // Avoid all-zero matrices too often (keeps prompts interesting)
-  if (A.every((row) => row.every((v) => v === 0))) A[0][0] = 1;
-  return A;
+  if (A.every((row) => row.every((v) => v === 0))) (A as unknown as number[][])[0][0] = 1;  return A;
 }
 
 function matToLatex(A: number[][]): string {

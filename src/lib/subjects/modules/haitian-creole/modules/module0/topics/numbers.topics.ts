@@ -1,15 +1,20 @@
-// import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
-// import { HC_MOD0 } from "../../../../../../../prisma/seed/data/subjects/haitian-creole/constants";
-import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/haitian-creole/slugs";
+// src/lib/subjects/modules/haitian-creole/modules/module0/topics/numbers.topics.ts
+import type { ReviewModule } from "@/lib/subjects/types";
+import type { TopicSlug } from "@/lib/practice/types";
 
-// import { M0_HC_NUMBERS_POOL } from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_part1_mod0/topics/numbers";
-import { SketchEntry } from "@/components/sketches/subjects";
-import {HC_NUMBERS_POOL} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/numbers";
-import {TopicDefCompat} from "@/seed/data/subjects/_types";
+import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/haitian-creole/slugs";
+import { HC_NUMBERS_POOL } from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/numbers";
+import type { TopicDefCompat } from "@/seed/data/subjects/_types";
 import { HC_MOD0 } from "@/seed/data/subjects/haitian-creole/constants";
+
 const ID = "hc_numbers" as const;
 const LABEL = "Numbers (0–100) basics" as const;
 const MINUTES = 12 as const;
+
+type ReviewTopicShape = ReviewModule["topics"][number];
+
+// ✅ cast once at the boundary so the rest stays strongly typed
+const TOPIC_NUMBERS = HT_TOPIC.numbers as unknown as TopicSlug;
 
 export const HC_NUMBERS = {
     topic: {
@@ -41,7 +46,7 @@ export const HC_NUMBERS = {
                     subject: "haitian-creole",
                     module: HC_MOD0,
                     section: HT_SECTION_PART1,
-                    topic: HT_TOPIC.numbers,
+                    topic: TOPIC_NUMBERS, // ✅ fixed typing
                     difficulty: "easy",
                     n: HC_NUMBERS_POOL.length,
                     allowReveal: true,
@@ -50,7 +55,7 @@ export const HC_NUMBERS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -59,6 +64,5 @@ export const HC_NUMBERS = {
             minutes: MINUTES,
             pool: HC_NUMBERS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
-
+    } satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

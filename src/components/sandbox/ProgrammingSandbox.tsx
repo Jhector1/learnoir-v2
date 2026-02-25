@@ -3,11 +3,11 @@
 // import React, { useMemo, useState } from "react";
 import FullIDE from "@/components/ide/fullide/FullIDE";
 import {useMemo, useState} from "react";
-import {Lang} from "@/lib/code/runCode";
 import {LangRail, LANGS} from "@/components/ide/lang/LangRail";
+import {CodeLanguage} from "@/lib/practice/types";
 
 export default function ProgrammingIdeSandbox() {
-    const [lang, setLang] = useState<Lang>("python");
+    const [lang, setLang] = useState<CodeLanguage>("python");
     const active = useMemo(() => LANGS.find((x) => x.id === lang) ?? LANGS[0], [lang]);
 
     const storageKey = `learnoir.ide.workspace.v2.${lang}`;

@@ -1,4 +1,4 @@
-import type { Lang } from "./types";
+import {CodeLanguage} from "@/lib/practice/types";
 
 function envInt(name: string) {
     const v = process.env[name];
@@ -7,7 +7,7 @@ function envInt(name: string) {
     return Number.isFinite(n) ? n : null;
 }
 
-const FALLBACK_LANG_IDS: Record<Lang, number> = {
+const FALLBACK_LANG_IDS: Record<CodeLanguage, number> = {
     python: 71,
     java: 62,
     javascript: 63,
@@ -15,7 +15,7 @@ const FALLBACK_LANG_IDS: Record<Lang, number> = {
     cpp: 54,
 };
 
-export function getSingleFileLanguageId(lang: Lang) {
+export function getSingleFileLanguageId(lang: CodeLanguage) {
     const py = envInt("JUDGE0_LANG_PYTHON");
     const ja = envInt("JUDGE0_LANG_JAVA");
     const js = envInt("JUDGE0_LANG_JAVASCRIPT");

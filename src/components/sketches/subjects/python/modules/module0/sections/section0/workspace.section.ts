@@ -1,4 +1,6 @@
-import type { SketchEntry } from "../../../../.";
+// import type { SketchEntry } from "../../../../.";
+
+import {SketchEntry} from "@/components/sketches/subjects";
 
 /**
  * Python — Workspace topics (image + instructions)
@@ -11,7 +13,7 @@ export const PY_WORKSPACE_SECTION: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Your Workspace: Where You’ll Write and Run Code",
             src: "/assets/editor.png",
-            alt: "Learnoir code workspace showing the module sidebar, code editor, run button, and terminal output.",
+            alt: "{appName} code workspace showing the module sidebar, code editor, run button, and terminal output.",
             aspectRatio: 16 / 9,
 
             caption: String.raw`

@@ -565,10 +565,9 @@ export function usePracticeEngine(args: {
           if (st?.missed) setServerMissed(st.missed);
           if (st?.run?.mode) setRun(st.run);
 
-          if (st?.targetCount && st.targetCount > 0) {
-            setSessionSize((cur) =>
-              cur === SESSION_DEFAULT ? st.targetCount : cur,
-            );
+          const tc = st?.targetCount;
+          if (typeof tc === "number" && tc > 0) {
+            setSessionSize((cur) => (cur === SESSION_DEFAULT ? tc : cur));
           }
 
           if (st?.complete) {

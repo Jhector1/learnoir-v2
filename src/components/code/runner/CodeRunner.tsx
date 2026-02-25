@@ -4,7 +4,7 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTheme} from "next-themes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
-import type {Lang} from "@/lib/code/runCode";
+// import {codeLanguage} From "@/lib/practice/types";
 
 import {DEFAULT_CODE, DEFAULT_LANGS} from "./constants";
 import {isControlled, type CodeRunnerProps, type TerminalDock} from "./types";
@@ -13,6 +13,7 @@ import EditorPane from "./components/EditorPane";
 import TerminalPane from "./components/TerminalPane";
 import {useSplitSizing} from "./hooks/useSplitSizing";
 import {useTerminalRunner} from "./hooks/useTerminalRunner";
+import {CodeLanguage} from "@/lib/practice/types";
 
 export default function CodeRunner(props: CodeRunnerProps) {
     const {
@@ -62,20 +63,20 @@ export default function CodeRunner(props: CodeRunnerProps) {
         return base;
     }, [allowedLanguages, fixedLanguage]);
 
-    const initialLang: Lang =
+    const initialLang: CodeLanguage =
         fixedLanguage ??
         (controlled ? (props as any).language : (props as any).initialLanguage) ??
         allowedLangs[0] ??
         "python";
 
     // ---------- state ----------
-    const [uLang, setULang] = useState<Lang>(initialLang);
+    const [uLang, setULang] = useState<CodeLanguage>(initialLang);
     const [uCode, setUCode] = useState<string>((props as any).initialCode ?? DEFAULT_CODE[initialLang]);
 
-    const lang: Lang = fixedLanguage ? fixedLanguage : controlled ? (props as any).language : uLang;
+    const lang: CodeLanguage = fixedLanguage ? fixedLanguage : controlled ? (props as any).language : uLang;
     const code: string = controlled ? (props as any).code : uCode;
 
-    const setLang = (l: Lang) => {
+    const setLang = (l: CodeLanguage) => {
         if (fixedLanguage) return;
         if (!allowedLangs.includes(l)) return;
         controlled ? (props as any).onChangeLanguage(l) : setULang(l);
@@ -134,7 +135,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
         requestLayout();
     }, [dock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const onSwitchLang = (next: Lang) => {
+    const onSwitchLang = (next: CodeLanguage) => {
         if (fixedLanguage) return;
         if (!allowedLangs.includes(next)) return;
         setLang(next);

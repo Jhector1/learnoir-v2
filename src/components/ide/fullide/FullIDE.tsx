@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef } from "react";
-import type { Lang, RunResult } from "@/lib/code/runCode";
+import type {  RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 
 import { useIdeWorkspace } from "./useIdeWorkspace";
@@ -11,6 +11,7 @@ import { exportProjectFiles, pathOf } from "./fsTree";
 import ExplorerTree from "./ExplorerTree";
 import TabsBar from "./TabsBar";
 import DeleteModal from "./DeleteModal";
+import {CodeLanguage} from "@/lib/practice/types";
 
 type FullIDEProps = {
     title?: string;
@@ -28,8 +29,8 @@ type FullIDEProps = {
     storageKey?: string;
 
     /** Controlled language from parent (optional). */
-    language?: Lang;
-    onChangeLanguage?: (l: Lang) => void;
+    language?: CodeLanguage;
+    onChangeLanguage?: (l: CodeLanguage) => void;
 
     /** When controlled language changes, reset the whole workspace instead of soft-switching. */
     resetOnForcedLanguageChange?: boolean;
@@ -79,7 +80,7 @@ export default function FullIDE(props: FullIDEProps) {
     const { activeFile, entryFile, tabFiles, rootSrc } = derived;
 
     const onRunProject = async (args: {
-        language: Lang;
+        language: CodeLanguage;
         code: string;
         stdin: string;
     }): Promise<RunResult> => {
@@ -105,12 +106,12 @@ export default function FullIDE(props: FullIDEProps) {
     };
 
     const languages = useMemo(
-        () => ["python", "java", "javascript", "c", "cpp"] as Lang[],
+        () => ["python", "java", "javascript", "c", "cpp"] as CodeLanguage[],
         [],
     );
 
     // If parent controls language, prefer calling parent setter (and let parent decide storageKey strategy).
-    const setLangUI = (l: Lang) => {
+    const setLangUI = (l: CodeLanguage) => {
         if (onChangeLanguage) onChangeLanguage(l);
         else actions.switchLanguage(l);
     };
@@ -290,13 +291,10 @@ export default function FullIDE(props: FullIDEProps) {
                                         onChangeLanguage={actions.switchLanguage}
                                         code={activeFile.content}
                                         onChangeCode={actions.onChangeCode}
-                                        stdin={stdin}
-                                        onChangeStdin={actions.setStdin}
                                         showLanguagePicker={false}
                                         allowReset={false}
                                         allowRun
                                         resetTerminalOnRun
-                                        resetStdinOnRun={false}
                                         onRun={onRunProject}
                                     />
                                 ) : (

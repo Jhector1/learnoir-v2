@@ -24,7 +24,7 @@ import {
 } from "./session";
 import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
 import {coercePurposeMode, coercePurposePolicy} from "@/lib/subjects/quizClient";
-import {computeMaxAttempts} from "@/lib/practice/policies/attempts";
+// import {computeMaxAttempts} from "@/lib/practice/policies/attempts";
 
 export type PracticeGetResult =
     | { kind: "json"; status: number; body: any }
@@ -200,8 +200,7 @@ function computePurposeDecision(args: {
     | { ok: false; status: number; message: string; detail?: any } {
     const { session } = args;
     const allowed = session ? pickAllowedPurposesFromSession(session) : [];
-    const policy = coercePurposePolicy(args.purposePolicyParam);
-
+    const policy: PurposePolicy = coercePurposePolicy(args.purposePolicyParam) ?? "fallback";
     // assignments: ignore param
     if (session?.assignmentId) {
         return {

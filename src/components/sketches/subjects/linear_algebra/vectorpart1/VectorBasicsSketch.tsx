@@ -114,7 +114,7 @@ $$
     s.push();
     s.stroke("rgba(52,211,153,0.9)");
     s.strokeWeight(3);
-    s.drawingContext.setLineDash([6, 6]);
+  
     s.line(o.x, o.y, uTip.x, uTip.y);
     s.drawingContext.setLineDash([]);
     s.pop();

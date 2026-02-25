@@ -5,6 +5,7 @@ import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M1_OPERATORS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/operators_expressions";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "operators_expressions" as const;
 const LABEL = "Operators + Expressions: The Calculator Inside Your Code" as const;
@@ -81,7 +82,7 @@ export const PY_OPERATORS_EXPRESSIONS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -90,5 +91,5 @@ export const PY_OPERATORS_EXPRESSIONS = {
             minutes: MINUTES,
             pool: M1_OPERATORS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

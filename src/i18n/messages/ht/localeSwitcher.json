@@ -1,12 +1,12 @@
 {
   "LocaleSwitcher": {
-    "ariaLabel": "Language switcher",
-    "switchTo": "Switch to {locale}",
+    "ariaLabel": "Chanjè lang",
+    "switchTo": "Chanje pou {locale}",
     "confirm": {
-      "title": "Switch language?",
-      "description": "Your current progress is saved for {from}, but you’ll start a separate progress/session for {to}. You can switch back anytime.",
-      "confirmText": "Switch",
-      "cancelText": "Stay"
+      "title": "Chanje lang?",
+      "description": "Pwogrè ou genyen kounye a anrejistre pou {from}, men w ap kòmanse yon lòt pwogrè/sesyon apa pou {to}. Ou ka retounen nenpòt ki lè.",
+      "confirmText": "Chanje",
+      "cancelText": "Rete"
     }
   }
 }

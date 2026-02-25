@@ -123,7 +123,7 @@ export default function GeoNormUnitBallsSketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 A **unit ball** is the set \(\{x : \|x\|\le 1\}\).
 
 - **Euclidean**: \(\|x\|_2=\sqrt{x_1^2+x_2^2}\) → circle

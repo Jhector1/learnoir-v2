@@ -6,7 +6,7 @@ import {useRouter} from "@/i18n/navigation";
 
 import type {ReviewModule, ReviewCard} from "@/lib/subjects/types";
 import type {SavedQuizState, ReviewProgressState} from "@/lib/subjects/progressTypes";
-import type {Lang} from "@/lib/code/runCode";
+import {CodeLanguage} from "@/lib/practice/types";
 
 import {useReviewProgress} from "@/components/review/module/hooks/useReviewProgress";
 import {useAssignmentStatus} from "@/components/review/module/hooks/useAssignmentStatus";
@@ -643,17 +643,14 @@ export default function ReviewModuleView({
 
     return (
         <ReviewToolsProvider
-            autoBindFirst
-            mode="first_unanswered"          // ✅ IMPORTANT
-
-            resetKey={`${viewTid}:${versionStr}`}   // ✅ NEW
-
+            mode="first_unanswered"
+            resetKey={`${viewTid}:${versionStr}`}
             externalBoundId={tool.boundId}
             ensureVisible={() => {
                 if (panels.rightCollapsed) panels.setRightCollapsed(false);
             }}
-            onBindToToolsPanel={({id, lang, code, stdin, onPatch}) => {
-                tool.bindCodeInput({id, lang, code, stdin, onPatch});
+            onBindToToolsPanel={({ id, lang, code, stdin, onPatch }) => {
+                tool.bindCodeInput({ id, lang, code, stdin, onPatch });
             }}
             onUnbindFromToolsPanel={() => tool.unbindCodeInput()}
         >
@@ -781,7 +778,7 @@ export default function ReviewModuleView({
                                 {/*<TopicIntro topic={viewTopic}/>*/}
 
                                 <div key={topicRenderKey} className="grid gap-3">
-                                    {viewCards.map((card, cardIndex) => {
+                                    {viewCards.map((card: any, cardIndex: number) => {
                                         // const done =
                                         //     card.type === "quiz" ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
 
@@ -957,11 +954,11 @@ export default function ReviewModuleView({
                                 rightBodyRef={tool.rightBodyRef}
                                 codeRunnerRegionH={tool.codeRunnerRegionH}
 
-                                toolLang={tool.toolLang as Lang}
+                                toolLang={tool.toolLang as CodeLanguage}
                                 toolCode={tool.toolCode}
                                 toolStdin={tool.toolStdin}
 
-                                onChangeLang={(l: Lang) => {
+                                onChangeLang={(l: CodeLanguage) => {
                                     tool.setToolLang(l);
                                     tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
                                 }}

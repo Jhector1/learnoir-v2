@@ -1,4 +1,3 @@
-// src/lib/practice/makeRng.ts
 // Deterministic RNG you can seed (so picks are reproducible per session/key if you want).
 // No hardcoding of topics/archetypes here — this is purely a utility.
 
@@ -188,3 +187,5 @@ export function makeRng(seed: string): RNG {
 
   return api;
 }
+// export type { RNG, WeightedItem } from "@/lib/practice/makeRng";
+// export { makeRng } from "@/lib/practice/makeRng";

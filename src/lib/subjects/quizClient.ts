@@ -1,6 +1,6 @@
 import type {ReviewQuizSpec, ReviewProjectSpec, PurposeMode, PurposePolicy} from "@/lib/subjects/types";
 
-type AnySpec = ReviewQuizSpec | ReviewProjectSpec;
+type AnySpec = ReviewQuizSpec | ReviewProjectSpec| any;
 
 function bool01(v: any) { return v ? 1 : 0; }
 function norm(v: any) { return String(v ?? "").trim(); }

@@ -9,6 +9,7 @@ import * as React from "react";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import type {CommonProps, SavedSketchState} from "../subjects/types";
 import { cn, SKETCH_BTN, SKETCH_BTN_PRIMARY } from "@/components/sketches/_shared/sketchUi";
+import TemplatePickerSketch from "@/components/sketches/_archetypes/TemplatePickerSketch";
 
 
 

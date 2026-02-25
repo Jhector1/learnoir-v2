@@ -1,9 +1,10 @@
 import CodeRunner from "@/components/code/runner/CodeRunner";
 import React, {useEffect, useMemo, useState} from "react";
-import {Lang} from "@/lib/code/types";
 import {CodeSketchSpec} from "@/components/sketches/subjects/specTypes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
-import {SavedSketchState} from ".";
+// import {SavedSketchState} from ".";
+import {CodeLanguage} from "@/lib/practice/types";
+import {SavedSketchState} from "@/components/sketches/subjects";
 
 export function CodeSketch({
                                spec,
@@ -30,9 +31,9 @@ export function CodeSketch({
                 title="Run the Python"
                 code={code}
                 onChangeCode={setCode}
-                stdin=""
-                onChangeStdin={() => {
-                }}
+                // stdin=""
+                // onChangeStdin={() => {
+                // }}
                 hintMarkdown={spec.hint}
                 fixedLanguage={spec.language}
                 disabled={readOnly}

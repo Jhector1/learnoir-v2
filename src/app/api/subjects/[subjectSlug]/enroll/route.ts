@@ -1,18 +1,26 @@
-import { NextResponse } from "next/server";
+// src/app/api/subjects/[subjectSlug]/enroll/route.ts
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getActor, ensureGuestId, attachGuestCookie, actorKeyOf } from "@/lib/practice/actor";
+import {
+    getActor,
+    ensureGuestId,
+    attachGuestCookie,
+    actorKeyOf,
+} from "@/lib/practice/actor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function json(body: any, status = 200, setGuestId?: string) {
+function json(body: any, status = 200, setGuestId?: string | null) {
     const res = NextResponse.json(body, { status });
     return attachGuestCookie(res, setGuestId);
 }
 
-export async function POST(req: Request, ctx: { params: Promise<{ subjectSlug: string }> }) {
-    const {subjectSlug} = await ctx.params;
-
+export async function POST(
+    req: NextRequest,
+    ctx: { params: Promise<{ subjectSlug: string }> },
+) {
+    const { subjectSlug } = await ctx.params;
     const slug = decodeURIComponent(subjectSlug);
 
     const subject = await prisma.practiceSubject.findUnique({
@@ -21,10 +29,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ subjectSlug: s
     });
     if (!subject) return json({ message: "Subject not found" }, 404);
 
-    const actor = await getActor();
-    const { guestId, setGuestId } = await ensureGuestId(actor.guestId);
+    const actor0 = await getActor();
+    const ensured = ensureGuestId(actor0); // ✅ pass Actor object
+    const actor = ensured.actor;
+    const setGuestId = ensured.setGuestId;
 
-    const actorKey = actorKeyOf({ userId: actor.userId ?? null, guestId });
+    const actorKey = actorKeyOf(actor);
 
     await prisma.subjectEnrollment.upsert({
         where: { actorKey_subjectId: { actorKey, subjectId: subject.id } },
@@ -34,6 +44,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ subjectSlug: s
             subjectId: subject.id,
             source: "self",
             lastSeenAt: new Date(),
+            status: "enrolled",
         },
         update: {
             lastSeenAt: new Date(),
@@ -49,8 +60,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ subjectSlug: s
             actorKey,
             subjectId: subject.id,
             revokedAt: null,
-            OR: [{ startsAt: null }, { startsAt: { lte: now } }],
-            OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+            AND: [
+                { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+                { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+            ],
         },
         select: { id: true },
     });

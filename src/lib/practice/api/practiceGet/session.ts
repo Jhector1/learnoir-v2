@@ -3,6 +3,11 @@ import type { PrismaClient } from "@prisma/client";
 import { requireEntitledUser } from "@/lib/billing/requireEntitledUser";
 import type { Difficulty } from "@/lib/practice/types";
 
+// src/lib/practice/api/practiceGet/session.ts
+// import type { PrismaClient } from "@prisma/client";
+// import { requireEntitledUser } from "@/lib/billing/requireEntitledUser";
+// import type { Difficulty } from "@/lib/practice/types";
+
 export async function loadSession(prisma: PrismaClient, sessionId?: string) {
   if (!sessionId) return null;
 
@@ -13,6 +18,9 @@ export async function loadSession(prisma: PrismaClient, sessionId?: string) {
       status: true,
       userId: true,
       guestId: true,
+
+      // ✅ FIX: include preferPurpose so handler.ts can read it
+      preferPurpose: true,
 
       difficulty: true,
       targetCount: true,

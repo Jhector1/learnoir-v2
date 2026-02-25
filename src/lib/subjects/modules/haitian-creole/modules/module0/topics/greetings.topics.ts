@@ -1,19 +1,17 @@
-// import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
-// import { HC_MOD0 } from "../../../../../../../prisma/seed/data/subjects/haitian-creole/constants";
-import { HC_MOD0 } from "@/seed/data/subjects/haitian-creole/constants";
+// src/lib/subjects/modules/haitian-creole/modules/module0/topics/greetings.topics.ts
+import type {ReviewModule, ReviewTopicShape} from "@/lib/subjects/types";
 
+import { HC_MOD0 } from "@/seed/data/subjects/haitian-creole/constants";
 import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/haitian-creole/slugs";
 
-// ✅ source of truth (pool) from generator topic
-// import { M0_HC_GREETINGS_POOL } from "@/lib/practice/generator/engines/haitian/haitian_creole_part1_mod0/topics/greetings";
-
-import { SketchEntry } from "@/components/sketches/subjects";
-import {HC_GREETINGS_POOL} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/greetings";
-import {TopicDefCompat} from "@/seed/data/subjects/_types";
+import { HC_GREETINGS_POOL } from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/greetings";
+import type { TopicDefCompat } from "@/seed/data/subjects/_types";
 
 const ID = "hc_greetings" as const;
 const LABEL = "Greetings + Polite Phrases" as const;
 const MINUTES = 12 as const;
+
+
 
 export const HC_GREETINGS = {
     topic: {
@@ -22,6 +20,7 @@ export const HC_GREETINGS = {
         minutes: MINUTES,
         summary:
             "Say hello, goodbye, thank you, and pick the right greeting for the time of day.",
+        // ✅ IMPORTANT: no `as const` here → cards is mutable ReviewCard[]
         cards: [
             {
                 type: "sketch",
@@ -55,7 +54,7 @@ export const HC_GREETINGS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -64,7 +63,5 @@ export const HC_GREETINGS = {
             minutes: MINUTES,
             pool: HC_GREETINGS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
-
-/* -------------------------------- sketches -------------------------------- */
+    } satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

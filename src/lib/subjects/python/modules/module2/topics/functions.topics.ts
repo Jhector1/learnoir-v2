@@ -4,6 +4,7 @@ import { PY_SECTION_PART2, PY_TOPIC_MOD2 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M2_FUNCTIONS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod2/topics/functions";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "functions_basics" as const;
 const LABEL = "Functions: Small Machines You Can Reuse" as const;
@@ -100,7 +101,7 @@ export const PY_FUNCTIONS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -109,5 +110,5 @@ export const PY_FUNCTIONS = {
             minutes: MINUTES,
             pool: M2_FUNCTIONS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

@@ -242,11 +242,13 @@ export default function QuizBlock({
 
       if (prev.kind === "practice") {
         const ps = practiceBank.practice[prev.id];
+        const maxA = ps?.maxAttempts;
         const attemptsCapped =
-            ps &&
+            !!ps &&
             !unlimitedAttempts &&
-            Number.isFinite(ps.maxAttempts) &&
-            ps.attempts >= ps.maxAttempts;
+            typeof maxA === "number" &&
+            Number.isFinite(maxA) &&
+            ps.attempts >= maxA;
         if (attemptsCapped) return true;
       }
     }
@@ -401,7 +403,9 @@ export default function QuizBlock({
   }, []);
 
   function setQuestionEl(qid: string) {
-    return (el: HTMLElement | null) => qElRef.current.set(qid, el);
+    return (el: HTMLDivElement | null) => {
+      qElRef.current.set(qid, el);
+    };
   }
 
   function scrollToEl(root: HTMLElement) {
@@ -465,8 +469,13 @@ export default function QuizBlock({
       const ps = practiceBank.practice[q.id];
       if (ps?.ok === true) return true;
 
+      const maxA = ps?.maxAttempts;
       const outOfAttempts =
-          ps && !unlimitedAttempts && ps.attempts >= ps.maxAttempts;
+          !!ps &&
+          !unlimitedAttempts &&
+          typeof maxA === "number" &&
+          Number.isFinite(maxA) &&
+          ps.attempts >= maxA;
 
       if (!strictSequential && outOfAttempts) return true;
       return false;

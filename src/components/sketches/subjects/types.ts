@@ -5,7 +5,7 @@ export type SavedSketchState = {
 };
 
 export type SketchTone = "neutral" | "good" | "info" | "warn" | "danger";
-import {SavedSketchState} from "";
+// import {SavedSketchState} from "";
 
 export type CommonProps<S extends { archetype: string; specVersion?: number }> = {
     spec: S;

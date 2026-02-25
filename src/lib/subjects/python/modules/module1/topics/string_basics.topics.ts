@@ -5,6 +5,7 @@ import { PY_SECTION_PART1, PY_TOPIC_MOD1 } from "@/lib/practice/catalog/subjects
 import type { PracticeKind } from "@prisma/client";
 
 import { M1_STRINGS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/string_basics";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "string_basics" as const;
 const LABEL = "String Basics: Working With Text Like a Pro" as const;
@@ -76,7 +77,7 @@ export const PY_STRING_BASICS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -85,5 +86,5 @@ export const PY_STRING_BASICS = {
             minutes: MINUTES,
             pool: M1_STRINGS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

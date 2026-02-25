@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import type { Exercise } from "@/lib/practice/types";
-import type { Lang, RunResult } from "@/lib/code/runCode";
+import type {CodeLanguage, Exercise} from "@/lib/practice/types";
+import type {  RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
 
@@ -42,17 +42,17 @@ export default function CodeInputExerciseUI({
     exercise: CodeInputExercise;
     code: string;
     stdin: string;
-    language: Lang;
+    language: CodeLanguage;
     onChangeCode: (code: string) => void;
     onChangeStdin: (stdin: string) => void;
-    onChangeLanguage: (l: Lang) => void;
+    onChangeLanguage: (l: CodeLanguage) => void;
     disabled: boolean;
 
-    onRun?: (args: { language: Lang; code: string; stdin: string }) => Promise<RunResult>;
+    onRun?: (args: { language: CodeLanguage; code: string; stdin: string }) => Promise<RunResult>;
 
     checked?: boolean;
     ok?: boolean | null;
-    reviewCorrect?: { language: Lang; code: string; stdin: string } | null;
+    reviewCorrect?: { language: CodeLanguage; code: string; stdin: string } | null;
 
     readOnly?: boolean;
 
@@ -204,8 +204,8 @@ export default function CodeInputExerciseUI({
                 showLanguagePicker={lockLanguage ? false : true}
                 code={code}
                 onChangeCode={(c) => !readOnly && onChangeCode(c)}
-                stdin={stdin}
-                onChangeStdin={(s) => !readOnly && onChangeStdin(s)}
+                // stdin={stdin}
+                // onChangeStdin={(s) => !readOnly && onChangeStdin(s)}
                 onRun={onRun}
                 fixedTerminalDock="bottom"
             />
@@ -233,8 +233,8 @@ export default function CodeInputExerciseUI({
                             onChangeLanguage={() => {}}
                             code={reviewCorrect!.code}
                             onChangeCode={() => {}}
-                            stdin={reviewCorrect!.stdin ?? ""}
-                            onChangeStdin={() => {}}
+                            // stdin={reviewCorrect!.stdin ?? ""}
+                            // onChangeStdin={() => {}}
                             onRun={undefined}
                         />
                     </div>

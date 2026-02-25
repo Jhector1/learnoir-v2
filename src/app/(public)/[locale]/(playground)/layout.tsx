@@ -11,7 +11,7 @@ export default async function LearnLayout({
   return (
     // <html>
       <div >
-          <HeaderSlick isBillingStatus={false} brand="Learnoir" badge="Sandbox" isUser={false} isNav={false} />
+          <HeaderSlick isBillingStatus={false} brand={process.env.APP_NAME} badge="Sandbox" isUser={false} isNav={false} />
         {children}
       </div>
     // </html>

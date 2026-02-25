@@ -6,6 +6,7 @@ import { HT_SECTION_PART1, HT_TOPIC } from "@/lib/practice/catalog/subjects/hait
 import { SketchEntry } from "@/components/sketches/subjects";
 import { HC_MOD0 } from "@/seed/data/subjects/haitian-creole/constants";import {TopicDefCompat} from "@/seed/data/subjects/_types";
 import {HC_QUESTIONS_POOL} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/topics/questions";
+import {ReviewTopicShape} from "@/lib/subjects/types";
 
 const ID = "hc_questions" as const;
 const LABEL = "Question words" as const;
@@ -50,7 +51,8 @@ export const HC_QUESTIONS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
+
 
     def: {
         id: ID,
@@ -59,6 +61,6 @@ export const HC_QUESTIONS = {
             minutes: MINUTES,
             pool: HC_QUESTIONS_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+    }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };
 

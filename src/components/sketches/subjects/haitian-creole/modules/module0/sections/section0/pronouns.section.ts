@@ -1,3 +1,5 @@
+import {SketchEntry} from "@/components/sketches/subjects";
+
 export const HC_PRONOUNS_SECTION: Record<string, SketchEntry> = {
     "ht.hc.mod0.pronouns.lesson": {
         kind: "archetype",

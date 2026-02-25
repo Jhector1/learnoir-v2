@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useMemo, useState} from "react";
-import type {Lang} from "@/lib/code/runCode";
+// import {codeLanguage} From "@/lib/practice/types";
 import {
     SiPython,
 
@@ -12,13 +12,14 @@ import {
 } from "react-icons/si";
 // import {AiOutlineJava} from "react-icons/ai";
 import {FaJava} from "react-icons/fa6";
+import {CodeLanguage} from "@/lib/practice/types";
 
 function cn(...cls: Array<string | false | undefined | null>) {
     return cls.filter(Boolean).join(" ");
 }
 
 type LangItem = {
-    id: Lang;
+    id: CodeLanguage;
     label: string;
     desc: string;
     Icon: React.ComponentType<{ className?: string }>;
@@ -33,8 +34,8 @@ export const LANGS: LangItem[] = [
 ];
 
 export function LangRail(props: {
-    lang: Lang;
-    setLang: (l: Lang) => void;
+    lang: CodeLanguage;
+    setLang: (l: CodeLanguage) => void;
 }) {
     const {lang, setLang} = props;
     const [collapsed, setCollapsed] = useState(true);

@@ -76,12 +76,16 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
                 />
             </div>
 
+            {/*// ReviewModulePageClient.tsx (only the bottom part changed)*/}
             <ReviewModuleNavBar
                 locale={locale}
                 subjectSlug={subjectSlug}
                 prevModuleId={nav?.prevModuleId ?? null}
                 nextModuleId={nav?.nextModuleId ?? null}
                 canGoNext={canUnlockAll ? true : moduleComplete}
+                // ✅ NEW
+                isLastModule={Boolean(nav && !nav.nextModuleId&& undefined)}
+                canGetCertificate={Boolean(nav && !nav.nextModuleId && undefined) && (canUnlockAll ? true : moduleComplete)}
             />
         </div>
     );

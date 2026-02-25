@@ -61,7 +61,7 @@ export default function GeoProjectionLineSketch() {
             </div>
 
             <MathMarkdown
-                markdown={String.raw`
+                content={String.raw`
 Projection onto the line \(U=\mathrm{span}(b)\):
 
 $$\pi_U(x)=\frac{b^\top x}{b^\top b}\,b$$

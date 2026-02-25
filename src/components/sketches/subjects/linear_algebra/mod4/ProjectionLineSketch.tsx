@@ -91,7 +91,7 @@ export default function ProjectionLineSketch({ height = 420 }: { height?: number
             s.push();
             s.stroke("rgba(34,197,94,0.85)");
             s.strokeWeight(4);
-            s.drawingContext.setLineDash([6, 6]);
+          
             s.line(px.x, px.y, xx.x, xx.y);
             s.drawingContext.setLineDash([]);
             s.pop();

@@ -6,11 +6,13 @@ import type { PracticeKind } from "@prisma/client";
 
 // ✅ pool source of truth
 import { M1_IO_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/input_output_patterns";
+import {ReviewTopicShape} from "@/lib/subjects/types";
+import {TopicSlug} from "@/lib/practice/types";
 
 const ID = "input_output_patterns" as const;
 const LABEL = "Input + Output Patterns: Real Mini-Programs" as const;
 const MINUTES = 14 as const;
-
+const TOPIC_OUTPUT_PATTERNS = PY_TOPIC_MOD1.input_output_patterns as unknown as TopicSlug;
 // ✅ avoid runtime Prisma import: use string literals typed as PracticeKind
 const PK = {
     code_input: "code_input" as PracticeKind,
@@ -41,7 +43,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                     subject: "python",
                     module: PY_MOD1,
                     section: PY_SECTION_PART1,
-                    topic: PY_TOPIC_MOD1.input_output_patterns,
+                    topic:TOPIC_OUTPUT_PATTERNS,
                     difficulty: "easy",
                     allowReveal: true,
                     preferKind: null,
@@ -52,7 +54,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                         {
                             id: "age_next_year",
                             title: "Age next year",
-                            topic: PY_TOPIC_MOD1.input_output_patterns,
+                            topic: TOPIC_OUTPUT_PATTERNS,
                             difficulty: "easy",
                             preferKind: PK.code_input,
                             exerciseKey: "m1_io_age_next_year",
@@ -62,7 +64,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                         {
                             id: "tip_calc",
                             title: "Tip calculator",
-                            topic: PY_TOPIC_MOD1.input_output_patterns,
+                            topic:TOPIC_OUTPUT_PATTERNS,
                             difficulty: "easy",
                             preferKind: PK.code_input,
                             exerciseKey: "m1_io_tip_total",
@@ -72,7 +74,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                         {
                             id: "temp_convert",
                             title: "Temperature converter (C → F)",
-                            topic: PY_TOPIC_MOD1.input_output_patterns,
+                            topic:TOPIC_OUTPUT_PATTERNS,
                             difficulty: "easy",
                             preferKind: PK.code_input,
                             exerciseKey: "m1_io_c_to_f",
@@ -83,7 +85,7 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
                 },
             },
         ],
-    } as const,
+    } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
@@ -92,5 +94,5 @@ export const PY_INPUT_OUTPUT_PATTERNS = {
             minutes: MINUTES,
             pool: M1_IO_POOL.map((p) => ({ ...p })),
         },
-    } as const satisfies TopicDefCompat,
-} as const;
+   }  satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

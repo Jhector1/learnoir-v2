@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useRef } from "react";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
-import type { Exercise } from "@/lib/practice/types";
+import type {CodeLanguage, Exercise} from "@/lib/practice/types";
 import type { VectorPadState } from "@/components/vectorpad/types";
 import { defaultVectorPadState } from "@/components/vectorpad/defaultState";
 
@@ -15,7 +15,7 @@ import MultiChoiceExerciseUI from "./kinds/MultiChoiceExerciseUI";
 import CodeInputExerciseUI from "./kinds/CodeInputExerciseUI";
 
 import { buildCorrectItemFromExpected } from "@/features/practice/client/usePracticeEngine";
-import type { Lang } from "@/lib/code/runCode";
+
 
 function normalizeMath(md: string) {
   const s = String(md ?? "");
@@ -108,7 +108,7 @@ function ReadOnlyPracticeCard({
     const code = typeof ci.code === "string" ? ci.code : null;
     if (!code) return null;
 
-    const language = (ci.codeLang ?? q.codeLang) as Lang;
+    const language = (ci.codeLang ?? q.codeLang) as CodeLanguage;
     const stdin = typeof ci.codeStdin === "string" ? ci.codeStdin : (q.codeStdin ?? "");
 
     return { language, code, stdin };
@@ -189,7 +189,7 @@ function ReadOnlyPracticeCard({
             exercise={exercise as any}
             code={q.code ?? ""}
             stdin={q.codeStdin ?? ""}
-            language={(q.codeLang ?? "python") as Lang}
+            language={(q.codeLang ?? "python") as CodeLanguage}
             onChangeCode={() => {}}
             onChangeStdin={() => {}}
             onChangeLanguage={() => {}}

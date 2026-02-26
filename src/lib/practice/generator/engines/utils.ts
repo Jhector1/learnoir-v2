@@ -307,3 +307,15 @@ export function makeSubjectTopicGenerator(args: {
         } as any;
     };
 }
+
+export function makeNoGenerator(engineName: string, topicSlugRaw: string) {
+    return (_rng: RNG, _diff: Difficulty, id: string): GenOut<ExerciseKind> => {
+        const err = new Error(
+            `${engineName}: no generator registered for topicSlug="${topicSlugRaw}" (exercise id=${id})`
+        );
+        (err as any).code = "NO_GENERATOR";
+        (err as any).topicSlug = topicSlugRaw;
+        (err as any).engineName = engineName;
+        throw err;
+    };
+}

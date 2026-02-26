@@ -7,7 +7,7 @@ import type { TopicContext } from "../../generatorTypes";
 // Reuse the same slug parser you use for Python (recommended).
 // If you prefer, copy it into engines/haitian/_shared.ts and import from "./_shared" instead.
 import {makeGenHaitianCreolePart1Mod0} from "@/lib/practice/generator/engines/haitian_creole/haitian_creole_mod0/handlers";
-import {parseTopicSlug} from "@/lib/practice/generator/engines/utils";
+import {makeNoGenerator, parseTopicSlug} from "@/lib/practice/generator/engines/utils";
 
 // import { makeGenHaitianCreolePart1Mod0 } from "./haitian_creole_part1_mod0/handlers";
 // import { makeGenHaitianCreolePart1Mod1 } from "./haitian_creole_part1_mod1/handlers";
@@ -40,9 +40,9 @@ const MOD2_BASE = new Set<string>([
  * Prefixes your app uses (analogous to py0/py1/py2)
  * Use whatever you actually store in topicSlug prefixes.
  */
-const MOD0_PREFIX = "ht0";
-const MOD1_PREFIX = "ht1";
-const MOD2_PREFIX = "ht2";
+const MOD0_PREFIX = "hc0";
+const MOD1_PREFIX = "hc1";
+const MOD2_PREFIX = "hc2";
 
 export function makeGenHaitianCreolePart1(ctx: TopicContext) {
     const { raw, base, prefix } = parseTopicSlug(String(ctx.topicSlug));
@@ -57,9 +57,5 @@ export function makeGenHaitianCreolePart1(ctx: TopicContext) {
     // if (MOD1_BASE.has(base)) return makeGenHaitianCreolePart1Mod1(ctx);
     // if (MOD2_BASE.has(base)) return makeGenHaitianCreolePart1Mod2(ctx);
 
-    return (_rng: RNG, _diff: Difficulty, id: string): GenOut<ExerciseKind> => {
-        throw new Error(
-            `haitian_creole_part1: no generator registered for topicSlug="${raw}" (exercise id=${id})`,
-        );
-    };
+    return makeNoGenerator("haitian_creole_part1", raw);
 }

@@ -233,7 +233,7 @@ export default function ReviewModuleView({
     const canGetCertificate = isLastModule && (unlockAll || moduleDone);
 
     async function handleAssignmentClick() {
-        const returnToCurrentModule = `/${ROUTES.learningPath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}`;
+        const returnToCurrentModule = `/${locale}/${ROUTES.learningPath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}`;
 
         if (assignmentSessionId && assignmentStatus.phase !== "idle") {
             router.push(

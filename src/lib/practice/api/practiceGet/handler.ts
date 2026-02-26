@@ -298,7 +298,13 @@ function computePurposeDecision(args: {
 
 function isGeneratorTopicMismatch(e: any) {
     const code = String((e as any)?.code ?? "");
-    if (code === "UNKNOWN_TOPIC" || code === "MISSING_HANDLER" || code === "EMPTY_POOL" || code === "NO_QUESTIONS_AVAILABLE") {
+    if (
+        code === "UNKNOWN_TOPIC" ||
+        code === "MISSING_HANDLER" ||
+        code === "EMPTY_POOL" ||
+        code === "NO_QUESTIONS_AVAILABLE" ||
+        code === "NO_GENERATOR" // ✅ ADD
+    ) {
         return true;
     }
     const msg = String(e?.message ?? "");

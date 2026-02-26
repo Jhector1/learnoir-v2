@@ -400,7 +400,23 @@ export function usePracticeController(args: {
 
       onReturn: () => {
         if (!completionReturnUrl) return;
-        router.replace(completionReturnUrl);
+
+        const raw = String(completionReturnUrl).trim();
+
+        // ✅ block external/protocol-relative
+        if (!raw || raw.startsWith("//") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return;
+
+        // ✅ ensure it’s an internal absolute path
+        const path = raw.startsWith("/") ? raw : `/${raw}`;
+
+        // ✅ add locale if missing
+        const parts = pathname.split("/").filter(Boolean);
+        const locale = parts[0]; // since pathname is /en/... /fr/... /ht/...
+        const hasLocalePrefix = path.startsWith(`/${locale}/`) || path === `/${locale}`;
+
+        const safe = hasLocalePrefix ? path : `/${locale}${path}`;
+
+        router.replace(safe, { scroll: false });
       },
 
       t,

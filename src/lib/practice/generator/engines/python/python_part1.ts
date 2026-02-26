@@ -7,7 +7,7 @@ import type { TopicContext } from "../../generatorTypes";
 import { makeGenPythonStatementsPart1Mod0 } from "./python_part1_mod0/handlers";
 import { makeGenPythonStatementsPart1Mod1 } from "./python_part1_mod1/handlers";
 import { makeGenPythonStatementsPart1Mod2 } from "./python_part1_mod2/handlers";
-import {parseTopicSlug} from "@/lib/practice/generator/engines/utils";
+import {makeNoGenerator, parseTopicSlug} from "@/lib/practice/generator/engines/utils";
 
 // Base slugs (no prefix)
 const MOD0_BASE = new Set<string>([
@@ -53,7 +53,5 @@ export function makeGenPythonStatementsPart1(ctx: TopicContext) {
   if (MOD1_BASE.has(base)) return makeGenPythonStatementsPart1Mod1(ctx);
   if (MOD2_BASE.has(base)) return makeGenPythonStatementsPart1Mod2(ctx);
 
-  return (_rng: RNG, _diff: Difficulty, id: string): GenOut<ExerciseKind> => {
-    throw new Error(`python_part1: no generator registered for topicSlug="${raw}" (exercise id=${id})`);
-  };
-}
+  // src/lib/practice/generator/engines/python/python_part1.ts
+  return makeNoGenerator("python_part1", raw);}

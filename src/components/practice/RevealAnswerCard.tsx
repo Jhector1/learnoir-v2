@@ -42,6 +42,13 @@ function matrixToGridStrings(values: number[][]) {
     return values.map((row) => row.map((v) => String(v)));
 }
 
+type RevealModel = {
+    title: string;
+    copyText: string;
+    fillPatch: Partial<QItem> | null;
+    node: React.ReactNode;
+};
+
 export default function RevealAnswerCard({
                                              exercise,
                                              current,
@@ -61,7 +68,7 @@ export default function RevealAnswerCard({
     // ✅ MUST be declared before any conditional returns (Rules of Hooks)
     const rootRef = useRef<HTMLDivElement | null>(null);
 
-    const model = useMemo(() => {
+    const model: RevealModel | null = useMemo(() => {
         if (!reveal || typeof reveal !== "object") return null;
 
         const kind = String(reveal.kind ?? exercise?.kind);
@@ -103,8 +110,12 @@ export default function RevealAnswerCard({
                 node: (
                     <div className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden">
                         <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-black/30 px-3 py-2">
-                            <div className="text-[11px] font-extrabold text-white/70">{lang.toUpperCase()}</div>
-                            <div className="text-[11px] text-white/45">Copy/paste into the editor, then Submit.</div>
+                            <div className="text-[11px] font-extrabold text-white/70">
+                                {lang.toUpperCase()}
+                            </div>
+                            <div className="text-[11px] text-white/45">
+                                Copy/paste into the editor, then Submit.
+                            </div>
                         </div>
 
                         <pre className="p-3 text-xs leading-relaxed text-white/85 overflow-x-auto">
@@ -160,37 +171,6 @@ export default function RevealAnswerCard({
                             onShapeChange={() => {}}
                             onChange={() => {}}
                         />
-                    </div>
-                ),
-            };
-        }
-
-        if (kind === "text_input") {
-            const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
-            const preferred = String(reveal.preferred ?? answers[0] ?? "").trim();
-            const copyText = preferred || (answers[0] ?? "");
-
-            return {
-                title: "Accepted answers",
-                copyText,
-                fillPatch: copyText ? ({ text: copyText } as Partial<QItem>) : null,
-                node: (
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                        <div className="text-xs font-extrabold text-white/70">Accepted</div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {answers.length ? (
-                                answers.map((a: string) => (
-                                    <span
-                                        key={a}
-                                        className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
-                                    >
-                    {a}
-                  </span>
-                                ))
-                            ) : (
-                                <span className="text-xs text-white/60">—</span>
-                            )}
-                        </div>
                     </div>
                 ),
             };
@@ -274,22 +254,13 @@ export default function RevealAnswerCard({
                 ),
             };
         }
-// ✅ put this where your text_input branch currently is
-        if (
-            kind === "text_input" ||
-            kind === "listen_build" ||
-            kind === "word_bank_arrange" ||
-            kind === "fill_blank_choice"
-        ) {
+
+        // ✅ unified branch for text-like answers
+        if (kind === "text_input" || kind === "listen_build" || kind === "word_bank_arrange" || kind === "fill_blank_choice") {
             const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
 
             // reveal may come as { value } (safe payload) OR { answers } (full expected)
-            const preferred = String(
-                reveal.preferred ??
-                reveal.value ??
-                (answers[0] ?? "")
-            ).trim();
-
+            const preferred = String(reveal.preferred ?? reveal.value ?? (answers[0] ?? "")).trim();
             const copyText = preferred || (answers[0] ?? "");
 
             const title =
@@ -320,13 +291,13 @@ export default function RevealAnswerCard({
                                         key={a}
                                         className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
                                     >
-                {a}
-              </span>
+                    {a}
+                  </span>
                                 ))
                             ) : copyText ? (
                                 <span className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85">
-              {copyText}
-            </span>
+                  {copyText}
+                </span>
                             ) : (
                                 <span className="text-xs text-white/60">—</span>
                             )}
@@ -335,6 +306,7 @@ export default function RevealAnswerCard({
                 ),
             };
         }
+
         if (kind === "single_choice") {
             const optionId = String(reveal.optionId ?? "");
             const options = (exercise as any)?.options ?? [];
@@ -421,17 +393,20 @@ export default function RevealAnswerCard({
 
     if (!model) return null;
 
+    // ✅ model is non-null in this scope
+    const m = model;
+
     async function onCopy() {
-        if (!model.copyText) return;
-        const ok = await copyToClipboard(model.copyText);
+        if (!m.copyText) return;
+        const ok = await copyToClipboard(m.copyText);
         if (!ok) return;
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1200);
     }
 
     function onFill() {
-        if (!model.fillPatch) return;
-        updateCurrent({ ...model.fillPatch, submitted: false, result: null });
+        if (!m.fillPatch) return;
+        updateCurrent({ ...m.fillPatch, submitted: false, result: null });
     }
 
     return (
@@ -442,7 +417,7 @@ export default function RevealAnswerCard({
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={onCopy}
-                        disabled={!model.copyText}
+                        disabled={!m.copyText}
                         className={cn(
                             "rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50",
                         )}
@@ -452,7 +427,7 @@ export default function RevealAnswerCard({
 
                     <button
                         onClick={onFill}
-                        disabled={!model.fillPatch}
+                        disabled={!m.fillPatch}
                         className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50"
                         title="Fill the input with the revealed answer"
                     >
@@ -461,7 +436,7 @@ export default function RevealAnswerCard({
                 </div>
             </div>
 
-            <div className="mt-2">{model.node}</div>
+            <div className="mt-2">{m.node}</div>
         </div>
     );
 }

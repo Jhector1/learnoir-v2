@@ -87,7 +87,7 @@ export default function SummaryView(props: PracticeShellProps) {
                       className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold"
                       onClick={() => setShowMissed(!showMissed)}
                   >
-                    {showMissed ? t("summary.toggleMissedHide") : t("summary.toggleMissedShow")}
+                    {!showMissed ? t("summary.toggleMissedHide") : t("summary.toggleMissedShow")}
                   </button>
 
                   <button

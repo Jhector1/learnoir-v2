@@ -205,9 +205,9 @@ function HeroPanelCard({
             <DemoProgress rows={demoProgressRows} suffix={demoProgressSuffix} />
         ) : null}
 
-        <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-          {assetNote}
-        </div>
+        {/*<div className="mt-2 text-xs text-neutral-500 dark:text-white/60">*/}
+        {/*  {assetNote}*/}
+        {/*</div>*/}
       </div>
   );
 }
@@ -816,9 +816,9 @@ export default async function HomePage({
               ))}
             </div>
 
-            <p className="mt-6 text-xs text-neutral-500 dark:text-white/60">
-              {t("pricing.note")}
-            </p>
+            {/*<p className="mt-6 text-xs text-neutral-500 dark:text-white/60">*/}
+            {/*  {t("pricing.note")}*/}
+            {/*</p>*/}
           </Container>
         </section>
 

@@ -4,12 +4,3 @@ prisma migrate reset --force&&prisma migrate deploy && prisma generate&&
  npx dotenv-cli -e .env.production.local -- npx prisma migrate deploy
 npx dotenv-cli -e .env.production.local -- npx prisma db seed
 
-
-
-
-
-
-Couldn’t load a question
-haitian_creole_part1: no generator registered for topicSlug="hc0.pronouns" (exercise id=haitian_creole_part1_70a54e52c01e)
-Retry
-Continue

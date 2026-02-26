@@ -209,6 +209,7 @@ export async function POST(req: Request) {
   });
 
   // --- 11) Response shaping
+  // --- 11) Response shaping
   const includeExpected = isReveal;
 
   let publicExplanation = graded.explanation;
@@ -219,8 +220,15 @@ export async function POST(req: Request) {
   const left = maxAttempts == null ? null : Math.max(0, maxAttempts - nextNonRevealAttempts);
   const returnUrl = sess?.returnUrl ?? null;
 
+// ✅ NEW: reveal should NOT be treated as graded incorrect
+  const okOut: boolean | null = isReveal ? null : Boolean(graded.ok);
+
   const res = NextResponse.json({
-    ok: isReveal ? false : Boolean(graded.ok),
+    ok: okOut,
+
+    // ✅ add a flag so the client can treat it as reveal (optional but helpful)
+    revealUsed: isReveal,
+
     revealAnswer: isReveal ? graded.revealAnswer : null,
     expected: null,
     explanation: includeExpected ? graded.explanation : publicExplanation,

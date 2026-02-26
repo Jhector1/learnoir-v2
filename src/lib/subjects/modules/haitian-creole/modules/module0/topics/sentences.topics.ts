@@ -44,7 +44,7 @@ export const HC_SENTENCES = {
                     section: HT_SECTION_PART1,
                     topic: HT_TOPIC.sentence_building,
                     difficulty: "easy",
-                    n: HC_SENTENCES_POOL.length,
+                    n: 3,
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 10,

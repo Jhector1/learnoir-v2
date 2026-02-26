@@ -47,7 +47,7 @@ export const HC_GREETINGS = {
                     section: HT_SECTION_PART1,
                     topic: HT_TOPIC.greetings,
                     difficulty: "easy",
-                    n: HC_GREETINGS_POOL.length,
+                    n: 3,
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 10,

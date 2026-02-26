@@ -1,430 +1,467 @@
+// src/components/practice/RevealAnswerCard.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise } from "@/lib/practice/types";
 import type { QItem } from "./practiceType";
 
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import MatrixInputPanel from "./MatrixInputPanel";
+import { scrollIntoViewSmart } from "@/lib/ui/flowScroll";
 
 function cn(...cls: Array<string | false | undefined | null>) {
-  return cls.filter(Boolean).join(" ");
+    return cls.filter(Boolean).join(" ");
 }
 
 async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // fallback
     try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return true;
+        await navigator.clipboard.writeText(text);
+        return true;
     } catch {
-      return false;
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            return true;
+        } catch {
+            return false;
+        }
     }
-  }
 }
 
 function matrixToText(values: number[][]) {
-  // nice copy format: rows on new lines, columns space-separated
-  return values.map((r) => r.join(" ")).join("\n");
+    return values.map((r) => r.join(" ")).join("\n");
 }
 
 function matrixToGridStrings(values: number[][]) {
-  return values.map((row) => row.map((v) => String(v)));
+    return values.map((row) => row.map((v) => String(v)));
 }
 
 export default function RevealAnswerCard({
-  exercise,
-  current,
-  result,
-  updateCurrent,
-}: {
-  exercise: Exercise | null;
-  current: QItem;
-  result: any;
-  updateCurrent: (patch: Partial<QItem>) => void;
+                                             exercise,
+                                             current,
+                                             result,
+                                             updateCurrent,
+                                         }: {
+    exercise: Exercise | null;
+    current: QItem;
+    result: any;
+    updateCurrent: (patch: Partial<QItem>) => void;
 }) {
-  // Prefer new API shape, fallback to old `expected`
-  const reveal = (result?.revealAnswer ??
-    result?.reveal ??
-    result?.expected) as any;
+    // Prefer new API shape, fallback to old `expected`
+    const reveal = (result?.revealAnswer ?? result?.reveal ?? result?.expected) as any;
 
-  const [copied, setCopied] = useState(false);
+    const [copied, setCopied] = useState(false);
 
-  const model = useMemo(() => {
-    if (!reveal || typeof reveal !== "object") return null;
+    // ✅ MUST be declared before any conditional returns (Rules of Hooks)
+    const rootRef = useRef<HTMLDivElement | null>(null);
 
-    const kind = String(reveal.kind ?? exercise?.kind);
+    const model = useMemo(() => {
+        if (!reveal || typeof reveal !== "object") return null;
 
-    // Build:
-    // - display node
-    // - copyText
-    // - fillPatch (optional)
-    if (kind === "numeric") {
-      const v = reveal.value;
-      const copyText = v == null ? "" : String(v);
-      return {
-        title: "Answer",
-        copyText,
-        fillPatch: copyText ? ({ num: copyText } as Partial<QItem>) : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <MathMarkdown
-              content={`$$${copyText || "\\text{(empty)}"}$$`}
-              className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
-            />
-          </div>
-        ),
-      };
-    }
+        const kind = String(reveal.kind ?? exercise?.kind);
 
-    if (kind === "code_input") {
-      const lang = String(reveal.language ?? current.codeLang ?? "python");
-      const code = String(reveal.solutionCode ?? reveal.code ?? "");
-      const stdin = String(reveal.stdin ?? "");
+        if (kind === "numeric") {
+            const v = reveal.value;
+            const copyText = v == null ? "" : String(v);
+            return {
+                title: "Answer",
+                copyText,
+                fillPatch: copyText ? ({ num: copyText } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <MathMarkdown
+                            content={`$$${copyText || "\\text{(empty)}"}$$`}
+                            className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
+                        />
+                    </div>
+                ),
+            };
+        }
 
-      const copyText = code.trim() ? code : "";
-      return {
-        title: `Solution code (${lang})`,
-        copyText,
-        fillPatch: copyText
-          ? ({
-              code: copyText,
-              codeLang: lang as any,
-              codeStdin: stdin,
-            } as Partial<QItem>)
-          : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden">
-            <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-black/30 px-3 py-2">
-              <div className="text-[11px] font-extrabold text-white/70">
-                {lang.toUpperCase()}
-              </div>
-              <div className="text-[11px] text-white/45">
-                Copy/paste into the editor, then Submit.
-              </div>
-            </div>
-            <pre className="p-3 text-xs leading-relaxed text-white/85 overflow-x-auto">
+        if (kind === "code_input") {
+            const lang = String(reveal.language ?? current.codeLang ?? "python");
+            const code = String(reveal.solutionCode ?? reveal.code ?? "");
+            const stdin = String(reveal.stdin ?? "");
+            const copyText = code.trim() ? code : "";
+
+            return {
+                title: `Solution code (${lang})`,
+                copyText,
+                fillPatch: copyText
+                    ? ({
+                        code: copyText,
+                        codeLang: lang as any,
+                        codeStdin: stdin,
+                    } as Partial<QItem>)
+                    : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden">
+                        <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-black/30 px-3 py-2">
+                            <div className="text-[11px] font-extrabold text-white/70">{lang.toUpperCase()}</div>
+                            <div className="text-[11px] text-white/45">Copy/paste into the editor, then Submit.</div>
+                        </div>
+
+                        <pre className="p-3 text-xs leading-relaxed text-white/85 overflow-x-auto">
               {code ? (
-                <MathMarkdown
-                  content={code}
-                  className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
-                />
+                  <MathMarkdown
+                      content={code}
+                      className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
+                  />
               ) : (
-                "// (no solutionCode provided)"
+                  "// (no solutionCode provided)"
               )}
             </pre>
 
-            {stdin ? (
-              <div className="border-t border-white/10 px-3 py-2">
-                <div className="text-[11px] font-extrabold text-white/60">
-                  stdin
-                </div>
-                <pre className="mt-1 text-xs text-white/80 overflow-x-auto">
-                  {stdin}
-                </pre>
-              </div>
-            ) : null}
-          </div>
-        ),
-      };
-    }
+                        {stdin ? (
+                            <div className="border-t border-white/10 px-3 py-2">
+                                <div className="text-[11px] font-extrabold text-white/60">stdin</div>
+                                <pre className="mt-1 text-xs text-white/80 overflow-x-auto">{stdin}</pre>
+                            </div>
+                        ) : null}
+                    </div>
+                ),
+            };
+        }
 
-    if (kind === "matrix_input") {
-      const values = Array.isArray(reveal.values)
-        ? (reveal.values as number[][])
-        : [];
-      const rows = values.length;
-      const cols = values[0]?.length ?? 0;
+        if (kind === "matrix_input") {
+            const values = Array.isArray(reveal.values) ? (reveal.values as number[][]) : [];
+            const rows = values.length;
+            const cols = values[0]?.length ?? 0;
 
-      const copyText = rows && cols ? matrixToText(values) : "";
-      return {
-        title: "Matrix answer",
-        copyText,
-        fillPatch:
-          rows && cols
-            ? ({
-                matRows: rows,
-                matCols: cols,
-                mat: matrixToGridStrings(values),
-              } as Partial<QItem>)
-            : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <MatrixInputPanel
-              labelLatex={
-                (reveal.labelLatex as string) ?? String.raw`\mathbf{A}=`
-              }
-              rows={rows}
-              cols={cols}
-              allowResize={false}
-              value={matrixToGridStrings(values)}
-              readOnly={true}
-              requiredRows={rows}
-              requiredCols={cols}
-              onShapeChange={() => {}}
-              onChange={() => {}}
-            />
-          </div>
-        ),
-      };
-    }
-// text_input
-if (kind === "text_input") {
-  const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
-  const preferred = String(reveal.preferred ?? answers[0] ?? "").trim();
-  const copyText = preferred || (answers[0] ?? "");
+            const copyText = rows && cols ? matrixToText(values) : "";
+            return {
+                title: "Matrix answer",
+                copyText,
+                fillPatch:
+                    rows && cols
+                        ? ({
+                            matRows: rows,
+                            matCols: cols,
+                            mat: matrixToGridStrings(values),
+                        } as Partial<QItem>)
+                        : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <MatrixInputPanel
+                            labelLatex={(reveal.labelLatex as string) ?? String.raw`\mathbf{A}=`}
+                            rows={rows}
+                            cols={cols}
+                            allowResize={false}
+                            value={matrixToGridStrings(values)}
+                            readOnly={true}
+                            requiredRows={rows}
+                            requiredCols={cols}
+                            onShapeChange={() => {}}
+                            onChange={() => {}}
+                        />
+                    </div>
+                ),
+            };
+        }
 
-  return {
-    title: "Accepted answers",
-    copyText,
-    fillPatch: copyText ? ({ text: copyText } as Partial<QItem>) : null,
-    node: (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-        <div className="text-xs font-extrabold text-white/70">Accepted</div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {answers.length ? (
-            answers.map((a: string) => (
-              <span
-                key={a}
-                className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
-              >
+        if (kind === "text_input") {
+            const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
+            const preferred = String(reveal.preferred ?? answers[0] ?? "").trim();
+            const copyText = preferred || (answers[0] ?? "");
+
+            return {
+                title: "Accepted answers",
+                copyText,
+                fillPatch: copyText ? ({ text: copyText } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs font-extrabold text-white/70">Accepted</div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {answers.length ? (
+                                answers.map((a: string) => (
+                                    <span
+                                        key={a}
+                                        className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                                    >
+                    {a}
+                  </span>
+                                ))
+                            ) : (
+                                <span className="text-xs text-white/60">—</span>
+                            )}
+                        </div>
+                    </div>
+                ),
+            };
+        }
+
+        if (kind === "voice_input") {
+            const transcript =
+                String(reveal.preferred ?? reveal.transcript ?? "").trim() ||
+                String((Array.isArray(reveal.answers) ? reveal.answers[0] : "") ?? "").trim();
+
+            const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
+            const copyText = transcript;
+
+            return {
+                title: "Correct transcript",
+                copyText,
+                fillPatch: transcript ? ({ voiceTranscript: transcript } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs font-extrabold text-white/70">Transcript</div>
+                        <div className="mt-1 text-sm font-black text-white/90">{transcript || "—"}</div>
+
+                        {answers.length ? (
+                            <>
+                                <div className="mt-3 text-xs font-extrabold text-white/60">Also accepted</div>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {answers.map((a: string) => (
+                                        <span
+                                            key={a}
+                                            className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                                        >
+                      {a}
+                    </span>
+                                    ))}
+                                </div>
+                            </>
+                        ) : null}
+                    </div>
+                ),
+            };
+        }
+
+        if (kind === "drag_reorder") {
+            const order = Array.isArray(reveal.order) ? reveal.order.map(String) : [];
+            const tokens = Array.isArray((exercise as any)?.tokens) ? (exercise as any).tokens : [];
+            const byId = new Map(tokens.map((t: any) => [String(t.id), String(t.text ?? t.label ?? t.id)]));
+
+            const copyText = order
+                .map((raw: any) => {
+                    const sid = String(raw);
+                    return byId.get(sid) ?? sid;
+                })
+                .join(" ");
+
+            return {
+                title: "Correct order",
+                copyText,
+                fillPatch: order.length ? ({ reorder: order, reorderIds: order } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs font-extrabold text-white/70">Correct order</div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {order.length ? (
+                                order.map((raw: any) => {
+                                    const sid = String(raw);
+                                    const label = String(byId.get(sid) ?? sid);
+                                    return (
+                                        <span
+                                            key={sid}
+                                            className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                                        >
+                      {label}
+                    </span>
+                                    );
+                                })
+                            ) : (
+                                <span className="text-xs text-white/60">—</span>
+                            )}
+                        </div>
+                    </div>
+                ),
+            };
+        }
+// ✅ put this where your text_input branch currently is
+        if (
+            kind === "text_input" ||
+            kind === "listen_build" ||
+            kind === "word_bank_arrange" ||
+            kind === "fill_blank_choice"
+        ) {
+            const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
+
+            // reveal may come as { value } (safe payload) OR { answers } (full expected)
+            const preferred = String(
+                reveal.preferred ??
+                reveal.value ??
+                (answers[0] ?? "")
+            ).trim();
+
+            const copyText = preferred || (answers[0] ?? "");
+
+            const title =
+                kind === "fill_blank_choice"
+                    ? "Correct choice"
+                    : kind === "listen_build"
+                        ? "Correct sentence"
+                        : kind === "word_bank_arrange"
+                            ? "Correct sentence"
+                            : "Accepted answers";
+
+            return {
+                title,
+                copyText,
+                // ✅ your builders + fill_blank all use item.text in your ExerciseRenderer
+                // ✅ also set single so anything choice-ish stays consistent
+                fillPatch: copyText ? ({ text: copyText, single: copyText } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs font-extrabold text-white/70">
+                            {kind === "text_input" ? "Accepted" : "Answer"}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {answers.length ? (
+                                answers.map((a: string) => (
+                                    <span
+                                        key={a}
+                                        className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                                    >
                 {a}
               </span>
-            ))
-          ) : (
-            <span className="text-xs text-white/60">—</span>
-          )}
-        </div>
-      </div>
-    ),
-  };
-}
+                                ))
+                            ) : copyText ? (
+                                <span className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85">
+              {copyText}
+            </span>
+                            ) : (
+                                <span className="text-xs text-white/60">—</span>
+                            )}
+                        </div>
+                    </div>
+                ),
+            };
+        }
+        if (kind === "single_choice") {
+            const optionId = String(reveal.optionId ?? "");
+            const options = (exercise as any)?.options ?? [];
+            const found = options.find((o: any) => String(o.id) === optionId);
+            const label = found?.label ?? found?.text ?? found?.markdown ?? found?.latex ?? optionId;
 
-// voice_input
-if (kind === "voice_input") {
-  const transcript =
-    String(reveal.preferred ?? reveal.transcript ?? "").trim() ||
-    String((Array.isArray(reveal.answers) ? reveal.answers[0] : "") ?? "").trim();
+            return {
+                title: "Correct choice",
+                copyText: optionId,
+                fillPatch: optionId ? ({ single: optionId } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs text-white/70 font-extrabold">Option</div>
+                        <div className="mt-1 text-sm text-white/90">
+                            <MathMarkdown
+                                content={String(label)}
+                                className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
+                            />
+                        </div>
+                        <div className="mt-2 text-[11px] text-white/50">id: {optionId}</div>
+                    </div>
+                ),
+            };
+        }
 
-  const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
-  const copyText = transcript;
+        if (kind === "multi_choice") {
+            const optionIds = Array.isArray(reveal.optionIds) ? reveal.optionIds.map(String) : [];
+            const copyText = optionIds.join(", ");
 
-  return {
-    title: "Correct transcript",
-    copyText,
-    fillPatch: transcript
-      ? ({ voiceTranscript: transcript } as Partial<QItem>)
-      : null,
-    node: (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-        <div className="text-xs font-extrabold text-white/70">Transcript</div>
-        <div className="mt-1 text-sm font-black text-white/90">
-          {transcript || "—"}
-        </div>
+            return {
+                title: "Correct choices",
+                copyText,
+                fillPatch: optionIds.length ? ({ multi: optionIds } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-xs text-white/70 font-extrabold">Options</div>
+                        <div className="mt-1 text-sm text-white/90">{copyText || "—"}</div>
+                    </div>
+                ),
+            };
+        }
 
-        {answers.length ? (
-          <>
-            <div className="mt-3 text-xs font-extrabold text-white/60">Also accepted</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {answers.map((a: string) => (
-                <span
-                  key={a}
-                  className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
-                >
-                  {a}
-                </span>
-              ))}
+        if (kind === "vector_drag_target" || kind === "vector_drag_dot") {
+            const sol = reveal.solutionA ?? reveal.targetA ?? null;
+            const b = reveal.b ?? null;
+            const copyText = sol ? JSON.stringify(sol) : "";
+
+            return {
+                title: "One valid vector answer",
+                copyText,
+                fillPatch: sol ? ({ dragA: sol, ...(b ? { dragB: b } : {}) } as Partial<QItem>) : null,
+                node: (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-white/80">
+                        <div className="font-extrabold text-white/85">a</div>
+                        <pre className="mt-1 overflow-x-auto">{JSON.stringify(sol, null, 2)}</pre>
+                        {b ? (
+                            <>
+                                <div className="mt-3 font-extrabold text-white/85">b</div>
+                                <pre className="mt-1 overflow-x-auto">{JSON.stringify(b, null, 2)}</pre>
+                            </>
+                        ) : null}
+                    </div>
+                ),
+            };
+        }
+
+        return null;
+    }, [reveal, exercise, current.codeLang]);
+
+    // ✅ scroll when the reveal block appears/changes
+    useEffect(() => {
+        if (!model) return;
+        const el = rootRef.current;
+        if (!el) return;
+
+        requestAnimationFrame(() => {
+            scrollIntoViewSmart(el, {
+                block: "end",
+                force: true,
+                offsetPx: 12,
+            });
+        });
+    }, [model]);
+
+    if (!model) return null;
+
+    async function onCopy() {
+        if (!model.copyText) return;
+        const ok = await copyToClipboard(model.copyText);
+        if (!ok) return;
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1200);
+    }
+
+    function onFill() {
+        if (!model.fillPatch) return;
+        updateCurrent({ ...model.fillPatch, submitted: false, result: null });
+    }
+
+    return (
+        <div ref={rootRef} className="mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] font-extrabold text-white/70">Revealed answer</div>
+
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={onCopy}
+                        disabled={!model.copyText}
+                        className={cn(
+                            "rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50",
+                        )}
+                    >
+                        {copied ? "Copied ✓" : "Copy"}
+                    </button>
+
+                    <button
+                        onClick={onFill}
+                        disabled={!model.fillPatch}
+                        className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50"
+                        title="Fill the input with the revealed answer"
+                    >
+                        Fill answer
+                    </button>
+                </div>
             </div>
-          </>
-        ) : null}
-      </div>
-    ),
-  };
-}
 
-// drag_reorder
-if (kind === "drag_reorder") {
-  const order = Array.isArray(reveal.order) ? reveal.order.map(String) : [];
-  const tokens = Array.isArray((exercise as any)?.tokens) ? (exercise as any).tokens : [];
-  const byId = new Map(tokens.map((t: any) => [String(t.id), String(t.text ?? t.label ?? t.id)]));
-
-    const copyText = order.map((raw: any) => {
-        const sid = String(raw);
-        return byId.get(sid) ?? sid;
-    }).join(" ");
-  return {
-    title: "Correct order",
-    copyText,
-    fillPatch: order.length
-      ? ({
-          reorder: order,
-          reorderIds: order, // optional safety for your other code paths
-        } as Partial<QItem>)
-      : null,
-    node: (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-        <div className="text-xs font-extrabold text-white/70">Correct order</div>
-        <div className="mt-2 flex flex-wrap gap-2">
-            {order.length ? (
-                order.map((raw: any) => {
-                    const sid = String(raw);
-                    const label = String(byId.get(sid) ?? sid);
-                    return (
-                        <span
-                            key={sid}
-                            className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
-                        >
-        {label}
-      </span>
-                    );
-                })
-            ) : (
-                <span className="text-xs text-white/60">—</span>
-            )}
+            <div className="mt-2">{model.node}</div>
         </div>
-      </div>
-    ),
-  };
-}
-
-    // Single choice (try to show label)
-    if (kind === "single_choice") {
-      const optionId = String(reveal.optionId ?? "");
-      const options = (exercise as any)?.options ?? [];
-      const found = options.find((o: any) => String(o.id) === optionId);
-      const label =
-        found?.label ??
-        found?.text ??
-        found?.markdown ??
-        found?.latex ??
-        optionId;
-
-      return {
-        title: "Correct choice",
-        copyText: optionId,
-        fillPatch: optionId ? ({ single: optionId } as Partial<QItem>) : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="text-xs text-white/70 font-extrabold">Option</div>
-            <div className="mt-1 text-sm text-white/90">
-              <MathMarkdown
-                content={String(label)}
-                className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
-              />
-            </div>
-            <div className="mt-2 text-[11px] text-white/50">id: {optionId}</div>
-          </div>
-        ),
-      };
-    }
-
-    // Multi choice
-    if (kind === "multi_choice") {
-      const optionIds = Array.isArray(reveal.optionIds)
-        ? reveal.optionIds.map(String)
-        : [];
-      const copyText = optionIds.join(", ");
-      return {
-        title: "Correct choices",
-        copyText,
-        fillPatch: optionIds.length
-          ? ({ multi: optionIds } as Partial<QItem>)
-          : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="text-xs text-white/70 font-extrabold">Options</div>
-            <div className="mt-1 text-sm text-white/90">{copyText || "—"}</div>
-          </div>
-        ),
-      };
-    }
-
-    // Vectors (minimal display)
-    if (kind === "vector_drag_target" || kind === "vector_drag_dot") {
-      const sol = reveal.solutionA ?? reveal.targetA ?? null;
-      const b = reveal.b ?? null;
-      const copyText = sol ? JSON.stringify(sol) : "";
-      return {
-        title: "One valid vector answer",
-        copyText,
-        fillPatch: sol ? ({ dragA: sol,...(b ? { dragB: b } : {}) } as Partial<QItem>) : null,
-        node: (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-xs text-white/80">
-            <div className="font-extrabold text-white/85">a</div>
-            <pre className="mt-1 overflow-x-auto">
-              {JSON.stringify(sol, null, 2)}
-            </pre>
-            {b ? (
-              <>
-                <div className="mt-3 font-extrabold text-white/85">b</div>
-                <pre className="mt-1 overflow-x-auto">
-                  {JSON.stringify(b, null, 2)}
-                </pre>
-              </>
-            ) : null}
-          </div>
-        ),
-      };
-    }
-
-    return null;
-  }, [reveal, exercise, current.codeLang]);
-
-  if (!model) return null;
-
-  async function onCopy() {
-    if (!model?.copyText) return;
-    const ok = await copyToClipboard(model?.copyText);
-    if (!ok) return;
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
-  }
-
-  function onFill() {
-    if (!model?.fillPatch) return;
-    updateCurrent({ ...model.fillPatch, submitted: false, result: null });
-  }
-
-  return (
-    <div className="mt-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[11px] font-extrabold text-white/70">
-          Revealed answer
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={onCopy}
-            disabled={!model.copyText}
-            className={cn(
-              "rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50",
-            )}
-          >
-            {copied ? "Copied ✓" : "Copy"}
-          </button>
-
-          <button
-            onClick={onFill}
-            disabled={!model.fillPatch}
-            className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50"
-            title="Fill the input with the revealed answer"
-          >
-            Fill answer
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-2">{model.node}</div>
-    </div>
-  );
+    );
 }

@@ -46,7 +46,7 @@ export const HC_PRONOUNS = {
                     section: HT_SECTION_PART1,
                     topic: HT_TOPIC.pronouns,
                     difficulty: "easy",
-                    n: HC_PRONOUNS_POOL.length,
+                    n: 3,
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 10,

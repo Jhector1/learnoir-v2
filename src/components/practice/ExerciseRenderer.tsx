@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef} from "react";
-import type { Exercise} from "@/lib/practice/types";
+import type {Exercise} from "@/lib/practice/types";
 import type {VectorPadState} from "@/components/vectorpad/types";
 import {CodeLanguage} from "@/lib/practice/types";
 
@@ -131,9 +131,9 @@ function CodeInputWithTools(props: {
             code={curCode}
             stdin={curStdin}
             language={curLang}
-            onChangeCode={(code) => updateCurrent({ code, ...resetCheckPatch() })}
-            onChangeStdin={(codeStdin) => updateCurrent({ codeStdin, ...resetCheckPatch() })}
-            onChangeLanguage={(codeLang) => updateCurrent({ codeLang, ...resetCheckPatch() })}
+            onChangeCode={(code) => updateCurrent({code, ...resetCheckPatch()})}
+            onChangeStdin={(codeStdin) => updateCurrent({codeStdin, ...resetCheckPatch()})}
+            onChangeLanguage={(codeLang) => updateCurrent({codeLang, ...resetCheckPatch()})}
             disabled={lockInputs}
             checked={checked}
             ok={ok}
@@ -209,30 +209,39 @@ export default function ExerciseRenderer({
     const t = useTranslations("ExerciseRenderer");
 
 
-
-
-
-
-
-
-
-
     const maxA =
         maxAttempts == null || !Number.isFinite(maxAttempts)
             ? Number.POSITIVE_INFINITY
             : Math.max(1, Math.floor(maxAttempts));
 
     const attempts = (current as any).attempts ?? 0;
-
-// any result exists (including reveal objects)
+    // any result exists (including reveal objects)
     const hasAnyResult = Boolean((current as any).submitted || (current as any).result);
 
-// ok graded only when boolean
+// ✅ detect reveal (your API returns revealAnswer, and we can also support revealUsed)
+    const isRevealResult = Boolean(
+        (current as any)?.result?.revealUsed ||
+        (current as any)?.result?.revealAnswer
+    );
+
+// ✅ ok should be null on reveal (prevents red/green UI)
     const ok: boolean | null =
-        typeof (current as any).result?.ok === "boolean" ? (current as any).result.ok : null;
+        !isRevealResult && typeof (current as any).result?.ok === "boolean"
+            ? (current as any).result.ok
+            : null;
+
+// ✅ checked for styling only when actually graded/submitted
+    const checked = Boolean((current as any).submitted || ok !== null);
+
+// any result exists (including reveal objects)
+//     const hasAnyResult = Boolean((current as any).submitted || (current as any).result);
+
+// ok graded only when boolean
+//     const ok: boolean | null =
+//         typeof (current as any).result?.ok === "boolean" ? (current as any).result.ok : null;
 
 // checked for styling = graded (or submitted)
-    const checked = Boolean((current as any).submitted || ok !== null);
+//     const checked = Boolean((current as any).submitted || ok !== null);
 
 // ✅ server truth for locking
     const finalized = Boolean((current as any)?.result?.finalized);
@@ -244,9 +253,18 @@ export default function ExerciseRenderer({
 // lock if readOnly/busy/correct/finalized
     const lockInputs = readOnly || busy || ok === true || outOfAttempts;
 
+
+
+
+
+
+
+
+
+
     function resetCheckPatch() {
         if (readOnly) return {};
-        return hasAnyResult ? { submitted: false, result: null } : {};
+        return hasAnyResult ? {submitted: false, result: null} : {};
     }
 
     // -----------------------------
@@ -354,7 +372,7 @@ export default function ExerciseRenderer({
             <DragReorderExerciseUI
                 exercise={exercise as any}
                 tokenIds={curOrder}
-                onChange={(ids) => updateCurrent({ reorder: ids, ...resetCheckPatch() })}
+                onChange={(ids) => updateCurrent({reorder: ids, ...resetCheckPatch()})}
                 disabled={lockInputs}
                 checked={checked}
                 ok={ok}
@@ -441,24 +459,24 @@ export default function ExerciseRenderer({
 // -----------------------------
 // word_bank_arrange ✅
 // -----------------------------
-    if (exercise.kind === "word_bank_arrange") {
-        const reviewCorrectValue =
-            reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
-                ? String((reviewCorrectItem as any).text)
-                : (exercise as any).targetText ?? null;
-
-        return (
-            <WordBankArrangeExerciseUI
-                exercise={exercise as any}
-                value={(current as any).text ?? ""} // ✅ store assembled sentence here
-                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
-                disabled={lockInputs}
-                checked={checked}
-                ok={ok}
-                reviewCorrectValue={reviewCorrectValue}
-            />
-        );
-    }
+//     if (exercise.kind === "word_bank_arrange") {
+//         const reviewCorrectValue =
+//             reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
+//                 ? String((reviewCorrectItem as any).text)
+//                 : (exercise as any).targetText ?? null;
+//
+//         return (
+//             <WordBankArrangeExerciseUI
+//                 exercise={exercise as any}
+//                 value={(current as any).text ?? ""} // ✅ store assembled sentence here
+//                 onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+//                 disabled={lockInputs}
+//                 checked={checked}
+//                 ok={ok}
+//                 reviewCorrectValue={reviewCorrectValue}
+//             />
+//         );
+//     }
 
 // -----------------------------
 // listen_build ✅
@@ -468,7 +486,7 @@ export default function ExerciseRenderer({
             <ListenBuildExerciseUI
                 exercise={exercise as any}
                 value={(current as any).text ?? ""} // ✅ store assembled sentence here
-                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+                onChangeValue={(text) => updateCurrent({text, ...resetCheckPatch()})}
                 disabled={lockInputs}
                 checked={checked}
                 showTargetWhen={"never"}
@@ -492,7 +510,7 @@ export default function ExerciseRenderer({
             <FillBlankChoiceExerciseUI
                 exercise={exercise as any}
                 value={(current as any).text ?? ""} // ✅ store selected choice here
-                onChangeValue={(text) => updateCurrent({ text, ...resetCheckPatch() })}
+                onChangeValue={(text) => updateCurrent({text, single: text, ...resetCheckPatch()})}
                 disabled={lockInputs}
                 checked={checked}
                 ok={ok}
@@ -554,9 +572,9 @@ export default function ExerciseRenderer({
                 code={curCode}
                 stdin={curStdin}
                 language={curLang}
-                onChangeCode={(code) => updateCurrent({ code, ...resetCheckPatch() })}
-                onChangeStdin={(codeStdin) => updateCurrent({ codeStdin, ...resetCheckPatch() })}
-                onChangeLanguage={(codeLang) => updateCurrent({ codeLang, ...resetCheckPatch() })}
+                onChangeCode={(code) => updateCurrent({code, ...resetCheckPatch()})}
+                onChangeStdin={(codeStdin) => updateCurrent({codeStdin, ...resetCheckPatch()})}
+                onChangeLanguage={(codeLang) => updateCurrent({codeLang, ...resetCheckPatch()})}
                 disabled={lockInputs}
                 checked={checked}
                 ok={ok}

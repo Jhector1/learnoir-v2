@@ -48,7 +48,7 @@ export const HC_NUMBERS = {
                     section: HT_SECTION_PART1,
                     topic: TOPIC_NUMBERS, // ✅ fixed typing
                     difficulty: "easy",
-                    n: HC_NUMBERS_POOL.length,
+                    n: 4,
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 10,

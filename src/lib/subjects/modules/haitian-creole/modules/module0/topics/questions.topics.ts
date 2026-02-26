@@ -44,7 +44,7 @@ export const HC_QUESTIONS = {
                     section: HT_SECTION_PART1,
                     topic: HT_TOPIC.questions,
                     difficulty: "easy",
-                    n: HC_QUESTIONS_POOL.length,
+                    n: 4,
                     allowReveal: true,
                     preferKind: null,
                     maxAttempts: 10,

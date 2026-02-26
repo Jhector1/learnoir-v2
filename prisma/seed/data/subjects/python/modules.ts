@@ -13,7 +13,7 @@ export const PY_MODULES = [
     weekEnd: 2,
     meta: {
       estimatedMinutes: 40,
-      videoUrl: "https://youtu.be/QXeEoD0pB3E?si=3N8WDibvE4bghpea",
+      // videoUrl: undefined,
       prereqs: ["None — you can start here"],
       outcomes: [
         "Navigate the editor, Run button, and terminal",
@@ -38,7 +38,7 @@ export const PY_MODULES = [
     weekEnd: 5,
     meta: {
       estimatedMinutes: 90,
-      videoUrl: undefined,
+      // videoUrl: undefined,
       prereqs: ["Python 0 — Foundations"],
       outcomes: [
         "Store values in variables and explain types",
@@ -63,7 +63,7 @@ export const PY_MODULES = [
     weekEnd: 8,
     meta: {
       estimatedMinutes: 110,
-      videoUrl: undefined,
+      // videoUrl: undefined,
       prereqs: ["Python 1 — Core Building Blocks"],
       outcomes: [
         "Use if/elif/else with comparisons and boolean logic",

@@ -34,17 +34,33 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
         if (!v) return undefined;
         return {kind: "text_input", value: v};
     }
-
-
-
-    if (ex.kind === "word_bank_arrange" || ex.kind === "listen_build" || ex.kind === "fill_blank_choice") {
+// ✅ text-like builders
+    if (ex.kind === "listen_build" || ex.kind === "word_bank_arrange") {
         const v = String((item as any).text ?? "").trim();
         if (!v) return undefined;
+        return { kind: ex.kind, value: v } as any;
+    }
 
-        if (ex.kind === "word_bank_arrange") return { kind: "word_bank_arrange", value: v };
-        if (ex.kind === "listen_build") return { kind: "listen_build", value: v };
+// ✅ fill_blank_choice (accept either storage field)
+    if (ex.kind === "fill_blank_choice") {
+        const v = String((item as any).text ?? item.single ?? "").trim();
+        if (!v) return undefined;
         return { kind: "fill_blank_choice", value: v };
     }
+    // if (ex.kind === "fill_blank_choice") {
+    //     const v = String((item as any).text ?? item.single ?? "").trim();
+    //     if (!v) return undefined;
+    //     return { kind: "fill_blank_choice", value: v };
+    // }
+    //
+    // if (ex.kind === "word_bank_arrange" || ex.kind === "listen_build" || ex.kind === "fill_blank_choice") {
+    //     const v = String((item as any).text ?? "").trim();
+    //     if (!v) return undefined;
+    //
+    //     if (ex.kind === "word_bank_arrange") return { kind: "word_bank_arrange", value: v };
+    //     if (ex.kind === "listen_build") return { kind: "listen_build", value: v };
+    //     return { kind: "fill_blank_choice", value: v };
+    // }
 
 
 

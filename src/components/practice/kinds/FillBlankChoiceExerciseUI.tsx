@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
 import { useSpeak } from "./_shared/useSpeak";
 
@@ -45,6 +45,9 @@ export default function FillBlankChoiceExerciseUI({
         [exercise.template, selected]
     );
 
+    useEffect(() => {
+        setSelected(value ?? "");
+    }, [value]);
     const choose = (c: string) => {
         if (disabled) return;
         setSelected(c);
@@ -77,7 +80,7 @@ export default function FillBlankChoiceExerciseUI({
         <div className={shell}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <ExercisePrompt exercise={exercise} />
-                {checked ? (
+                {typeof ok === "boolean" ? (
                     <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>
                         {ok ? "Correct" : "Try again"}
                     </div>

@@ -591,7 +591,12 @@ export default function ReviewModuleView({
         const t = window.setTimeout(() => setShowMask(false), 420);
         return () => window.clearTimeout(t);
     }, [showSkeleton, reduceMotion]);
-
+    const footerPad = footerInsetPx ? footerInsetPx + 12 : 0; // +12 breathing room
+    const padStyle = ({
+        paddingBottom: footerPad || undefined,
+        scrollPaddingBottom: footerPad || undefined,
+        ["--flow-bottom-inset" as any]: `${footerPad || 0}px`,
+    } as React.CSSProperties);
     return (
         <>
             <ReviewToolsProvider
@@ -722,6 +727,8 @@ export default function ReviewModuleView({
                                                 )}
                                                 style={{ width: panels.leftCollapsed ? 0 : panels.leftW }}
                                             >
+                                                <div className="h-full min-h-0 overflow-auto" style={padStyle}>
+
                                                 <ModuleSidebar
                                                     progressHydrated={progressHydrated}
                                                     mod={mod}
@@ -745,6 +752,7 @@ export default function ReviewModuleView({
                                                     navError={navError}
                                                     canGoNextModule={canGoNextModule}
                                                 />
+                                                </div>
                                             </aside>
 
                                             {!panels.leftCollapsed ? (
@@ -759,10 +767,8 @@ export default function ReviewModuleView({
                                             <main
                                                 ref={mainScrollRef}
                                                 className="flex-1 min-w-0 min-h-0 overflow-auto"
-                                                style={{
-                                                    paddingBottom: footerInsetPx ? footerInsetPx + 12 : undefined,
-                                                    scrollPaddingBottom: footerInsetPx ? footerInsetPx + 12 : undefined,
-                                                }}
+                                                style={padStyle}
+
                                             >
                                                 {panels.leftCollapsed ? (
                                                     <div className="mb-3">

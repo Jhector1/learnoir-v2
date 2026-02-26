@@ -205,7 +205,7 @@ export default function WordBankArrangeExerciseUI({
         <div className={shell}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <ExercisePrompt exercise={exercise as any} />
-                {checked ? (
+                {typeof ok === "boolean" ? (
                     <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>
                         {ok ? "Correct" : "Try again"}
                     </div>

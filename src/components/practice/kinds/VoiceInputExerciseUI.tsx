@@ -2,6 +2,19 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
+import Tooltip from "@/components/ui/Tooltip";
+
+import {
+    Mic,
+    Square,
+    Trash2,
+    Volume2,
+    Loader2,
+    ShieldCheck,
+    Zap,
+    AudioWaveformIcon,
+} from "lucide-react";
+
 
 /* --------------------------------- speech api -------------------------------- */
 
@@ -132,6 +145,47 @@ function pickMimeType() {
 
 async function blobToFile(blob: Blob, filename: string) {
     return new File([blob], filename, { type: blob.type || "audio/webm" });
+}
+
+/* -------------------------------- ui helpers -------------------------------- */
+
+type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+function IconBtn({
+                     label,
+                     tip,
+                     Icon,
+                     className,
+                     iconClassName,
+                     showLabel = true,
+                     tooltipSide = "top",
+                     tooltipBelowLgOnly = false,
+                     ...props
+                 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    label: string;
+    tip?: string;
+    Icon: IconType;
+    iconClassName?: string;
+    showLabel?: boolean;
+    tooltipSide?: "top" | "bottom";
+    tooltipBelowLgOnly?: boolean;
+}) {
+    const btn = (
+        <button
+            {...props}
+            aria-label={label}
+            className={["inline-flex items-center gap-2", className].filter(Boolean).join(" ")}
+        >
+            <Icon className={["h-4 w-4", iconClassName].filter(Boolean).join(" ")} aria-hidden="true" />
+            {showLabel ? <span className="hidden sm:inline">{label}</span> : <span className="sr-only">{label}</span>}
+        </button>
+    );
+
+    return (
+        <Tooltip tip={tip ?? label} side={tooltipSide} belowLgOnly={tooltipBelowLgOnly}>
+            {btn}
+        </Tooltip>
+    );
 }
 
 /* -------------------------------- component -------------------------------- */
@@ -310,97 +364,100 @@ export default function VoiceInputExerciseUI({
         mediaStreamRef.current = null;
     }, []);
 
-    const startVisualizer = useCallback(async (stream: MediaStream) => {
-        if (!showViz) return;
-        if (analyserRef.current || audioCtxRef.current) return;
+    const startVisualizer = useCallback(
+        async (stream: MediaStream) => {
+            if (!showViz) return;
+            if (analyserRef.current || audioCtxRef.current) return;
 
-        const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
-        if (!AudioCtx) return;
+            const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
+            if (!AudioCtx) return;
 
-        const ctx = new AudioCtx();
-        audioCtxRef.current = ctx;
+            const ctx = new AudioCtx();
+            audioCtxRef.current = ctx;
 
-        try {
-            if (ctx.state === "suspended") await ctx.resume();
-        } catch {}
+            try {
+                if (ctx.state === "suspended") await ctx.resume();
+            } catch {}
 
-        const source = ctx.createMediaStreamSource(stream);
-        const analyser = ctx.createAnalyser();
-        analyserRef.current = analyser;
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyserRef.current = analyser;
 
-        analyser.fftSize = 2048;
-        analyser.smoothingTimeConstant = 0.86;
-        source.connect(analyser);
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.86;
+            source.connect(analyser);
 
-        const timeU8 = new Uint8Array(analyser.fftSize);
-        const timeF32 = new Float32Array(analyser.fftSize);
+            const timeU8 = new Uint8Array(analyser.fftSize);
+            const timeF32 = new Float32Array(analyser.fftSize);
 
-        let lastTextUpdate = 0;
+            let lastTextUpdate = 0;
 
-        const draw = (t: number) => {
-            const a = analyserRef.current;
-            const audioCtx = audioCtxRef.current;
-            const canvas = canvasRef.current;
-            if (!a || !audioCtx || !canvas) return;
+            const draw = (t: number) => {
+                const a = analyserRef.current;
+                const audioCtx = audioCtxRef.current;
+                const canvas = canvasRef.current;
+                if (!a || !audioCtx || !canvas) return;
 
-            const dpr = window.devicePixelRatio || 1;
-            const cssW = canvas.clientWidth || 1;
-            const cssH = canvas.clientHeight || 1;
-            const w = Math.max(1, Math.floor(cssW * dpr));
-            const h = Math.max(1, Math.floor(cssH * dpr));
-            if (canvas.width !== w || canvas.height !== h) {
-                canvas.width = w;
-                canvas.height = h;
-            }
+                const dpr = window.devicePixelRatio || 1;
+                const cssW = canvas.clientWidth || 1;
+                const cssH = canvas.clientHeight || 1;
+                const w = Math.max(1, Math.floor(cssW * dpr));
+                const h = Math.max(1, Math.floor(cssH * dpr));
+                if (canvas.width !== w || canvas.height !== h) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
 
-            const g = canvas.getContext("2d");
-            if (!g) return;
+                const g = canvas.getContext("2d");
+                if (!g) return;
 
-            a.getByteTimeDomainData(timeU8);
+                a.getByteTimeDomainData(timeU8);
 
-            let sumSq = 0;
-            for (let i = 0; i < timeU8.length; i++) {
-                const v = (timeU8[i] - 128) / 128;
-                sumSq += v * v;
-                timeF32[i] = v;
-            }
+                let sumSq = 0;
+                for (let i = 0; i < timeU8.length; i++) {
+                    const v = (timeU8[i] - 128) / 128;
+                    sumSq += v * v;
+                    timeF32[i] = v;
+                }
 
-            const rms = Math.sqrt(sumSq / timeU8.length);
-            const ampRaw = clamp01(rms * 2.2);
+                const rms = Math.sqrt(sumSq / timeU8.length);
+                const ampRaw = clamp01(rms * 2.2);
 
-            const alpha = 0.9;
-            const prev = ampSmoothRef.current;
-            const amp = prev === 0 ? ampRaw : prev * alpha + ampRaw * (1 - alpha);
-            ampSmoothRef.current = amp;
+                const alpha = 0.9;
+                const prev = ampSmoothRef.current;
+                const amp = prev === 0 ? ampRaw : prev * alpha + ampRaw * (1 - alpha);
+                ampSmoothRef.current = amp;
 
-            const pitch = estimatePitchHz(timeF32, audioCtx.sampleRate);
+                const pitch = estimatePitchHz(timeF32, audioCtx.sampleRate);
 
-            g.clearRect(0, 0, w, h);
-            g.globalAlpha = 0.8;
-            g.beginPath();
-            for (let i = 0; i < timeU8.length; i++) {
-                const x = (i / (timeU8.length - 1)) * w;
-                const y = (timeU8[i] / 255) * h;
-                if (i === 0) g.moveTo(x, y);
-                else g.lineTo(x, y);
-            }
-            g.strokeStyle = "rgba(16,185,129,0.65)";
-            g.lineWidth = Math.max(1.25 * dpr, 2);
-            g.stroke();
-            g.globalAlpha = 1;
+                g.clearRect(0, 0, w, h);
+                g.globalAlpha = 0.8;
+                g.beginPath();
+                for (let i = 0; i < timeU8.length; i++) {
+                    const x = (i / (timeU8.length - 1)) * w;
+                    const y = (timeU8[i] / 255) * h;
+                    if (i === 0) g.moveTo(x, y);
+                    else g.lineTo(x, y);
+                }
+                g.strokeStyle = "rgba(16,185,129,0.65)";
+                g.lineWidth = Math.max(1.25 * dpr, 2);
+                g.stroke();
+                g.globalAlpha = 1;
 
-            if (t - lastTextUpdate > 120) {
-                lastTextUpdate = t;
-                const ampPct = Math.round(amp * 100);
-                if (ampTextRef.current) ampTextRef.current.textContent = `${ampPct}%`;
-                if (pitchTextRef.current) pitchTextRef.current.textContent = pitch ? `${Math.round(pitch)} Hz` : "—";
-            }
+                if (t - lastTextUpdate > 120) {
+                    lastTextUpdate = t;
+                    const ampPct = Math.round(amp * 100);
+                    if (ampTextRef.current) ampTextRef.current.textContent = `${ampPct}%`;
+                    if (pitchTextRef.current) pitchTextRef.current.textContent = pitch ? `${Math.round(pitch)} Hz` : "—";
+                }
+
+                rafRef.current = requestAnimationFrame(draw);
+            };
 
             rafRef.current = requestAnimationFrame(draw);
-        };
-
-        rafRef.current = requestAnimationFrame(draw);
-    }, [showViz]);
+        },
+        [showViz]
+    );
 
     // if user toggles viz on mid-session, attach viz to existing stream
     useEffect(() => {
@@ -755,43 +812,70 @@ export default function VoiceInputExerciseUI({
 
     const startLabel = !canAny ? "No mic" : isUploading ? "Transcribing…" : isRecording ? "Recording…" : "Start";
 
+    const modeLabel = isHaitian ? "High accuracy" : mode === "server" ? "High accuracy" : "Fast";
+    const modeTip = isHaitian
+        ? "Haitian uses high accuracy only"
+        : mode === "server"
+            ? "High accuracy (server)"
+            : "Fast (browser)";
+
+    const vizLabel = showViz ? "Hide mic" : "Show mic";
+    const vizTip = showViz ? "Hide mic visualizer" : "Show mic visualizer";
+
+    const startTip = !canAny
+        ? "Microphone not available"
+        : isUploading
+            ? "Transcribing…"
+            : isRecording
+                ? "Recording…"
+                : "Start recording";
+
+    const stopTip = "Stop recording";
+    const clearTip = "Clear transcript";
+    const playTip = ttsStatus ? "Playing…" : "Play transcript";
+
     return (
         <div className="ui-card p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <ExercisePrompt exercise={exercise} />
-                {checked ? (
-                    <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>{ok ? "Correct" : "Try again"}</div>
+                {typeof ok === "boolean" ? (
+                    <div className={[pillBase, ok ? pillOk : pillBad].join(" ")}>
+                        {ok ? "Correct" : "Try again"}
+                    </div>
                 ) : null}
             </div>
 
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className={`text-xs font-extrabold ${muted}`}>
-                    Speak clearly. You can edit the transcript anytime.
-                </div>
+                <div className={`text-xs font-extrabold ${muted}`}>Speak clearly. You can edit the transcript anytime.</div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <IconBtn
                         type="button"
                         className={btnSecondary}
                         disabled={disabled || isRecording || isUploading || isHaitian}
                         onClick={() => setMode((m) => (m === "server" ? "browser" : "server"))}
-                        title={isHaitian ? "Haitian uses high accuracy only" : mode === "server" ? "High accuracy (server)" : "Fast (browser)"}
-                    >
-                        {isHaitian ? "High accuracy" : mode === "server" ? "High accuracy" : "Fast"}
-                    </button>
+                        label={modeLabel}
+                        tip={modeTip}
+                        Icon={isHaitian || mode === "server" ? ShieldCheck : Zap}
+                        tooltipSide="bottom"
+                    />
 
-                    <button
+                    <IconBtn
                         type="button"
                         className={btnSecondary}
                         disabled={disabled || isRecording || isUploading}
                         onClick={() => setShowViz((v) => !v)}
                         aria-pressed={showViz}
-                    >
-                        {showViz ? "Hide mic" : "Show mic"}
-                    </button>
+                        label={vizLabel}
+                        tip={vizTip}
+                        Icon={AudioWaveformIcon}
+                        iconClassName={showViz ? "" : "opacity-70"}
+                        tooltipSide="bottom"
+                    />
 
                     <label className={`ml-1 inline-flex items-center gap-2 text-[11px] font-extrabold ${muted}`}>
                         <input type="checkbox" checked={autoReadBack} onChange={(e) => setAutoReadBack(e.target.checked)} />
+                        <Volume2 className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
                         Read-back
                     </label>
                 </div>
@@ -817,26 +901,51 @@ export default function VoiceInputExerciseUI({
                     <div className={`text-xs font-extrabold ${muted}`}>Transcript</div>
 
                     <div className="flex flex-wrap gap-2">
-                        <button type="button" className={btnPrimary} disabled={!canAny || disabled || isRecording || isUploading} onClick={start}>
-                            {startLabel}
-                        </button>
+                        <IconBtn
+                            type="button"
+                            className={btnPrimary}
+                            disabled={!canAny || disabled || isRecording || isUploading}
+                            onClick={start}
+                            label={startLabel}
+                            tip={startTip}
+                            Icon={isUploading ? Loader2 : Mic}
+                            iconClassName={isUploading ? "animate-spin" : ""}
+                            tooltipSide="bottom"
+                        />
 
-                        <button type="button" className={btnSecondary} disabled={!isRecording} onClick={stop}>
-                            Stop
-                        </button>
+                        <IconBtn
+                            type="button"
+                            className={btnSecondary}
+                            disabled={!isRecording}
+                            onClick={stop}
+                            label="Stop"
+                            tip={stopTip}
+                            Icon={Square}
+                            tooltipSide="bottom"
+                        />
 
-                        <button type="button" className={btnGhost} disabled={disabled || isRecording || isUploading} onClick={() => onChangeTranscript("")}>
-                            Clear
-                        </button>
+                        <IconBtn
+                            type="button"
+                            className={btnGhost}
+                            disabled={disabled || isRecording || isUploading}
+                            onClick={() => onChangeTranscript("")}
+                            label="Clear"
+                            tip={clearTip}
+                            Icon={Trash2}
+                            tooltipSide="bottom"
+                        />
 
-                        <button
+                        <IconBtn
                             type="button"
                             className={btnSecondary}
                             disabled={disabled || isRecording || isUploading || !transcript?.trim()}
                             onClick={() => speakBack(transcript)}
-                        >
-                            Play back
-                        </button>
+                            label="Play"
+                            tip={playTip}
+                            Icon={ttsStatus ? Loader2 : Volume2}
+                            iconClassName={ttsStatus ? "animate-spin" : ""}
+                            tooltipSide="bottom"
+                        />
                     </div>
                 </div>
 

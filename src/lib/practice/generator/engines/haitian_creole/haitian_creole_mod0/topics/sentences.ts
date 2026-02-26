@@ -1,37 +1,24 @@
-// src/lib/practice/generator/engines/haitian/haitian_creole_part1_mod0/topics/sentences.ts
 import type {
     SingleChoiceExercise,
-    TextInputExercise,
     VoiceInputExercise,
     DragReorderExercise,
-    WordBankArrangeExercise,
     ListenBuildExercise,
     FillBlankChoiceExercise,
 } from "../../../../../types";
 
-import {
-    makeTextExpected,
-    makeVoiceExpected,
-    makeDragExpected,
-} from "../../_shared";
-
-import {
-    defineTopic,
-    makeSingleChoiceOut,
-    type Handler,
-    type TopicBundle,
-} from "@/lib/practice/generator/engines/utils";
+import { makeTextExpected, makeVoiceExpected, makeDragExpected } from "../../_shared";
+import { defineTopic, makeSingleChoiceOut, type Handler, type TopicBundle } from "@/lib/practice/generator/engines/utils";
 
 export const HC_SENTENCES_POOL = [
     { key: "hc_sent_svo_order_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_sent_translate_im_fine_text", w: 1, kind: "text_input", purpose: "quiz" },
+    { key: "hc_sent_renmen_means_like_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+
     { key: "hc_sent_reorder_mwen_renmen_diri", w: 1, kind: "drag_reorder", purpose: "quiz" },
     { key: "hc_sent_voice_say_mwen_byen", w: 1, kind: "voice_input", purpose: "quiz" },
 
-    // ✅ NEW kinds
-    { key: "hc_sent_wordbank_mwen_renmen_diri", w: 1, kind: "word_bank_arrange", purpose: "project" },
-    { key: "hc_sent_listen_build_mwen_byen", w: 1, kind: "listen_build", purpose: "project" },
-    { key: "hc_sent_fill_blank_mwen___", w: 1, kind: "fill_blank_choice", purpose: "project" },
+    { key: "hc_sent_listen_build_mwen_renmen_diri", w: 1, kind: "listen_build", purpose: "quiz" },
+    { key: "hc_sent_fill_blank_mwen___diri", w: 1, kind: "fill_blank_choice", purpose: "quiz" },
+    { key: "hc_sent_fill_blank_mwen___", w: 1, kind: "fill_blank_choice", purpose: "quiz" },
 ] as const;
 
 export type HcSentencesKey = (typeof HC_SENTENCES_POOL)[number]["key"];
@@ -54,28 +41,29 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
             hint: "Basic order is usually **S + V + O**.",
         }),
 
-    hc_sent_translate_im_fine_text: ({ diff, id, topic }) => {
-        const exercise: TextInputExercise = {
+    hc_sent_renmen_means_like_mcq: ({ diff, id, topic }) => {
+        const exercise: SingleChoiceExercise = {
             id,
             topic,
             difficulty: diff,
-            kind: "text_input",
-            title: "Translate",
-            prompt: `Translate to Haitian Creole: **I’m fine.**`,
-            placeholder: "Type in Kreyòl…",
-            ui: "short",
-            hint: `Common: "Mwen byen."`,
+            kind: "single_choice",
+            title: "Vocabulary",
+            prompt: `What does **renmen** mean?`,
+            options: [
+                { id: "a", text: "to like / to love" },
+                { id: "b", text: "to eat" },
+                { id: "c", text: "to sleep" },
+            ],
+            hint: `"Mwen renmen diri." = I like rice.`,
         };
-
-        const expected = makeTextExpected(["mwen byen", "mwen byen."]);
-        return { archetype: "hc_sent_translate_im_fine_text", exercise, expected };
+        return { archetype: "hc_sent_renmen_means_like_mcq", exercise, expected: { kind: "single_choice", optionId: "a" } };
     },
 
     hc_sent_reorder_mwen_renmen_diri: ({ rng, diff, id, topic }) => {
         const tokens = [
             { id: "t1", text: "Mwen" },
             { id: "t2", text: "renmen" },
-            { id: "t3", text: "diri" },
+            { id: "t3", text: "diri." },
         ];
 
         const exercise: DragReorderExercise = {
@@ -86,7 +74,7 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
             title: "Word order",
             prompt: `Rearrange to form the sentence: **I like rice.**`,
             tokens: rng.shuffle(tokens as any) as any,
-            hint: `Pattern: "Mwen renmen diri"`,
+            hint: `Pattern: "Mwen renmen diri."`,
         };
 
         const expected = makeDragExpected(["t1", "t2", "t3"]);
@@ -111,27 +99,7 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
         return { archetype: "hc_sent_voice_say_mwen_byen", exercise, expected };
     },
 
-    // ✅ NEW: word_bank_arrange
-    hc_sent_wordbank_mwen_renmen_diri: ({ diff, id, topic }) => {
-        const exercise: WordBankArrangeExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "word_bank_arrange",
-            title: "Build the sentence",
-            prompt: `Build: **Mwen renmen diri.**`,
-            targetText: "Mwen renmen diri.",
-            locale: "ht-HT",
-            hint: `Tap tiles to form: "Mwen renmen diri."`,
-            distractors: ["byen", "bonjou"],
-        };
-
-        const expected = makeTextExpected(["mwen renmen diri", "mwen renmen diri."]);
-        return { archetype: "hc_sent_wordbank_mwen_renmen_diri", exercise, expected };
-    },
-
-    // ✅ NEW: listen_build
-    hc_sent_listen_build_mwen_byen: ({ diff, id, topic }) => {
+    hc_sent_listen_build_mwen_renmen_diri: ({ diff, id, topic }) => {
         const exercise: ListenBuildExercise = {
             id,
             topic,
@@ -139,17 +107,34 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
             kind: "listen_build",
             title: "Listen & build",
             prompt: `Listen, then build the sentence.`,
-            targetText: "Mwen byen.",
+            targetText: "Mwen renmen diri.",
             locale: "ht-HT",
-            hint: `Common: "Mwen byen."`,
-            distractors: ["diri", "renmen"],
+            hint: `"Mwen renmen diri." = I like rice.`,
+            distractors: ["byen", "bonjou", "ou"],
         };
 
-        const expected = makeTextExpected(["mwen byen", "mwen byen."]);
-        return { archetype: "hc_sent_listen_build_mwen_byen", exercise, expected };
+        const expected = makeTextExpected(["mwen renmen diri", "mwen renmen diri."]);
+        return { archetype: "hc_sent_listen_build_mwen_renmen_diri", exercise, expected };
     },
 
-    // ✅ NEW: fill_blank_choice
+    hc_sent_fill_blank_mwen___diri: ({ diff, id, topic }) => {
+        const exercise: FillBlankChoiceExercise = {
+            id,
+            topic,
+            difficulty: diff,
+            kind: "fill_blank_choice",
+            title: "Fill the blank",
+            prompt: "Choose the word that completes the sentence.",
+            template: "Mwen ____ diri.",
+            choices: ["renmen", "byen", "bonjou"],
+            locale: "ht-HT",
+            hint: `"Mwen renmen diri." = I like rice.`,
+        };
+
+        const expected = makeTextExpected(["renmen"]);
+        return { archetype: "hc_sent_fill_blank_mwen___diri", exercise, expected };
+    },
+
     hc_sent_fill_blank_mwen___: ({ diff, id, topic }) => {
         const exercise: FillBlankChoiceExercise = {
             id,
@@ -159,9 +144,9 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
             title: "Fill the blank",
             prompt: "Choose the word that completes the sentence.",
             template: "Mwen ____.",
-            choices: ["byen", "bonjou", "diri"],
+            choices: ["byen", "diri", "kote"],
             locale: "ht-HT",
-            hint: `"Mwen byen." means "I’m fine."`,
+            hint: `"Mwen byen." = I'm fine.`,
         };
 
         const expected = makeTextExpected(["byen"]);
@@ -172,5 +157,5 @@ export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
 export const HC_SENTENCES_TOPIC: TopicBundle = defineTopic(
     "hc_sentences",
     HC_SENTENCES_POOL as any,
-    HC_SENTENCES_HANDLERS as any,
+    HC_SENTENCES_HANDLERS as any
 );

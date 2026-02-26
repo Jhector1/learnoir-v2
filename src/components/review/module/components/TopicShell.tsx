@@ -4,7 +4,7 @@
 import React from "react";
 
 export default function TopicShell(props: {
-    title: string;
+    title?: string;
     subtitle?: string | null;
     right?: React.ReactNode;
     children: React.ReactNode;
@@ -14,7 +14,7 @@ export default function TopicShell(props: {
     return (
         <section className="min-h-full">
             {/* ✅ STICKY HEADER (OPAQUE + ALWAYS ON TOP) */}
-            <div className="sticky top-0 z-[9999] isolate">
+            <div className="sticky  isolate">
                 <div className="bg-white dark:bg-neutral-950">
                     <div className="mb-3 rounded-2xl border border-neutral-200 p-3 shadow-sm dark:border-white/10">
                         {/* ✅ always row: buttons have priority, title wraps */}

@@ -394,6 +394,9 @@ export function usePracticeController(args: {
     () => ({
       returnUrl: completionReturnUrl,
       reviewStack: engine.reviewStack,
+      // ...existing props...
+      excuseAndNext: (reason?: string | null) => engine.excuseAndNext?.(reason),
+      skipLoadError: () => engine.skipLoadError?.(),
 
       onReturn: () => {
         if (!completionReturnUrl) return;
@@ -508,6 +511,8 @@ export function usePracticeController(args: {
       confirmOpen,
       padRef,
       zHeldRef,
+      engine.excuseAndNext,
+      engine.skipLoadError,
 
       stack,
       idx,

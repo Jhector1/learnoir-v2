@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 import type {
   Exercise,
   SubmitAnswer,
@@ -19,26 +20,19 @@ import {
   cloneVec,
   initItemFromExercise,
 } from "@/lib/practice/uiHelpers";
+import { isExcusedPracticeItem } from "@/lib/flow/excuse";
+import { usePracticeExcuseActions } from "@/lib/flow/usePracticeExcuseActions";
 import { getSessionStatus, SessionStatus } from "./sessionStatus";
 import { SESSION_DEFAULT } from "./constants";
 import type { RunMeta, TopicValue } from "./usePracticeRunMeta";
 import type { VectorPadState } from "@/components/vectorpad/types";
-import type { MutableRefObject } from "react";
 import { getEffectiveSid } from "./storage";
+import type { SessionHistoryRow } from "./sessionStatus";
+import { PurposeMode, PurposePolicy } from "@/lib/subjects/types";
 
 export type Phase = "practice" | "summary";
 
-/**
- * Stable “equivalence” signature.
- * Lets a later correct attempt clear an earlier missed attempt,
- * even if exercise was re-served with a different key.
- */
-
-// import type { QItem } from "@/components/practice/practiceType";
-// import type { Exercise } from "@/lib/practice/types";
-// import { initItemFromExercise } from "@/lib/practice/uiHelpers";
-import type { SessionHistoryRow } from "./sessionStatus";
-import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
+/* -------------------------------- helpers -------------------------------- */
 
 function applyAnswerPayloadToItem(item: QItem, payload: any) {
   if (!payload || typeof payload !== "object") return;
@@ -59,19 +53,19 @@ function applyAnswerPayloadToItem(item: QItem, payload: any) {
       break;
 
     case "code_input": {
-      // ✅ accept both `code` and legacy `source`
-      const code = typeof payload.code === "string"
-          ? payload.code
-          : typeof payload.source === "string"
-              ? payload.source
-              : "";
+      const code =
+          typeof payload.code === "string"
+              ? payload.code
+              : typeof payload.source === "string"
+                  ? payload.source
+                  : "";
 
-      // ✅ accept both `stdin` and legacy `codeStdin`
-      const stdin = typeof payload.stdin === "string"
-          ? payload.stdin
-          : typeof payload.codeStdin === "string"
-              ? payload.codeStdin
-              : "";
+      const stdin =
+          typeof payload.stdin === "string"
+              ? payload.stdin
+              : typeof payload.codeStdin === "string"
+                  ? payload.codeStdin
+                  : "";
 
       const lang =
           typeof payload.language === "string"
@@ -95,22 +89,24 @@ function applyAnswerPayloadToItem(item: QItem, payload: any) {
       break;
   }
 }
+
 export function buildCorrectItemFromExpected(q: QItem, expectedPayload: any): QItem | null {
   const exercise = q.exercise as Exercise | undefined;
   if (!exercise || !expectedPayload) return null;
 
-  // normalize expected payload to include kind (if server omitted it)
   const payload =
-    typeof expectedPayload === "object" && expectedPayload?.kind
-      ? expectedPayload
-      : { kind: String(exercise.kind), ...(typeof expectedPayload === "object" ? expectedPayload : {}) };
+      typeof expectedPayload === "object" && expectedPayload?.kind
+          ? expectedPayload
+          : {
+            kind: String(exercise.kind),
+            ...(typeof expectedPayload === "object" ? expectedPayload : {}),
+          };
 
   const item = initItemFromExercise(exercise, `expected:${q.key}`);
-
   applyAnswerPayloadToItem(item, payload);
 
   (item as any).submitted = true;
-  (item as any).revealed = true; // treat as reveal-style view
+  (item as any).revealed = true;
   (item as any).result = { ok: true, finalized: true };
 
   return item;
@@ -134,19 +130,16 @@ export function historyRowToQItem(h: SessionHistoryRow): QItem {
   const finalized = Boolean(h.answeredAt) || Number(h.attempts ?? 0) > 0;
   (item as any).submitted = finalized;
 
-  // ✅ result with extra fields used by your review UI
   (item as any).result = {
     ok: h.lastOk === null ? undefined : Boolean(h.lastOk),
     finalized,
-    expected: h.expectedAnswerPayload ?? null,      // ✅ used by extractExpected()
-    explanation: h.explanation ?? null,             // ✅
+    expected: h.expectedAnswerPayload ?? null,
+    explanation: h.explanation ?? null,
   };
 
   applyAnswerPayloadToItem(item, h.lastAnswerPayload);
-
   return item;
 }
-
 
 function exerciseSignature(ex: Exercise | null | undefined): string {
   if (!ex) return "";
@@ -165,28 +158,26 @@ function stableAt(q: QItem): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/* -------------------------------- hook -------------------------------- */
+
 export function usePracticeEngine(args: {
   subjectSlug: string;
   moduleSlug: string;
-
-  // translator
   t: any;
 
-  // run meta
   run: RunMeta | null;
   setRun: (r: RunMeta | null) => void;
   isLockedRun: boolean;
   allowReveal: boolean;
   maxAttempts: number;
   returnUrlFromQuery: string | null;
-  // ✅ NEW
-  preferPurpose?: PurposeMode;      // "quiz" | "project" | "mixed"
-  purposePolicy?: PurposePolicy;    // "strict" | "fallback"
-  // hydrated + sid resolution
+
+  preferPurpose?: PurposeMode;
+  purposePolicy?: PurposePolicy;
+
   hydrated: boolean;
   resolvedSessionIdRef: MutableRefObject<string | null>;
 
-  // filters
   topic: TopicValue;
   difficulty: Difficulty | "all";
   section: string | null;
@@ -197,56 +188,46 @@ export function usePracticeEngine(args: {
   sessionId: string | null;
   setSessionId: (v: string | null) => void;
 
-  // phase
   phase: Phase;
   setPhase: (p: Phase) => void;
 
   autoSummarized: boolean;
   setAutoSummarized: (v: boolean) => void;
 
-  // summary lock
   completed: boolean;
   setCompleted: (v: boolean) => void;
 
-  // errors/busy
   busy: boolean;
   setBusy: (v: boolean) => void;
   setLoadErr: (v: string | null) => void;
   setActionErr: (v: string | null) => void;
 
-  // return url on complete
   completionReturnUrl: string | null;
   setCompletionReturnUrl: (v: string | null) => void;
 
-  // controller-owned progress state
   stack: QItem[];
   setStack: (v: QItem[] | ((p: QItem[]) => QItem[])) => void;
 
   idx: number;
   setIdx: (v: number | ((p: number) => number)) => void;
 
-  // vector state
   padRef: MutableRefObject<VectorPadState>;
 }) {
   const {
     subjectSlug,
     moduleSlug,
     t,
-
     run,
     setRun,
     isLockedRun,
     allowReveal,
     maxAttempts,
     returnUrlFromQuery,
-
     hydrated,
     resolvedSessionIdRef,
-
     topic,
     difficulty,
     section,
-
     sessionSize,
     setSessionSize,
     sessionId,
@@ -257,22 +238,17 @@ export function usePracticeEngine(args: {
     setPhase,
     autoSummarized,
     setAutoSummarized,
-
     completed,
     setCompleted,
-
     busy,
     setBusy,
     setLoadErr,
     setActionErr,
-
     setCompletionReturnUrl,
-
     stack,
     setStack,
     idx,
     setIdx,
-
     padRef,
   } = args;
 
@@ -282,25 +258,30 @@ export function usePracticeEngine(args: {
   const bootCompleteRef = useRef(false);
   const [serverStatus, setServerStatus] = useState<SessionStatus | null>(null);
 
-  // ✅ NEW: server-backed missed list (so refresh works even when stack is empty)
   const [serverMissed, setServerMissed] = useState<MissedItem[]>([]);
+  const [serverHistoryStack, setServerHistoryStack] = useState<QItem[]>([]);
 
-  // apply run.targetCount only once
   const appliedRunCountRef = useRef(false);
 
   const current = stack[idx] ?? null;
   const exercise = current?.exercise ?? null;
 
+  // ✅ kill old action errors when navigating between questions
+  useEffect(() => {
+    setActionErr(null);
+  }, [idx, setActionErr]);
+
   // ---------------- Missed (local from stack) ----------------
   const localMissed: MissedItem[] = useMemo(() => {
-    const unresolved = new Map<
-      string,
-      { idx: number; q: QItem; ans: SubmitAnswer }
-    >();
+    const unresolved = new Map<string, { idx: number; q: QItem; ans: SubmitAnswer }>();
 
     for (let i = 0; i < stack.length; i++) {
       const q = stack[i];
       if (!q?.submitted) continue;
+
+      // ✅ excused should NOT show as missed
+      if (isExcusedPracticeItem(q)) continue;
+
       const ex = q.exercise;
       if (!ex) continue;
 
@@ -308,7 +289,6 @@ export function usePracticeEngine(args: {
       if (!sig) continue;
 
       const ok = Boolean(q.result?.ok);
-
       if (ok) {
         unresolved.delete(sig);
         continue;
@@ -321,7 +301,6 @@ export function usePracticeEngine(args: {
     }
 
     const tmp: Array<{ idx: number; item: MissedItem }> = [];
-
     for (const { idx: missIdx, q, ans } of unresolved.values()) {
       const ex = q.exercise!;
       tmp.push({
@@ -344,7 +323,6 @@ export function usePracticeEngine(args: {
     return tmp.map((x) => x.item);
   }, [stack]);
 
-  // ✅ FINAL missed: local if available, else server list (refresh-safe)
   const missed = useMemo(() => {
     return localMissed.length ? localMissed : serverMissed;
   }, [localMissed, serverMissed]);
@@ -376,11 +354,7 @@ export function usePracticeEngine(args: {
     });
   }
 
-  function isFinalized(
-    q: QItem | null,
-    maxAttempts: number,
-    isLockedRun: boolean,
-  ) {
+  function isFinalized(q: QItem | null, maxAttempts_: number, isLockedRun_: boolean) {
     if (!q) return false;
     if (q.submitted) return true;
     if (q.revealed) return true;
@@ -394,48 +368,45 @@ export function usePracticeEngine(args: {
     const left = r.attempts?.left;
     if (typeof left === "number") return left <= 0;
 
-    if (isLockedRun && typeof q.attempts === "number") {
-      return q.attempts >= maxAttempts;
+    if (isLockedRun_ && typeof q.attempts === "number") {
+      return q.attempts >= maxAttempts_;
     }
 
     return false;
   }
 
   const localAnswered = useMemo(
-    () => stack.filter((q) => isFinalized(q, maxAttempts, isLockedRun)).length,
-    [stack, maxAttempts, isLockedRun],
+      () => stack.filter((q) => isFinalized(q, maxAttempts, isLockedRun)).length,
+      [stack, maxAttempts, isLockedRun],
   );
 
   const localCorrect = useMemo(
-    () =>
-      stack.filter(
-        (q) => isFinalized(q, maxAttempts, isLockedRun) && q.result?.ok,
-      ).length,
-    [stack, maxAttempts, isLockedRun],
+      () =>
+          stack.filter((q) => isFinalized(q, maxAttempts, isLockedRun) && q.result?.ok).length,
+      [stack, maxAttempts, isLockedRun],
   );
-  const [serverHistoryStack, setServerHistoryStack] = useState<QItem[]>([]);
 
   const reviewStack = useMemo(() => {
     return stack.length ? stack : serverHistoryStack;
   }, [stack, serverHistoryStack]);
 
-  // server fallback (important when stack is empty after refresh)
-  const serverAnswered = Math.max(
-    serverStatus?.totalCount ?? 0,
-    serverStatus?.answeredCount ?? 0,
-  );
+  const serverAnswered = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
   const serverCorrect = serverStatus?.correctCount ?? 0;
 
-  // don’t go backwards: trust whichever is higher
   const answeredCount = Math.max(localAnswered, serverAnswered);
   const correctCount = Math.max(localCorrect, serverCorrect);
 
-  // SCORE percent (0..100)
-  const pct =
-    answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+  // ✅ ignore excused in pct denom (quiz-like)
+  const localExcusedAnswered = useMemo(() => {
+    return stack.filter(
+        (q) => isFinalized(q, maxAttempts, isLockedRun) && isExcusedPracticeItem(q),
+    ).length;
+  }, [stack, maxAttempts, isLockedRun]);
+
+  const denomForPct = Math.max(0, answeredCount - localExcusedAnswered);
+  const pct = denomForPct > 0 ? Math.round((correctCount / denomForPct) * 100) : 0;
 
   async function loadNextExercise(opts?: { forceNew?: boolean }) {
-    // old behavior: summary view does not load unless forceNew
     if (phase === "summary" && !opts?.forceNew) return;
     if (completed && !opts?.forceNew) return;
 
@@ -455,8 +426,10 @@ export function usePracticeEngine(args: {
       const effectiveSid = getEffectiveSid({ sessionId, resolvedSessionIdRef });
       const sid = opts?.forceNew ? null : effectiveSid;
       const useSession = Boolean(sid);
+
       const pp = preferPurpose ?? "quiz";
       const pol = purposePolicy ?? "fallback";
+
       const res: PracticeGetResponse = await fetchPracticeExercise({
         sessionId: useSession ? (sid ?? undefined) : undefined,
         allowReveal: allowReveal ? true : undefined,
@@ -465,13 +438,9 @@ export function usePracticeEngine(args: {
         subject: useSession ? undefined : subjectSlug,
         module: useSession ? undefined : moduleSlug,
         topic: useSession ? undefined : String(topic === "all" ? "" : topic),
-        difficulty: useSession
-          ? undefined
-          : difficulty === "all"
-            ? undefined
-            : difficulty,
+        difficulty: useSession ? undefined : difficulty === "all" ? undefined : difficulty,
         section: useSession ? undefined : (section ?? undefined),
-        // ✅ NEW: purpose routing (works for session + non-session)
+
         preferPurpose: pp,
         purposePolicy: pol,
       } as any);
@@ -479,12 +448,10 @@ export function usePracticeEngine(args: {
       const runFromApi = (res as any)?.run;
       if (runFromApi?.mode) setRun(runFromApi);
 
-      // server says complete → summary lock
       if ((res as any)?.complete) {
         const sid2 = (res as any)?.sessionId;
         if (sid2) setSessionId(String(sid2));
 
-        // ✅ try to fetch missed immediately (refresh-safe)
         try {
           const st = await getSessionStatus(String(sid2 ?? sid), {
             includeMissed: true,
@@ -492,21 +459,19 @@ export function usePracticeEngine(args: {
           });
 
           if (st) {
-            if (st?.history?.length) {
-              setServerHistoryStack(st.history.map(historyRowToQItem));
-            }
+            if (st?.history?.length) setServerHistoryStack(st.history.map(historyRowToQItem));
             setServerStatus(st);
             if (st?.missed) setServerMissed(st.missed);
             if (st?.run?.mode) setRun(st.run);
             setCompletionReturnUrl(st.returnUrl || returnUrlFromQuery);
           } else {
             const serverReturn =
-              (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
+                (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
             setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
           }
         } catch {
           const serverReturn =
-            (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
+              (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
           setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
         }
 
@@ -520,9 +485,7 @@ export function usePracticeEngine(args: {
       const key = (res as any)?.key;
 
       if (!ex || typeof ex?.kind !== "string" || typeof key !== "string") {
-        throw new Error(
-          "Malformed response from /api/practice (missing exercise/key).",
-        );
+        throw new Error("Malformed response from /api/practice (missing exercise/key).");
       }
 
       if ((res as any).sessionId) setSessionId(String((res as any).sessionId));
@@ -542,22 +505,19 @@ export function usePracticeEngine(args: {
     }
   }
 
-  // ✅ boot: if session exists, load server status (counts + missed)
+  // boot
   useEffect(() => {
     if (!hydrated) return;
     if (bootCompleteRef.current) return;
-    if (phase === "summary") return; // keep your behavior
+    if (phase === "summary") return;
     if (completed) return;
 
     const effectiveSid = getEffectiveSid({ sessionId, resolvedSessionIdRef });
-
     let alive = true;
 
     (async () => {
       if (effectiveSid) {
-        const st = await getSessionStatus(String(effectiveSid), {
-          includeMissed: true,
-        });
+        const st = await getSessionStatus(String(effectiveSid), { includeMissed: true });
         if (!alive) return;
 
         if (st) {
@@ -581,10 +541,7 @@ export function usePracticeEngine(args: {
         }
       }
 
-      // if restored questions, don't auto-load
       if (stack.length > 0) return;
-
-      // otherwise load first question
       await loadNextExercise({ forceNew: !effectiveSid });
     })();
 
@@ -594,7 +551,7 @@ export function usePracticeEngine(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, phase, sessionId, stack.length, returnUrlFromQuery, completed]);
 
-  // ✅ NEW: even if you land in summary (from storage), still fetch missed once
+  // if land in summary, still fetch missed/history once
   useEffect(() => {
     if (!hydrated) return;
     if (phase !== "summary") return;
@@ -611,20 +568,16 @@ export function usePracticeEngine(args: {
         includeMissed: true,
         includeHistory: true,
       });
-
       if (!alive) return;
 
       if (st) {
         setServerStatus(st);
         if (st?.missed) setServerMissed(st.missed);
         if (st?.run?.mode) setRun(st.run);
-        if (st?.complete)
-          setCompletionReturnUrl(st.returnUrl || returnUrlFromQuery);
+        if (st?.complete) setCompletionReturnUrl(st.returnUrl || returnUrlFromQuery);
+
         if (Array.isArray(st.history) && st.history.length) {
-          const items = st.history.map((h: SessionHistoryRow) =>
-            historyRowToQItem(h),
-          );
-          setServerHistoryStack(items);
+          setServerHistoryStack(st.history.map((h: SessionHistoryRow) => historyRowToQItem(h)));
         }
       }
     })();
@@ -677,7 +630,6 @@ export function usePracticeEngine(args: {
     const outOfAttempts = attempts >= maxAttempts;
 
     if (!current.submitted && !outOfAttempts) return false;
-
     return answeredCount < sessionSize;
   }
 
@@ -741,21 +693,14 @@ export function usePracticeEngine(args: {
 
       setBusy(true);
 
-      const data = await submitPracticeAnswer({
-        key: current.key,
-        answer,
-      } as any);
+      const data = await submitPracticeAnswer({ key: current.key, answer } as any);
 
       const ok = Boolean((data as any)?.ok);
       const serverFinalized = Boolean((data as any)?.finalized);
       const serverUsed = Number((data as any)?.attempts?.used);
 
-      const used = Number.isFinite(serverUsed)
-        ? serverUsed
-        : (current.attempts ?? 0) + 1;
-
-      const finalized =
-        ok || serverFinalized || (isLockedRun && used >= maxAttempts);
+      const used = Number.isFinite(serverUsed) ? serverUsed : (current.attempts ?? 0) + 1;
+      const finalized = ok || serverFinalized || (isLockedRun && used >= maxAttempts);
 
       updateCurrent({
         result: data as any,
@@ -770,7 +715,7 @@ export function usePracticeEngine(args: {
         setPhase("summary");
 
         const serverReturn =
-          (data as any)?.returnUrl || (data as any)?.run?.returnUrl || null;
+            (data as any)?.returnUrl || (data as any)?.run?.returnUrl || null;
         setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
         return;
       }
@@ -791,10 +736,7 @@ export function usePracticeEngine(args: {
     setActionErr(null);
 
     try {
-      const data = await submitPracticeAnswer({
-        key: current.key,
-        reveal: true,
-      } as any);
+      const data = await submitPracticeAnswer({ key: current.key, reveal: true } as any);
 
       const solA = (data as any)?.reveal?.solutionA;
       const bExp = (data as any)?.reveal?.b;
@@ -817,12 +759,22 @@ export function usePracticeEngine(args: {
     }
   }
 
+  // ✅ modular excuse actions (shared pattern)
+  const { excuseAndNext, skipLoadError } = usePracticeExcuseActions({
+    current,
+    idx,
+    setStack: (u) => setStack((p) => u(p)),
+    goNext,
+    loadNextExercise,
+    actionErr: (args as any).actionErr ?? null, // not required; we pass through below
+    setActionErr,
+    sessionId,
+    resolvedSessionIdRef,
+  });
+
   const badge = useMemo(() => {
     if (!exercise) return "";
-    return `${String(exercise.topic).toUpperCase()} • ${exercise.kind.replaceAll(
-      "_",
-      " ",
-    )}`;
+    return `${String(exercise.topic).toUpperCase()} • ${exercise.kind.replaceAll("_", " ")}`;
   }, [exercise]);
 
   return {
@@ -833,7 +785,7 @@ export function usePracticeEngine(args: {
     missed,
     badge,
     pct,
-    reviewStack, // ✅ new
+    reviewStack,
 
     updateCurrent,
     loadNextExercise,
@@ -845,5 +797,9 @@ export function usePracticeEngine(args: {
     goNext,
     submit,
     reveal,
+
+    // ✅ NEW
+    excuseAndNext,
+    skipLoadError,
   };
 }

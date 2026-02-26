@@ -56,7 +56,7 @@ Let’s start on the **left side**: there is your **module sidebar**. You can na
 
 On the **right**, you have your **code editor**. Some people call this an IDE(Integrated Development Environment), but I prefer calling this web version a **code editor** because it’s not a full IDE—still, it’s enough to help you learn Python with all the necessary tools you need.
 
-Now take a look at the layout. Click the **Run** button on the **top right corner** of your screen and confirm the text **"Hello from Python!"** is printed on the terminal.
+Now take a look at the layout. Click the **Run** button on the **top right corner** of your screen and confirm the text within the quotes is printed on the terminal.
 
 Congratulations — you just learned how to execute your code and display the output on the terminal.
 
@@ -68,7 +68,7 @@ print("I am learning Python")
 
 Verify that it also displays on the terminal.
 
-When you finish, click **Next** and make sure you mark everything as read.
+When you finish, you can move on to the next topic, and make sure you mark everything as read.
       `.trim(),
         },
     },

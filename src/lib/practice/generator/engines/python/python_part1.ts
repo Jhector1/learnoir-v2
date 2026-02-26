@@ -19,7 +19,9 @@ const MOD0_BASE = new Set<string>([
 ]);
 
 const MOD1_BASE = new Set<string>([
-  "variables_types_intro",
+  "variables_intro",
+  "data_types_intro",
+  "errors_intro",
   "operators_expressions",
   "string_basics",
   "input_output_patterns",

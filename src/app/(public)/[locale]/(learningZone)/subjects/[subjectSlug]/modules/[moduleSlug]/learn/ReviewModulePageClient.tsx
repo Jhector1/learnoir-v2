@@ -1,9 +1,10 @@
-// src/app/(public)/[locale]/subjects/[subjectSlug]/modules/[moduleSlug]/ReviewModulePageClient.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+
 import ReviewModuleNavBar from "@/components/review/ReviewModuleNavBar";
+import ReviewModuleNavBarSkeleton from "@/components/review/ReviewModuleNavBarSkeleton";
 
 import type { ReviewModule } from "@/lib/subjects/types";
 import { getReviewModule } from "@/lib/subjects/registry";
@@ -17,11 +18,7 @@ type NavInfo = {
 };
 
 export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll: boolean }) {
-    const params = useParams<{
-        locale: string;
-        subjectSlug: string;
-        moduleSlug: string;
-    }>();
+    const params = useParams<{ locale: string; subjectSlug: string; moduleSlug: string }>();
 
     const locale = params?.locale ?? "en";
     const subjectSlug = params?.subjectSlug ?? "";
@@ -32,24 +29,51 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
         return getReviewModule(subjectSlug, moduleId);
     }, [subjectSlug, moduleId]);
 
-    const [nav, setNav] = useState<NavInfo | null>(null);
+    const [nav, setNav] = useState<NavInfo | null | undefined>(undefined);
     const [moduleComplete, setModuleComplete] = useState(false);
+
+    const navLoading = nav === undefined;
+    const isLastModule = Boolean(nav && !nav.nextModuleId);
+    const canGetCertificate = isLastModule && (canUnlockAll ? true : moduleComplete);
 
     useEffect(() => {
         if (!subjectSlug || !moduleId) return;
+
+        setNav(undefined);
 
         fetch(
             `/api/review/module-nav?subjectSlug=${encodeURIComponent(subjectSlug)}&moduleId=${encodeURIComponent(moduleId)}`,
             { cache: "no-store" },
         )
             .then((r) => (r.ok ? r.json() : null))
-            .then((d) => setNav(d))
+            .then((d) => setNav(d ?? null))
             .catch(() => setNav(null));
     }, [subjectSlug, moduleId]);
 
     useEffect(() => {
         setModuleComplete(false);
     }, [subjectSlug, moduleId, locale]);
+
+    // ✅ measure footer height (skeleton + real)
+    const footerRef = useRef<HTMLDivElement | null>(null);
+    const [footerH, setFooterH] = useState(0);
+
+    useLayoutEffect(() => {
+        const el = footerRef.current;
+        if (!el) return;
+
+        const measure = () => setFooterH(Math.ceil(el.getBoundingClientRect().height));
+        measure();
+
+        if (typeof ResizeObserver === "undefined") {
+            window.addEventListener("resize", measure);
+            return () => window.removeEventListener("resize", measure);
+        }
+
+        const ro = new ResizeObserver(() => measure());
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [navLoading]);
 
     if (!mod) {
         return (
@@ -73,21 +97,24 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
                     mod={mod}
                     canUnlockAll={canUnlockAll}
                     onModuleCompleteChange={setModuleComplete}
+                    footerInsetPx={footerH}
                 />
             </div>
 
-            {/*// ReviewModulePageClient.tsx (only the bottom part changed)*/}
-            <ReviewModuleNavBar
-                locale={locale}
-                subjectSlug={subjectSlug}
-                prevModuleId={nav?.prevModuleId ?? null}
-                nextModuleId={nav?.nextModuleId ?? null}
-                canGoNext={canUnlockAll ? true : moduleComplete}
-                // ✅ NEW
-                isLastModule={Boolean(nav && !nav.nextModuleId&& undefined)}
-                canGetCertificate={Boolean(nav && !nav.nextModuleId && undefined) && (canUnlockAll ? true : moduleComplete)}
-            />
+            {navLoading ? (
+                <ReviewModuleNavBarSkeleton ref={footerRef} />
+            ) : (
+                <ReviewModuleNavBar
+                    ref={footerRef}
+                    locale={locale}
+                    subjectSlug={subjectSlug}
+                    prevModuleId={nav?.prevModuleId ?? null}
+                    nextModuleId={nav?.nextModuleId ?? null}
+                    canGoNext={canUnlockAll ? true : moduleComplete}
+                    isLastModule={isLastModule}
+                    canGetCertificate={canGetCertificate}
+                />
+            )}
         </div>
     );
-
 }

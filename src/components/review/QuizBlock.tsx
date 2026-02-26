@@ -23,6 +23,7 @@ import QuizPracticeCard from "./quiz/components/QuizPracticeCard";
 import QuizLocalCard from "./quiz/components/QuizLocalCard";
 import QuizFooter from "./quiz/components/QuizFooter";
 import {emitSfx} from "@/lib/sfx/bus";
+import {QuizBlockSkeleton} from "@/components/review/quiz/components/QuizBlockSkeleton";
 
 /* -------------------------------- settings -------------------------------- */
 
@@ -581,14 +582,8 @@ export default function QuizBlock({
 
   /* --------------------------------- UI ------------------------------------- */
 
-  if (quizLoading) {
-    return (
-        <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-          Loading quiz…
-        </div>
-    );
-  }
-
+  if (quizLoading) return <QuizBlockSkeleton />;
+  //
   if (quizError) {
     return (
         <div className="mt-2 rounded-lg border border-rose-300/20 bg-rose-300/10 p-2 text-xs text-rose-700 dark:text-rose-200/90">

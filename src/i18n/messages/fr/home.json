@@ -264,6 +264,17 @@
       }
     },
     "ui": {
+      "images": {
+        "hero": {
+          "alt1": "Étudiant souriant en train d’apprendre",
+          "alt2": "Étudiants qui étudient ensemble",
+          "alt3": "Ordinateur portable avec des notes et des exercices",
+          "badge1": "Apprendre simplement",
+          "badge2": "Pratique + Révision"
+        },
+        "educators": {
+          "alt": "Enseignant aidant un étudiant à apprendre"
+        }},
       "demos": {
         "tokens": [
           "Range",

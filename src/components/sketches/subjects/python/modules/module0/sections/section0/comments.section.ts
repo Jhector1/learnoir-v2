@@ -56,7 +56,7 @@ total = price * qty
 print("total =", total)
 ~~~
 
-Now **comment out** the compute line and run again:
+Now **comment out** the line started with total and run again:
 
 ~~~python
 price = 4.99
@@ -72,18 +72,18 @@ It proves that comments truly “remove” code from execution.
 
 ---
 
-## Tiny rule of thumb
+## NB
 
 ✅ Write comments to explain **why** something exists.  
 ❌ Don’t write comments that just repeat the code.
 
-Good:
+Here is a way to write a proper comment:
 ~~~python
 # Convert input (text) into a number so we can do math
 age = int(input("Age: "))
 ~~~
 
-Not useful:
+This one is not useful, because it just repeat what the code does:
 ~~~python
 # Set age to input
 age = int(input("Age: "))

@@ -18,6 +18,7 @@ export default function QuestionPanel(props: PracticeShellProps) {
         updateCurrent,
         isAssignmentRun,
         maxAttempts,
+        skipLoadError, // ✅ NEW
     } = props;
 
     return (
@@ -40,13 +41,22 @@ export default function QuestionPanel(props: PracticeShellProps) {
                     <div className="rounded-xl border border-rose-400/35 bg-rose-500/10 p-3 text-sm text-neutral-900 dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-white/85">
                         <div className="font-black">{t("loadError.title")}</div>
                         <div className="mt-1 text-xs text-neutral-700 dark:text-white/70">{loadErr}</div>
-                        <div className="mt-3 flex gap-2">
+
+                        <div className="mt-3 flex flex-wrap gap-2">
                             <button
                                 className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold"
                                 onClick={retryLoad}
                                 disabled={busy}
                             >
                                 {t("buttons.retry")}
+                            </button>
+
+                            <button
+                                className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => skipLoadError?.()}
+                                disabled={busy || !skipLoadError}
+                            >
+                                Continue
                             </button>
                         </div>
                     </div>

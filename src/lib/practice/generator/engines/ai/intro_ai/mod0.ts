@@ -281,7 +281,7 @@ const UNSAFE_SECRET = [
     "A screenshot with an API key visible",
     "A log line containing a JWT token",
     "A config file with DATABASE_URL and password",
-    "A .env file with secrets",
+    "A .env.development.local file with secrets",
 ];
 const UNSAFE_PII = [
     "A support email with full name + address",
@@ -497,7 +497,7 @@ const HANDLERS: Record<string, Handler> = {
             title: "Spot sensitive info",
             prompt: "Which items should NOT be pasted into ChatGPT? Pick all that apply.",
             options: [
-                { id: "a", text: "A .env file with API keys" },
+                { id: "a", text: "A .env.development.local file with API keys" },
                 { id: "b", text: "A redacted message using [CUSTOMER] and [ORDER_ID]" },
                 { id: "c", text: "A screenshot showing a JWT token" },
                 { id: "d", text: "A short generic question with no identifiers" },

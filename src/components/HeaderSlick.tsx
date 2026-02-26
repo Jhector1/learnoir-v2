@@ -278,7 +278,7 @@ export default function HeaderSlick({
   return (
       <header className="sticky top-0 z-50">
         <div className={headerShell} >
-          <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <div className="mx-auto px-4 md:px-6">
             <div className="flex h-16 items-center justify-between gap-3">
               {/* ✅ LEFT GROUP (brand + badges + optional slot) */}
               <div className="flex min-w-0 items-center gap-3">

@@ -3,7 +3,7 @@
    * Surfaces
    * ========================= */
   .ui-card {
-    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
+    @apply  border border-neutral-200 bg-white shadow-sm;
   }
 
   .dark .ui-card {

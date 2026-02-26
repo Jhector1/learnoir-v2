@@ -6,10 +6,13 @@ import type { TopicContext } from "../../../generatorTypes";
 
 import { makePythonModuleGenerator } from "../_shared";
 
-import { M1_VARIABLES_TOPIC } from "./topics/variables_types";
+// import { M1_VARS_TOPIC } from "./topics/variables_types";
 import { M1_OPERATORS_TOPIC } from "./topics/operators_expressions";
 import { M1_STRINGS_TOPIC } from "./topics/string_basics";
 import { M1_IO_TOPIC } from "./topics/input_output_patterns";
+import {M1_VARS_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables";
+import {M1_TYPES_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/types";
+import {M1_ERRORS_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/errors";
 
 export function makeGenPythonStatementsPart1Mod1(ctx: TopicContext) {
     return makePythonModuleGenerator({
@@ -17,6 +20,6 @@ export function makeGenPythonStatementsPart1Mod1(ctx: TopicContext) {
         ctx,
         defaultPurpose: "quiz",
         enablePurpose: true,
-        topics: [M1_VARIABLES_TOPIC, M1_OPERATORS_TOPIC, M1_STRINGS_TOPIC, M1_IO_TOPIC],
+        topics: [ M1_OPERATORS_TOPIC, M1_STRINGS_TOPIC, M1_IO_TOPIC, M1_VARS_TOPIC, M1_ERRORS_TOPIC, M1_TYPES_TOPIC],
     }) as unknown as (rng: RNG, diff: Difficulty, id: string) => GenOut<ExerciseKind>;
 }

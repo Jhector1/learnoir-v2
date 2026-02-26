@@ -19,7 +19,7 @@ export const M0_PROGRAMMING_HANDLERS: Record<M0ProgrammingKey, Handler> = {
             title: "Programming language",
             prompt: "A **programming language** is best described as:",
             options: [
-                { id: "a", text: "A way to communicate instructions to a computer" },
+                { id: "a", text: "A way to give instructions to a computer" },
                 { id: "b", text: "A type of internet browser" },
                 { id: "c", text: "A folder on your desktop" },
             ],

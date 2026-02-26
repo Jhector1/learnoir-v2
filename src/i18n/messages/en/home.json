@@ -192,6 +192,17 @@
       }
     },
     "ui": {
+      "images": {
+        "hero": {
+          "alt1": "Smiling student learning",
+          "alt2": "Students studying together",
+          "alt3": "Laptop with notes and practice",
+          "badge1": "Learning made simple",
+          "badge2": "Practice + Review"
+        },
+        "educators": {
+          "alt": "Educator helping a student learn"
+        }},
       "heroCard": {
         "title": "Practice Preview",
         "subtitle": "Exercises • Feedback • Progress",

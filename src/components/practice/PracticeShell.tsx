@@ -11,6 +11,7 @@ import { buildSubmitAnswerFromItem } from "@/lib/practice/uiHelpers";
 import SummaryView from "./shell/SummaryView";
 import PracticeView from "./shell/PracticeView";
 import { useConceptExplain } from "./hooks/useConceptExplain";
+import { isExcusedPracticeItem } from "@/lib/flow/excuse";
 
 export type TFn = (key: string, values?: Record<string, any>) => string;
 
@@ -88,9 +89,18 @@ export type PracticeShellProps = {
   zHeldRef: React.MutableRefObject<boolean>;
 
   updateCurrent: (patch: Partial<QItem>) => void;
+
+  /** ✅ NEW: excuse current and continue */
+  excuseAndNext?: (reason?: string | null) => Promise<void> | void;
+
+  /** ✅ NEW: skip a load error (try another exercise) */
+  skipLoadError?: () => Promise<void> | void;
 };
 
 function getResultBoxClass(current: QItem | null) {
+  if (isExcusedPracticeItem(current)) {
+    return "border-amber-600/25 bg-amber-50/70 dark:border-amber-300/30 dark:bg-amber-300/10";
+  }
   if (current?.revealed) {
     return "border-sky-300/50 bg-sky-50/70 dark:border-sky-300/25 dark:bg-sky-300/10";
   }

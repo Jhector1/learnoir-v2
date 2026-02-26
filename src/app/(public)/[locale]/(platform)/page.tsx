@@ -1,6 +1,7 @@
 // src/app/[locale]/page.tsx
 import React from "react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/cn";
@@ -195,7 +196,10 @@ function HeroPanelCard({
 
         {demo === "tokens" ? <DemoTokens tokens={demoTokens} /> : null}
         {demo === "quiz" ? (
-            <DemoQuiz options={demoQuizOptions} selectedIndex={demoQuizSelectedIndex} />
+            <DemoQuiz
+                options={demoQuizOptions}
+                selectedIndex={demoQuizSelectedIndex}
+            />
         ) : null}
         {demo === "progress" ? (
             <DemoProgress rows={demoProgressRows} suffix={demoProgressSuffix} />
@@ -206,6 +210,106 @@ function HeroPanelCard({
         </div>
       </div>
   );
+}
+
+/* -------------------------------- images (presentable) -------------------------------- */
+
+function PhotoCard({
+                     src,
+                     alt,
+                     priority,
+                     className,
+                     sizes,
+                   }: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  className?: string;
+  sizes: string;
+}) {
+  return (
+      <div
+          className={cn(
+              "relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none",
+              className,
+          )}
+      >
+        <Image
+            src={src}
+            alt={alt}
+            fill
+            priority={priority}
+            className="object-cover"
+            sizes={sizes}
+        />
+        {/* subtle overlay for readability on both themes */}
+        <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-black/0 to-transparent dark:from-black/35"
+        />
+      </div>
+  );
+}
+
+function HeroPhotoMosaic({
+                             alt1,
+                             alt2,
+                             alt3,
+                             badge1,
+                             badge2,
+                         }: {
+    alt1: string;
+    alt2: string;
+    alt3: string;
+    badge1?: string;
+    badge2?: string;
+}) {
+    return (
+        <div className={cn("ui-card", "p-4")}>
+            <div className="mt-1 grid gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                    <PhotoCard
+                        src="/images/home/student-smile.png"
+                        alt={alt1}
+                        priority
+                        className="aspect-[4/3]"
+                        sizes="(min-width: 1024px) 220px, 50vw"
+                    />
+                    <PhotoCard
+                        src="/images/home/study-group.png"
+                        alt={alt2}
+                        className="aspect-[4/3]"
+                        sizes="(min-width: 1024px) 220px, 50vw"
+                    />
+                </div>
+
+                <PhotoCard
+                    src="/images/home/laptop-notes.png"
+                    alt={alt3}
+                    className="aspect-[16/9]"
+                    sizes="(min-width: 1024px) 460px, 100vw"
+                />
+            </div>
+
+            {(badge1 || badge2) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {badge1 ? (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:shadow-none">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            {badge1}
+            </span>
+                    ) : null}
+
+                    {badge2 ? (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:shadow-none">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                            {badge2}
+            </span>
+                    ) : null}
+                </div>
+            )}
+        </div>
+    );
 }
 
 /* ---------------------------------- metadata ---------------------------------- */
@@ -241,7 +345,10 @@ export default async function HomePage({
 
   const heroPills = t.raw("hero.pills") as string[];
   const trustItems = t.raw("trust.items") as Array<{ k: string; v: string }>;
-  const featureItems = t.raw("features.items") as Array<{ title: string; desc: string }>;
+  const featureItems = t.raw("features.items") as Array<{
+    title: string;
+    desc: string;
+  }>;
   const appName = process.env.APP_NAME ?? "Learnoir";
 
   const subjectCards = t.raw("subjects.cards") as Array<{
@@ -254,7 +361,10 @@ export default async function HomePage({
   }>;
   const howSteps = t.raw("how.steps") as Array<{ title: string; desc: string }>;
   const educatorBullets = t.raw("educators.bullets") as string[];
-  const testimonials = t.raw("testimonials.items") as Array<{ quote: string; who: string }>;
+  const testimonials = t.raw("testimonials.items") as Array<{
+    quote: string;
+    who: string;
+  }>;
   const pricingTiers = t.raw("pricing.tiers") as Array<{
     name: string;
     price: string;
@@ -284,19 +394,26 @@ export default async function HomePage({
       : null;
 
   // ✅ Demo data (all translated; zero hardcoded text)
-  const demoTokens = (has("ui.demos.tokens") ? (t.raw("ui.demos.tokens") as string[]) : []) ?? [];
+  const demoTokens =
+      (has("ui.demos.tokens") ? (t.raw("ui.demos.tokens") as string[]) : []) ??
+      [];
   const demoQuizOptions =
-      (has("ui.demos.quiz.options") ? (t.raw("ui.demos.quiz.options") as string[]) : []) ?? [];
+      (has("ui.demos.quiz.options")
+          ? (t.raw("ui.demos.quiz.options") as string[])
+          : []) ?? [];
   const demoQuizSelectedIndex =
-      (has("ui.demos.quiz.selectedIndex") ? Number(t.raw("ui.demos.quiz.selectedIndex")) : 0) || 0;
+      (has("ui.demos.quiz.selectedIndex")
+          ? Number(t.raw("ui.demos.quiz.selectedIndex"))
+          : 0) || 0;
 
   const demoProgressRows =
       (has("ui.demos.progress.rows")
           ? (t.raw("ui.demos.progress.rows") as Array<{ k: string; v: number }>)
           : []) ?? [];
 
-  const demoProgressSuffix =
-      has("ui.demos.progress.suffix") ? String(t("ui.demos.progress.suffix")) : "%";
+  const demoProgressSuffix = has("ui.demos.progress.suffix")
+      ? String(t("ui.demos.progress.suffix"))
+      : "%";
 
   const fallbackPanels: HeroPanel[] = [
     { label: t("ui.heroCard.laLabel"), text: t("ui.heroCard.laText"), demo: "progress" },
@@ -304,8 +421,26 @@ export default async function HomePage({
   ];
 
   const panels = (
-      heroPanels && Array.isArray(heroPanels) && heroPanels.length > 0 ? heroPanels : fallbackPanels
+      heroPanels && Array.isArray(heroPanels) && heroPanels.length > 0
+          ? heroPanels
+          : fallbackPanels
   ).slice(0, 3);
+    const heroBadge1 = has("ui.images.hero.badge1") ? String(t("ui.images.hero.badge1")) : "";
+    const heroBadge2 = has("ui.images.hero.badge2") ? String(t("ui.images.hero.badge2")) : "";
+  // Image alt text (translation-safe with fallbacks)
+  const heroAlt1 = has("ui.images.hero.alt1")
+      ? String(t("ui.images.hero.alt1"))
+      : "Smiling student learning";
+  const heroAlt2 = has("ui.images.hero.alt2")
+      ? String(t("ui.images.hero.alt2"))
+      : "Students studying together";
+  const heroAlt3 = has("ui.images.hero.alt3")
+      ? String(t("ui.images.hero.alt3"))
+      : "Laptop with notes and practice";
+
+  const educatorsAlt = has("ui.images.educators.alt")
+      ? String(t("ui.images.educators.alt"))
+      : "Educator and student learning";
 
   return (
       <main className="relative min-h-screen bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white">
@@ -354,7 +489,13 @@ export default async function HomePage({
               </div>
 
               {/* Hero visual */}
-              <div className="lg:col-span-5">
+              <div className="lg:col-span-5 space-y-4">
+                {/* Nice photo mosaic */}
+                <HeroPhotoMosaic alt1={heroAlt1} alt2={heroAlt2} alt3={heroAlt3} badge1={heroBadge1}
+                                 badge2={heroBadge2}
+                />
+
+                {/* Your existing UI demo card */}
                 <div className={cn("ui-card", "p-4")}>
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-semibold text-neutral-900 dark:text-white/90">
@@ -371,7 +512,10 @@ export default async function HomePage({
                             key={`${p.label}-${idx}`}
                             label={p.label}
                             text={p.text}
-                            demo={p.demo ?? (idx === 0 ? "progress" : idx === 1 ? "tokens" : "quiz")}
+                            demo={
+                                p.demo ??
+                                (idx === 0 ? "progress" : idx === 1 ? "tokens" : "quiz")
+                            }
                             assetNote={t("ui.heroCard.assetNote")}
                             demoTokens={demoTokens}
                             demoQuizOptions={demoQuizOptions}
@@ -565,8 +709,18 @@ export default async function HomePage({
                   <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-white/70">
                     {t("ui.heroCard.subtitle")}
                   </p>
-                  <div className="mt-4 h-36 rounded-xl border border-neutral-200 bg-gradient-to-br from-neutral-200/60 to-transparent dark:border-white/10 dark:from-white/[0.06]" />
-                  <p className="mt-2 text-xs text-neutral-500 dark:text-white/60">
+
+                  {/* Replaced placeholder gradient with a real image */}
+                  <div className="mt-4">
+                    <PhotoCard
+                        src="/images/home/educator-helping.png"
+                        alt={educatorsAlt}
+                        className="aspect-[16/10]"
+                        sizes="(min-width: 1024px) 420px, 100vw"
+                    />
+                  </div>
+
+                  <p className="mt-3 text-xs text-neutral-500 dark:text-white/60">
                     {t("ui.heroCard.assetNote")}
                   </p>
                 </div>

@@ -264,6 +264,18 @@
       }
     },
     "ui": {
+      "images": {
+        "hero": {
+          "alt1": "Elèv k ap souri pandan l ap aprann",
+          "alt2": "Elèv k ap etidye ansanm",
+          "alt3": "Òdinatè ak nòt ak egzèsis",
+          "badge1": "Aprann vin pi senp",
+          "badge2": "Pratik + Revizyon"
+        },
+        "educators": {
+          "alt": "Pwofesè k ap ede yon elèv aprann"
+        }
+      },
       "demos": {
         "tokens": [
           "Ranje",

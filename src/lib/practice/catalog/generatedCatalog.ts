@@ -49,13 +49,17 @@ export const GENERATED_CATALOG = {
         "genKey": "python_part1",
         "prefix": "py1",
         "topicIds": [
-          "variables_types_intro",
+          "variables_intro",
+          "errors_intro",
+          "data_types_intro",
           "operators_expressions",
           "string_basics",
           "input_output_patterns"
         ],
         "topics": {
-          "variables_types_intro": "py1.variables_types_intro",
+          "variables_intro": "py1.variables_intro",
+          "errors_intro": "py1.errors_intro",
+          "data_types_intro": "py1.data_types_intro",
           "operators_expressions": "py1.operators_expressions",
           "string_basics": "py1.string_basics",
           "input_output_patterns": "py1.input_output_patterns"

@@ -1,10 +1,9 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/operators_expressions.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {  makeCodeExpected, safeInt } from "../../_shared";
+import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
 
 export const M1_OPERATORS_POOL = [
-    // ✅ PRACTICE QUIZ MODE: these must be quiz to ever appear
     { key: "m1_ops_precedence_sc", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_ops_mod_evenodd_sc", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_ops_checkout_code", w: 1, kind: "code_input", purpose: "project" },
@@ -30,6 +29,9 @@ export const M1_OPERATORS_HANDLERS: Record<M1OperatorsKey, Handler> = {
         const c2 = pickDifferentInt(rng, 1, 9, c1);
         const r2 = a2 + b2 * c2;
 
+        const exStdin = `${a1}\n${b1}\n${c1}\n`;
+        const exStdout = `${r1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -44,15 +46,7 @@ a + b * c
 
 Print **ONLY the number** (one line).
 
-~~~terminal
-$ input
-1
-2
-3
-
-$ output
-7
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`a = int(input())
@@ -82,6 +76,9 @@ c = int(input())
         const n2 = pickDifferentInt(rng, 1, 99, n1);
         const out2 = n2 % 2 === 0 ? "even" : "odd";
 
+        const exStdin = `${n1}\n`;
+        const exStdout = `${out1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -96,6 +93,8 @@ even
 
 Otherwise print:
 odd
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`n = int(input())
@@ -127,6 +126,9 @@ odd
         const tax2 = Math.floor((subtotal2 * taxPct2) / 100);
         const total2 = subtotal2 + tax2;
 
+        const exStdin = `${subtotal1}\n${taxPct1}\n`;
+        const exStdout = `Tax = ${tax1}\nTotal = ${total1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -145,6 +147,8 @@ Compute:
 Print **EXACTLY two lines**:
 Tax = <tax>
 Total = <total>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`subtotal = int(input())

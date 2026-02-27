@@ -1,6 +1,7 @@
+// src/lib/practice/generator/engines/python/python_part1_mod1/topics/loops_basics.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, safeInt } from "../../_shared";
+import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
 
 export const M2_LOOPS_POOL = [
     { key: "m2_loop_guess_until_secret_code", w: 1, kind: "code_input", purpose: "project" },
@@ -22,6 +23,9 @@ export const M2_LOOPS_HANDLERS: Record<M2LoopsKey, Handler> = {
         const wrong2 = pickDifferentInt(rng, 1, 9, wrong1);
         const secret = 7;
 
+        const exStdin = `${wrong1}\n${secret}\n`;
+        const exStdout = `You got it!\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -37,6 +41,8 @@ Rules:
 - while guess != 7: keep reading
 - when correct, print exactly:
 You got it!
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# secret is 7
@@ -69,6 +75,9 @@ guess = int(input())
         const good = safeInt(rng, 1, 10);
         const good2 = pickDifferentInt(rng, 1, 10, good);
 
+        const exStdin = `${bad1}\n${bad2}\n${good}\n`;
+        const exStdout = `OK: ${good}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -84,6 +93,8 @@ When you finally get a valid value, print:
 OK: <value>
 
 (No other output.)
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`n = int(input())
@@ -115,6 +126,9 @@ OK: <value>
         const q = "quit";
         const w3 = rng.pick(["status", "help", "snack"] as const);
 
+        const exStdin = `${w1}\n${w2}\n${q}\n`;
+        const exStdout = `You typed: ${w1}\nYou typed: ${w2}\nBye!\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -132,6 +146,8 @@ Rules:
 You typed: <command>
 - When you read quit, print:
 Bye!
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`cmd = input().strip()

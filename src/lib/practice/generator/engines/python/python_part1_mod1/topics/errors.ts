@@ -1,21 +1,15 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/errors.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, safeInt } from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
 
-/**
- * Module 1 — Errors + Debugging (only)
- * Focus: NameError vs TypeError vs ValueError + practical “how to avoid it”.
- */
 export const M1_ERRORS_POOL = [
-    // Single choice (quiz)
-    { key: "m1_types_errors_sc", w: 1, kind: "single_choice", purpose: "quiz" }, // keep your existing key
+    { key: "m1_types_errors_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_err_nameerror_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_err_typeerror_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_err_valueerror_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_err_debug_combo_sc", w: 1, kind: "single_choice", purpose: "quiz" },
 
-    // Code input (quiz-style practice)
     { key: "m1_err_fix_type_mismatch_code", w: 1, kind: "code_input", purpose: "quiz" },
     { key: "m1_err_parse_age_safely_code", w: 1, kind: "code_input", purpose: "quiz" },
 ] as const;
@@ -152,6 +146,9 @@ age = int("twelve")
         const a2 = safeInt(rng, 1, 50);
         const b2 = safeInt(rng, 1, 50);
 
+        const exStdin = `${a1}\n${b1}\n`;
+        const exStdout = `${a1 + b1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -165,14 +162,7 @@ Read TWO inputs.
 Convert them to integers.
 Print ONLY their sum.
 
-~~~terminal
-$ input
-10
-5
-
-$ output
-15
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`a = input()
@@ -188,16 +178,18 @@ b = input()
                 { stdin: `${a1}\n${b1}\n`, stdout: `${a1 + b1}\n`, match: "exact" },
                 { stdin: `${a2}\n${b2}\n`, stdout: `${a2 + b2}\n`, match: "exact" },
             ],
-            solutionCode:
-                `a = int(input())\n` +
-                `b = int(input())\n` +
-                `print(a + b)\n`,
+            solutionCode: `a = int(input())\nb = int(input())\nprint(a + b)\n`,
         });
 
         return { archetype: "m1_err_fix_type_mismatch_code", exercise, expected };
     },
 
     m1_err_parse_age_safely_code: ({ diff, id, topic }) => {
+        const ex1In = `16\n`;
+        const ex1Out = `Next year = 17\n`;
+        const ex2In = `twelve\n`;
+        const ex2Out = `Invalid age\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -217,21 +209,9 @@ Rules:
 
 Examples:
 
-~~~terminal
-$ input
-16
+${terminalFence(ex1In, ex1Out)}
 
-$ output
-Next year = 17
-~~~
-
-~~~terminal
-$ input
-twelve
-
-$ output
-Invalid age
-~~~
+${terminalFence(ex2In, ex2Out)}
 `.trim(),
             language: "python",
             starterCode: String.raw`text = input().strip()
@@ -258,7 +238,6 @@ Invalid age
         return { archetype: "m1_err_parse_age_safely_code", exercise, expected };
     },
 };
-
 
 export const M1_ERRORS_TOPIC: TopicBundle = defineTopic(
     "errors_intro",

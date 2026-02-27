@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/types.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, pickName, safeInt } from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, pickName, safeInt, terminalFence } from "../../_shared";
 
 /**
  * Module 1 — Types + Conversion (only)
@@ -101,6 +101,9 @@ export const M1_TYPES_HANDLERS: Record<M1TypesKey, Handler> = {
         const name2 = pickName(rng);
         const age2 = safeInt(rng, 10, 40);
 
+        const exStdin = `${name1}\n${age1}\n`;
+        const exStdout = `Hi ${name1}! Next year you'll be ${age1 + 1}.\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -119,14 +122,7 @@ Read TWO inputs:
 Convert age to an integer, then print EXACTLY:
 Hi <name>! Next year you'll be <age+1>.
 
-~~~terminal
-$ input
-Maya
-16
-
-$ output
-Hi Maya! Next year you'll be 17.
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`name = input()
@@ -163,6 +159,9 @@ age = input()
         const tip2 = Math.floor((bill2 * pct2) / 100);
         const total2 = bill2 + tip2;
 
+        const exStdin = `${bill1}\n${pct1}\n`;
+        const exStdout = `Tip = ${tip1}\nTotal = ${total1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -182,15 +181,7 @@ Print EXACTLY:
 Tip = <tip>
 Total = <total>
 
-~~~terminal
-$ input
-50
-20
-
-$ output
-Tip = 10
-Total = 60
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`bill = int(input())
@@ -225,6 +216,9 @@ pct = int(input())
         const c2 = safeInt(rng, -10, 40);
         const f2 = Math.floor((c2 * 9) / 5 + 32);
 
+        const exStdin = `${c1}\n`;
+        const exStdout = `${f1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -240,13 +234,7 @@ F = C * 9/5 + 32
 
 Print ONLY F.
 
-~~~terminal
-$ input
-0
-
-$ output
-32
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`c = int(input())
@@ -267,6 +255,7 @@ $ output
         return { archetype: "m1_types_c_to_f_code", exercise, expected };
     },
 };
+
 export const M1_TYPES_TOPIC: TopicBundle = defineTopic(
     "data_types_intro",
     M1_TYPES_POOL as any,

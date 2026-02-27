@@ -1,21 +1,14 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/variables.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, pickName, safeInt } from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, pickName, safeInt, terminalFence } from "../../_shared";
 
-/**
- * Module 1 — Variables (only)
- * Goal: strong mental model + real-world stories.
- * Mix: single_choice + code_input.
- */
 export const M1_VARS_POOL = [
-    // Single choice (quiz)
     { key: "m1_vars_what_is_variable_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_vars_assignment_operator_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_vars_valid_name_sc", w: 1, kind: "single_choice", purpose: "quiz" },
     { key: "m1_vars_update_value_sc", w: 1, kind: "single_choice", purpose: "quiz" },
 
-    // Code input (project / short practice)
     { key: "m1_vars_boxes_print_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_vars_swap_values_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_vars_running_total_code", w: 1, kind: "code_input", purpose: "project" },
@@ -107,6 +100,9 @@ Which line correctly updates \`score\`?
         const name2 = pickName(rng);
         const age2 = safeInt(rng, 10, 40);
 
+        const exStdin = `${name1}\n${age1}\n`;
+        const exStdout = `name = ${name1}\nage = ${age1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -125,17 +121,7 @@ Store them in variables, then print EXACTLY:
 name = <name>
 age = <age>
 
-Example:
-
-~~~terminal
-$ input
-Maya
-16
-
-$ output
-name = Maya
-age = 16
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# Read inputs
@@ -145,7 +131,7 @@ age = 16
 # name = <name>
 # age = <age>
 `,
-            hint: "Use input() twice. Convert age with int(...) if you want, but printing a string age is OK if it matches.",
+            hint: "Use input() twice. Converting age is optional if output matches exactly.",
         };
 
         const expected = makeCodeExpected({
@@ -170,6 +156,9 @@ age = 16
         const a2 = safeInt(rng, 10, 99);
         const b2 = safeInt(rng, 10, 99);
 
+        const exStdin = `${a1}\n${b1}\n`;
+        const exStdout = `${b1}\n${a1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -184,15 +173,7 @@ Swap them, then print:
 1) the new a
 2) the new b
 
-~~~terminal
-$ input
-2
-9
-
-$ output
-9
-2
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`a = int(input())
@@ -216,7 +197,6 @@ b = int(input())
     },
 
     m1_vars_running_total_code: ({ rng, diff, id, topic }) => {
-        // Story: daily steps; compute total steps across 3 days.
         const d1 = safeInt(rng, 1000, 12000);
         const d2 = safeInt(rng, 1000, 12000);
         const d3 = safeInt(rng, 1000, 12000);
@@ -224,6 +204,9 @@ b = int(input())
         const e1 = safeInt(rng, 1000, 12000);
         const e2 = safeInt(rng, 1000, 12000);
         const e3 = safeInt(rng, 1000, 12000);
+
+        const exStdin = `${d1}\n${d2}\n${d3}\n`;
+        const exStdout = `Total = ${d1 + d2 + d3}\n`;
 
         const exercise: CodeInputExercise = {
             id,
@@ -244,15 +227,7 @@ Compute total = day1 + day2 + day3
 Print EXACTLY:
 Total = <total>
 
-~~~terminal
-$ input
-3000
-2500
-4000
-
-$ output
-Total = 9500
-~~~
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`day1 = int(input())
@@ -280,6 +255,7 @@ day3 = int(input())
         return { archetype: "m1_vars_running_total_code", exercise, expected };
     },
 };
+
 export const M1_VARS_TOPIC: TopicBundle = defineTopic(
     "variables_intro",
     M1_VARS_POOL as any,

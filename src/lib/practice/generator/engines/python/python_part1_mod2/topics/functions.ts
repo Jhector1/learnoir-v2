@@ -1,6 +1,7 @@
+// src/lib/practice/generator/engines/python/python_part1_mod1/topics/functions_basics.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {  makeCodeExpected, safeInt, } from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
 
 export const M2_FUNCTIONS_POOL = [
     { key: "m2_func_total_with_tip_code", w: 1, kind: "code_input", purpose: "project" },
@@ -29,6 +30,9 @@ export const M2_FUNCTIONS_HANDLERS: Record<M2FunctionsKey, Handler> = {
         const tip2 = Math.floor((bill2 * pct2) / 100);
         const total2 = bill2 + tip2;
 
+        const exStdin = `${bill1}\n${pct1}\n`;
+        const exStdout = `Total = ${total1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -49,6 +53,8 @@ Rules:
 Then:
 Read TWO integers (bill, pct) and print:
 Total = <total>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`def total_with_tip(bill, pct):
@@ -88,6 +94,9 @@ pct = int(input())
 
         const ship = (total: number) => (total >= 50 ? 0 : 7);
 
+        const exStdin = `${t1}\n`;
+        const exStdout = `Shipping = ${ship(t1)}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -106,6 +115,8 @@ Rule:
 
 Then read ONE integer total and print:
 Shipping = <cost>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`def shipping_cost(total):
@@ -146,6 +157,9 @@ total = int(input())
         const c2 = pickDifferentInt(rng, 1, 30, c1);
         const s2 = a2 + b2 + c2;
 
+        const exStdin = `${a1}\n${b1}\n${c1}\n`;
+        const exStdout = `sum = ${s1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -165,6 +179,8 @@ Rules:
 Then:
 Read THREE integers, store them in a list, call sum_list, and print:
 sum = <value>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`def sum_list(xs):

@@ -1,11 +1,10 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/string_basics.ts
 import type { CodeInputExercise, SingleChoiceExercise } from "../../../../../types";
-import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {makeCodeExpected, pickName } from "../../_shared";
+import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, pickName, terminalFence } from "../../_shared";
 
 export const M1_STRINGS_POOL = [
     { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice", purpose: "project" },
-    // ✅ make these quiz if practice is quiz-only
     { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_str_username_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
@@ -47,15 +46,26 @@ export const M1_STRINGS_HANDLERS: Record<M1StringsKey, Handler> = {
         const name1 = pickName(rng);
         const name2 = pickDifferentName(rng, name1);
 
+        const exStdin = `${name1}\n`;
+        const exStdout = `Hello, ${name1}!\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
             difficulty: diff,
             kind: "code_input",
             title: "f-string greeting",
-            prompt: `Read ONE input (name). Print: Hello, <name>!`,
+            prompt: String.raw`
+Read ONE input (name).
+
+Print EXACTLY:
+Hello, <name>!
+
+${terminalFence(exStdin, exStdout)}
+`.trim(),
             language: "python",
-            starterCode: `# TODO`,
+            starterCode: String.raw`# TODO
+`,
             hint: `print(f"Hello, {name}!")`,
         };
 
@@ -85,15 +95,29 @@ export const M1_STRINGS_HANDLERS: Record<M1StringsKey, Handler> = {
         const stdinLast2 = `  ${last2}  `;
         const out2 = ((first2.trim()[0] ?? "") + last2.trim()).toLowerCase();
 
+        const exStdin = `${stdinFirst1}\n${stdinLast1}\n`;
+        const exStdout = `${out1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
             difficulty: diff,
             kind: "code_input",
             title: "Username generator",
-            prompt: `Read TWO inputs (first, last). Print first letter of first + last (strip, lowercase).`,
+            prompt: String.raw`
+Read TWO inputs (first, last).
+
+Rules:
+- strip spaces
+- username = first letter of first + last
+- lowercase
+Print ONLY the username.
+
+${terminalFence(exStdin, exStdout)}
+`.trim(),
             language: "python",
-            starterCode: `# TODO`,
+            starterCode: String.raw`# TODO
+`,
             hint: `username = (first.strip()[0] + last.strip()).lower()`,
         };
 

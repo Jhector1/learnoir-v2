@@ -1,6 +1,7 @@
+// src/lib/practice/generator/engines/python/python_part1_mod1/topics/lists_basics.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {  makeCodeExpected, safeInt } from "../../_shared";
+import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
 
 export const M2_LISTS_POOL = [
     { key: "m2_list_three_prices_sum_avg_code", w: 1, kind: "code_input", purpose: "project" },
@@ -30,6 +31,9 @@ export const M2_LISTS_HANDLERS: Record<M2ListsKey, Handler> = {
         const sum2 = a2 + b2 + c2;
         const avg2 = Math.floor(sum2 / 3);
 
+        const exStdin = `${a1}\n${b1}\n${c1}\n`;
+        const exStdout = `sum = ${sum1}\navg = ${avg1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -48,6 +52,8 @@ Compute:
 Print EXACTLY two lines:
 sum = <sum>
 avg = <avg>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read 3 prices
@@ -87,6 +93,9 @@ avg = <avg>
         const y4 = pickDifferentInt(rng, -20, 50, x4);
         const m2 = Math.max(y1, y2, y3, y4);
 
+        const exStdin = `${x1}\n${x2}\n${x3}\n${x4}\n`;
+        const exStdout = `max = ${m1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -101,6 +110,8 @@ Store them in a list.
 Print the maximum as:
 
 max = <value>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read 4 integers
@@ -129,6 +140,9 @@ max = <value>
         const a1 = rng.pick(["Nina", "Omar", "Kai"] as const);
         const a2 = rng.pick(["Zoe", "Ivy", "Noah"] as const);
 
+        const exStdin = `${n1}\n${n2}\n`;
+        const exStdout = `names[0] = ${n1}\nnames[1] = ${n2}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -144,6 +158,8 @@ Print EXACTLY:
 
 names[0] = <first>
 names[1] = <second>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO: read two names

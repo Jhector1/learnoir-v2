@@ -1,8 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/input_output_patterns.ts
 import type { CodeInputExercise } from "../../../../../types";
-// import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {  makeCodeExpected, safeInt, pickName } from "../../_shared";
-import {defineTopic, Handler, TopicBundle} from "@/lib/practice/generator/engines/utils";
+import {makeCodeExpected, safeInt, pickName, terminalFence} from "../../_shared";
+import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
 
 export const M1_IO_POOL = [
     { key: "m1_io_age_next_year", w: 1, kind: "code_input", purpose: "project" },
@@ -23,12 +22,26 @@ function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     return x;
 }
 
+/** Renders exactly:
+ ~~~terminal
+ $ input
+ ...
+
+ $ output
+ ...
+ ~~~
+ */
+
+
 export const M1_IO_HANDLERS: Record<M1IoKey, Handler> = {
     m1_io_age_next_year: ({ rng, diff, id, topic }) => {
         const name1 = pickName(rng);
         const age1 = safeInt(rng, 10, 40);
         const name2 = pickDifferentName(rng, name1);
         const age2 = pickDifferentInt(rng, 10, 40, age1);
+
+        const exStdin = `${name1}\n${age1}\n`;
+        const exStdout = `Hi ${name1}! Next year you'll be ${age1 + 1}.\n`;
 
         const exercise: CodeInputExercise = {
             id,
@@ -43,6 +56,8 @@ Read TWO inputs:
 
 Print exactly:
 Hi <name>! Next year you'll be <age+1>.
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`# TODO
@@ -53,8 +68,16 @@ Hi <name>! Next year you'll be <age+1>.
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${name1}\n${age1}\n`, stdout: `Hi ${name1}! Next year you'll be ${age1 + 1}.\n`, match: "exact" },
-                { stdin: `${name2}\n${age2}\n`, stdout: `Hi ${name2}! Next year you'll be ${age2 + 1}.\n`, match: "exact" },
+                {
+                    stdin: `${name1}\n${age1}\n`,
+                    stdout: `Hi ${name1}! Next year you'll be ${age1 + 1}.\n`,
+                    match: "exact",
+                },
+                {
+                    stdin: `${name2}\n${age2}\n`,
+                    stdout: `Hi ${name2}! Next year you'll be ${age2 + 1}.\n`,
+                    match: "exact",
+                },
             ],
             solutionCode: `name = input()\nage = int(input())\nprint(f"Hi {name}! Next year you'll be {age + 1}.")\n`,
         });
@@ -72,6 +95,9 @@ Hi <name>! Next year you'll be <age+1>.
         const pct2 = pickDifferentInt(rng, 10, 25, pct1);
         const tip2 = Math.floor((bill2 * pct2) / 100);
         const total2 = bill2 + tip2;
+
+        const exStdin = `${bill1}\n${pct1}\n`;
+        const exStdout = `Tip = ${tip1}\nTotal = ${total1}\n`;
 
         const exercise: CodeInputExercise = {
             id,
@@ -91,6 +117,8 @@ total = bill + tip
 Print exactly:
 Tip = <tip>
 Total = <total>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`bill = int(input())
@@ -125,6 +153,9 @@ pct = int(input())
         const c2 = pickDifferentInt(rng, -10, 40, c1);
         const f2 = Math.floor((c2 * 9) / 5 + 32);
 
+        const exStdin = `${c1}\n`;
+        const exStdout = `${f1}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -138,6 +169,8 @@ Compute:
 F = C * 9/5 + 32
 
 Print ONLY F.
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`c = int(input())

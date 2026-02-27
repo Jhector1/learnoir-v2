@@ -80,7 +80,7 @@ export default function SubjectPicker({ initialSubjects }: { initialSubjects: Su
   }
 
   return (
-      <div className="mx-auto grid max-w-5xl gap-4">
+      <div className="mx-auto my-10 grid max-w-5xl gap-4">
         <div className="ui-surface">
           {/* ... your header/search unchanged ... */}
 

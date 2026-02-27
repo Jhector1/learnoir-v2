@@ -829,21 +829,22 @@ export default async function HomePage({
             <SectionTitle>{t("faq.title")}</SectionTitle>
 
             <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {faqItems.map((it) => (
-                  <details key={it.q} className={cn("ui-card", "group p-5")}>
-                    <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-900 dark:text-white">
-                      <div className="flex items-center justify-between gap-4">
-                        <span>{it.q}</span>
-                        <span className="text-neutral-500 transition group-open:rotate-180 dark:text-white/50">
-                      ▾
-                    </span>
-                      </div>
-                    </summary>
-                    <p className="mt-3 text-sm leading-6 text-neutral-600 dark:text-white/70">
-                      {it.a}
-                    </p>
-                  </details>
-              ))}
+                {faqItems.map((it) => (
+                    <details key={it.q} className={cn("ui-card", "group p-5")}>
+                        <summary className="cursor-pointer list-none text-sm font-semibold text-neutral-900 dark:text-white">
+                            <div className="flex items-center justify-between gap-4">
+                                <span>{it.q}</span>
+                                <span className="text-neutral-500 transition group-open:rotate-180 dark:text-white/50">
+          ▾
+        </span>
+                            </div>
+                        </summary>
+
+                        <p className="mt-3 text-sm leading-6 text-neutral-600 dark:text-white/70">
+                            {it.a.replaceAll("{appName}", appName)}
+                        </p>
+                    </details>
+                ))}
             </div>
           </Container>
         </section>

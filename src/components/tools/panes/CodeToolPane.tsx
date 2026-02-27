@@ -29,7 +29,7 @@ export default function CodeToolPane(props: {
                 frame="plain"
                 title="Run code"
                 showHint={false}
-                height={runnerH}
+                height={runnerH-50}
                 showTerminalDockToggle
                 showEditorThemeToggle
                 fixedLanguage={toolLang}

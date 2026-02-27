@@ -1,10 +1,7 @@
+// src/lib/practice/generator/engines/python/python_part1_mod1/topics/conditionals_basics.ts
 import type { CodeInputExercise } from "../../../../../types";
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-import {
-    makeCodeExpected,
-    safeInt,
-    pickName,
-} from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt, pickName, terminalFence } from "../../_shared";
 
 export const M2_CONDITIONALS_POOL = [
     { key: "m2_cond_age_gate_code", w: 1, kind: "code_input", purpose: "project" },
@@ -26,6 +23,9 @@ export const M2_CONDITIONALS_HANDLERS: Record<M2ConditionalsKey, Handler> = {
         const a1 = safeInt(rng, 12, 17);
         const a2 = safeInt(rng, 18, 30);
 
+        const exStdin = `${a1}\n`;
+        const exStdout = `DENIED\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -42,6 +42,8 @@ ALLOWED
 
 Else print:
 DENIED
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`age = int(input())
@@ -72,6 +74,9 @@ DENIED
 
         const totalMember = (s: number) => s - Math.floor((s * 10) / 100);
 
+        const exStdin = `${subtotal1}\n${flag1}\n`;
+        const exStdout = `Total = ${totalMember(subtotal1)}\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -91,6 +96,8 @@ Rules:
 
 Print exactly:
 Total = <total>
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`subtotal = int(input())
@@ -123,6 +130,9 @@ member = input().strip()
         const correct = "letmein";
         const wrong = pickName(rng);
 
+        const exStdin = `${correct}\n`;
+        const exStdout = `Logged in\n`;
+
         const exercise: CodeInputExercise = {
             id,
             topic,
@@ -139,6 +149,8 @@ Logged in
 
 Else print:
 Wrong password
+
+${terminalFence(exStdin, exStdout)}
 `.trim(),
             language: "python",
             starterCode: String.raw`pw = input().strip()

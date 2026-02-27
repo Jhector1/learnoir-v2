@@ -59,7 +59,15 @@ export type CodeExpected = {
     stdout?: string;
     solutionCode?: string;
 };
+export function terminalFence(stdin: string, stdout: string) {
+    return String.raw`~~~terminal
+$ input
+${stdin.trimEnd()}
 
+$ output
+${stdout.trimEnd()}
+~~~`;
+}
 export function makeCodeExpected(args: {
     language?: CodeLanguage;
     stdin?: string;

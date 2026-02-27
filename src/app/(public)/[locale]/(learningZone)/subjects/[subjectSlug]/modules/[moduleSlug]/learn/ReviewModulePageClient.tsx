@@ -101,20 +101,20 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
                 />
             </div>
 
-            {navLoading ? (
-                <ReviewModuleNavBarSkeleton ref={footerRef} />
-            ) : (
-                <ReviewModuleNavBar
-                    ref={footerRef}
-                    locale={locale}
-                    subjectSlug={subjectSlug}
-                    prevModuleId={nav?.prevModuleId ?? null}
-                    nextModuleId={nav?.nextModuleId ?? null}
-                    canGoNext={canUnlockAll ? true : moduleComplete}
-                    isLastModule={isLastModule}
-                    canGetCertificate={canGetCertificate}
-                />
-            )}
+            {/*{navLoading ? (*/}
+            {/*    <ReviewModuleNavBarSkeleton ref={footerRef} />*/}
+            {/*) : (*/}
+            {/*    <ReviewModuleNavBar*/}
+            {/*        ref={footerRef}*/}
+            {/*        locale={locale}*/}
+            {/*        subjectSlug={subjectSlug}*/}
+            {/*        prevModuleId={nav?.prevModuleId ?? null}*/}
+            {/*        nextModuleId={nav?.nextModuleId ?? null}*/}
+            {/*        canGoNext={canUnlockAll ? true : moduleComplete}*/}
+            {/*        isLastModule={isLastModule}*/}
+            {/*        canGetCertificate={canGetCertificate}*/}
+            {/*    />*/}
+            {/*)}*/}
         </div>
     );
 }

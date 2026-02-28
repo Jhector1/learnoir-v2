@@ -10,7 +10,6 @@ export const GetParamsSchema = z.object({
 // add this to your GetParams zod schema
 includeMissed: z.enum(["true", "false"]).optional(),
   includeHistory: z.string().optional(),  // ✅ ADD THIS
-
   allowReveal: z.enum(["true", "false"]).optional(),
   sessionId: z.string().optional(),
   statusOnly: z.enum(["true", "false"]).optional(),
@@ -19,6 +18,8 @@ includeMissed: z.enum(["true", "false"]).optional(),
   // ✅ NEW: persisted on PracticeSession so completion redirect survives refresh
   returnUrl: z.string().optional(),
   returnTo: z.string().optional(), // alias (optional)
+    // back: z.string().optional(), // alias (optional)
+
     // ✅ NEW: quiz | project | mixed
     preferPurpose: z.enum(["quiz", "project", "mixed"]).optional(),
 

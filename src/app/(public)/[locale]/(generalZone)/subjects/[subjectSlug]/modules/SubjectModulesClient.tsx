@@ -6,6 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { useReviewProgressMany } from "@/components/review/module/hooks/useReviewProgressMany";
 import { ROUTES } from "@/utils";
+import { buildBillingHref } from "@/lib/billing/moduleAccess";
 
 type ModuleRow = {
   id: string; // db id
@@ -26,6 +27,12 @@ type SectionRow = {
   moduleId: string | null; // db module id
 };
 
+export type ModuleAccessView = {
+  ok: boolean;
+  paid: boolean;
+  reason: string; // "ok" | "requires_login" | "requires_payment" | ...
+};
+
 type Props = {
   locale: string;
   subjectSlug: string;
@@ -35,19 +42,17 @@ type Props = {
   modules: ModuleRow[];
   sections: SectionRow[];
 
-  // IMPORTANT: these must be the same “topic keys” you store in review progress.
-  // If they are DB ids but progress uses genKey/slug, counts will mismatch.
   topicIdsByModuleDbId: Record<string, string[]>;
   topicIdsBySectionId: Record<string, string[]>;
 
-  // ✅ NEW: server-controlled unlock (teacher/admin)
+  // ✅ server-controlled unlock (teacher/admin)
   canUnlockAll?: boolean;
+
+  // ✅ NEW: server-computed access decisions per module slug
+  accessByModuleSlug?: Record<string, ModuleAccessView>;
 };
 
-function sortByOrderThenSlug<T extends { order: number | null; slug: string }>(
-    a: T,
-    b: T,
-) {
+function sortByOrderThenSlug<T extends { order: number | null; slug: string }>(a: T, b: T) {
   const ao = a.order ?? 0;
   const bo = b.order ?? 0;
   return ao - bo || a.slug.localeCompare(b.slug);
@@ -65,9 +70,7 @@ function ProgressBar({ pct, label }: { pct: number; label?: React.ReactNode }) {
         {label ? (
             <div className="flex items-center justify-between text-[11px] font-extrabold tracking-wide text-neutral-600 dark:text-white/60">
               {label}
-              <span className="tabular-nums text-neutral-500 dark:text-white/45">
-            {w}
-          </span>
+              <span className="tabular-nums text-neutral-500 dark:text-white/45">{w}</span>
             </div>
         ) : null}
 
@@ -153,16 +156,13 @@ export default function SubjectModulesClient(props: Props) {
     modules,
     sections,
     topicIdsByModuleDbId,
-    // topicIdsBySectionId, // (not used here yet, keep prop for future)
     canUnlockAll = false,
+    accessByModuleSlug,
   } = props;
 
   const unlockAll = Boolean(canUnlockAll);
 
-  const sortedModules = useMemo(
-      () => modules.slice().sort(sortByOrderThenSlug),
-      [modules],
-  );
+  const sortedModules = useMemo(() => modules.slice().sort(sortByOrderThenSlug), [modules]);
 
   const sectionsByModuleDbId = useMemo(() => {
     const m = new Map<string, SectionRow[]>();
@@ -179,14 +179,13 @@ export default function SubjectModulesClient(props: Props) {
 
   const moduleIds = useMemo(() => sortedModules.map((m) => m.slug), [sortedModules]);
 
-  const { loading: progressLoading, byModuleId: progByModuleSlug } =
-      useReviewProgressMany({
-        subjectSlug,
-        locale,
-        moduleIds,
-        enabled: moduleIds.length > 0,
-        refreshMs: 0,
-      });
+  const { loading: progressLoading, byModuleId: progByModuleSlug } = useReviewProgressMany({
+    subjectSlug,
+    locale,
+    moduleIds,
+    enabled: moduleIds.length > 0,
+    refreshMs: 0,
+  });
 
   // ✅ lock module i unless previous module is completed (unless unlockAll)
   const unlockedBySlug = useMemo(() => {
@@ -224,7 +223,6 @@ export default function SubjectModulesClient(props: Props) {
 
       const direct = countMatches(moduleTopicKeys, mp?.completedTopicKeys);
 
-      // Fallback for mismatched keysets (keeps UI from looking broken)
       const fallback =
           direct === 0 &&
           moduleTopicKeys.length > 0 &&
@@ -235,8 +233,7 @@ export default function SubjectModulesClient(props: Props) {
       doneTopics += fallback;
     }
 
-    const pct =
-        totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completedModules ? 1 : 0;
+    const pct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completedModules ? 1 : 0;
 
     return {
       totalTopics,
@@ -284,9 +281,7 @@ export default function SubjectModulesClient(props: Props) {
                   {unlockAll ? <Pill variant="warn">UNLOCK ENABLED</Pill> : null}
                 </div>
 
-                <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">
-                  {subjectTitle}
-                </div>
+                <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">{subjectTitle}</div>
 
                 {subjectDescription ? (
                     <div className="mt-2 text-sm md:text-base text-neutral-600 dark:text-white/70">
@@ -301,9 +296,7 @@ export default function SubjectModulesClient(props: Props) {
                         <>
                           <span>Overall progress</span>
                           <span className="tabular-nums">
-                        {progressLoading
-                            ? "Syncing…"
-                            : `${subjectStats.doneTopics}/${subjectStats.totalTopics} topics`}
+                        {progressLoading ? "Syncing…" : `${subjectStats.doneTopics}/${subjectStats.totalTopics} topics`}
                             {subjectStats.totalModules ? (
                                 <span className="ml-2 text-neutral-500 dark:text-white/45">
                             • {subjectStats.completedModules}/{subjectStats.totalModules} modules
@@ -339,8 +332,14 @@ export default function SubjectModulesClient(props: Props) {
                   const modSections = sectionsByModuleDbId.get(String(m.id)) ?? [];
                   const mp = progByModuleSlug[m.slug];
 
-                  const unlocked = unlockedBySlug.has(m.slug);
-                  const locked = !unlockAll && !unlocked && idx !== 0;
+                  const sequentialUnlocked = unlockedBySlug.has(m.slug);
+                  const seqLocked = !unlockAll && !sequentialUnlocked && idx !== 0;
+
+                  const access = accessByModuleSlug?.[m.slug] ?? { ok: true, paid: false, reason: "unknown" };
+                  const paywallLocked = !unlockAll && !access.ok;
+
+                  // ✅ don’t upsell payment if user can’t access anyway due to sequencing
+                  const showPremium = paywallLocked && !seqLocked;
 
                   const completed = Boolean(mp?.moduleCompleted);
 
@@ -350,27 +349,39 @@ export default function SubjectModulesClient(props: Props) {
                   const directDone = countMatches(moduleTopicKeys, mp?.completedTopicKeys);
 
                   const doneTopics =
-                      directDone === 0 &&
-                      totalTopics > 0 &&
-                      (mp?.completedTopicKeys?.size ?? 0) > 0
+                      directDone === 0 && totalTopics > 0 && (mp?.completedTopicKeys?.size ?? 0) > 0
                           ? Math.min(totalTopics, mp!.completedTopicKeys.size)
                           : directDone;
 
-                  const modulePct =
-                      totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
+                  const modulePct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
 
-                  const hasAnyProgress =
-                      (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
-                  const ctaLabel = completed
-                      ? "Review module →"
-                      : hasAnyProgress
-                          ? "Continue →"
-                          : "Start module →";
+                  const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
 
                   const moduleHref = `/${encodeURIComponent(locale)}/${ROUTES.moduleIntro(
                       encodeURIComponent(subjectSlug),
                       encodeURIComponent(m.slug),
                   )}`;
+
+                  const modulesListPath = `/${encodeURIComponent(locale)}/subjects/${encodeURIComponent(subjectSlug)}/modules`;
+
+                  const billingHref = buildBillingHref({
+                    locale,
+                    next: moduleHref,
+                    back: modulesListPath,
+                    reason: "module",
+                    subject: subjectSlug,
+                    module: m.slug,
+                  });
+
+                  const ctaLabel = showPremium
+                      ? access.reason === "requires_login"
+                          ? "Sign in to unlock →"
+                          : "Unlock →"
+                      : completed
+                          ? "Review module →"
+                          : hasAnyProgress
+                              ? "Continue →"
+                              : "Start module →";
 
                   return (
                       <div
@@ -381,7 +392,7 @@ export default function SubjectModulesClient(props: Props) {
                               "backdrop-blur-xl",
                               "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
                               "transition-transform duration-200",
-                              !locked && "hover:-translate-y-[2px]",
+                              !seqLocked && "hover:-translate-y-[2px]",
                           )}
                       >
                         <div
@@ -403,8 +414,10 @@ export default function SubjectModulesClient(props: Props) {
 
                                 {completed ? (
                                     <Pill variant="good">✓ Completed</Pill>
-                                ) : locked ? (
+                                ) : seqLocked ? (
                                     <Pill variant="neutral">🔒 Locked</Pill>
+                                ) : showPremium ? (
+                                    <Pill variant="warn">💎 Premium</Pill>
                                 ) : hasAnyProgress ? (
                                     <Pill variant="warn">↻ In progress</Pill>
                                 ) : (
@@ -414,14 +427,10 @@ export default function SubjectModulesClient(props: Props) {
                                 {progressLoading ? <Pill variant="neutral">Syncing…</Pill> : null}
                               </div>
 
-                              <div className="mt-1 text-lg md:text-xl font-black tracking-tight">
-                                {m.title}
-                              </div>
+                              <div className="mt-1 text-lg md:text-xl font-black tracking-tight">{m.title}</div>
 
                               {m.description ? (
-                                  <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-                                    {m.description}
-                                  </div>
+                                  <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">{m.description}</div>
                               ) : null}
 
                               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-neutral-500 dark:text-white/45">
@@ -476,7 +485,7 @@ export default function SubjectModulesClient(props: Props) {
                           </div>
 
                           <div className="flex items-center gap-2 md:pl-4">
-                            {locked ? (
+                            {seqLocked ? (
                                 <span
                                     className={cn(
                                         "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
@@ -487,6 +496,18 @@ export default function SubjectModulesClient(props: Props) {
                                 >
                           {ctaLabel}
                         </span>
+                            ) : showPremium ? (
+                                <Link
+                                    href={billingHref}
+                                    className={cn(
+                                        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
+                                        "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
+                                        "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
+                                        "transition",
+                                    )}
+                                >
+                                  {ctaLabel}
+                                </Link>
                             ) : (
                                 <Link
                                     href={moduleHref}

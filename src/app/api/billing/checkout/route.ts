@@ -2,43 +2,56 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { billingConfig, createCheckoutSession } from "@/lib/billing/stripeService";
+import { createCheckoutSession, billingConfig } from "@/lib/billing/stripeService";
+
+function safeInternalPath(path: unknown, fallback = "/") {
+  const raw = typeof path === "string" ? path.trim() : "";
+  if (!raw) return fallback;
+  if (raw.startsWith("//")) return fallback;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return fallback;
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const session = await auth();
-  const userId = (session?.user as any)?.id as string | undefined;
+  const userId: string | null = (session as any)?.user?.id ?? null;
+  if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-  if (!userId) {
-    return NextResponse.json(
-      { message: "Not signed in.", redirectTo: "/authenticate?callbackUrl=/billing" },
-      { status: 401 }
-    );
+  const body = await req.json().catch(() => null);
+  const plan = body?.plan as "monthly" | "yearly" | undefined;
+  const useTrial = Boolean(body?.useTrial);
+  const callbackUrl = safeInternalPath(body?.callbackUrl, "/");
+
+  if (plan !== "monthly" && plan !== "yearly") {
+    return NextResponse.json({ message: "Invalid plan." }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => null)) as
-    | { plan?: "monthly" | "yearly"; useTrial?: boolean }
-    | null;
-
-  const { monthlyPriceId, yearlyPriceId } = billingConfig();
-
-  const requested =
-    body?.plan === "yearly" ? yearlyPriceId : monthlyPriceId;
+  const { monthlyPriceId, yearlyPriceId, trialDays } = billingConfig();
+  const priceId = plan === "monthly" ? monthlyPriceId : yearlyPriceId;
 
   const u = await prisma.user.findUnique({
     where: { id: userId },
     select: { trialUsedAt: true },
   });
 
-  const useTrial = Boolean(body?.useTrial) && !u?.trialUsedAt;
+  const canUseTrial = useTrial && !u?.trialUsedAt && trialDays > 0;
 
-  const { url } = await createCheckoutSession({
-    userId,
-    priceId: requested,
-    useTrial,
-  });
+  try {
+    const out = await createCheckoutSession({
+      userId,
+      priceId,
+      useTrial: canUseTrial,
+      callbackUrl,
+    });
 
-  return NextResponse.json({ url });
+    if (!out.url) return NextResponse.json({ message: "Stripe session missing url." }, { status: 500 });
+
+    return NextResponse.json({ url: out.url });
+  } catch (e: any) {
+    console.error("[/api/billing/checkout] ERROR", e);
+    return NextResponse.json({ message: e?.message ?? "Checkout failed" }, { status: 500 });
+  }
 }

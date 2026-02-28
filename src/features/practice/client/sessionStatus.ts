@@ -42,24 +42,26 @@ export type SessionStatus = {
   returnUrl?: string | null;
 };
 
+// wherever getSessionStatus is defined
 export async function getSessionStatus(
-  sessionId: string,
-  opts?: { includeMissed?: boolean; includeHistory?: boolean },
+    sessionId: string,
+    opts?: { includeMissed?: boolean; includeHistory?: boolean; subject?: string; module?: string },
 ): Promise<SessionStatus | null> {
   const qs = new URLSearchParams();
   qs.set("sessionId", sessionId);
   qs.set("statusOnly", "true");
+
+  if (opts?.subject) qs.set("subject", opts.subject);
+  if (opts?.module) qs.set("module", opts.module);
 
   if (opts?.includeMissed) qs.set("includeMissed", "true");
   if (opts?.includeHistory) qs.set("includeHistory", "true");
 
   const res = await fetch(`/api/practice?${qs.toString()}`, { cache: "no-store" });
 
+  if (res.status === 402) return null;
   if (!res.ok) return null;
 
   const data = await res.json().catch(() => null);
-
-  if (!data) return null;
-
-  return data as SessionStatus;
+  return data ? (data as SessionStatus) : null;
 }

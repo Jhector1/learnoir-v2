@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { StripeStatusPanel } from "@/components/billing/StripeStatusPanel";
 import { cn } from "@/lib/cn";
 
@@ -9,13 +10,35 @@ import BillingShell from "@/components/billing/BillingShell";
 import BillingHeader from "@/components/billing/BillingHeader";
 import BillingError from "@/components/billing/BillingError";
 import PlanCard from "@/components/billing/PlanCard";
-// import InfoRow from "./_components/InfoRow";
 
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
 import { useBillingActions } from "@/components/billing/hooks/useBillingActions";
 import InfoRow from "@/components/billing/InfoRow";
 
-export default function BillingPageClient({ callbackUrl }: { callbackUrl: string }) {
+type PaywallInfo = {
+    reason?: string | null; // e.g. "module"
+    subject?: string | null;
+    module?: string | null;
+    next?: string | null;   // internal path to go back to
+    back?: string | null; // ✅ NEW: safe page
+
+};
+
+function safeInternalPath(path?: string | null) {
+    const raw = String(path ?? "").trim();
+    if (!raw) return null;
+    if (raw.startsWith("//")) return null;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return null; // blocks http:, javascript:, etc
+    return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
+export default function BillingPageClient({
+                                              callbackUrl,
+                                              paywall,
+                                          }: {
+    callbackUrl: string;
+    paywall?: PaywallInfo;
+}) {
     const { status, loading, error, setError, trialState, canUseTrial, headlineBadge } =
         useBillingStatus();
 
@@ -24,6 +47,16 @@ export default function BillingPageClient({ callbackUrl }: { callbackUrl: string
         callbackUrl,
         onError: setError,
     });
+
+    const showPaywall = Boolean(paywall?.reason);
+    const backHref = safeInternalPath(paywall?.back);
+
+    const paywallTitle =
+        paywall?.reason === "module"
+            ? "This module requires payment"
+            : paywall?.reason === "assignment"
+                ? "This assignment requires payment"
+                : "This requires payment";
 
     return (
         <BillingShell>
@@ -38,6 +71,55 @@ export default function BillingPageClient({ callbackUrl }: { callbackUrl: string
                         onManageBilling={openPortal}
                         onSignIn={authRedirect}
                     />
+
+                    {/* ✅ NEW: Paywall banner */}
+                    {showPaywall ? (
+                        <div className="px-5 pb-5">
+                            <div
+                                className={cn(
+                                    "rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 text-sm",
+                                    "dark:border-amber-300/15 dark:bg-amber-300/5",
+                                )}
+                            >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="font-black tracking-tight">{paywallTitle}</div>
+
+                                    {backHref ? (
+                                        <Link
+                                            href={backHref}
+                                            className={cn(
+                                                "inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-xs font-extrabold",
+                                                "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
+                                                "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
+                                                "transition",
+                                            )}
+                                        >
+                                            ← Go back
+                                        </Link>
+                                    ) : null}
+                                </div>
+
+                                <div className="mt-2 text-xs text-neutral-700 dark:text-white/70">
+                                    Subscribe to unlock access and continue.
+                                    {paywall?.subject || paywall?.module ? (
+                                        <span className="ml-1">
+                      {paywall.subject ? (
+                          <span className="font-mono">subject: {paywall.subject}</span>
+                      ) : null}
+                                            {paywall.subject && paywall.module ? <span> • </span> : null}
+                                            {paywall.module ? (
+                                                <span className="font-mono">module: {paywall.module}</span>
+                                            ) : null}
+                    </span>
+                                    ) : null}
+                                </div>
+
+                                <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
+                                    After checkout, you’ll be returned automatically.
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
 
                     {error ? (
                         <div className="p-5">
@@ -59,7 +141,6 @@ export default function BillingPageClient({ callbackUrl }: { callbackUrl: string
                             </div>
                         </div>
 
-                        {/* Stripe status panel */}
                         {!loading && status ? (
                             <div className="p-5 pt-4">
                                 <StripeStatusPanel
@@ -194,8 +275,7 @@ export default function BillingPageClient({ callbackUrl }: { callbackUrl: string
                 </div>
 
                 <div className="text-xs text-neutral-500 dark:text-white/55">
-                    Payments are handled by Stripe. Manage or cancel anytime from the billing
-                    portal.
+                    Payments are handled by Stripe. Manage or cancel anytime from the billing portal.
                 </div>
             </div>
         </BillingShell>

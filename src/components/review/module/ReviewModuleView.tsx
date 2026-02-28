@@ -205,6 +205,8 @@ export default function ReviewModuleView({
     const { status: assignmentStatus, complete: assignmentDone, pct: assignmentPct } = useAssignmentStatus({
         sessionId: assignmentSessionId,
         enabled: progressHydrated,
+        subject:subjectSlug,
+        module:moduleId
     });
 
     const assignmentLabel =

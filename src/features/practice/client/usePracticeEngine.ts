@@ -456,6 +456,8 @@ export function usePracticeEngine(args: {
           const st = await getSessionStatus(String(sid2 ?? sid), {
             includeMissed: true,
             includeHistory: true,
+            subject:subjectSlug,
+            module:moduleSlug,
           });
 
           if (st) {
@@ -517,7 +519,7 @@ export function usePracticeEngine(args: {
 
     (async () => {
       if (effectiveSid) {
-        const st = await getSessionStatus(String(effectiveSid), { includeMissed: true });
+        const st = await getSessionStatus(String(effectiveSid), { includeMissed: true , module:moduleSlug, subject:subjectSlug});
         if (!alive) return;
 
         if (st) {
@@ -567,6 +569,8 @@ export function usePracticeEngine(args: {
       const st = await getSessionStatus(String(effectiveSid), {
         includeMissed: true,
         includeHistory: true,
+        subject:subjectSlug,
+        module:moduleSlug
       });
       if (!alive) return;
 

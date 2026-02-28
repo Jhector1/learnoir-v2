@@ -29,6 +29,17 @@ enum PracticePurpose {
   project
 }
 
+enum AccessPolicy {
+  free
+  paid
+}
+
+enum AccessOverride {
+  inherit
+  free
+  paid
+}
+
 enum PracticeRunPresetKey {
   MODULE_QUIZ_ONLY
   MIXED_PRACTICE
@@ -53,27 +64,61 @@ model PracticeRunPreset {
   sessions PracticeSession[]
 }
 
-model PracticeModule {
-  id          String           @id @default(cuid())
-  slug        String           @unique
-  title       String
-  description String?
-  order       Int              @default(0)
-  weekStart   Int?
-  weekEnd     Int?
-  meta        Json? // ✅ ADD
-  // NEW (optional)
-  subjectId   String?
-  subject     PracticeSubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+model ModuleAccessGrant {
+  id String @id @default(cuid())
+
+  actorKey String // "user:<id>" | "guest:<id>"
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  moduleId String
+  module   PracticeModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  type AccessGrantType
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+  revokedAt DateTime?
+  meta      Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sections         PracticeSection[]
-  topics           PracticeTopic[]
-  sessions         PracticeSession[]  @relation("ModuleSessions") // ✅ opposite side
-  practicePresetId String?
-  practicePreset   PracticeRunPreset? @relation(fields: [practicePresetId], references: [id])
+  @@index([actorKey, moduleId, revokedAt])
+  @@index([actorKey, moduleId, endsAt])
+  @@index([actorKey])
+  @@index([moduleId])
+  @@index([type])
+  @@index([endsAt])
+  @@index([revokedAt])
+}
+
+model PracticeModule {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  title          String
+  description    String?
+  order          Int              @default(0)
+  weekStart      Int?
+  weekEnd        Int?
+  meta           Json? // ✅ ADD
+  // NEW (optional)
+  subjectId      String?
+  subject        PracticeSubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  // ✅ NEW: module-level override
+  accessOverride AccessOverride   @default(inherit)
+  entitlementKey String? // optional label like "module:python:capstone"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sections           PracticeSection[]
+  topics             PracticeTopic[]
+  sessions           PracticeSession[]   @relation("ModuleSessions") // ✅ opposite side
+  practicePresetId   String?
+  practicePreset     PracticeRunPreset?  @relation(fields: [practicePresetId], references: [id])
+  moduleAccessGrants ModuleAccessGrant[]
 
   @@index([practicePresetId])
   @@index([order])
@@ -148,10 +193,10 @@ enum PracticeKind {
   text_input
   drag_reorder
   voice_input
-    // ✅ NEW
-    word_bank_arrange
-    listen_build
-    fill_blank_choice
+  // ✅ NEW
+  word_bank_arrange
+  listen_build
+  fill_blank_choice
 }
 
 enum PracticeDifficulty {
@@ -353,6 +398,7 @@ model User {
   accounts            Account[]
   sessions            Session[]
   subscriptions       Subscription[]
+  moduleAccessGrants  ModuleAccessGrant[]
 }
 
 model Account {
@@ -440,9 +486,12 @@ model PracticeSubject {
   order       Int     @default(0)
   meta        Json?
 
-  // ✅ NEW: Cloudinary image reference
-  imagePublicId String? // e.g. "learnoir/subjects/linear-algebra"
-  imageAlt      String?
+  //  Cloudinary image reference
+  imagePublicId  String? // e.g. "learnoir/subjects/linear-algebra"
+  imageAlt       String?
+  // ✅ NEW: subject-level access control
+  accessPolicy   AccessPolicy @default(free)
+  entitlementKey String? // optional label like "subject:python" or "pro"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -4,7 +4,16 @@ import {prisma} from "@/lib/prisma";
 import {stripe} from "@/lib/stripe";
 import type Stripe from "stripe";
 import type {StripeSubscriptionStatus} from "@prisma/client";
+import { formatMoneyMinor } from "@/i18n/money";
 
+function priceUnitAmountMinor(p: Stripe.Price): number | null {
+    if (typeof p.unit_amount === "number") return p.unit_amount;
+    if (typeof p.unit_amount_decimal === "string") {
+        const n = Number(p.unit_amount_decimal);
+        return Number.isFinite(n) ? Math.round(n) : null;
+    }
+    return null;
+}
 
 function isMissingCustomerError(e: any) {
     const code = e?.code;
@@ -61,47 +70,89 @@ function formatMoney(amount: number, currency: string) {
     }).format(amount);
 }
 
-export async function getPricePresentation() {
-    const {monthlyPriceId, yearlyPriceId, trialDays} = billingConfig();
+// Add near the top with your other helpers
+function unitAmountMinorForCurrency(price: Stripe.Price, currency: string): number | null {
+    const cur = currency.toLowerCase();
 
-    // defaults
+    // If requested currency is the price base currency
+    if ((price.currency ?? "").toLowerCase() === cur) {
+        return priceUnitAmountMinor(price);
+    }
+
+    const opts: any = (price as any).currency_options;
+    const o = opts?.[cur];
+    if (!o) return null;
+
+    if (typeof o.unit_amount === "number") return o.unit_amount;
+    if (typeof o.unit_amount_decimal === "string") {
+        const n = Number(o.unit_amount_decimal);
+        return Number.isFinite(n) ? Math.round(n) : null;
+    }
+
+    return null;
+}
+
+export async function getPricePresentation(intlLocale = "en-US", desiredCurrency?: string) {
+    const { monthlyPriceId, yearlyPriceId, trialDays } = billingConfig();
+
+    // fallbacks
+    let currency = (desiredCurrency ?? "usd").toLowerCase();
+    let monthlyUnitAmountMinor = 1000;
+    let yearlyUnitAmountMinor = 10000;
+
     let monthlyPriceLabel = "$10 / mo";
     let yearlyPriceLabel = "$100 / yr";
     let yearlySavingsLabel: string | null = null;
 
     try {
         const [pM, pY] = await Promise.all([
-            stripe.prices.retrieve(monthlyPriceId),
-            stripe.prices.retrieve(yearlyPriceId),
+            stripe.prices.retrieve(monthlyPriceId,{ expand: ["currency_options"] }),
+            stripe.prices.retrieve(yearlyPriceId,{ expand: ["currency_options"] }),
         ]);
 
-        const mAmt = (pM.unit_amount ?? 0) / 100;
-        const yAmt = (pY.unit_amount ?? 0) / 100;
-        const cur = pM.currency ?? "usd";
+        // If caller didn’t specify currency, start from the Price base currency
+        if (!desiredCurrency) {
+            currency = (pM.currency ?? "usd").toLowerCase();
+        }
 
-        monthlyPriceLabel = `${formatMoney(mAmt, cur)} / mo`;
-        yearlyPriceLabel = `${formatMoney(yAmt, cur)} / yr`;
+        const m = unitAmountMinorForCurrency(pM, currency);
+        const y = unitAmountMinorForCurrency(pY, currency);
 
-        if (mAmt > 0 && yAmt > 0) {
-            const impliedYear = mAmt * 12;
-            const pct = Math.round(((impliedYear - yAmt) / impliedYear) * 100);
+        // If currency option missing, fall back to price base currency
+        if (m == null || y == null) {
+            currency = (pM.currency ?? "usd").toLowerCase();
+            monthlyUnitAmountMinor = unitAmountMinorForCurrency(pM, currency) ?? 0;
+            yearlyUnitAmountMinor = unitAmountMinorForCurrency(pY, currency) ?? 0;
+        } else {
+            monthlyUnitAmountMinor = m;
+            yearlyUnitAmountMinor = y;
+        }
+
+        monthlyPriceLabel = `${formatMoneyMinor(monthlyUnitAmountMinor, currency, intlLocale)} / mo`;
+        yearlyPriceLabel = `${formatMoneyMinor(yearlyUnitAmountMinor, currency, intlLocale)} / yr`;
+        console.log("MONTHLY priceId", monthlyPriceId, "currency_options", Object.keys((pM as any).currency_options ?? {}));
+        console.log("YEARLY  priceId", yearlyPriceId, "currency_options", Object.keys((pY as any).currency_options ?? {}));
+        if (monthlyUnitAmountMinor > 0 && yearlyUnitAmountMinor > 0) {
+            const impliedYear = monthlyUnitAmountMinor * 12;
+            const pct = Math.round(((impliedYear - yearlyUnitAmountMinor) / impliedYear) * 100);
             if (Number.isFinite(pct) && pct > 0) yearlySavingsLabel = `Save ${pct}%`;
         }
     } catch {
-        // keep fallback
+        // keep fallbacks
     }
 
     return {
         monthlyPriceId,
         yearlyPriceId,
+        trialDays,
+        currency,
+        monthlyUnitAmountMinor,
+        yearlyUnitAmountMinor,
         monthlyPriceLabel,
         yearlyPriceLabel,
         yearlySavingsLabel,
-        trialDays,
     };
-}
-
-// src/lib/billing/stripeService.ts
+}// src/lib/billing/stripeService.ts
 export async function ensureStripeCustomer(userId: string) {
     const u = await prisma.user.findUnique({
         where: {id: userId},
@@ -151,23 +202,33 @@ export async function ensureStripeCustomer(userId: string) {
     return customer.id;
 }
 
+
+
+function stripeCheckoutLocaleFromAppLocale(appLocale?: string | null): Stripe.Checkout.SessionCreateParams.Locale {
+    const l = String(appLocale ?? "").toLowerCase();
+    if (l === "fr"||l=="ht") return "fr";
+    if (l === "en") return "en";
+    return "auto"; // ht not supported; Stripe will choose best match
+}
+
 export async function createCheckoutSession(args: {
     userId: string;
     priceId: string;
     useTrial: boolean;
     callbackUrl: string;
+    currency?: "usd" | "htg";
+    appLocale?: string | null;
 }) {
     const { appUrl, trialDays } = billingConfig();
 
     const cb = safeInternalPathOrNull(args.callbackUrl) ?? "/billing";
 
-    // ✅ locale-aware success page if you use /en/...
-    const locale = cb.split("/").filter(Boolean)[0];
-    const hasLocale = locale && locale.length === 2;
-    const successPath = hasLocale ? `/${locale}/billing/success` : `/billing/success`;
-    const billingPath = hasLocale ? `/${locale}/billing` : `/billing`;
+    const localeSeg = cb.split("/").filter(Boolean)[0];
+    const hasLocale = localeSeg && localeSeg.length === 2;
 
-    // ✅ IMPORTANT: build string so {CHECKOUT_SESSION_ID} stays literal (not URL-encoded)
+    const successPath = hasLocale ? `/${localeSeg}/billing/success` : `/billing/success`;
+    const billingPath = hasLocale ? `/${localeSeg}/billing` : `/billing`;
+
     const success_url =
         `${appUrl}${successPath}` +
         `?session_id={CHECKOUT_SESSION_ID}` +
@@ -178,6 +239,8 @@ export async function createCheckoutSession(args: {
         `?next=${encodeURIComponent(cb)}` +
         `&canceled=1`;
 
+    const stripeLocale = stripeCheckoutLocaleFromAppLocale(args.appLocale ?? (hasLocale ? localeSeg : null));
+
     const checkout = await withValidCustomer(args.userId, (customerId) =>
         stripe.checkout.sessions.create({
             mode: "subscription",
@@ -185,28 +248,26 @@ export async function createCheckoutSession(args: {
             line_items: [{ price: args.priceId, quantity: 1 }],
             allow_promotion_codes: true,
 
+            // ✅ Checkout language/formatting
+            locale: stripeLocale, // supported list is limited; "auto" works broadly :contentReference[oaicite:5]{index=5}
+
+            // ✅ Force currency to match what you showed in your UI
+            // Requires your Price to have currency_options[htg] configured.
+            ...(args.currency ? { currency: args.currency } : {}),
+
             subscription_data: {
                 ...(args.useTrial ? { trial_period_days: trialDays } : {}),
-                metadata: { userId: args.userId, priceId: args.priceId },
+                metadata: { userId: args.userId, priceId: args.priceId, currency: args.currency ?? "" },
             },
 
             client_reference_id: args.userId,
-
             success_url,
             cancel_url,
-
-            metadata: {
-                userId: args.userId,
-                priceId: args.priceId,
-                useTrial: String(args.useTrial),
-                callbackUrl: cb,
-            },
-        }),
+        })
     );
 
     return { url: checkout.url };
 }
-
 export async function createBillingPortalSession(userId: string) {
     const {appUrl} = billingConfig();
 

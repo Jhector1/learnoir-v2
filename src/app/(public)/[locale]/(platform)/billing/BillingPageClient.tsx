@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { StripeStatusPanel } from "@/components/billing/StripeStatusPanel";
 import { cn } from "@/lib/cn";
 
@@ -16,19 +17,18 @@ import { useBillingActions } from "@/components/billing/hooks/useBillingActions"
 import InfoRow from "@/components/billing/InfoRow";
 
 type PaywallInfo = {
-    reason?: string | null; // e.g. "module"
+    reason?: string | null; // "module" | "assignment" | ...
     subject?: string | null;
     module?: string | null;
-    next?: string | null;   // internal path to go back to
-    back?: string | null; // ✅ NEW: safe page
-
+    next?: string | null;
+    back?: string | null;
 };
 
 function safeInternalPath(path?: string | null) {
     const raw = String(path ?? "").trim();
     if (!raw) return null;
     if (raw.startsWith("//")) return null;
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return null; // blocks http:, javascript:, etc
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return null;
     return raw.startsWith("/") ? raw : `/${raw}`;
 }
 
@@ -39,7 +39,9 @@ export default function BillingPageClient({
     callbackUrl: string;
     paywall?: PaywallInfo;
 }) {
-    const { status, loading, error, setError, trialState, canUseTrial, headlineBadge } =
+    const t = useTranslations("billing");
+
+    const { status, loading, error, setError, reload, trialState, canUseTrial, headlineBadge } =
         useBillingStatus();
 
     const { busy, authRedirect, openPortal, startCheckout } = useBillingActions({
@@ -53,15 +55,16 @@ export default function BillingPageClient({
 
     const paywallTitle =
         paywall?.reason === "module"
-            ? "This module requires payment"
+            ? t("paywall.titleModule")
             : paywall?.reason === "assignment"
-                ? "This assignment requires payment"
-                : "This requires payment";
+                ? t("paywall.titleAssignment")
+                : t("paywall.titleGeneric");
+
+    const trialDays = status?.trialDays ?? 7;
 
     return (
         <BillingShell>
             <div className="relative mx-auto max-w-5xl grid gap-4">
-                {/* Header */}
                 <div className={CARD}>
                     <BillingHeader
                         busy={busy}
@@ -72,7 +75,6 @@ export default function BillingPageClient({
                         onSignIn={authRedirect}
                     />
 
-                    {/* ✅ NEW: Paywall banner */}
                     {showPaywall ? (
                         <div className="px-5 pb-5">
                             <div
@@ -94,28 +96,32 @@ export default function BillingPageClient({
                                                 "transition",
                                             )}
                                         >
-                                            ← Go back
+                                            {t("paywall.goBack")}
                                         </Link>
                                     ) : null}
                                 </div>
 
                                 <div className="mt-2 text-xs text-neutral-700 dark:text-white/70">
-                                    Subscribe to unlock access and continue.
+                                    {t("paywall.body")}
                                     {paywall?.subject || paywall?.module ? (
                                         <span className="ml-1">
                       {paywall.subject ? (
-                          <span className="font-mono">subject: {paywall.subject}</span>
+                          <span className="font-mono">
+                          {t("paywall.subjectLabel")}: {paywall.subject}
+                        </span>
                       ) : null}
                                             {paywall.subject && paywall.module ? <span> • </span> : null}
                                             {paywall.module ? (
-                                                <span className="font-mono">module: {paywall.module}</span>
+                                                <span className="font-mono">
+                          {t("paywall.moduleLabel")}: {paywall.module}
+                        </span>
                                             ) : null}
                     </span>
                                     ) : null}
                                 </div>
 
                                 <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
-                                    After checkout, you’ll be returned automatically.
+                                    {t("paywall.afterCheckout")}
                                 </div>
                             </div>
                         </div>
@@ -128,16 +134,45 @@ export default function BillingPageClient({
                     ) : null}
                 </div>
 
-                {/* Main */}
                 <div className="grid gap-4 lg:grid-cols-3">
-                    {/* Plans */}
                     <div className={cn(CARD, "lg:col-span-2")}>
                         <div className="border-b border-neutral-200/70 bg-white/70 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-black/20">
-                            <div className="text-sm font-black tracking-tight">Plans</div>
+                            <div className="text-sm font-black tracking-tight">{t("plans.sectionTitle")}</div>
+
                             <div className="mt-1 text-xs text-neutral-500 dark:text-white/60">
                                 {status?.trialDays
-                                    ? `${status.trialDays}-day free trial if eligible.`
-                                    : "Trial available if eligible."}
+                                    ? t("plans.trialInfoWithDays", { days: status.trialDays })
+                                    : t("plans.trialInfo")}
+                            </div>
+
+                            <div className="mt-3 flex items-center gap-2">
+                                {(["usd", "htg"] as const).map((cur) => (
+                                    <button
+                                        key={cur}
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                await fetch("/api/billing/currency", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ currency: cur }),
+                                                });
+                                                await reload();
+                                            } catch {
+                                                // optional toast
+                                            }
+                                        }}
+                                        className={cn(
+                                            "rounded-xl px-3 py-1.5 text-xs font-extrabold border transition",
+                                            status?.currency === cur
+                                                ? "bg-neutral-900 text-white border-neutral-900 dark:bg-white/10 dark:border-white/20"
+                                                : "bg-white/70 text-neutral-900 border-neutral-200/70 hover:bg-white dark:bg-white/[0.04] dark:text-white/80 dark:border-white/10",
+                                        )}
+                                        aria-pressed={status?.currency === cur}
+                                    >
+                                        {cur.toUpperCase()}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -158,124 +193,103 @@ export default function BillingPageClient({
 
                         {loading || !status ? (
                             <div className="p-5 text-sm text-neutral-600 dark:text-white/70">
-                                Loading plans…
+                                {t("plans.loading")}
                             </div>
                         ) : (
                             <div className="p-5 grid gap-3 md:grid-cols-2">
                                 <PlanCard
-                                    title="Monthly"
+                                    title={t("plans.monthly.title")}
                                     price={status.monthlyPriceLabel}
-                                    subtitle="Flexible month-to-month. Cancel anytime."
+                                    subtitle={t("plans.monthly.subtitle")}
                                     recommended={false}
                                     highlight={status.currentPlan === "monthly"}
-                                    features={[
-                                        "Unlimited practice sessions",
-                                        "Assignments access",
-                                        "Progress tracking",
-                                        "Premium review modules",
-                                    ]}
+                                    priceKicker={t("plans.priceKicker")}
+                                    recommendedLabel={t("plans.recommended")}
+                                    features={t.raw("plans.monthly.features") as string[]}
                                     ctaLabel={
                                         status.isSubscribed && status.currentPlan === "monthly"
-                                            ? "Current plan"
-                                            : "Subscribe monthly"
+                                            ? t("plans.currentPlan")
+                                            : t("plans.monthly.subscribe")
                                     }
                                     ctaDisabled={busy || status.isSubscribed}
                                     onCta={() => startCheckout("monthly", false)}
                                     trialLabel={
                                         canUseTrial
-                                            ? `Start ${status.trialDays}-day trial`
+                                            ? t("plans.startTrial", { days: trialDays })
                                             : trialState.inTrial
-                                                ? "Trial active"
-                                                : "Trial unavailable"
+                                                ? t("plans.trialActive")
+                                                : t("plans.trialUnavailable")
                                     }
                                     trialDisabled={busy || !canUseTrial || status.isSubscribed}
                                     onTrial={() => startCheckout("monthly", true)}
                                     trialNote={
                                         !status.trialEligible
-                                            ? "Trial already used on this account."
+                                            ? t("plans.trialNoteUsed")
                                             : trialState.trialEnded
-                                                ? "Trial period has ended."
-                                                : "No charge today. Cancel before trial ends."
+                                                ? t("plans.trialNoteEnded")
+                                                : t("plans.trialNoteDefault")
                                     }
                                 />
 
                                 <PlanCard
-                                    title="Yearly"
+                                    title={t("plans.yearly.title")}
                                     price={status.yearlyPriceLabel}
-                                    subtitle="Best value for consistent learners."
+                                    subtitle={t("plans.yearly.subtitle")}
                                     recommended
                                     highlight={status.currentPlan === "yearly"}
-                                    savings={status.yearlySavingsLabel ?? "Save vs monthly"}
-                                    features={[
-                                        "Everything in Monthly",
-                                        "Lower effective monthly cost",
-                                        "Fewer billing interruptions",
-                                        "Best for cohorts & schools",
-                                    ]}
+                                    savings={status.yearlySavingsLabel ?? "—"} // savings label comes from server; localize there if you want
+                                    priceKicker={t("plans.priceKicker")}
+                                    recommendedLabel={t("plans.recommended")}
+                                    features={t.raw("plans.yearly.features") as string[]}
                                     ctaLabel={
                                         status.isSubscribed && status.currentPlan === "yearly"
-                                            ? "Current plan"
-                                            : "Subscribe yearly"
+                                            ? t("plans.currentPlan")
+                                            : t("plans.yearly.subscribe")
                                     }
                                     ctaDisabled={busy || status.isSubscribed}
                                     onCta={() => startCheckout("yearly", false)}
                                     trialLabel={
                                         canUseTrial
-                                            ? `Start ${status.trialDays}-day trial`
+                                            ? t("plans.startTrial", { days: trialDays })
                                             : trialState.inTrial
-                                                ? "Trial active"
-                                                : "Trial unavailable"
+                                                ? t("plans.trialActive")
+                                                : t("plans.trialUnavailable")
                                     }
                                     trialDisabled={busy || !canUseTrial || status.isSubscribed}
                                     onTrial={() => startCheckout("yearly", true)}
                                     trialNote={
                                         !status.trialEligible
-                                            ? "Trial already used on this account."
+                                            ? t("plans.trialNoteUsed")
                                             : trialState.trialEnded
-                                                ? "Trial period has ended."
-                                                : "No charge today. Cancel before trial ends."
+                                                ? t("plans.trialNoteEnded")
+                                                : t("plans.trialNoteDefault")
                                     }
                                 />
                             </div>
                         )}
                     </div>
 
-                    {/* Sidebar */}
                     <div className={CARD}>
                         <div className="border-b border-neutral-200/70 bg-white/70 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-black/20">
-                            <div className="text-sm font-black tracking-tight">What you get</div>
-                            <div className="mt-1 text-xs text-neutral-500 dark:text-white/60">
-                                Premium features included with any plan.
-                            </div>
+                            <div className="text-sm font-black tracking-tight">{t("sidebar.title")}</div>
+                            <div className="mt-1 text-xs text-neutral-500 dark:text-white/60">{t("sidebar.subtitle")}</div>
                         </div>
 
                         <div className="p-5 grid gap-3 text-sm">
-                            <InfoRow
-                                title="Assignments"
-                                desc="Teacher/admin assignments with session tracking and completion flow."
-                            />
-                            <InfoRow
-                                title="Unlimited practice"
-                                desc="Generate questions across topics and difficulty with instant feedback."
-                            />
-                            <InfoRow
-                                title="Progress history"
-                                desc="Track accuracy, missed items, and review progress by subject."
-                            />
-                            <InfoRow
-                                title="Multi-language"
-                                desc="Use Learnoir in English, French, and Haitian Creole."
-                            />
+                            <InfoRow title={t("sidebar.items.assignments.title")} desc={t("sidebar.items.assignments.desc")} />
+                            <InfoRow title={t("sidebar.items.unlimitedPractice.title")} desc={t("sidebar.items.unlimitedPractice.desc")} />
+                            <InfoRow title={t("sidebar.items.progressHistory.title")} desc={t("sidebar.items.progressHistory.desc")} />
+                            <InfoRow title={t("sidebar.items.multilanguage.title")} desc={t("sidebar.items.multilanguage.desc")} />
 
                             <div className="rounded-2xl border border-neutral-200/70 bg-white/70 p-4 text-xs text-neutral-600 shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:shadow-none">
-                                Tip: If an assignment is locked, subscribing here will unlock it immediately.
+                                {t("sidebar.tip")}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="text-xs text-neutral-500 dark:text-white/55">
-                    Payments are handled by Stripe. Manage or cancel anytime from the billing portal.
+                    {t("footer.disclaimer")}
                 </div>
             </div>
         </BillingShell>

@@ -10,6 +10,12 @@ export type BillingStatus = {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
 
+    // ✅ NEW: raw pricing data (Stripe minor units) for locale reformatting client-side
+    currency: string;               // e.g. "usd"
+    monthlyUnitAmountMinor: number; // e.g. 1000
+    yearlyUnitAmountMinor: number;  // e.g. 10000
+
+    // Labels (server formatted, but client can override on locale change)
     monthlyPriceLabel: string;
     yearlyPriceLabel: string;
     yearlySavingsLabel?: string | null;

@@ -1,7 +1,7 @@
 prisma migrate reset --force&&prisma migrate deploy && prisma generate&&
 
 
- npx dotenv-cli -e .env.production.local -- npx prisma migrate deploy
+npx dotenv-cli -e .env.production.local -- npx prisma migrate deploy
 npx dotenv-cli -e .env.production.local -- npx prisma db seed
 
 

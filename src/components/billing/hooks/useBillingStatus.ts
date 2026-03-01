@@ -1,10 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocale } from "next-intl";
 import type { BillingStatus } from "@/lib/billing/types";
 import { fmtShortDate } from "@/lib/billing/format";
+import { formatMoneyMinor, toIntlLocale } from "@/i18n/money";
+
+function hasRawPricing(s: BillingStatus | null) {
+    return Boolean(
+        s &&
+        typeof (s as any).currency === "string" &&
+        typeof (s as any).monthlyUnitAmountMinor === "number" &&
+        typeof (s as any).yearlyUnitAmountMinor === "number"
+    );
+}
 
 export function useBillingStatus() {
+    const locale = useLocale(); // "en", "fr", ...
+    const intlLocale = useMemo(() => toIntlLocale(locale), [locale]);
+
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<BillingStatus | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -36,51 +50,64 @@ export function useBillingStatus() {
         };
     }, [load]);
 
+    // ✅ Reformat plan labels instantly when locale changes (no refetch)
+    const derivedStatus = useMemo(() => {
+        if (!status) return null;
+
+        if (!hasRawPricing(status)) return status;
+
+        const currency = (status as any).currency as string;
+        const m = (status as any).monthlyUnitAmountMinor as number;
+        const y = (status as any).yearlyUnitAmountMinor as number;
+
+        return {
+            ...status,
+            monthlyPriceLabel: `${formatMoneyMinor(m, currency, intlLocale)} / mo`,
+            yearlyPriceLabel: `${formatMoneyMinor(y, currency, intlLocale)} / yr`,
+        };
+    }, [status, intlLocale]);
+
     const trialState = useMemo(() => {
-        const ends = status?.trialEndsAt ? new Date(status.trialEndsAt) : null;
+        const ends = derivedStatus?.trialEndsAt ? new Date(derivedStatus.trialEndsAt) : null;
         const now = new Date();
         const inTrial = !!ends && ends.getTime() > now.getTime();
         const trialEnded = !!ends && ends.getTime() <= now.getTime();
         return { ends, inTrial, trialEnded };
-    }, [status?.trialEndsAt]);
+    }, [derivedStatus?.trialEndsAt]);
 
-    const canUseTrial = Boolean(status?.trialEligible) && !trialState.trialEnded;
+    const canUseTrial = Boolean(derivedStatus?.trialEligible) && !trialState.trialEnded;
 
     const headlineBadge = useMemo(() => {
-        if (!status) return null;
+        if (!derivedStatus) return null;
 
-        // if (!status.isAuthenticated) {
-        //     return { tone: "warn" as const, text: "Sign in required" };
-        // }
-
-        if (status.stripeStatus === "trialing") {
+        if (derivedStatus.stripeStatus === "trialing") {
             return {
                 tone: "good" as const,
-                text: `🕒 Trialing • ends ${fmtShortDate(status.trialEndsAt)}`,
+                text: `🕒 Trialing • ends ${fmtShortDate(derivedStatus.trialEndsAt, intlLocale)}`,
             };
         }
 
-        if (status.stripeStatus === "active") {
+        if (derivedStatus.stripeStatus === "active") {
             return { tone: "good" as const, text: "✅ Active subscription" };
         }
 
-        if (status.stripeStatus === "past_due") {
+        if (derivedStatus.stripeStatus === "past_due") {
             return { tone: "warn" as const, text: "⚠️ Past due — update payment method" };
         }
 
-        if (status.stripeStatus === "unpaid") {
+        if (derivedStatus.stripeStatus === "unpaid") {
             return { tone: "warn" as const, text: "⚠️ Unpaid — update payment method" };
         }
 
-        if (status.stripeStatus === "canceled") {
+        if (derivedStatus.stripeStatus === "canceled") {
             return { tone: "neutral" as const, text: "Canceled" };
         }
 
         return { tone: "neutral" as const, text: "Not subscribed" };
-    }, [status]);
+    }, [derivedStatus, intlLocale]);
 
     return {
-        status,
+        status: derivedStatus,
         loading,
         error,
         setError,

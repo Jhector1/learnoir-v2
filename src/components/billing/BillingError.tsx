@@ -1,7 +1,12 @@
+"use client";
+
 import React from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 export default function BillingError({ message }: { message: string }) {
+    const t = useTranslations("billing");
+
     return (
         <div
             className={cn(
@@ -10,7 +15,7 @@ export default function BillingError({ message }: { message: string }) {
                 "dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-white/90",
             )}
         >
-            <div className="font-black">⚠️ Something went wrong</div>
+            <div className="font-black">{t("errors.title")}</div>
             <div className="mt-1 text-xs opacity-80">{message}</div>
         </div>
     );

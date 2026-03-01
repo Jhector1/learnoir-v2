@@ -1,7 +1,5 @@
 // src/components/sketches/subjects/python/modules/module0/sections/section0/functions.section.ts
-// import { SketchEntry } from "../../../../.";
-
-import {SketchEntry} from "@/components/sketches/subjects";
+import { SketchEntry } from "@/components/sketches/subjects";
 
 export const PY_FUNCTIONS_SECTION: Record<string, SketchEntry> = {
     "py.func.basics": {
@@ -13,45 +11,65 @@ export const PY_FUNCTIONS_SECTION: Record<string, SketchEntry> = {
             bodyMarkdown: String.raw`
 You’ve been building bigger and bigger programs:
 
-- variables + types
-- expressions
-- strings + clean output
-- input patterns
-- decisions (if)
-- repetition (loops)
+- variables + types  
+- expressions  
+- strings + clean output  
+- input patterns  
+- decisions (\`if\`)  
+- repetition (loops)  
 - collections (lists)
 
-Now you’ve probably felt this pain:
+At some point, you usually hit this pain:
 
 > “I keep writing the same logic again.”
 
-That’s the signal you’re ready for functions.
+That’s the signal you’re ready for **functions**.
 
-Think of a **function** like a small machine:
+A function is like a small machine:
 
-- you feed it inputs
-- it does a job
-- it gives you an output
+- you **give it inputs**
+- it **does a job**
+- it can **give you an output**
 
-You already used built-in machines:
+You can run the same “machine” many times without rewriting the logic.
+
+---
+
+## You already used functions (built-in)
+
+You already used built-in functions—functions that come with Python.
+
+**Keep this in mind:** we talked about these already, and I promise we’ll go deeper into them later.  
+For now, we’re learning the *magic of functions* by understanding how they work and how to make our own.
 
 - \`print(...)\` shows output
 - \`input(...)\` asks a question
 - \`type(...)\` checks a type
 - \`len(...)\` counts items
 
-Now you’ll build your own.
+Yes—these are functions. They’re called **built-in functions** because Python provides them for you.  
+There are many more built-in functions, but for now we’ll focus on building our own **user-defined functions**.
 
 ---
 
 ## Defining a function
 
+A function definition has:
+
+- the keyword \`def\`
+- a **name**
+- parentheses \`( )\` for parameters
+- a colon \`: \`
+- an indented body
+
 ~~~python
 def greet():
     print("Hello!")
 ~~~
 
-Calling it:
+### Calling it
+
+Calling (running) the function means writing its name with parentheses:
 
 ~~~python
 greet()
@@ -72,21 +90,29 @@ greet()
 
 ---
 
-## Parameters: sending information into the machine
+## Parameters vs. arguments (very important)
+
+People mix these up at first—here’s the clean rule:
+
+- **Parameters** are the *names* inside the function definition.
+- **Arguments** are the *actual values* you pass in when calling the function.
+
+Example:
 
 ~~~python
-def greet(name):
+def greet(name):        # name is a PARAMETER
     print(f"Hello, {name}!")
+
+greet("Maya")           # "Maya" is an ARGUMENT
+greet("Ayo")            # "Ayo" is an ARGUMENT
 ~~~
 
-~~~python
-greet("Maya")
-greet("Ayo")
-~~~
+### Why parameters matter
+Parameters let your function become flexible instead of hard-coded.
 
 ---
 
-## Try it
+## Try it (use input as an argument)
 
 ~~~python
 def greet(name):
@@ -98,10 +124,12 @@ greet(name)
 
 ---
 
-## Return values: getting a result back
+## Return values (output you can *use*)
 
-Sometimes you don’t want to *print* inside the function.
-You want the function to *return* a value so you can use it in expressions.
+Sometimes you don’t want to **print** inside a function.
+
+- \`print()\` shows something to the user, but it does **not** give a value back to your program.
+- \`return\` sends a value back to the caller so you can store it, combine it, or use it in expressions.
 
 ~~~python
 def add(a, b):
@@ -111,9 +139,14 @@ result = add(10, 5)
 print("result =", result)
 ~~~
 
+### What does \`return\` do?
+When Python hits \`return\`:
+1) it immediately ends the function  
+2) it sends the returned value back to the line that called the function  
+
 ---
 
-## Try it (use the result)
+## Try it (use the returned result)
 
 ~~~python
 def add(a, b):
@@ -127,10 +160,10 @@ print(f"x + y = {add(x, y)}")
 
 ---
 
-## Refactor a previous pattern (tip calculator)
+## A practical refactor (tip calculator)
 
-Earlier, you wrote tip math directly.
-Now we turn it into a reusable machine:
+Earlier, you wrote tip math directly in your program.
+Now we turn that logic into a reusable machine:
 
 ~~~python
 def total_with_tip(bill, tip_percent):
@@ -143,15 +176,21 @@ Use it:
 ~~~python
 bill = float(input("Bill: "))
 tip_percent = float(input("Tip %: "))
+
 total = total_with_tip(bill, tip_percent)
 print(f"Total = {total}")
 ~~~
 
+### Why this is better
+- You can reuse \`total_with_tip\` anywhere (even in a bigger app).
+- Your main program becomes easier to read.
+- You can test the function by itself.
+
 ---
 
-## Scope (very light)
+## Scope (very light, but crucial)
 
-Variables inside a function live inside that function.
+Variables created inside a function live **only** inside that function.
 
 ~~~python
 def demo():
@@ -166,7 +205,7 @@ That \`x\` does not “leak out” to the rest of the program.
 For Module 0, remember this simple rule:
 
 ✅ **What happens inside the function stays inside the function**  
-(unless you return something).
+(unless you \`return\` something).
 
 ---
 
@@ -176,10 +215,11 @@ Functions let you:
 
 - avoid repeating code
 - write cleaner programs
-- build your own reusable tools
+- break big problems into smaller steps
+- build reusable tools you can call anytime
 
-After this, you’re ready for bigger projects—because now you can combine:
-**lists + loops + conditionals + functions** into real apps.
+Next, you’ll start combining:
+**lists + loops + conditionals + functions** into real mini-apps.
 `.trim(),
         },
     },

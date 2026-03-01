@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createCheckoutSession, billingConfig } from "@/lib/billing/stripeService";
+import {getLocaleFromCookie} from "@/serverUtils";
+import {resolveBillingCurrency} from "@/lib/billing/currency";
 
 function safeInternalPath(path: unknown, fallback = "/") {
   const raw = typeof path === "string" ? path.trim() : "";
@@ -38,13 +40,19 @@ export async function POST(req: Request) {
   });
 
   const canUseTrial = useTrial && !u?.trialUsedAt && trialDays > 0;
+  const appLocale = await getLocaleFromCookie();     // "en", "fr", ...
 
   try {
+    const billingCurrency = await resolveBillingCurrency();
+    const appLocale = await getLocaleFromCookie();
+
     const out = await createCheckoutSession({
       userId,
       priceId,
       useTrial: canUseTrial,
       callbackUrl,
+      currency: billingCurrency,
+      appLocale,
     });
 
     if (!out.url) return NextResponse.json({ message: "Stripe session missing url." }, { status: 500 });

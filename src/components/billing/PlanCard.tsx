@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { cn } from "@/lib/cn";
 
@@ -11,6 +13,10 @@ export default function PlanCard(props: {
     savings?: string;
 
     highlight?: boolean;
+
+    // ✅ new: allow i18n for small labels
+    priceKicker?: string;        // default "Price"
+    recommendedLabel?: string;   // default "Recommended"
 
     ctaLabel: string;
     ctaDisabled?: boolean;
@@ -33,18 +39,14 @@ export default function PlanCard(props: {
         >
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <div className="text-sm font-black text-neutral-900 dark:text-white/90">
-                        {props.title}
-                    </div>
-                    <div className="mt-1 text-xs text-neutral-500 dark:text-white/60">
-                        {props.subtitle}
-                    </div>
+                    <div className="text-sm font-black text-neutral-900 dark:text-white/90">{props.title}</div>
+                    <div className="mt-1 text-xs text-neutral-500 dark:text-white/60">{props.subtitle}</div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1">
                     {props.recommended ? (
                         <span className="rounded-full border border-emerald-300/40 bg-emerald-300/15 px-2 py-1 text-[11px] font-extrabold text-emerald-900 dark:border-emerald-300/20 dark:bg-emerald-300/10 dark:text-emerald-100">
-              Recommended
+              {props.recommendedLabel ?? "Recommended"}
             </span>
                     ) : null}
 
@@ -58,7 +60,7 @@ export default function PlanCard(props: {
 
             <div className="mt-4 rounded-2xl border border-neutral-200/70 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-black/20">
                 <div className="text-[11px] font-extrabold text-neutral-500 dark:text-white/60">
-                    Price
+                    {props.priceKicker ?? "Price"}
                 </div>
                 <div className="mt-1 text-2xl font-black tracking-tight text-neutral-950 dark:text-white">
                     {props.price}

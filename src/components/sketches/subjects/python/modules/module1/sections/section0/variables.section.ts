@@ -54,7 +54,7 @@ Read it like this:
 Python uses \`=\` to **assign** a value to a variable.
 In math, \`=\` usually means “is equal to,” but in programming (here) it means **assignment**.
 
-(When you want to compare values for equality in Python, you use \`==\`.)
+*(When you want to compare values for equality in Python, you use \`==\`, we'll get more into this later.)*
 
 ---
 

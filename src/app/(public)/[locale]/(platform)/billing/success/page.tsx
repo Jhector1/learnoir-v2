@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 type ConfirmResp =
@@ -24,19 +25,32 @@ function safeInternalPathOrNull(path?: string | null) {
   return raw.startsWith("/") ? raw : `/${raw}`;
 }
 
-function formatWhen(x: string | null) {
+function formatWhen(x: string | null, locale: string) {
   if (!x) return "—";
   const d = new Date(x);
   if (Number.isNaN(d.getTime())) return x;
-  return d.toLocaleString();
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
 
-function planFromPriceId(priceId: string | null) {
+type PlanKey = "monthly" | "yearly" | "unknown";
+function planKeyFromPriceId(priceId: string | null): PlanKey {
   const id = (priceId ?? "").toLowerCase();
-  if (id.includes("year") || id.includes("annual")) return "Yearly";
-  if (id.includes("month") || id.includes("monthly")) return "Monthly";
-  return "Subscription";
+  if (id.includes("year") || id.includes("annual")) return "yearly";
+  if (id.includes("month") || id.includes("monthly")) return "monthly";
+  return "unknown";
 }
+
+const KNOWN_STRIPE_STATUSES = new Set([
+  "trialing",
+  "active",
+  "past_due",
+  "unpaid",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "paused",
+  "none",
+]);
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
@@ -95,26 +109,26 @@ function Soft({ children }: { children: React.ReactNode }) {
 }
 
 export default function BillingSuccessPageClient() {
+  const t = useTranslations("billing.success");
+  const tStatus = useTranslations("billing.statusPanel"); // reuse your existing status/plan labels
+  const locale = useLocale();
+
   const sp = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
 
   const sessionId = sp.get("session_id");
   const nextParam = sp.get("next");
 
   const [busy, setBusy] = useState(true);
   const [data, setData] = useState<ConfirmResp | null>(null);
-const COUNT_NUM = 10;
+
+  const COUNT_NUM = 10;
+
   // auto-redirect controls
   const [auto, setAuto] = useState(true);
   const [countdown, setCountdown] = useState(COUNT_NUM);
   const redirectedRef = useRef(false);
   const cancelAutoRef = useRef(false);
-
-  const locale = useMemo(() => {
-    const seg = (pathname ?? "").split("/").filter(Boolean)[0];
-    return seg && seg.length === 2 ? seg : "en";
-  }, [pathname]);
 
   const nextSafe = useMemo(() => {
     const p = safeInternalPathOrNull(nextParam);
@@ -124,10 +138,22 @@ const COUNT_NUM = 10;
 
   const ok = data?.ok === true;
 
-  const planName = useMemo(
-      () => (ok ? planFromPriceId((data as any).priceId ?? null) : "Subscription"),
-      [ok, data],
-  );
+  const planName = useMemo(() => {
+    if (!ok) return tStatus("planUnknown");
+
+    const key = planKeyFromPriceId((data as any).priceId ?? null);
+    if (key === "monthly") return tStatus("planMonthly");
+    if (key === "yearly") return tStatus("planYearly");
+    return tStatus("planUnknown");
+  }, [ok, data, tStatus]);
+
+  const statusLabel = useMemo(() => {
+    if (!ok) return null;
+    const s = String((data as any).status ?? "").trim();
+    if (!s) return null;
+    if (KNOWN_STRIPE_STATUSES.has(s)) return tStatus(`statuses.${s}` as any);
+    return s;
+  }, [ok, data, tStatus]);
 
   // confirm subscription
   useEffect(() => {
@@ -136,7 +162,7 @@ const COUNT_NUM = 10;
     (async () => {
       if (!sessionId || sessionId.includes("CHECKOUT_SESSION_ID")) {
         if (!alive) return;
-        setData({ ok: false, message: "Missing/invalid session_id in URL." });
+        setData({ ok: false, message: t("errors.missingSession") });
         setBusy(false);
         return;
       }
@@ -154,11 +180,14 @@ const COUNT_NUM = 10;
         const j = (await r.json().catch(() => null)) as ConfirmResp | null;
         if (!alive) return;
 
-        if (!r.ok || !j) setData({ ok: false, message: (j as any)?.message ?? "Confirm failed." });
-        else setData(j);
+        if (!r.ok || !j) {
+          setData({ ok: false, message: (j as any)?.message ?? t("errors.confirmFailed") });
+        } else {
+          setData(j);
+        }
       } catch (e: any) {
         if (!alive) return;
-        setData({ ok: false, message: e?.message ?? "Confirm failed." });
+        setData({ ok: false, message: e?.message ?? t("errors.confirmFailed") });
       } finally {
         if (!alive) return;
         setBusy(false);
@@ -168,7 +197,7 @@ const COUNT_NUM = 10;
     return () => {
       alive = false;
     };
-  }, [sessionId]);
+  }, [sessionId, t]);
 
   // auto-redirect with countdown + cancel
   useEffect(() => {
@@ -186,13 +215,16 @@ const COUNT_NUM = 10;
       if (cancelAutoRef.current) return;
       redirectedRef.current = true;
       router.replace(nextSafe);
-    }, 4000);
+    }, COUNT_NUM * 1000);
 
     return () => {
       clearInterval(tick);
       clearTimeout(go);
     };
   }, [busy, ok, auto, nextSafe, router]);
+
+  const headerTitle = busy ? t("title.busy") : ok ? t("title.ok") : t("title.fail");
+  const headerSub = busy ? t("subtitle.busy") : ok ? t("subtitle.ok") : t("subtitle.fail");
 
   return (
       <div
@@ -218,29 +250,21 @@ const COUNT_NUM = 10;
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div>
                     <div className="text-xs font-extrabold tracking-wide text-neutral-500 dark:text-white/60">
-                      Billing
+                      {t("kicker")}
                     </div>
 
                     <div className="mt-1 text-lg md:text-xl font-black tracking-tight">
-                      {busy
-                          ? "Finalizing subscription…"
-                          : ok
-                              ? "✅ Subscription active"
-                              : "⚠️ Subscription not confirmed"}
+                      {headerTitle}
                     </div>
 
                     <div className="mt-1 text-sm text-neutral-600 dark:text-white/70">
-                      {busy
-                          ? "One moment — we’re syncing your plan."
-                          : ok
-                              ? "All set. We’ll take you back in a moment."
-                              : "We couldn’t confirm the subscription yet."}
+                      {headerSub}
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <Pill>Plan: {planName}</Pill>
-                    {ok ? <Pill>Status: {(data as any).status}</Pill> : null}
+                    <Pill>{t("pills.plan", { plan: planName })}</Pill>
+                    {ok ? <Pill>{t("pills.status", { status: statusLabel ?? String((data as any).status ?? "") })}</Pill> : null}
                   </div>
                 </div>
               </div>
@@ -255,15 +279,17 @@ const COUNT_NUM = 10;
                               "dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-white/90",
                           )}
                       >
-                        <div className="font-black">Error</div>
-                        <div className="mt-1 text-xs opacity-80">{(data as any)?.message ?? "Unknown error."}</div>
+                        <div className="font-black">{t("errorPanel.title")}</div>
+                        <div className="mt-1 text-xs opacity-80">
+                          {(data as any)?.message ?? t("errors.unknown")}
+                        </div>
 
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button className="ui-btn ui-btn-secondary" onClick={() => window.location.reload()}>
-                            Retry
+                            {t("errorPanel.retry")}
                           </button>
                           <button className="ui-btn ui-btn-primary" onClick={() => router.push(`/${locale}/billing`)}>
-                            Go to Billing
+                            {t("errorPanel.goBilling")}
                           </button>
                         </div>
                       </div>
@@ -273,34 +299,40 @@ const COUNT_NUM = 10;
                 {!busy && ok ? (
                     <div className="grid gap-4">
                       <div className="flex flex-wrap gap-2">
-                        <Pill>Status: {(data as any).status}</Pill>
-                        {(data as any).trialEnd ? <Pill>Trial ends: {formatWhen((data as any).trialEnd)}</Pill> : null}
+                        <Pill>{t("pills.status", { status: statusLabel ?? String((data as any).status ?? "") })}</Pill>
+                        {(data as any).trialEnd ? (
+                            <Pill>{t("pills.trialEnds", { when: formatWhen((data as any).trialEnd, locale) })}</Pill>
+                        ) : null}
                         {(data as any).currentPeriodEnd ? (
-                            <Pill>Renews: {formatWhen((data as any).currentPeriodEnd)}</Pill>
+                            <Pill>{t("pills.renews", { when: formatWhen((data as any).currentPeriodEnd, locale) })}</Pill>
                         ) : null}
                       </div>
 
                       <Panel>
                         <div className="p-5 grid gap-3">
                           <div className="text-xs font-extrabold tracking-wide text-neutral-500 dark:text-white/60">
-                            What’s now unlocked
+                            {t("unlocked.kicker")}
                           </div>
 
                           <div className="grid gap-3 sm:grid-cols-2">
                             <Soft>
                               <div className="p-4">
-                                <div className="text-sm font-black text-neutral-900 dark:text-white/90">Practice + Feedback</div>
+                                <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+                                  {t("unlocked.practiceTitle")}
+                                </div>
                                 <div className="mt-1 text-sm text-neutral-600 dark:text-white/70">
-                                  Interactive exercises, instant checks, and targeted review.
+                                  {t("unlocked.practiceDesc")}
                                 </div>
                               </div>
                             </Soft>
 
                             <Soft>
                               <div className="p-4">
-                                <div className="text-sm font-black text-neutral-900 dark:text-white/90">Assignments + Progress</div>
+                                <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+                                  {t("unlocked.assignTitle")}
+                                </div>
                                 <div className="mt-1 text-sm text-neutral-600 dark:text-white/70">
-                                  Track progress by subject and keep learning consistent.
+                                  {t("unlocked.assignDesc")}
                                 </div>
                               </div>
                             </Soft>
@@ -310,21 +342,23 @@ const COUNT_NUM = 10;
 
                       <Panel>
                         <div className="p-5 grid gap-3">
-                          <div className="text-xs font-extrabold tracking-wide text-neutral-500 dark:text-white/60">Next</div>
+                          <div className="text-xs font-extrabold tracking-wide text-neutral-500 dark:text-white/60">
+                            {t("next.kicker")}
+                          </div>
 
                           <div className="text-sm text-neutral-700 dark:text-white/80">
                             {auto ? (
                                 <>
-                                  Continuing in <span className="font-black tabular-nums">{countdown}</span>s…
+                                  {t("next.auto", { s: countdown })}
                                 </>
                             ) : (
-                                <>Choose what to do next.</>
+                                <>{t("next.manual")}</>
                             )}
                           </div>
 
                           <div className="flex flex-wrap gap-2">
                             <button className="ui-btn ui-btn-primary" onClick={() => router.replace(nextSafe)}>
-                              Continue
+                              {t("actions.continue")}
                             </button>
 
                             {auto ? (
@@ -335,12 +369,12 @@ const COUNT_NUM = 10;
                                       setAuto(false);
                                     }}
                                 >
-                                  Stay here
+                                  {t("actions.stayHere")}
                                 </button>
                             ) : null}
 
                             <button className="ui-btn ui-btn-secondary" onClick={() => router.push(`/${locale}/billing`)}>
-                              Manage billing
+                              {t("actions.manageBilling")}
                             </button>
                           </div>
                         </div>
@@ -351,22 +385,26 @@ const COUNT_NUM = 10;
                 {busy ? (
                     <Panel>
                       <div className="p-5">
-                        <div className="text-sm font-black text-neutral-900 dark:text-white/90">Syncing your plan…</div>
+                        <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+                          {t("sync.title")}
+                        </div>
                         <div className="mt-1 text-sm text-neutral-600 dark:text-white/70">
-                          We’re confirming your Stripe subscription and enabling premium features.
+                          {t("sync.desc")}
                         </div>
 
                         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-white/10">
                           <div className="h-full w-1/2 rounded-full bg-emerald-400/70" />
                         </div>
 
-                        <div className="mt-3 text-xs text-neutral-500 dark:text-white/60">This usually takes a few seconds.</div>
+                        <div className="mt-3 text-xs text-neutral-500 dark:text-white/60">
+                          {t("sync.note")}
+                        </div>
                       </div>
                     </Panel>
                 ) : null}
 
                 <div className="pt-1 text-xs text-neutral-500 dark:text-white/55">
-                  Tip: If you’re still seeing a lock, refresh once — subscription sync may have just finished.
+                  {t("tip")}
                 </div>
               </div>
             </Card>

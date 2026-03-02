@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef} from "react";
+import React, {useCallback, useEffect, useMemo, useRef} from "react";
 import type {Exercise} from "@/lib/practice/types";
 import type {VectorPadState} from "@/components/vectorpad/types";
 import {CodeLanguage} from "@/lib/practice/types";
@@ -25,6 +25,8 @@ import ListenBuildExerciseUI from "@/components/practice/kinds/ListenBuildExerci
 import WordBankArrangeExerciseUI from "@/components/practice/kinds/WordBankArrangeExerciseUI";
 import {TFn} from "@/components/practice/PracticeShell";
 import {useTranslations} from "next-intl";
+import {resolveDeepTagged} from "@/i18n/resolveDeepTagged";
+import {useTaggedT} from "@/i18n/tagged";
 
 // ✅ minimal tools API (don’t import review context from practice layer)
 // ...imports unchanged
@@ -223,7 +225,13 @@ export default function ExerciseRenderer({
         (current as any)?.result?.revealUsed ||
         (current as any)?.result?.revealAnswer
     );
+    const { t: tSafe } = useTaggedT(); // safe + no throw
 
+// ✅ Translate tagged "@:..." in the whole exercise object once.
+// Literal strings remain untouched.
+    const ex = useMemo(() => {
+        return resolveDeepTagged(exercise, (key) => tSafe(key, {}, "")) as Exercise;
+    }, [exercise, tSafe]);
 // ✅ ok should be null on reveal (prevents red/green UI)
     const ok: boolean | null =
         !isRevealResult && typeof (current as any).result?.ok === "boolean"
@@ -270,10 +278,10 @@ export default function ExerciseRenderer({
     // -----------------------------
     // numeric
     // -----------------------------
-    if (exercise.kind === "numeric") {
+    if (ex.kind === "numeric") {
         return (
             <NumericExerciseUI
-                exercise={exercise}
+                exercise={ex}
                 value={current.num}
                 onChange={(num) => updateCurrent({num, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -286,7 +294,7 @@ export default function ExerciseRenderer({
     // -----------------------------
     // single_choice
     // -----------------------------
-    if (exercise.kind === "single_choice") {
+    if (ex.kind === "single_choice") {
         const reviewCorrectId =
             reviewCorrectItem && typeof (reviewCorrectItem as any).single === "string"
                 ? String((reviewCorrectItem as any).single)
@@ -294,7 +302,7 @@ export default function ExerciseRenderer({
 
         return (
             <SingleChoiceExerciseUI
-                exercise={exercise}
+                exercise={ex}
                 value={current.single}
                 onChange={(id) => updateCurrent({single: id, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -309,7 +317,7 @@ export default function ExerciseRenderer({
     // -----------------------------
     // multi_choice
     // -----------------------------
-    if (exercise.kind === "multi_choice") {
+    if (ex.kind === "multi_choice") {
         const reviewCorrectIds =
             reviewCorrectItem && Array.isArray((reviewCorrectItem as any).multi)
                 ? (reviewCorrectItem as any).multi.map((x: any) => String(x))
@@ -317,7 +325,7 @@ export default function ExerciseRenderer({
 
         return (
             <MultiChoiceExerciseUI
-                exercise={exercise}
+                exercise={ex}
                 value={current.multi}
                 onChange={(ids) => updateCurrent({multi: ids, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -331,7 +339,7 @@ export default function ExerciseRenderer({
     // -----------------------------
     // text_input ✅
     // -----------------------------
-    if (exercise.kind === "text_input") {
+    if (ex.kind === "text_input") {
         const reviewCorrectText =
             reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
                 ? String((reviewCorrectItem as any).text)
@@ -339,7 +347,7 @@ export default function ExerciseRenderer({
 
         return (
             <TextInputExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 value={(current as any).text ?? ""}
                 onChange={(text) => updateCurrent({text, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -353,7 +361,7 @@ export default function ExerciseRenderer({
     // -----------------------------
     // drag_reorder ✅
     // -----------------------------
-    if (exercise.kind === "drag_reorder") {
+    if (ex.kind === "drag_reorder") {
         const curOrder =
             Array.isArray((current as any).reorder)
                 ? (current as any).reorder.map(String)
@@ -370,7 +378,7 @@ export default function ExerciseRenderer({
 
         return (
             <DragReorderExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 tokenIds={curOrder}
                 onChange={(ids) => updateCurrent({reorder: ids, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -383,7 +391,7 @@ export default function ExerciseRenderer({
     // -----------------------------
     // voice_input ✅
     // -----------------------------
-    if (exercise.kind === "voice_input") {
+    if (ex.kind === "voice_input") {
         const reviewCorrectTranscript =
             reviewCorrectItem && typeof (reviewCorrectItem as any).voiceTranscript === "string"
                 ? String((reviewCorrectItem as any).voiceTranscript)
@@ -391,7 +399,7 @@ export default function ExerciseRenderer({
 
         return (
             <VoiceInputExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 transcript={(current as any).voiceTranscript ?? ""}
                 onChangeTranscript={(voiceTranscript) =>
                     updateCurrent({voiceTranscript, ...resetCheckPatch()})
@@ -407,8 +415,8 @@ export default function ExerciseRenderer({
     // -----------------------------
     // matrix_input
     // -----------------------------
-    if (exercise.kind === "matrix_input") {
-        const exAny = exercise as any;
+    if (ex.kind === "matrix_input") {
+        const exAny = ex as any;
         const allowResize = true;
         const panelReadOnly = lockInputs;
 
@@ -443,11 +451,11 @@ export default function ExerciseRenderer({
     // -----------------------------
     // vector_drag_target
     // -----------------------------
-    if (exercise.kind === "vector_drag_target") {
+    if (ex.kind === "vector_drag_target") {
         return (
             <VectorDragTargetExerciseUI
-                key={(exercise as any).id ?? (exercise as any).key ?? current.key}
-                exercise={exercise}
+                key={(ex as any).id ?? (exercise as any).key ?? current.key}
+                exercise={ex}
                 a={current.dragA}
                 b={current.dragB}
                 onChange={(a, b) => updateCurrent({dragA: a, dragB: b, ...resetCheckPatch()})}
@@ -481,10 +489,10 @@ export default function ExerciseRenderer({
 // -----------------------------
 // listen_build ✅
 // -----------------------------
-    if (exercise.kind === "listen_build") {
+    if (ex.kind === "listen_build") {
         return (
             <ListenBuildExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 value={(current as any).text ?? ""} // ✅ store assembled sentence here
                 onChangeValue={(text) => updateCurrent({text, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -498,7 +506,7 @@ export default function ExerciseRenderer({
 // -----------------------------
 // fill_blank_choice ✅
 // -----------------------------
-    if (exercise.kind === "fill_blank_choice") {
+    if (ex.kind === "fill_blank_choice") {
         const reviewCorrectValue =
             reviewCorrectItem && typeof (reviewCorrectItem as any).text === "string"
                 ? String((reviewCorrectItem as any).text)
@@ -508,7 +516,7 @@ export default function ExerciseRenderer({
 
         return (
             <FillBlankChoiceExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 value={(current as any).text ?? ""} // ✅ store selected choice here
                 onChangeValue={(text) => updateCurrent({text, single: text, ...resetCheckPatch()})}
                 disabled={lockInputs}
@@ -521,10 +529,10 @@ export default function ExerciseRenderer({
     // -----------------------------
     // vector_drag_dot
     // -----------------------------
-    if (exercise.kind === "vector_drag_dot") {
+    if (ex.kind === "vector_drag_dot") {
         return (
             <VectorDragDotExerciseUI
-                exercise={exercise}
+                exercise={ex}
                 a={current.dragA}
                 onChange={(a) => updateCurrent({dragA: a, ...resetCheckPatch()})}
                 padRef={padRef}
@@ -539,13 +547,13 @@ export default function ExerciseRenderer({
 // -----------------------------
 // code_input ✅ ToolsPanel support
 // -----------------------------
-    if (exercise.kind === "code_input") {
+    if (ex.kind === "code_input") {
         const useTools = codeRunnerMode === "tools" && !!codeTools && !!codeInputId;
 
         if (useTools) {
             return (
                 <CodeInputWithTools
-                    exercise={exercise as any}
+                    exercise={ex as any}
                     current={current}
                     lockInputs={lockInputs}
                     checked={checked}
@@ -568,7 +576,7 @@ export default function ExerciseRenderer({
 
         return (
             <CodeInputExerciseUI
-                exercise={exercise as any}
+                exercise={ex as any}
                 code={curCode}
                 stdin={curStdin}
                 language={curLang}

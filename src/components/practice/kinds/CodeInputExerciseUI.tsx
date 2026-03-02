@@ -6,6 +6,7 @@ import type {CodeLanguage, Exercise} from "@/lib/practice/types";
 import type {  RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
+import {useTaggedT} from "@/i18n/tagged";
 
 type CodeInputExercise = Extract<Exercise, { kind: "code_input" }>;
 
@@ -75,7 +76,7 @@ export default function CodeInputExerciseUI({
 
     const didAutoBind = useRef(false);
     const didFirstSync = useRef(false);
-
+    const ui = useTaggedT("practiceUi.codeInput");
     useEffect(() => {
         if (variant !== "tools") return;
         if (!onUseTools) return;
@@ -116,21 +117,12 @@ export default function CodeInputExerciseUI({
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                             <div className="text-xs font-black text-neutral-800 dark:text-white/80">
-                                Edit & run in <span className="font-black">Tools</span>
+                                {ui.t("tools.title", {}, "Edit & run in Tools")}
                             </div>
                             <div className="mt-1 text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
-                                Language: <span className="font-black">{String(language ?? "python")}</span>
-                                {String(stdin ?? "").trim() ? (
-                                    <>
-                                        {" "}
-                                        • Stdin: <span className="font-black">yes</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        {" "}
-                                        • Stdin: <span className="font-black">no</span>
-                                    </>
-                                )}
+                                {ui.t("tools.language", {}, "Language")}: <span className="font-black">{String(language ?? "python")}</span>
+                                {" • "}
+                                {ui.t("tools.stdin", {}, "Stdin")}: <span className="font-black">{String(stdin ?? "").trim() ? ui.t("yes", {}, "yes") : ui.t("no", {}, "no")}</span>
                             </div>
                         </div>
 
@@ -142,25 +134,27 @@ export default function CodeInputExerciseUI({
                                 "ui-btn ui-btn-secondary text-xs font-extrabold",
                                 disabled || readOnly || !onUseTools ? "opacity-60 cursor-not-allowed" : "",
                             ].join(" ")}
-                            title="Bind this question to the Tools panel"
+                            title={ui.t("tools.bindTitle", {}, "Bind this question to the Tools panel")}
                         >
-                            {toolsBound ? "Bound ✓" : "Open in Tools"}
+                            {toolsBound ? ui.t("tools.bound", {}, "Bound ✓") : ui.t("tools.open", {}, "Open in Tools")}
                         </button>
                     </div>
 
                     <div className="mt-3 grid gap-2">
                         <div className="text-[11px] font-black text-neutral-600 dark:text-white/60">
-                            Your code (snapshot)
-                        </div>
+                            {ui.t("tools.codeSnapshot", {}, "Your code (snapshot)")}                        </div>
 
                         <pre className="max-h-56 overflow-auto rounded-xl bg-black/5 p-3 text-[11px] font-mono text-neutral-900 dark:bg-white/10 dark:text-white/90">
-              {String(code ?? "").trim() ? String(code) : "// Open Tools → to write code"}
-            </pre>
+              {String(code ?? "").trim()
+                  ? String(code)
+                  : ui.t("tools.emptyCode", {}, "// Open Tools → to write code")}
+</pre>
+
 
                         {String(stdin ?? "").trim() ? (
                             <>
                                 <div className="text-[11px] font-black text-neutral-600 dark:text-white/60">
-                                    Stdin (snapshot)
+                                    {ui.t("tools.stdinSnapshot", {}, "Stdin (snapshot)")}
                                 </div>
                                 <pre className="max-h-32 overflow-auto rounded-xl bg-black/5 p-3 text-[11px] font-mono text-neutral-900 dark:bg-white/10 dark:text-white/90">
                   {String(stdin)}
@@ -172,7 +166,7 @@ export default function CodeInputExerciseUI({
 
                 {showCorrect ? (
                     <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-3">
-                        {/* ...unchanged... */}
+                        {ui.t("correctSolution", {}, "Correct solution")}
                     </div>
                 ) : null}
             </div>

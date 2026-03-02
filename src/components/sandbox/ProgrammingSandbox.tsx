@@ -10,7 +10,7 @@ export default function ProgrammingIdeSandbox() {
     const [lang, setLang] = useState<CodeLanguage>("python");
     const active = useMemo(() => LANGS.find((x) => x.id === lang) ?? LANGS[0], [lang]);
 
-    const storageKey = `learnoir.ide.workspace.v2.${lang}`;
+    const storageKey = `${process.env.NEXT_PUBLIC_APP_NAME??"learnoir"}.ide.workspace.v2.${lang}`;
 
     return (
         <div className="h-dvh w-dvw overflow-hidden bg-transparent">

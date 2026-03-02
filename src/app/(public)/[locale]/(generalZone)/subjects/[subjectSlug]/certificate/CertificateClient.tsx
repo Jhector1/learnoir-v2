@@ -22,7 +22,7 @@ type Status = {
     certificate: { id: string; issuedAt: string; completedAt: string | null } | null;
     actor: { isGuest: boolean; userId: string | null; guestId: string | null };
 };
-
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
 export default function CertificateClient() {
     const params = useParams<{ locale: string; subjectSlug: string }>();
     const router = useRouter();
@@ -241,7 +241,7 @@ export default function CertificateClient() {
                                     className="text-[64px] md:text-[88px] font-black tracking-widest text-neutral-900/5 dark:text-white/5 rotate-[-12deg]"
                                     style={{fontFamily: "var(--font-playfair)"}}
                                 >
-                                    LEARNOIR
+                                    {String(APP_NAME).toUpperCase()}
                                 </div>
                             </div>
 
@@ -264,7 +264,7 @@ export default function CertificateClient() {
                             <div className="relative h-full flex flex-col items-center justify-center text-center px-6">
                                 <div
                                     className="text-[11px] font-extrabold tracking-[0.22em] text-slate-600 dark:text-white/60">
-                                    LEARNOIR
+                                    {String(APP_NAME).toUpperCase()}
                                 </div>
 
                                 <div className="mt-1 text-xs text-slate-500 dark:text-white/50">

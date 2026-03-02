@@ -25,6 +25,7 @@ import { emitSfx } from "@/lib/sfx/bus";
 import { QuizBlockSkeleton } from "@/components/review/quiz/components/QuizBlockSkeleton";
 
 import { scrollIntoViewSmart } from "@/lib/ui/flowScroll";
+import {useTaggedT} from "@/i18n/tagged";
 
 /* -------------------------------- settings -------------------------------- */
 
@@ -500,7 +501,7 @@ export default function QuizBlock({
   /* ------------------------------- state emitter ------------------------------ */
 
   const emitState = useCallback((s: SavedQuizState) => onStateChange?.(s), [onStateChange]);
-
+  const ui = useTaggedT("reviewQuizUi");
   const emitter = useDebouncedEmit(nextState, emitState, {
     delayMs: 400,
     enabled: Boolean(onStateChange && questions.length),
@@ -550,7 +551,7 @@ export default function QuizBlock({
   }
 
   if (!questions.length) {
-    return <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">No questions.</div>;
+    return <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">{ui.t("noQuestions", {}, "No questions.")}</div>;
   }
 
   return (
@@ -647,7 +648,7 @@ export default function QuizBlock({
                             else advanceFrom(q.id);
                           }}
                       >
-                        {isLast ? "Finish →" : "Next →"}
+                        {isLast ? ui.t("buttons.finish", {}, "Finish →") : ui.t("buttons.next", {}, "Next →")}
                       </button>
                     </div>
                 ) : null}
@@ -669,8 +670,7 @@ export default function QuizBlock({
                     setAutoAdvance(e.target.checked);
                   }}
               />
-              Auto-advance
-            </label>
+              {ui.t("autoAdvance", {}, "Auto-advance")}            </label>
           </div>
 
           <QuizFooter
@@ -689,21 +689,24 @@ export default function QuizBlock({
             open={confirmResetQuiz}
             onOpenChange={setConfirmResetQuiz}
             danger
-            title="Reset this quiz?"
-            confirmLabel="Reset quiz"
+            title={ui.t("resetDialog.title", {}, "Reset this quiz?")}
+            confirmLabel={ui.t("resetDialog.confirm", {}, "Reset quiz")}
             description={
               <div className="grid gap-2">
-                <div>This will:</div>
+                <div>{ui.t("resetDialog.intro", {}, "This will:")}</div>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Clear your selected answers and checked status.</li>
-                  <li>Clear practice attempts and local state for this quiz.</li>
+                  <li>{ui.t("resetDialog.b1", {}, "Clear your selected answers and checked status.")}</li>
+                  <li>{ui.t("resetDialog.b2", {}, "Clear practice attempts and local state for this quiz.")}</li>
                   <li>
-                    Reload the <span className="font-black">same</span> question set (it does{" "}
-                    <span className="font-black">not</span> generate a new set).
+                    {ui.t(
+                        "resetDialog.b3",
+                        {},
+                        "Reload the same question set (it does not generate a new set).",
+                    )}
                   </li>
                 </ul>
                 <div className="text-neutral-500 dark:text-white/60 text-xs font-extrabold">
-                  This can’t be undone.
+                  {ui.t("resetDialog.cannotUndo", {}, "This can’t be undone.")}
                 </div>
               </div>
             }

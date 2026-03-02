@@ -1,37 +1,37 @@
 // src/components/review/module/CardRenderer.tsx
 "use client";
 
-import React from "react";
-import type {ReviewCard, ReviewQuizSpec} from "@/lib/subjects/types";
-import type {SavedQuizState} from "@/lib/subjects/progressTypes";
+import React, { useMemo } from "react";
+import type { ReviewCard } from "@/lib/subjects/types";
+import type { SavedQuizState } from "@/lib/subjects/progressTypes";
 
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import QuizBlock from "@/components/review/QuizBlock";
-import {buildReviewQuizKey} from "@/lib/subjects/quizClient";
-import {cn} from "@/lib/cn";
+import { buildReviewQuizKey } from "@/lib/subjects/quizClient";
+import { cn } from "@/lib/cn";
 
 import SketchBlock from "@/components/sketches/subjects/SketchBlock";
+import { useTaggedT } from "@/i18n/tagged";
 
 type SavedSketchState = any;
 
-function GateBanner({kind}: { kind: "quiz" | "project" }) {
+function GateBanner({ text }: { text: string }) {
     return (
-        <div
-            className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
-            Complete the topic items above (readings, videos, sketches) to unlock this {kind}.
+        <div className="mt-2 rounded-xl border border-amber-600/20 bg-amber-500/10 p-2 text-xs font-extrabold text-amber-950 dark:border-amber-400/30 dark:bg-amber-300/10 dark:text-amber-100">
+            {text}
         </div>
     );
 }
 
-function CompletedBadge() {
+function CompletedBadge({ text }: { text: string }) {
     return (
         <div className="mt-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300/80">
-            ✓ Completed
+            {text}
         </div>
     );
 }
 
-function CardTitle({title}: { title?: string | null }) {
+function CardTitle({ title }: { title?: string | null }) {
     if (!title) return null;
     return (
         <div className="text-sm font-black text-neutral-900 dark:text-white/90">
@@ -42,8 +42,6 @@ function CardTitle({title}: { title?: string | null }) {
 
 export default function CardRenderer(props: {
     card: ReviewCard;
-
-    // ✅ NEW
     cardIndex?: number;
 
     done: boolean;
@@ -63,6 +61,9 @@ export default function CardRenderer(props: {
     savedSketch: SavedSketchState | null;
     onSketchStateChange: (sketchCardId: string, s: SavedSketchState) => void;
 }) {
+    const ui = useTaggedT("cardUi"); // UI strings
+    const tt = useTaggedT();         // tagged resolver for "@:...."
+
     const {
         card,
         cardIndex = 0,
@@ -93,23 +94,46 @@ export default function CardRenderer(props: {
     // deterministic cross-page ordering: each card gets a huge block
     const orderBase = cardIndex * 10000;
 
-    function renderQuizLike(kind: "quiz" | "project") {
-        // if (card.type !== "video") {
-            const key = buildReviewQuizKey(card.spec as any, card.id, versionStr);
-        // }
+    // Resolve card title if it might be "@:..."
+    const cardTitle = tt.resolve(card.title ?? null, {}, card.title ?? "");
 
-        // ✅ show banner ONLY when locked by prereqs and not already completed
+    // Helper: label for gate strings
+    const kindLabel = (kind: "quiz" | "project") =>
+        kind === "quiz"
+            ? ui.t("kinds.quiz", {}, "quiz")
+            : ui.t("kinds.project", {}, "project");
+
+    function renderQuizLike(kind: "quiz" | "project") {
+        const key = buildReviewQuizKey(card.spec as any, card.id, versionStr);
+
+        // show banner ONLY when locked by prereqs and not already completed
         const showGate = !done && !prereqsMet;
 
-        // ✅ avoid mounting QuizBlock (and fetching) until prereqs are met
+        // avoid mounting QuizBlock (and fetching) until prereqs are met
         // (but still allow rendering when already completed)
         const canMountQuizBlock = progressHydrated && (prereqsMet || done);
+
+        const kp = kindLabel(kind);
+
+        const gateText = ui.t(
+            "gateBanner",
+            { kind: kp },
+            `Complete the topic items above to unlock this ${kp}.`,
+        );
+
+        const loadingSavedText = ui.t(
+            "loadingSaved",
+            { kind: kp },
+            `Loading saved ${kp} state…`,
+        );
+
+        const completedText = ui.t("completed", {}, "✓ Completed");
 
         const quizBlockProps =
             kind === "quiz"
                 ? {
                     passScore: (card as any).passScore ?? 1.0,
-                    sequential: undefined as boolean | undefined, // default in QuizBlock
+                    sequential: undefined as boolean | undefined,
                     strictSequential: undefined as boolean | undefined,
                     unlimitedAttempts: true,
                 }
@@ -122,15 +146,14 @@ export default function CardRenderer(props: {
 
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title}/>
+                <CardTitle title={cardTitle} />
 
-                {showGate ? <GateBanner kind={kind}/> : null}
+                {showGate ? <GateBanner text={gateText} /> : null}
 
                 {!showGate ? (
                     !canMountQuizBlock ? (
-                        // this covers: not hydrated yet (while prereqs met) OR other edge cases
                         <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
-                            Loading saved {kind} state…
+                            {loadingSavedText}
                         </div>
                     ) : (
                         <QuizBlock
@@ -147,30 +170,32 @@ export default function CardRenderer(props: {
                             onPass={() => onQuizPass(card.id)}
                             onStateChange={(s: SavedQuizState) => onQuizStateChange(card.id, s)}
                             onReset={() => onQuizReset(card.id)}
-                            // quiz/project behavior knobs
                             sequential={quizBlockProps.sequential as any}
                             strictSequential={quizBlockProps.strictSequential as any}
                             unlimitedAttempts={quizBlockProps.unlimitedAttempts}
-                            // ✅ deterministic ordering across topic page
                             orderBase={orderBase}
                         />
                     )
                 ) : null}
 
-                {done ? <CompletedBadge/> : null}
+                {done ? <CompletedBadge text={completedText} /> : null}
             </div>
         );
     }
 
     if (card.type === "text") {
+        const md = tt.resolve(card.markdown ?? "", {}, card.markdown ?? "");
+        const btnText = done
+            ? ui.t("actions.readDone", {}, "✓ Read")
+            : ui.t("actions.read", {}, "Mark as read");
+
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title}/>
-                <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.markdown}/>
+                <CardTitle title={cardTitle} />
+                <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={md} />
                 <div className="mt-3 flex justify-end">
-                    <button type="button" onClick={onMarkDone} className={actionBtn} data-flow-focus="1"
-                    >
-                        {done ? "✓ Read" : "Mark as read"}
+                    <button type="button" onClick={onMarkDone} className={actionBtn} data-flow-focus="1">
+                        {btnText}
                     </button>
                 </div>
             </div>
@@ -178,6 +203,7 @@ export default function CardRenderer(props: {
     }
 
     if (card.type === "sketch") {
+        // SketchBlock already resolves tagged spec/title via your resolver pipeline
         return (
             <div className="">
                 <SketchBlock
@@ -203,48 +229,49 @@ export default function CardRenderer(props: {
 
         const isFile = /\.(mp4|webm|mov)(\?|#|$)/i.test(url) || provider === "file";
 
+        const caption = tt.resolve(card.captionMarkdown ?? "", {}, card.captionMarkdown ?? "");
+
+        const btnText = done
+            ? ui.t("actions.watchedDone", {}, "✓ Watched")
+            : ui.t("actions.watched", {}, "Mark watched");
+
         return (
             <div className={wrapCls}>
-                <CardTitle title={card.title}/>
+                <CardTitle title={cardTitle} />
 
                 <div className="mt-3 ui-sketch-panel p-3">
                     {isFile ? (
                         <video className="w-full rounded-xl" controls preload="metadata" poster={card.posterUrl}>
-                            <source src={url}/>
+                            <source src={url} />
                         </video>
                     ) : (
                         <iframe
                             className="w-full rounded-xl"
-                            style={{height: 380}}
+                            style={{ height: 380 }}
                             src={url}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         />
                     )}
 
-                    {card.captionMarkdown ? (
+                    {caption ? (
                         <div className="mt-3">
-                            <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={card.captionMarkdown}/>
+                            <MathMarkdown className="ui-math [&_.katex]:text-inherit" content={caption} />
                         </div>
                     ) : null}
                 </div>
 
                 <div className="mt-3 flex justify-end">
                     <button type="button" onClick={onMarkDone} className={actionBtn} data-flow-focus="1">
-                        {done ? "✓ Watched" : "Mark watched"}
+                        {btnText}
                     </button>
                 </div>
             </div>
         );
     }
 
-    if (card.type === "quiz") {
-        return renderQuizLike("quiz");
-    }
-
-    if (card.type === "project") {
-        return renderQuizLike("project");
-    }
+    if (card.type === "quiz") return renderQuizLike("quiz");
+    if (card.type === "project") return renderQuizLike("project");
 
     return null;
 }

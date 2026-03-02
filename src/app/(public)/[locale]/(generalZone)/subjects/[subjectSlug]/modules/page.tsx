@@ -4,12 +4,12 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import SubjectModulesClient from "./SubjectModulesClient";
 import { auth } from "@/lib/auth";
-
 import type { Actor } from "@/lib/practice/actor";
 
-// ✅ batch access
 import { getAccessSnapshot } from "@/lib/access/accessSnapshot";
 import { resolveModuleAccess } from "@/lib/access/resolveModuleAccess";
+
+import { getTranslations } from "next-intl/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,23 +22,34 @@ type Params = {
 type ModuleAccessView = {
   ok: boolean;
   paid: boolean;
-  reason: string; // e.g. "ok" | "requires_login" | "requires_payment" | ...
+  reason: string;
 };
 
-export default async function SubjectModulesPage({
-                                                   params,
-                                                 }: {
-  params: Promise<Params>;
-}) {
+export default async function SubjectModulesPage({ params }: { params: Promise<Params> }) {
   const { locale, subjectSlug } = await params;
+
+  const tr = await getTranslations();
+  const has = ((tr as any).has?.bind(tr) as ((k: string) => boolean) | undefined) ?? (() => false);
+
+  const tMaybe = (key: string, fallback: string, values?: Record<string, any>) => {
+    try {
+      if (!has(key)) return fallback;
+      const out = tr(key as any, values as any);
+      return out || fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
   if (!subjectSlug) {
     return (
         <div className="min-h-screen p-6">
           <div className="mx-auto max-w-3xl ui-card p-6">
-            <div className="text-lg font-black">Missing subject</div>
+            <div className="text-lg font-black">
+              {tMaybe("subjectModulesUi.errors.missingSubjectTitle", "Missing subject")}
+            </div>
             <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-              subjectSlug param is missing.
+              {tMaybe("subjectModulesUi.errors.missingSubjectDesc", "subjectSlug param is missing.")}
             </div>
           </div>
         </div>
@@ -59,12 +70,9 @@ export default async function SubjectModulesPage({
   const roles: string[] = (user as any)?.roles ?? [];
   const canUnlockAll = roles.includes("teacher") || roles.includes("admin");
 
-  // ✅ actor (guestId optional—if you have it in cookies you can fill it in)
+  // actor (guestId optional—if you have it in cookies you can fill it in)
   const actor: Actor = { userId, guestId: null };
 
-  // -----------------------------
-  // Subject query (+ access fields)
-  // -----------------------------
   const subject = await prisma.practiceSubject.findUnique({
     where: { slug: subjectSlug },
     select: {
@@ -73,7 +81,7 @@ export default async function SubjectModulesPage({
       title: true,
       description: true,
 
-      // ✅ for access resolution
+      // for access resolution
       accessPolicy: true as any,
       entitlementKey: true,
 
@@ -88,7 +96,7 @@ export default async function SubjectModulesPage({
           weekStart: true,
           weekEnd: true,
 
-          // ✅ for access resolution
+          // for access resolution
           accessOverride: true as any,
           entitlementKey: true,
         },
@@ -111,28 +119,44 @@ export default async function SubjectModulesPage({
     return (
         <div className="min-h-screen p-6">
           <div className="mx-auto max-w-3xl ui-card p-6">
-            <div className="text-lg font-black">Subject not found</div>
+            <div className="text-lg font-black">
+              {tMaybe("subjectModulesUi.errors.notFoundTitle", "Subject not found")}
+            </div>
             <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-              No subject with slug “{subjectSlug}”.
+              {tMaybe(
+                  "subjectModulesUi.errors.notFoundDesc",
+                  `No subject with slug “${subjectSlug}”.`,
+                  { slug: subjectSlug },
+              )}
             </div>
           </div>
         </div>
     );
   }
 
-  // -----------------------------
-  // ✅ Batch compute module access
-  // -----------------------------
+  // ✅ Translate subject (fallback to DB)
+  const subjectTitle = tMaybe(`subjects.${subject.slug}.title`, subject.title);
+  const subjectDescription = tMaybe(`subjects.${subject.slug}.description`, subject.description ?? "");
+
+  // ✅ Translate modules (fallback to DB) using your JSON keys:
+  // modules.python.python-0.title
+  const modules = subject.modules.map((m) => {
+    const title = tMaybe(`modules.${subject.slug}.${m.slug}.title`, m.title);
+    const desc = tMaybe(`modules.${subject.slug}.${m.slug}.description`, m.description ?? "");
+    return { ...m, title, description: desc || null };
+  });
+
+  // Batch compute module access
   const requireAll = process.env.BILLING_REQUIRE_ALL_MODULES === "1";
 
   const snapshot = await getAccessSnapshot(prisma, actor, {
     subjectIds: [subject.id],
-    moduleIds: subject.modules.map((m) => m.id),
+    moduleIds: modules.map((m) => m.id),
   });
 
   const accessByModuleSlug: Record<string, ModuleAccessView> = {};
 
-  for (const m of subject.modules) {
+  for (const m of modules) {
     if (canUnlockAll) {
       accessByModuleSlug[m.slug] = { ok: true, paid: false, reason: "bypass" };
       continue;
@@ -162,10 +186,8 @@ export default async function SubjectModulesPage({
     };
   }
 
-  // -----------------------------
-  // Topics map (unchanged)
-  // -----------------------------
-  const moduleDbIds = subject.modules.map((m) => m.id);
+  // Topics map
+  const moduleDbIds = modules.map((m) => m.id);
   const sectionIds = subject.sections.map((s) => s.id);
 
   const moduleTopics = await prisma.practiceTopic.findMany({
@@ -201,14 +223,14 @@ export default async function SubjectModulesPage({
       <SubjectModulesClient
           locale={locale}
           subjectSlug={subject.slug}
-          subjectTitle={subject.title}
-          subjectDescription={subject.description}
-          modules={subject.modules}
+          subjectTitle={subjectTitle}
+          subjectDescription={subjectDescription || null}
+          modules={modules}
           sections={subject.sections}
           topicIdsByModuleDbId={topicIdsByModuleDbId}
           topicIdsBySectionId={topicIdsBySectionId}
           canUnlockAll={canUnlockAll}
-          accessByModuleSlug={accessByModuleSlug} // ✅ NEW
+          accessByModuleSlug={accessByModuleSlug}
       />
   );
 }

@@ -4,8 +4,8 @@ import { uid } from "./utils";
 import { defaultMainFile, defaultMainCode } from "./languageDefaults";
 import {CodeLanguage} from "@/lib/practice/types";
 
-export const STORAGE_KEY_V2 = "learnoir.ide.workspace.v2";
-export const STORAGE_KEY_V1 = "learnoir.ide.workspace.v1";
+export const STORAGE_KEY_V2 = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v2`;
+export const STORAGE_KEY_V1 = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v1`;
 
 export function loadV2(storageKey: string): WorkspaceStateV2 | null {
     try {

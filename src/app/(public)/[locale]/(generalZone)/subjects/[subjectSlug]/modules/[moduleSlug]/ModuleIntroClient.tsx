@@ -1,11 +1,13 @@
+// src/app/(public)/[locale]/subjects/[subjectSlug]/modules/[moduleSlug]/ModuleIntroClient.tsx
 "use client";
 
 import React, { useMemo } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { useReviewProgressMany } from "@/components/review/module/hooks/useReviewProgressMany";
 import { ROUTES } from "@/utils";
-import type { ModuleMeta } from "@/seed/data/subjects/_types"; // ✅ reuse shared type
+import type { ModuleMeta } from "@/seed/data/subjects/_types";
 
 type Props = {
     locale: string;
@@ -24,7 +26,7 @@ type Props = {
         order: number;
         weekStart: number | null;
         weekEnd: number | null;
-        meta: ModuleMeta | null; // ✅ not optional
+        meta: ModuleMeta | null;
     };
     stats: { sectionsCount: number; topicsCount: number };
 };
@@ -46,23 +48,13 @@ function StatPill({ label, value }: { label: string; value: React.ReactNode }) {
                 "dark:bg-white/[0.06] dark:ring-white/10",
             )}
         >
-      <span className="text-[11px] font-extrabold tracking-wide text-neutral-500 dark:text-white/45">
-        {label}
-      </span>
+            <span className="text-[11px] font-extrabold tracking-wide text-neutral-500 dark:text-white/45">{label}</span>
             <span className="text-sm font-black tabular-nums">{value}</span>
         </div>
     );
 }
 
-function Card({
-                  title,
-                  icon,
-                  children,
-              }: {
-    title: string;
-    icon?: React.ReactNode;
-    children: React.ReactNode;
-}) {
+function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
     return (
         <div
             className={cn(
@@ -81,13 +73,7 @@ function Card({
     );
 }
 
-function BulletList({
-                        items,
-                        marker = "✓",
-                    }: {
-    items: string[];
-    marker?: "✓" | "•" | "→";
-}) {
+function BulletList({ items, marker = "✓" }: { items: string[]; marker?: "✓" | "•" | "→" }) {
     return (
         <ul className="grid gap-2 text-sm text-neutral-700 dark:text-white/75">
             {items.map((x) => (
@@ -101,10 +87,10 @@ function BulletList({
 }
 
 function VideoEmbed({ url, title }: { url: string; title: string }) {
-    const isYouTube =
-        /youtube\.com\/watch\?v=|youtu\.be\//.test(url) || /youtube\.com\/embed\//.test(url);
-    const isVimeo =
-        /vimeo\.com\/\d+/.test(url) || /player\.vimeo\.com\/video\//.test(url);
+    const t = useTranslations("moduleIntroUi");
+
+    const isYouTube = /youtube\.com\/watch\?v=|youtu\.be\//.test(url) || /youtube\.com\/embed\//.test(url);
+    const isVimeo = /vimeo\.com\/\d+/.test(url) || /player\.vimeo\.com\/video\//.test(url);
     const isMp4 = /\.mp4(\?|#|$)/i.test(url);
 
     const embedUrl = (() => {
@@ -134,11 +120,9 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
             <div className="p-4 md:p-6 pb-3">
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                        <Kicker>Intro video</Kicker>
+                        <Kicker>{t("introVideoKicker")}</Kicker>
                         <div className="mt-1 text-base font-black tracking-tight truncate">{title}</div>
-                        <div className="mt-1 text-xs text-neutral-600 dark:text-white/60">
-                            Watch first if you want the big picture before practice.
-                        </div>
+                        <div className="mt-1 text-xs text-neutral-600 dark:text-white/60">{t("introVideoHint")}</div>
                     </div>
 
                     <a
@@ -151,7 +135,7 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
                             "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
                         )}
                     >
-                        Open ↗
+                        {t("openLink")}
                     </a>
                 </div>
             </div>
@@ -180,21 +164,21 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
 }
 
 export default function ModuleIntroClient({ locale, subject, module, stats }: Props) {
-    // ✅ MUST pass DB module id, not slug
+    const t = useTranslations("moduleIntroUi");
+
     const { byModuleId, loading } = useReviewProgressMany({
         subjectSlug: subject.slug,
         locale,
-        moduleIds: [module.id],
+        moduleIds: [module.id], // DB module id
         enabled: true,
         refreshMs: 0,
     });
 
-    // ✅ MUST index by DB module id
     const mp = byModuleId[module.id];
     const completed = Boolean(mp?.moduleCompleted);
     const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0;
 
-    const ctaLabel = completed ? "Review module →" : hasAnyProgress ? "Continue →" : "Start module →";
+    const ctaLabel = completed ? t("cta.review") : hasAnyProgress ? t("cta.continue") : t("cta.start");
 
     const learnHref = `/${encodeURIComponent(locale)}/${ROUTES.learningPath(
         encodeURIComponent(subject.slug),
@@ -208,34 +192,32 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
 
     const backHref = `/${encodeURIComponent(locale)}/subjects/${encodeURIComponent(subject.slug)}/modules`;
 
-    // ✅ no cast, meta already validated server-side
-    const meta: ModuleMeta = module.meta ?? {};
-
+    const meta = useMemo<ModuleMeta>(() => module.meta ?? ({} satisfies ModuleMeta), [module.meta]);
     const outcomes = useMemo(() => {
         const xs = meta.outcomes?.filter(Boolean) ?? [];
-        return xs.length
-            ? xs
-            : [
-                "Learn the core ideas with clear, guided examples",
-                "Practice with interactive questions and instant feedback",
-                "Build confidence to use this in the next modules",
-            ];
-    }, [meta.outcomes]);
+        return xs.length ? xs : [t("defaults.outcome1"), t("defaults.outcome2"), t("defaults.outcome3")];
+    }, [meta.outcomes, t]);
 
     const why = useMemo(() => {
         const xs = meta.why?.filter(Boolean) ?? [];
-        return xs.length
-            ? xs
-            : [
-                "This module unlocks skills you’ll reuse constantly",
-                "It improves speed and accuracy on real problems",
-                "It’s a foundation for interviews and real-world projects",
-            ];
-    }, [meta.why]);
+        return xs.length ? xs : [t("defaults.why1"), t("defaults.why2"), t("defaults.why3")];
+    }, [meta.why, t]);
 
     const prereqs = useMemo(() => meta.prereqs?.filter(Boolean) ?? [], [meta.prereqs]);
+
     const est = meta.estimatedMinutes ?? null;
     const videoUrl = meta.videoUrl ?? null;
+
+    const statusText = loading
+        ? t("status.syncing")
+        : completed
+            ? t("status.completed")
+            : hasAnyProgress
+                ? t("status.inProgress")
+                : t("status.new");
+
+    const kicker = t("kicker", { subject: subject.title, n: module.order + 1 });
+    const videoTitle = t("videoTitle", { module: module.title });
 
     return (
         <div
@@ -267,13 +249,9 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                 >
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <Kicker>
-                                {subject.title} • Module {module.order + 1}
-                            </Kicker>
+                            <Kicker>{kicker}</Kicker>
 
-                            <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">
-                                {module.title}
-                            </div>
+                            <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">{module.title}</div>
 
                             {module.description ? (
                                 <div className="mt-2 text-sm md:text-base text-neutral-600 dark:text-white/70">
@@ -282,12 +260,12 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                             ) : null}
 
                             <div className="mt-4 flex flex-wrap gap-2">
-                                <StatPill label="Sections" value={stats.sectionsCount} />
-                                <StatPill label="Topics" value={stats.topicsCount} />
+                                <StatPill label={t("labels.sections")} value={stats.sectionsCount} />
+                                <StatPill label={t("labels.topics")} value={stats.topicsCount} />
 
                                 {module.weekStart != null || module.weekEnd != null ? (
                                     <StatPill
-                                        label="Weeks"
+                                        label={t("labels.weeks")}
                                         value={
                                             <span className="tabular-nums">
                         {module.weekStart ?? "?"}–{module.weekEnd ?? "?"}
@@ -296,20 +274,9 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                                     />
                                 ) : null}
 
-                                {est != null ? <StatPill label="Est." value={`${est} min`} /> : null}
+                                {est != null ? <StatPill label={t("labels.est")} value={t("minutesShort", { n: est })} /> : null}
 
-                                <StatPill
-                                    label="Status"
-                                    value={
-                                        loading
-                                            ? "Syncing…"
-                                            : completed
-                                                ? "Completed"
-                                                : hasAnyProgress
-                                                    ? "In progress"
-                                                    : "New"
-                                    }
-                                />
+                                <StatPill label={t("labels.status")} value={statusText} />
                             </div>
                         </div>
 
@@ -321,7 +288,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                                 "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
                             )}
                         >
-                            ← Back
+                            {t("actions.back")}
                         </Link>
                     </div>
 
@@ -338,12 +305,12 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                         </Link>
 
                         {/* Optional practice button */}
-                        {/* <Link href={practiceHref} ...>Practice →</Link> */}
+                        {/* <Link href={practiceHref} className="ui-btn ui-btn-secondary">{t("actions.practice")}</Link> */}
                     </div>
 
                     {prereqs.length ? (
                         <div className="mt-5 pt-4 border-t border-black/5 dark:border-white/10">
-                            <Kicker>Prereqs</Kicker>
+                            <Kicker>{t("sections.prereqs")}</Kicker>
                             <div className="mt-2">
                                 <BulletList items={prereqs} marker="→" />
                             </div>
@@ -352,15 +319,15 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                 </div>
 
                 {/* optional video */}
-                {videoUrl ? <VideoEmbed url={videoUrl} title={`${module.title} — Introduction`} /> : null}
+                {videoUrl ? <VideoEmbed url={videoUrl} title={videoTitle} /> : null}
 
                 {/* content */}
                 <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                    <Card title="What you’ll learn">
+                    <Card title={t("sections.whatLearn")}>
                         <BulletList items={outcomes} marker="✓" />
                     </Card>
 
-                    <Card title="Why it matters">
+                    <Card title={t("sections.whyMatters")}>
                         <BulletList items={why} marker="•" />
                     </Card>
                 </div>

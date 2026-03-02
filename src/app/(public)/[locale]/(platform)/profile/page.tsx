@@ -27,6 +27,8 @@ export default async function ProfilePage() {
         // If session exists but user row doesn't, safest is sign-in again
         redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent("/profile")}`);
     }
+    const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;                                    {String(APP_NAME).toUpperCase()}
+    {}
 
     return (
         <div className="ui-container py-8">
@@ -34,7 +36,7 @@ export default async function ProfilePage() {
                 <div className="ui-section-kicker">Account</div>
                 <h1 className="ui-section-title">Profile</h1>
                 <p className="ui-section-subtitle">
-                    Update your public info used across Learnoir (certificates, progress views, and account UI).
+                    Update your public info used across {String(APP_NAME).toUpperCase()} (certificates, progress views, and account UI).
                 </p>
             </div>
 

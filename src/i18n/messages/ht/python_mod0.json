@@ -1,0 +1,62 @@
+{
+  "topics": {
+    "python": {
+      "python-0": {
+        "comments_intro": {
+          "label": "Kòmantè : nòt pou moun (Python pa pran yo an kont)",
+          "summary": "Aprann sèvi ak kòmantè # pou dokimante panse ou, make etap yo, epi fèmen kèk liy tanporèman pandan w ap deboge.",
+          "cards": {
+            "sketch": {
+              "title": "Kòmantè nan Python (#)"
+            },
+            "quiz": {
+              "title": "Tès rapid : kòmantè"
+            }
+          }
+        }
+      }
+    }
+  },
+  "sketches": {
+    "py": {
+      "syntax": {
+        "comments": {
+          "title": "Kòmantè : nòt pou moun (Python pa pran yo an kont)",
+          "bodyMarkdown": "Lè w ap ekri kòd, ou ap ekri pou **de odyans** :\n\n1) Òdinatè a (Python)\n2) Ou menm nan lavni (ak lòt moun)\n\nYon **kòmantè** se yon nòt pou moun ke Python inyore nèt.\n\nPanse ak kòmantè tankou ti papye (post-it) sou yon resèt :\nyo ede w sonje *poukisa* ou fè yon bagay, pa sèlman *kisa* ou fè.\n\n---\n\n## Senbòl kòmantè a : `#`\n\nNenpòt bagay apre `#` sou yon liy, Python ap inyore li.\n\n~~~python\n# Sa a se yon kòmantè.\nprint(\"Hello\")  # Pati sa a se kòmantè tou\n~~~\n\n---\n\n## Poukisa kòmantè enpòtan (rezon nan Modil 0)\n\nSèvi ak kòmantè pou :\n- eksplike kisa yon liy ap fè\n- make etap yo nan yon mini-pwogram (mande → konvèti → kalkile → montre)\n- fèmen yon liy tanporèman pandan w ap deboge\n\n---\n\n## Eseye li (editè a sou bò dwat)\n\nKouri sa :\n\n~~~python\n# Etap 1 : mete valè yo nan varyab\nprice = 4.99\nqty = 3\n\n# Etap 2 : kalkile\ntotal = price * qty\n\n# Etap 3 : montre rezilta a\nprint(\"total =\", total)\n~~~\n\nKounye a **mete kòmantè** sou liy ki kòmanse ak `total` la epi kouri ankò :\n\n~~~python\nprice = 4.99\nqty = 3\n\n# total = price * qty\n\nprint(\"total =\", total)\n~~~\n\nOu ta dwe jwenn yon erè — sa nòmal.\nSa montre kòmantè yo vrèman “retire” kòd la nan ekzekisyon.\n\n---\n\n## NB\n\n✅ Ekri kòmantè pou eksplike **poukisa** yon bagay egziste.\n❌ Pa ekri kòmantè ki jis repete sa kòd la deja di.\n\nMen yon bon jan kòmantè :\n~~~python\n# Konvèti antre a (tèks) an nimewo pou nou ka fè matematik\nage = int(input(\"Age: \"))\n~~~\n\nSa a pa itil, paske li jis repete sa kòd la ap fè :\n~~~python\n# Mete age egal ak antre a\nage = int(input(\"Age: \"))\n~~~\n\n---\n\nApre sa : n ap sèvi ak kòmantè pou make etap nou yo pandan n ap aprann **varyab** ak **kalite done**."
+        }
+      }
+    }
+  },
+  "quiz": {
+    "m0_comments_symbol": {
+      "title": "Senbòl kòmantè (#)",
+      "prompt": "Ki senbòl ki kòmanse yon kòmantè sou yon sèl liy nan Python?",
+      "options": {
+        "a": "`//`",
+        "b": "`#`",
+        "c": "`/* */`"
+      },
+      "hint": "Python sèvi ak # pou kòmantè sou yon sèl liy."
+    },
+    "m0_comments_ignored_by_python": {
+      "title": "Python inyore kòmantè",
+      "prompt": "Kòmantè yo sèvi sitou pou :",
+      "options": {
+        "a": "Moun ki ap li kòd la",
+        "b": "Fè Python kouri pi vit",
+        "c": "Chanje rezilta a otomatikman"
+      },
+      "hint": "Python pa pran kòmantè yo an kont; yo ede moun konprann kòd la."
+    },
+    "m0_comments_best_reason": {
+      "title": "Pi bon rezon pou fè kòmantè",
+      "prompt": "Ki pi bon rezon pou ekri yon kòmantè?",
+      "options": {
+        "a": "Repete egzakteman sa kòd la deja di",
+        "b": "Eksplike entansyon an oswa yon etap ki difisil",
+        "c": "Fè fichye a pi long"
+      },
+      "hint": "Bon kòmantè eksplike entansyon an (poukisa a), pa sa ki evidan (kisa a)."
+    }
+  }
+}

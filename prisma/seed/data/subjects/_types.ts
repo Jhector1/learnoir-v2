@@ -14,6 +14,9 @@ export type SubjectSeed = {
   imagePublicId?:string;
   imageAlt?:string;
       meta?: any;
+  // ✅ add these
+  accessPolicy?:  "free" | "paid";
+  entitlementKey?: string | null;
 };
 
 export type ModuleSeed = {
@@ -25,6 +28,9 @@ export type ModuleSeed = {
   weekStart?: number;
   weekEnd?: number;
   meta?: ModuleMeta;
+  // ✅ add these
+  accessOverride?: "inherit" | "free" | "paid";
+  entitlementKey?: string | null;
 };
 
 export type PoolItem = { key: string; w: number };

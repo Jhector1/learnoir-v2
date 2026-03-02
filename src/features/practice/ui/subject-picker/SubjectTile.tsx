@@ -1,8 +1,9 @@
 // SubjectTile.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { SubjectCard } from "./SubjectPicker";
 import { cloudinaryImageUrl } from "@/lib/cloudinary/url";
 import { cn } from "@/lib/cn";
@@ -24,6 +25,8 @@ export default function SubjectTile({
   onPick: (s: SubjectCard) => void;
   enrolling: boolean;
 }) {
+  const t = useTranslations("subjectsUi");
+
   const disabled = !s.defaultModuleSlug || enrolling;
 
   const publicId = s.imagePublicId ?? publicIdFallback(s.slug);
@@ -47,7 +50,11 @@ export default function SubjectTile({
               ? "from-indigo-400/25 to-fuchsia-400/10"
               : "from-neutral-400/20 to-neutral-400/10";
 
-  const cta = enrolling ? "Enrolling…" : s.enrolled ? "Continue" : "Open modules";
+  const cta = useMemo(() => {
+    if (enrolling) return t("enrolling");
+    if (s.enrolled) return t("continue");
+    return t("openModules");
+  }, [enrolling, s.enrolled, t]);
 
   return (
       <button
@@ -70,18 +77,18 @@ export default function SubjectTile({
           <div className={cn("absolute inset-0 bg-gradient-to-br", accent)} />
           <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/20 to-transparent opacity-60 dark:from-white/10" />
 
-          {/* ✅ Enrolled badge */}
+          {/* Enrolled badge */}
           {s.enrolled && !enrolling ? (
               <div className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 text-[10px] font-extrabold tracking-wide text-white backdrop-blur">
-                Enrolled
+                {t("enrolled")}
               </div>
           ) : null}
 
-          {/* ✅ Enrolling badge */}
+          {/* Enrolling badge */}
           {enrolling ? (
               <div className="absolute right-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/50 px-2 py-1 text-[10px] font-extrabold tracking-wide text-white backdrop-blur">
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
-                Enrolling…
+                {t("enrolling")}
               </div>
           ) : null}
         </div>
@@ -106,15 +113,17 @@ export default function SubjectTile({
             {s.description}
           </div>
 
-          {(!s.defaultModuleSlug) ? (
+          {!s.defaultModuleSlug ? (
               <div className="mt-4 text-[11px] font-extrabold text-amber-700 dark:text-amber-200/70">
-                No modules yet
+                {t("noModulesYet")}
               </div>
           ) : (
               <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-extrabold text-neutral-700 dark:text-white/70">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/70 dark:bg-emerald-300/70" />
                 {cta}
-                <span className={cn("transition", !enrolling && "group-hover:translate-x-0.5")}>→</span>
+                <span className={cn("transition", !enrolling && "group-hover:translate-x-0.5")}>
+              →
+            </span>
               </div>
           )}
         </div>

@@ -10,6 +10,7 @@ import type { VectorPadState } from "@/components/vectorpad/types";
 import ExerciseRenderer from "@/components/practice/ExerciseRenderer";
 import RevealAnswerCard from "@/components/practice/RevealAnswerCard";
 import { useReviewTools } from "@/components/review/module/context/ReviewToolsContext";
+import {useTaggedT} from "@/i18n/tagged";
 
 export default function QuizPracticeCard(props: {
   q: Extract<ReviewQuestion, { kind: "practice" }>;
@@ -50,7 +51,7 @@ export default function QuizPracticeCard(props: {
   const tools = useReviewTools();
   const excused = Boolean(props.excused);
   const revealed = Boolean(ps?.item?.revealed);
-
+  const ui = useTaggedT("reviewQuizUi");
   // ✅ stable patch function (prevents register thrash downstream)
   const updateItemSafe = useCallback(
       (patch: any) => {
@@ -129,26 +130,21 @@ export default function QuizPracticeCard(props: {
 
   const btnLabel = ps?.busy ? (
       <span className="inline-flex items-center gap-2">
-      <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-400/60 border-t-transparent dark:border-white/40 dark:border-t-transparent" />
-      Checking…
-    </span>
-  ) : (
-      "Check this answer"
-  );
+    <span className="h-3 w-3 animate-spin ..." />
+        {ui.t("practice.checking", {}, "Checking…")}
+  </span>
+  ) : ui.t("buttons.checkAnswer", {}, "Check this answer");
 
   const maxForRenderer = ps?.maxAttempts ?? Number.POSITIVE_INFINITY;
 
   return (
       <div className={["ui-quiz-card", !unlocked ? "opacity-70" : ""].join(" ")}>
-        {!unlocked ? (
-            <div className="ui-quiz-hint">
-              Answer the previous question correctly to unlock this one.
-            </div>
-        ) : null}
+        {!unlocked ? <div className="ui-quiz-hint">{ui.t("unlockHint", {}, "Answer the previous question correctly to unlock this one.")}</div> : null}
+
 
         {ps?.loading ? (
             <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-              Loading exercise…
+              {ui.t("practice.loadingExercise", {}, "Loading exercise…")}
             </div>
         ) : ps?.error ? (
             <div className="mt-2 rounded-lg border border-rose-300/20 bg-rose-300/10 p-2 text-xs text-rose-700 dark:text-rose-200/90">
@@ -162,7 +158,7 @@ export default function QuizPracticeCard(props: {
                     disableSkip ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
                   ].join(" ")}
               >
-                {props.excused ? "Excused" : "Continue"}
+                {props.excused ? ui.t("buttons.excused", {}, "Excused") : ui.t("buttons.continue", {}, "Continue")}
               </button>
             </div>
         ) : ps?.exercise && ps?.item ? (
@@ -207,14 +203,16 @@ export default function QuizPracticeCard(props: {
                         disableReveal ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
                       ].join(" ")}
                   >
-                    Reveal
-                  </button>
+                    {ui.t("buttons.reveal", {}, "Reveal")}                  </button>
                 </div>
 
                 <div className="min-w-0 text-xs font-extrabold text-neutral-600 dark:text-white/60 sm:text-right">
               <span className="whitespace-normal">
-                Attempts: {ps.attempts}/
-                {ps.maxAttempts == null ? "∞" : ps.maxAttempts}
+               {ui.t(
+                   "practice.attempts",
+                   { n: ps.attempts, max: ps.maxAttempts == null ? "∞" : ps.maxAttempts },
+                   `Attempts: ${ps.attempts}/${ps.maxAttempts == null ? "∞" : ps.maxAttempts}`,
+               )}
               </span>
 
                   {ps.ok === true ? (
@@ -242,7 +240,7 @@ export default function QuizPracticeCard(props: {
             </div>
         ) : (
             <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
-              No exercise.
+              {ui.t("practice.noExercise", {}, "No exercise.")}
             </div>
         )}
       </div>

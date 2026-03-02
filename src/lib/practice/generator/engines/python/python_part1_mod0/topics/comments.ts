@@ -1,6 +1,4 @@
-// src/lib/practice/generator/engines/python/python_part1_mod0/topics/comments.ts
-import {defineTopic, Handler, makeSingleChoiceOut, TopicBundle} from "@/lib/practice/generator/engines/utils";
-// import { defineTopic, makeSingleChoiceOut } from "../../_shared";
+import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
 
 export const M0_COMMENTS_POOL = [
     { key: "m0_comments_symbol", w: 1, kind: "single_choice", purpose: "quiz" },
@@ -10,6 +8,10 @@ export const M0_COMMENTS_POOL = [
 
 export type M0CommentsKey = (typeof M0_COMMENTS_POOL)[number]["key"];
 
+function Q(key: M0CommentsKey) {
+    return `quiz.${key}`;
+}
+
 export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
     m0_comments_symbol: ({ diff, id, topic }) =>
         makeSingleChoiceOut({
@@ -17,15 +19,17 @@ export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
             id,
             topic,
             diff,
-            title: "Comment symbol (#)",
-            prompt: "Which symbol starts a single-line comment in Python?",
+
+            // ✅ these keys match your JSON; UI will resolve @:
+            title: `@:${Q("m0_comments_symbol")}.title`,
+            prompt: `@:${Q("m0_comments_symbol")}.prompt`,
             options: [
-                { id: "a", text: "`//`" },
-                { id: "b", text: "`#`" },
-                { id: "c", text: "`/* */`" },
+                { id: "a", text: `@:${Q("m0_comments_symbol")}.options.a` },
+                { id: "b", text: `@:${Q("m0_comments_symbol")}.options.b` },
+                { id: "c", text: `@:${Q("m0_comments_symbol")}.options.c` },
             ],
             answerOptionId: "b",
-            hint: "Python uses # for single-line comments.",
+            hint: `@:${Q("m0_comments_symbol")}.hint`,
         }),
 
     m0_comments_ignored_by_python: ({ diff, id, topic }) =>
@@ -34,15 +38,15 @@ export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
             id,
             topic,
             diff,
-            title: "Python ignores comments",
-            prompt: "Comments are mainly for:",
+            title: `@:${Q("m0_comments_ignored_by_python")}.title`,
+            prompt: `@:${Q("m0_comments_ignored_by_python")}.prompt`,
             options: [
-                { id: "a", text: "Humans reading the code" },
-                { id: "b", text: "Making Python run faster" },
-                { id: "c", text: "Changing the output automatically" },
+                { id: "a", text: `@:${Q("m0_comments_ignored_by_python")}.options.a` },
+                { id: "b", text: `@:${Q("m0_comments_ignored_by_python")}.options.b` },
+                { id: "c", text: `@:${Q("m0_comments_ignored_by_python")}.options.c` },
             ],
             answerOptionId: "a",
-            hint: "Python ignores comments; they help humans understand the code.",
+            hint: `@:${Q("m0_comments_ignored_by_python")}.hint`,
         }),
 
     m0_comments_best_reason: ({ diff, id, topic }) =>
@@ -51,15 +55,15 @@ export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
             id,
             topic,
             diff,
-            title: "Best reason to comment",
-            prompt: "Which is the best reason to write a comment?",
+            title: `@:${Q("m0_comments_best_reason")}.title`,
+            prompt: `@:${Q("m0_comments_best_reason")}.prompt`,
             options: [
-                { id: "a", text: "To repeat exactly what the code already says" },
-                { id: "b", text: "To explain intent or a tricky step" },
-                { id: "c", text: "To make the file longer" },
+                { id: "a", text: `@:${Q("m0_comments_best_reason")}.options.a` },
+                { id: "b", text: `@:${Q("m0_comments_best_reason")}.options.b` },
+                { id: "c", text: `@:${Q("m0_comments_best_reason")}.options.c` },
             ],
             answerOptionId: "b",
-            hint: "Good comments explain intent (the why), not obvious code (the what).",
+            hint: `@:${Q("m0_comments_best_reason")}.hint`,
         }),
 };
 

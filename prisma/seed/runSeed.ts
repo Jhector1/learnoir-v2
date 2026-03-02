@@ -34,7 +34,11 @@ export async function runSeed() {
             description: s.description,
             meta: s.meta ?? undefined,
             imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
-            imageAlt: (s as any).imageAlt ?? null,           // ✅ ADD
+            imageAlt: (s as any).imageAlt ?? null,
+            // ✅ ADD
+            // ✅ add
+            accessPolicy: (s as any).accessPolicy ?? "free",
+            entitlementKey: (s as any).entitlementKey ?? null,
 
           },
           create: {
@@ -45,7 +49,9 @@ export async function runSeed() {
             meta: s.meta ?? undefined,
             imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
             imageAlt: (s as any).imageAlt ?? null,           // ✅ ADD
-
+            // ✅ add
+            accessPolicy: (s as any).accessPolicy ?? "free",
+            entitlementKey: (s as any).entitlementKey ?? null,
           },
         });
         subjectIdBySlug.set(s.slug, row.id);
@@ -69,7 +75,8 @@ export async function runSeed() {
             weekEnd: m.weekEnd ?? null,
             subjectId,
             meta: m.meta ?? undefined, // ✅ ADD
-
+            accessOverride: m.accessOverride ?? "inherit",
+            entitlementKey: m.entitlementKey ?? null,
           },
           create: {
             slug: m.slug,
@@ -80,7 +87,8 @@ export async function runSeed() {
             weekEnd: m.weekEnd ?? null,
             subjectId,
             meta: m.meta ?? undefined, // ✅ ADD
-
+            accessOverride: m.accessOverride ?? "inherit",
+            entitlementKey: m.entitlementKey ?? null,
           },
         });
 

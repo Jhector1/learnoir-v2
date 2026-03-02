@@ -3,6 +3,7 @@
 
 import React, { useMemo } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { useReviewProgressMany } from "@/components/review/module/hooks/useReviewProgressMany";
 import { ROUTES } from "@/utils";
@@ -45,10 +46,7 @@ type Props = {
   topicIdsByModuleDbId: Record<string, string[]>;
   topicIdsBySectionId: Record<string, string[]>;
 
-  // ✅ server-controlled unlock (teacher/admin)
   canUnlockAll?: boolean;
-
-  // ✅ NEW: server-computed access decisions per module slug
   accessByModuleSlug?: Record<string, ModuleAccessView>;
 };
 
@@ -122,10 +120,7 @@ function Pill({
 
   return (
       <span
-          className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-extrabold",
-              cls,
-          )}
+          className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-extrabold", cls)}
       >
       {children}
     </span>
@@ -148,6 +143,8 @@ function IconCircle({ idx }: { idx: number }) {
 }
 
 export default function SubjectModulesClient(props: Props) {
+  const t = useTranslations("subjectModulesUi");
+
   const {
     locale,
     subjectSlug,
@@ -161,7 +158,6 @@ export default function SubjectModulesClient(props: Props) {
   } = props;
 
   const unlockAll = Boolean(canUnlockAll);
-
   const sortedModules = useMemo(() => modules.slice().sort(sortByOrderThenSlug), [modules]);
 
   const sectionsByModuleDbId = useMemo(() => {
@@ -187,7 +183,7 @@ export default function SubjectModulesClient(props: Props) {
     refreshMs: 0,
   });
 
-  // ✅ lock module i unless previous module is completed (unless unlockAll)
+  // lock module i unless previous module is completed (unless unlockAll)
   const unlockedBySlug = useMemo(() => {
     const set = new Set<string>();
 
@@ -277,8 +273,8 @@ export default function SubjectModulesClient(props: Props) {
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Kicker>Subject</Kicker>
-                  {unlockAll ? <Pill variant="warn">UNLOCK ENABLED</Pill> : null}
+                  <Kicker>{t("kickerSubject")}</Kicker>
+                  {unlockAll ? <Pill variant="warn">{t("unlockEnabled")}</Pill> : null}
                 </div>
 
                 <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">{subjectTitle}</div>
@@ -294,12 +290,14 @@ export default function SubjectModulesClient(props: Props) {
                       pct={subjectStats.pct}
                       label={
                         <>
-                          <span>Overall progress</span>
+                          <span>{t("overallProgress")}</span>
                           <span className="tabular-nums">
-                        {progressLoading ? "Syncing…" : `${subjectStats.doneTopics}/${subjectStats.totalTopics} topics`}
+                        {progressLoading
+                            ? t("syncing")
+                            : t("topicsRatio", { done: subjectStats.doneTopics, total: subjectStats.totalTopics })}
                             {subjectStats.totalModules ? (
                                 <span className="ml-2 text-neutral-500 dark:text-white/45">
-                            • {subjectStats.completedModules}/{subjectStats.totalModules} modules
+                            {t("modulesRatio", { done: subjectStats.completedModules, total: subjectStats.totalModules })}
                           </span>
                             ) : null}
                       </span>
@@ -319,7 +317,7 @@ export default function SubjectModulesClient(props: Props) {
                         "transition",
                     )}
                 >
-                  ← Change subject
+                  {t("changeSubject")}
                 </Link>
               </div>
             </div>
@@ -338,7 +336,7 @@ export default function SubjectModulesClient(props: Props) {
                   const access = accessByModuleSlug?.[m.slug] ?? { ok: true, paid: false, reason: "unknown" };
                   const paywallLocked = !unlockAll && !access.ok;
 
-                  // ✅ don’t upsell payment if user can’t access anyway due to sequencing
+                  // don’t upsell payment if user can’t access anyway due to sequencing
                   const showPremium = paywallLocked && !seqLocked;
 
                   const completed = Boolean(mp?.moduleCompleted);
@@ -354,7 +352,6 @@ export default function SubjectModulesClient(props: Props) {
                           : directDone;
 
                   const modulePct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
-
                   const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
 
                   const moduleHref = `/${encodeURIComponent(locale)}/${ROUTES.moduleIntro(
@@ -375,13 +372,13 @@ export default function SubjectModulesClient(props: Props) {
 
                   const ctaLabel = showPremium
                       ? access.reason === "requires_login"
-                          ? "Sign in to unlock →"
-                          : "Unlock →"
+                          ? t("cta.signInToUnlock")
+                          : t("cta.unlock")
                       : completed
-                          ? "Review module →"
+                          ? t("cta.review")
                           : hasAnyProgress
-                              ? "Continue →"
-                              : "Start module →";
+                              ? t("cta.continue")
+                              : t("cta.start");
 
                   return (
                       <div
@@ -410,21 +407,21 @@ export default function SubjectModulesClient(props: Props) {
 
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <Kicker>Module</Kicker>
+                                <Kicker>{t("kickerModule")}</Kicker>
 
                                 {completed ? (
-                                    <Pill variant="good">✓ Completed</Pill>
+                                    <Pill variant="good">{t("pillCompleted")}</Pill>
                                 ) : seqLocked ? (
-                                    <Pill variant="neutral">🔒 Locked</Pill>
+                                    <Pill variant="neutral">{t("pillLocked")}</Pill>
                                 ) : showPremium ? (
-                                    <Pill variant="warn">💎 Premium</Pill>
+                                    <Pill variant="warn">{t("pillPremium")}</Pill>
                                 ) : hasAnyProgress ? (
-                                    <Pill variant="warn">↻ In progress</Pill>
+                                    <Pill variant="warn">{t("pillInProgress")}</Pill>
                                 ) : (
-                                    <Pill variant="neutral">• Not started</Pill>
+                                    <Pill variant="neutral">{t("pillNotStarted")}</Pill>
                                 )}
 
-                                {progressLoading ? <Pill variant="neutral">Syncing…</Pill> : null}
+                                {progressLoading ? <Pill variant="neutral">{t("syncing")}</Pill> : null}
                               </div>
 
                               <div className="mt-1 text-lg md:text-xl font-black tracking-tight">{m.title}</div>
@@ -436,7 +433,7 @@ export default function SubjectModulesClient(props: Props) {
                               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-neutral-500 dark:text-white/45">
                                 {m.weekStart != null || m.weekEnd != null ? (
                                     <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">Weeks</span>
+                              <span className="opacity-70">{t("weeksLabel")}</span>
                               <span className="tabular-nums">
                                 {m.weekStart ?? "?"}–{m.weekEnd ?? "?"}
                               </span>
@@ -445,20 +442,20 @@ export default function SubjectModulesClient(props: Props) {
 
                                 {modSections.length ? (
                                     <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">Sections</span>
+                              <span className="opacity-70">{t("sectionsLabel")}</span>
                               <span className="tabular-nums">{modSections.length}</span>
                             </span>
                                 ) : null}
 
                                 {totalTopics ? (
                                     <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">Topics</span>
+                              <span className="opacity-70">{t("topicsLabel")}</span>
                               <span className="tabular-nums">
                                 {doneTopics}/{totalTopics}
                               </span>
                             </span>
                                 ) : (
-                                    <span className="opacity-70">No topics</span>
+                                    <span className="opacity-70">{t("noTopics")}</span>
                                 )}
 
                                 <span className="opacity-60">•</span>
@@ -472,10 +469,10 @@ export default function SubjectModulesClient(props: Props) {
                                       <span className="inline-flex items-center gap-2">
                                 <span>
                                   {totalTopics
-                                      ? `${doneTopics}/${totalTopics} topics complete`
+                                      ? t("topicsComplete", { done: doneTopics, total: totalTopics })
                                       : completed
-                                          ? "Completed"
-                                          : "No topics"}
+                                          ? t("completedShort")
+                                          : t("noTopics")}
                                 </span>
                               </span>
                                     }
@@ -538,10 +535,8 @@ export default function SubjectModulesClient(props: Props) {
                       "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
                   )}
               >
-                <div className="text-lg font-black tracking-tight">No modules yet</div>
-                <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-                  Seed at least one module for this subject to enable navigation.
-                </div>
+                <div className="text-lg font-black tracking-tight">{t("empty.title")}</div>
+                <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">{t("empty.desc")}</div>
               </div>
           )}
         </div>

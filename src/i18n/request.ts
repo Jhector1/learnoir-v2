@@ -47,6 +47,13 @@ async function loadBundles(locale: string) {
         safeJsonImport(import(`./messages/${locale}/localeSwitcher.json`)),
         safeJsonImport(import(`./messages/${locale}/billing.json`)),
         safeJsonImport(import(`./messages/${locale}/authenticate.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects.json`)),
+        safeJsonImport(import(`./messages/${locale}/sketchBlockUi.json`)),
+        safeJsonImport(import(`./messages/${locale}/python_mod0.json`)),
+        safeJsonImport(import(`./messages/${locale}/quizblock.json`)),
+
+        safeJsonImport(import(`./messages/${locale}/python1Modules.json`)),
+
     ]);
 
     // ✅ bundles are already plain objects

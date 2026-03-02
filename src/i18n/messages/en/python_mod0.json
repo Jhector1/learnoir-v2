@@ -1,0 +1,62 @@
+{
+  "topics": {
+    "python": {
+      "python-0": {
+        "comments_intro": {
+          "label": "Comments: Notes to Humans (Python Ignores Them)",
+          "summary": "Learn # comments to document your thinking, label steps, and temporarily disable lines while debugging.",
+          "cards": {
+            "sketch": {
+              "title": "Comments in Python (#)"
+            },
+            "quiz": {
+              "title": "Quick check: comments"
+            }
+          }
+        }
+      }
+    }
+  },
+  "sketches": {
+    "py": {
+      "syntax": {
+        "comments": {
+          "title": "Comments: Notes to Humans (Python Ignores Them)",
+          "bodyMarkdown": "When you write code, you’re writing for **two audiences**:\n\n1) The computer (Python)\n2) Future you (and other humans)\n\nA **comment** is a note for humans that Python completely ignores.\n\nThink of comments like sticky notes on a recipe:\nthey help you remember *why* you did something, not just *what* you did.\n\n---\n\n## The comment symbol: `#`\n\nAnything after `#` on a line is ignored by Python.\n\n~~~python\n# This is a comment.\nprint(\"Hello\")  # This part is also a comment\n~~~\n\n---\n\n## Why comments matter (Module 0 reasons)\n\nUse comments to:\n- explain what a line is doing\n- label steps in a mini-program (ask → convert → compute → show)\n- temporarily disable a line while debugging\n\n---\n\n## Try it (editor on the right)\n\nRun this:\n\n~~~python\n# Step 1: store values in variables\nprice = 4.99\nqty = 3\n\n# Step 2: compute\ntotal = price * qty\n\n# Step 3: show output\nprint(\"total =\", total)\n~~~\n\nNow **comment out** the line started with total and run again:\n\n~~~python\nprice = 4.99\nqty = 3\n\n# total = price * qty\n\nprint(\"total =\", total)\n~~~\n\nYou should get an error — that’s expected.\nIt proves that comments truly “remove” code from execution.\n\n---\n\n## NB\n\n✅ Write comments to explain **why** something exists.\n❌ Don’t write comments that just repeat the code.\n\nHere is a way to write a proper comment:\n~~~python\n# Convert input (text) into a number so we can do math\nage = int(input(\"Age: \"))\n~~~\n\nThis one is not useful, because it just repeat what the code does:\n~~~python\n# Set age to input\nage = int(input(\"Age: \"))\n~~~\n\n---\n\nNext up: we’ll use comments to label our steps while learning **variables** and **data types**."
+        }
+      }
+    }
+  },
+  "quiz": {
+    "m0_comments_symbol": {
+      "title": "Comment symbol (#)",
+      "prompt": "Which symbol starts a single-line comment in Python?",
+      "options": {
+        "a": "`//`",
+        "b": "`#`",
+        "c": "`/* */`"
+      },
+      "hint": "Python uses # for single-line comments."
+    },
+    "m0_comments_ignored_by_python": {
+      "title": "Python ignores comments",
+      "prompt": "Comments are mainly for:",
+      "options": {
+        "a": "Humans reading the code",
+        "b": "Making Python run faster",
+        "c": "Changing the output automatically"
+      },
+      "hint": "Python ignores comments; they help humans understand the code."
+    },
+    "m0_comments_best_reason": {
+      "title": "Best reason to comment",
+      "prompt": "Which is the best reason to write a comment?",
+      "options": {
+        "a": "To repeat exactly what the code already says",
+        "b": "To explain intent or a tricky step",
+        "c": "To make the file longer"
+      },
+      "hint": "Good comments explain intent (the why), not obvious code (the what)."
+    }
+  }
+}

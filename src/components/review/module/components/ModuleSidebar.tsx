@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import type { ReviewCard, ReviewModule } from "@/lib/subjects/types";
 import RingButton from "@/components/review/module/RingButton";
 import { isTopicComplete } from "../utils";
+import { useTaggedT } from "@/i18n/tagged"; // ✅ adjust path if yours differs
 
 export default function ModuleSidebar({
                                           mod,
@@ -26,7 +27,7 @@ export default function ModuleSidebar({
                                           assignmentSublabel,
                                           onAssignmentClick,
                                           hasNextModule,
-    progressHydrated,
+                                          progressHydrated,
                                           canGoNextModule,
                                       }: {
     mod: ReviewModule;
@@ -56,6 +57,12 @@ export default function ModuleSidebar({
     hasNextModule: boolean;
     canGoNextModule: boolean;
 }) {
+    const tt = useTaggedT(); // ✅ for "@:..."
+    const ui = useTaggedT("moduleSidebarUi"); // ✅ optional UI namespace
+
+    const modTitle = tt.resolve((mod as any)?.title ?? "");
+    const modSubtitle = tt.resolve((mod as any)?.subtitle ?? null);
+
     return (
         <div className="h-full ui-card overflow-hidden flex flex-col">
             {/* pinned header */}
@@ -63,15 +70,18 @@ export default function ModuleSidebar({
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                         <div className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">
-                            {mod.title}
+                            {modTitle}
                         </div>
-                        {mod.subtitle ? (
-                            <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">{mod.subtitle}</div>
+
+                        {modSubtitle ? (
+                            <div className="mt-1 text-sm text-neutral-600 dark:text-white/60">
+                                {modSubtitle}
+                            </div>
                         ) : null}
 
                         <div className="mt-3 flex items-center gap-2">
               <span className="text-[11px] font-extrabold text-neutral-500 dark:text-white/45">
-                Topics
+                {ui.t("topicsLabel", {}, "Topics")}
               </span>
                             <span className="text-[11px] font-black tabular-nums text-neutral-700 dark:text-white/70">
                 {moduleProgress.done}/{moduleProgress.total}
@@ -87,7 +97,7 @@ export default function ModuleSidebar({
 
                         {unlockAll ? (
                             <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-400/10 px-3 py-2 text-xs font-black text-amber-800 dark:border-amber-300/25 dark:bg-amber-200/10 dark:text-amber-200">
-                                UNLOCK ENABLED
+                                {ui.t("unlockEnabled", {}, "UNLOCK ENABLED")}
                             </div>
                         ) : null}
                     </div>
@@ -97,7 +107,7 @@ export default function ModuleSidebar({
                             type="button"
                             onClick={onCollapse}
                             className="ui-btn ui-btn-secondary px-3 py-2 text-[11px] font-extrabold"
-                            title="Collapse sidebar"
+                            title={ui.t("collapseTitle", {}, "Collapse sidebar")}
                         >
                             ◀
                         </button>
@@ -110,9 +120,9 @@ export default function ModuleSidebar({
                                 "px-3 py-2 text-[11px] font-extrabold",
                                 "text-rose-700 dark:text-rose-200",
                             )}
-                            title="Reset all progress in this module"
+                            title={ui.t("resetTitle", {}, "Reset all progress in this module")}
                         >
-                            Reset
+                            {ui.t("reset", {}, "Reset")}
                         </button>
                     </div>
                 </div>
@@ -122,25 +132,20 @@ export default function ModuleSidebar({
             <div className="flex-1 overflow-auto p-3">
                 <div className="grid gap-2">
                     {topics.map((t, idx) => {
-                        // const idx = topics.findIndex((x) => x.id === t.id);
-                        // const isEarlierOrActive = idx <= activeIdx;
-                        // const canGoForward = topicUnlocked(t.id);
-                        // const disabled = unlockAll ? false : !isEarlierOrActive && !canGoForward;
-                        //
-                        // const doneTopic = isTopicComplete((t.cards ?? []) as ReviewCard[], (progress as any)?.topics?.[t.id]);
                         const isEarlierOrActive = idx <= activeIdx;
                         const canGoForward = topicUnlocked(t.id);
                         const disabled = unlockAll ? false : !isEarlierOrActive && !canGoForward;
 
-                        // const doneTopic = isTopicComplete(
-                        //     (t.cards ?? []) as ReviewCard[],
-                        //     (progress as any)?.topics?.[t.id]
-                        // );
                         const doneTopic = progressHydrated
                             ? isTopicComplete((t.cards ?? []) as ReviewCard[], (progress as any)?.topics?.[t.id])
                             : false;
+
                         const isViewing = viewTopicId === t.id;
                         const isActive = activeTopicId === t.id;
+
+                        // ✅ resolve topic strings (may be "@:topics....")
+                        const topicLabel = tt.resolve(t.label ?? "");
+                        const topicSummary = tt.resolve(t.summary ?? null);
 
                         return (
                             <button
@@ -157,9 +162,15 @@ export default function ModuleSidebar({
                                 )}
                             >
                                 <div className="flex items-center justify-between gap-2">
-                                    <div className="text-sm font-extrabold">{t.label}</div>
+                                    <div className="text-sm font-extrabold">{topicLabel}</div>
+
                                     <div className="flex items-center gap-2">
-                                        {isActive ? <span className="ui-pill ui-pill--neutral">CURRENT</span> : null}
+                                        {isActive ? (
+                                            <span className="ui-pill ui-pill--neutral">
+                        {ui.t("current", {}, "CURRENT")}
+                      </span>
+                                        ) : null}
+
                                         {doneTopic ? (
                                             <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300/80">
                         ✓
@@ -168,8 +179,10 @@ export default function ModuleSidebar({
                                     </div>
                                 </div>
 
-                                {t.summary ? (
-                                    <div className="mt-1 text-xs text-neutral-600 dark:text-white/55">{t.summary}</div>
+                                {topicSummary ? (
+                                    <div className="mt-1 text-xs text-neutral-600 dark:text-white/55">
+                                        {topicSummary}
+                                    </div>
                                 ) : null}
                             </button>
                         );
@@ -179,8 +192,8 @@ export default function ModuleSidebar({
                 <div className="mt-3">
                     <RingButton
                         pct={assignmentPct}
-                        label={assignmentLabel}
-                        sublabel={assignmentSublabel}
+                        label={tt.resolve(assignmentLabel)}
+                        sublabel={tt.resolve(assignmentSublabel ?? null) || undefined}
                         onClick={onAssignmentClick}
                         disabled={false}
                     />
@@ -188,21 +201,33 @@ export default function ModuleSidebar({
 
                 {navLoading ? (
                     <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
-                        <div className="font-extrabold text-neutral-700 dark:text-white/70">Next module</div>
-                        <div className="mt-1 text-neutral-600 dark:text-white/55">Loading…</div>
+                        <div className="font-extrabold text-neutral-700 dark:text-white/70">
+                            {ui.t("nextModule.title", {}, "Next module")}
+                        </div>
+                        <div className="mt-1 text-neutral-600 dark:text-white/55">
+                            {ui.t("nextModule.loading", {}, "Loading…")}
+                        </div>
                     </div>
                 ) : navError ? (
                     <div className="mt-3 rounded-xl border border-rose-300/30 bg-rose-300/10 p-3 text-xs dark:border-rose-300/20">
-                        <div className="font-extrabold text-rose-700 dark:text-rose-200">Next module</div>
-                        <div className="mt-1 text-rose-700/80 dark:text-rose-200/80">Couldn’t load navigation.</div>
+                        <div className="font-extrabold text-rose-700 dark:text-rose-200">
+                            {ui.t("nextModule.title", {}, "Next module")}
+                        </div>
+                        <div className="mt-1 text-rose-700/80 dark:text-rose-200/80">
+                            {ui.t("nextModule.error", {}, "Couldn’t load navigation.")}
+                        </div>
                     </div>
                 ) : hasNextModule ? (
                     <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 text-xs dark:border-white/10 dark:bg-white/[0.04]">
-                        <div className="font-extrabold text-neutral-700 dark:text-white/70">Next module</div>
+                        <div className="font-extrabold text-neutral-700 dark:text-white/70">
+                            {ui.t("nextModule.title", {}, "Next module")}
+                        </div>
                         <div className="mt-1 text-neutral-600 dark:text-white/55">
                             {canGoNextModule
-                                ? (unlockAll ? "Unlocked." : "Unlocked after assignment.")
-                                : "Finish topics + assignment to unlock."}
+                                ? unlockAll
+                                    ? ui.t("nextModule.unlocked", {}, "Unlocked.")
+                                    : ui.t("nextModule.unlockedAfterAssignment", {}, "Unlocked after assignment.")
+                                : ui.t("nextModule.locked", {}, "Finish topics + assignment to unlock.")}
                         </div>
                     </div>
                 ) : null}

@@ -1,7 +1,7 @@
 bash -lc '
 set -e
 
-APP="learnoir-edu"
+APP="zoeskoul-edu"
 
 rm -rf "$APP"
 

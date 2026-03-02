@@ -45,7 +45,7 @@ export default function FullIDE(props: FullIDEProps) {
         height = 720,
         className,
         fullHeight = false,
-        storageKey = "learnoir.ide.workspace.v2",
+        storageKey = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v2`,
 
         language: forcedLanguage,
         onChangeLanguage,

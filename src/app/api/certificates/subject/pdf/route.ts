@@ -15,7 +15,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
+const APP_NAME = process.env.APP_NAME;
 function jsonErr(message: string, status = 400, detail?: any, setGuestId?: string) {
     const res = NextResponse.json({ message, detail }, { status });
     return attachGuestCookie(res, setGuestId);
@@ -359,7 +359,7 @@ export async function GET(req: Request) {
         doc.fillColor("#0B1220");
         doc.font("Playfair-Bold").fontSize(90);
         doc.rotate(-12, { origin: [W * 0.25, H * 0.55] });
-        doc.text("LEARNOIR", W * 0.06, H * 0.45, { width: W * 0.88, align: "center" });
+        doc.text(String(APP_NAME).toUpperCase(), W * 0.06, H * 0.45, { width: W * 0.88, align: "center" });
         doc.rotate(12, { origin: [W * 0.25, H * 0.55] });
         doc.opacity(1);
         doc.restore();
@@ -370,7 +370,7 @@ export async function GET(req: Request) {
         const issuedDateStr = cert.issuedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
 // Top small line
-        center("Learnoir", 62, "Inter-Bold", 12, sub, { characterSpacing: 1 });
+        center(String(APP_NAME).toUpperCase(), 62, "Inter-Bold", 12, sub, { characterSpacing: 1 });
         center(courseTitle, 82, "Inter", 12, muted);
 
 // Big certificate title (serif)
@@ -447,7 +447,7 @@ export async function GET(req: Request) {
         doc.fillColor(gold2).font("Inter-Bold").fontSize(10);
         doc.text("VERIFIED", W / 2 - 45, H - 126, { width: 90, align: "center" });
         doc.fillColor(muted).font("Inter").fontSize(8);
-        doc.text("LEARNOIR", W / 2 - 45, H - 112, { width: 90, align: "center" });
+        doc.text(String(APP_NAME).toUpperCase(), W / 2 - 45, H - 112, { width: 90, align: "center" });
         doc.restore();
 
 // Footer meta

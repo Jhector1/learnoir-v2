@@ -11,6 +11,9 @@ export const PY_MODULES = [
     description: "Workspace + programming basics: IPO model, syntax, and comments.",
     weekStart: 0,
     weekEnd: 2,
+    accessOverride: "paid",
+    entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD0}`,
+
     meta: {
       estimatedMinutes: 40,
       // videoUrl: undefined,
@@ -36,6 +39,9 @@ export const PY_MODULES = [
     description: "Variables/types, operators/expressions, strings, and mini-program patterns.",
     weekStart: 3,
     weekEnd: 5,
+    accessOverride: "paid",
+    entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD1}`,
+
     meta: {
       estimatedMinutes: 90,
       // videoUrl: undefined,
@@ -61,6 +67,9 @@ export const PY_MODULES = [
     description: "Conditionals, loops, lists, and functions — stitched into story-based mini-projects.",
     weekStart: 6,
     weekEnd: 8,
+    accessOverride: "paid",
+    entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD2}`,
+
     meta: {
       estimatedMinutes: 110,
       // videoUrl: undefined,

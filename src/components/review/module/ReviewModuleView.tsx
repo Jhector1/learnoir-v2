@@ -31,11 +31,100 @@ import ConfirmResetModal from "@/components/practice/ConfirmResetModal";
 import { ReviewToolsProvider } from "@/components/review/module/context/ReviewToolsContext";
 import { toolsPolicyForSubject } from "@/lib/tools/policy";
 
-/* ✅ NEW: skeleton + animations */
+/* ✅ skeleton + animations */
 import { AnimatePresence, motion } from "framer-motion";
 import ReviewModuleSkeleton from "@/components/review/module/ReviewModuleSkeleton";
 import { useSkeletonGate } from "@/components/review/module/hooks/useSkeletonGate";
 import HeaderSlick from "@/components/HeaderSlick";
+
+/* -----------------------------
+   ✅ MOBILE-FIRST RESPONSIVE
+-------------------------------- */
+
+function useMediaQuery(query: string) {
+    const [matches, setMatches] = React.useState(false);
+
+    React.useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) return;
+        const mq = window.matchMedia(query);
+
+        const apply = () => setMatches(Boolean(mq.matches));
+        apply();
+
+        if (mq.addEventListener) mq.addEventListener("change", apply);
+        else (mq as any).addListener?.(apply);
+
+        return () => {
+            if (mq.removeEventListener) mq.removeEventListener("change", apply);
+            else (mq as any).removeListener?.(apply);
+        };
+    }, [query]);
+
+    return matches;
+}
+
+function MobileDrawer(props: {
+    open: boolean;
+    side: "left" | "right";
+    title: string;
+    reduceMotion: boolean;
+    onClose: () => void;
+    children: React.ReactNode;
+}) {
+    const { open, side, title, reduceMotion, onClose, children } = props;
+
+    return (
+        <AnimatePresence>
+            {open ? (
+                <>
+                    {/* backdrop */}
+                    <motion.button
+                        type="button"
+                        aria-label="Close drawer"
+                        className="fixed inset-0 z-[90] bg-black/30 backdrop-blur-[2px]"
+                        onClick={onClose}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: reduceMotion ? 0 : 0.16 }}
+                    />
+
+                    {/* panel */}
+                    <motion.aside
+                        className={cn(
+                            "fixed top-0 bottom-0 z-[100] w-[min(92vw,380px)]",
+                            "bg-white/85 backdrop-blur border border-neutral-200/70",
+                            "dark:bg-[#0b0d12]/85 dark:border-white/10",
+                            "shadow-2xl",
+                            side === "left" ? "left-0 rounded-r-2xl" : "right-0 rounded-l-2xl"
+                        )}
+                        initial={{ x: side === "left" ? -24 : 24, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: side === "left" ? -24 : 24, opacity: 0 }}
+                        transition={{
+                            duration: reduceMotion ? 0 : 0.2,
+                            ease: [0.16, 1, 0.3, 1],
+                        }}
+                    >
+                        <div className="h-full min-h-0 flex flex-col">
+                            <div className="shrink-0 flex items-center justify-between gap-2 p-3">
+                                <div className="text-sm font-black text-neutral-900 dark:text-white/90">{title}</div>
+                                <button
+                                    type="button"
+                                    className="ui-btn ui-btn-secondary text-xs font-extrabold"
+                                    onClick={onClose}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                            <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+                        </div>
+                    </motion.aside>
+                </>
+            ) : null}
+        </AnimatePresence>
+    );
+}
 
 export default function ReviewModuleView({
                                              mod,
@@ -78,7 +167,7 @@ export default function ReviewModuleView({
 
     const viewTopic = useMemo(
         () => topics.find((t) => t.id === viewTopicId) ?? topics[0] ?? null,
-        [topics, viewTopicId],
+        [topics, viewTopicId]
     );
 
     const viewCards = Array.isArray(viewTopic?.cards) ? viewTopic!.cards : [];
@@ -205,8 +294,8 @@ export default function ReviewModuleView({
     const { status: assignmentStatus, complete: assignmentDone, pct: assignmentPct } = useAssignmentStatus({
         sessionId: assignmentSessionId,
         enabled: progressHydrated,
-        subject:subjectSlug,
-        module:moduleId
+        subject: subjectSlug,
+        module: moduleId,
     });
 
     const assignmentLabel =
@@ -241,7 +330,7 @@ export default function ReviewModuleView({
             router.push(
                 `/${ROUTES.practicePath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}` +
                 `?sessionId=${encodeURIComponent(assignmentSessionId)}` +
-                `&returnTo=${encodeURIComponent(returnToCurrentModule)}`,
+                `&returnTo=${encodeURIComponent(returnToCurrentModule)}`
             );
             return;
         }
@@ -269,7 +358,7 @@ export default function ReviewModuleView({
         router.push(
             `/${ROUTES.practicePath(encodeURIComponent(subjectSlug), encodeURIComponent(moduleId))}` +
             `?sessionId=${encodeURIComponent(newSid)}` +
-            `&returnTo=${encodeURIComponent(returnToCurrentModule)}`,
+            `&returnTo=${encodeURIComponent(returnToCurrentModule)}`
         );
     }
 
@@ -391,18 +480,37 @@ export default function ReviewModuleView({
         };
     }, []);
 
-    // before (BAD): returns Map because Map.set returns Map
-// const setCardEl = useCallback((id: string) => (el: HTMLElement | null) => cardElRef.current.set(id, el), []);
+    // ✅ breakpoint-driven layout
+    const mdUp = useMediaQuery("(min-width: 768px)");
+    const lgUp = useMediaQuery("(min-width: 1024px)");
 
-// after (GOOD): returns void
+    const showDesktopLeft = mdUp; // show left sidebar only md+
+    const showDesktopRight = lgUp; // show tools panel only lg+
+
+    const [mobileTopicsOpen, setMobileTopicsOpen] = useState(false);
+    const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+
+    useEffect(() => {
+        if (mdUp) setMobileTopicsOpen(false);
+        if (lgUp) setMobileToolsOpen(false);
+    }, [mdUp, lgUp]);
+
+    const leftCollapsedEff = showDesktopLeft ? panels.leftCollapsed : true;
+    const rightCollapsedEff = showDesktopRight ? panels.rightCollapsed : true;
+
+    // before (BAD): returns Map because Map.set returns Map
+    // const setCardEl = useCallback((id: string) => (el: HTMLElement | null) => cardElRef.current.set(id, el), []);
+
+    // after (GOOD): returns void
     const cardElRef = useRef(new Map<string, HTMLDivElement | null>());
 
     const setCardEl = useCallback(
         (id: string) => (el: HTMLDivElement | null) => {
             cardElRef.current.set(id, el);
         },
-        [],
+        []
     );
+
     useEffect(() => {
         cardElRef.current.clear();
     }, [viewTid, topicRenderKey]);
@@ -451,12 +559,12 @@ export default function ReviewModuleView({
                 'input[data-flow-focus]:not([disabled]),' +
                 'textarea[data-flow-focus]:not([disabled]),' +
                 'select[data-flow-focus]:not([disabled]),' +
-                '[tabindex][data-flow-focus]:not([tabindex="-1"])',
+                '[tabindex][data-flow-focus]:not([tabindex="-1"])'
             ) ??
             root.querySelector<HTMLElement>("button.ui-quiz-action--primary:not([disabled])") ??
             root.querySelector<HTMLElement>("button.ui-btn-primary:not([disabled])") ??
             root.querySelector<HTMLElement>(
-                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
             );
 
         preferred?.focus({ preventScroll: true } as any);
@@ -490,7 +598,7 @@ export default function ReviewModuleView({
             if (reduceMotion || !needsScroll) requestAnimationFrame(focusLater);
             else window.setTimeout(focusLater, 250);
         },
-        [reduceMotion],
+        [reduceMotion]
     );
 
     function scrollToNextActionable(fromIndex: number, nextProgress: any) {
@@ -514,7 +622,11 @@ export default function ReviewModuleView({
     }
 
     if (!topics.length) {
-        return <div className="h-full w-full p-6 text-sm text-neutral-600 dark:text-white/70">This module has no topics yet.</div>;
+        return (
+            <div className="h-full w-full p-6 text-sm text-neutral-600 dark:text-white/70">
+                This module has no topics yet.
+            </div>
+        );
     }
 
     const viewIsComplete = isTopicComplete(viewCards, (progress as any)?.topics?.[viewTid]);
@@ -555,7 +667,7 @@ export default function ReviewModuleView({
                 return next;
             });
         },
-        [setProgress, flushNow],
+        [setProgress, flushNow]
     );
 
     const moduleProgress = useMemo(() => {
@@ -593,12 +705,14 @@ export default function ReviewModuleView({
         const t = window.setTimeout(() => setShowMask(false), 420);
         return () => window.clearTimeout(t);
     }, [showSkeleton, reduceMotion]);
+
     const footerPad = footerInsetPx ? footerInsetPx + 12 : 0; // +12 breathing room
     const padStyle = ({
         paddingBottom: footerPad || undefined,
         scrollPaddingBottom: footerPad || undefined,
         ["--flow-bottom-inset" as any]: `${footerPad || 0}px`,
     } as React.CSSProperties);
+
     return (
         <>
             <ReviewToolsProvider
@@ -606,7 +720,13 @@ export default function ReviewModuleView({
                 resetKey={`${viewTid}:${versionStr}`}
                 externalBoundId={tool.boundId}
                 ensureVisible={() => {
-                    if (panels.rightCollapsed) panels.setRightCollapsed(false);
+                    // ✅ on desktop: expand right panel
+                    // ✅ on mobile/tablet: open tools drawer
+                    if (showDesktopRight) {
+                        if (panels.rightCollapsed) panels.setRightCollapsed(false);
+                    } else {
+                        setMobileToolsOpen(true);
+                    }
                 }}
                 onBindToToolsPanel={({ id, lang, code, stdin, onPatch }) => {
                     tool.bindCodeInput({ id, lang, code, stdin, onPatch });
@@ -632,6 +752,81 @@ export default function ReviewModuleView({
                         />
                     ) : null}
 
+                    {/* ✅ mobile drawers (persist across skeleton/content swaps) */}
+                    <MobileDrawer
+                        open={mobileTopicsOpen}
+                        side="left"
+                        title="Topics"
+                        reduceMotion={reduceMotion}
+                        onClose={() => setMobileTopicsOpen(false)}
+                    >
+                        <div className="p-3" style={padStyle}>
+                            <ModuleSidebar
+                                progressHydrated={progressHydrated}
+                                mod={mod}
+                                topics={topics}
+                                progress={progress}
+                                activeIdx={activeIdx}
+                                activeTopicId={activeTopicId}
+                                viewTopicId={viewTopicId}
+                                unlockAll={unlockAll}
+                                moduleProgress={moduleProgress}
+                                topicUnlocked={topicUnlocked}
+                                onGoToTopic={(tid) => {
+                                    goToTopic(tid);
+                                    setMobileTopicsOpen(false);
+                                }}
+                                onResetModule={requestResetModule}
+                                onCollapse={() => setMobileTopicsOpen(false)}
+                                assignmentPct={assignmentPct}
+                                assignmentLabel={assignmentLabel}
+                                assignmentSublabel={assignmentSublabel}
+                                onAssignmentClick={handleAssignmentClick}
+                                hasNextModule={hasNextModule}
+                                navLoading={navLoading}
+                                navError={navError}
+                                canGoNextModule={canGoNextModule}
+                            />
+                        </div>
+                    </MobileDrawer>
+
+                    <MobileDrawer
+                        open={mobileToolsOpen}
+                        side="right"
+                        title="Tools"
+                        reduceMotion={reduceMotion}
+                        onClose={() => setMobileToolsOpen(false)}
+                    >
+                        <div className="p-3 h-full min-h-0">
+                            <ToolsPanel
+                                onCollapse={() => setMobileToolsOpen(false)}
+                                onUnbind={tool.unbindCodeInput}
+                                boundId={tool.boundId}
+                                rightBodyRef={tool.rightBodyRef}
+                                codeRunnerRegionH={tool.codeRunnerRegionH}
+                                toolLang={tool.toolLang as CodeLanguage}
+                                toolCode={tool.toolCode}
+                                toolStdin={tool.toolStdin}
+                                onChangeLang={(l: CodeLanguage) => {
+                                    tool.setToolLang(l);
+                                    tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
+                                }}
+                                onChangeCode={(c: string) => {
+                                    tool.setToolCode(c);
+                                    tool.saveDebounced(tool.toolLang, c, tool.toolStdin);
+                                }}
+                                onChangeStdin={(s: string) => {
+                                    tool.setToolStdin(s);
+                                    tool.saveDebounced(tool.toolLang, tool.toolCode, s);
+                                }}
+                                subjectSlug={subjectSlug}
+                                moduleId={moduleId}
+                                locale={locale}
+                                codeEnabled={codeEnabled}
+                            />
+                        </div>
+                    </MobileDrawer>
+
                     <AnimatePresence mode="wait" initial={false}>
                         {showSkeleton ? (
                             <motion.div
@@ -644,8 +839,8 @@ export default function ReviewModuleView({
                             >
                                 <div className="h-full w-full pointer-events-none">
                                     <ReviewModuleSkeleton
-                                        leftCollapsed={panels.leftCollapsed}
-                                        rightCollapsed={panels.rightCollapsed}
+                                        leftCollapsed={leftCollapsedEff}
+                                        rightCollapsed={rightCollapsedEff}
                                         leftW={panels.leftW}
                                         rightW={panels.rightW}
                                     />
@@ -657,7 +852,10 @@ export default function ReviewModuleView({
                                 initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
+                                transition={{
+                                    duration: reduceMotion ? 0 : 0.24,
+                                    ease: [0.16, 1, 0.3, 1],
+                                }}
                                 className="h-full w-full"
                             >
                                 {/* ✅ FIX: flex column so header doesn't steal height from h-full children */}
@@ -665,49 +863,74 @@ export default function ReviewModuleView({
                                     <div className="shrink-0">
                                         <HeaderSlick
                                             slot={
-                                                <div className="ml-20 shrink-0 flex justify-center items-center gap-2 flex-nowrap whitespace-nowrap [&>button]:whitespace-nowrap">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => panels.setRightCollapsed((v) => !v)}
-                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                        title={panels.rightCollapsed ? "Show tools" : "Hide tools"}
+                                                <div className="flex-1 flex justify-end min-w-0">
+                                                    <div
+                                                        className={cn(
+                                                            "max-w-full flex items-center gap-2 px-2",
+                                                            "overflow-x-auto",
+                                                            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                                                        )}
                                                     >
-                                                        {panels.rightCollapsed ? "Tools ▶" : "Tools ◀"}
-                                                    </button>
+                                                        {/* Topics */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (showDesktopLeft) panels.setLeftCollapsed((v) => !v);
+                                                                else setMobileTopicsOpen(true);
+                                                            }}
+                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                            title="Topics"
+                                                        >
+                                                            {showDesktopLeft ? (panels.leftCollapsed ? "Topics ▶" : "Topics ◀") : "Topics"}
+                                                        </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => requestResetTopic(viewTid)}
-                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                    >
-                                                        Reset topic
-                                                    </button>
+                                                        {/* Tools */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (showDesktopRight) panels.setRightCollapsed((v) => !v);
+                                                                else setMobileToolsOpen(true);
+                                                            }}
+                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                            title="Tools"
+                                                        >
+                                                            {showDesktopRight ? (panels.rightCollapsed ? "Tools ▶" : "Tools ◀") : "Tools"}
+                                                        </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={goPrevTopic}
-                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                        disabled={!prevTopic?.id}
-                                                        title={!prevTopic?.id ? "No previous topic" : "Previous topic"}
-                                                    >
-                                                        ←
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => requestResetTopic(viewTid)}
+                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap hidden sm:inline-flex"
+                                                        >
+                                                            Reset topic
+                                                        </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={goNextTopic}
-                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                        disabled={!nextTopic?.id || (!unlockAll && !viewIsComplete)}
-                                                        title={
-                                                            !nextTopic?.id
-                                                                ? "No next topic"
-                                                                : !unlockAll && !viewIsComplete
-                                                                    ? "Complete the topic to continue"
-                                                                    : "Next topic"
-                                                        }
-                                                    >
-                                                        →
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={goPrevTopic}
+                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                            disabled={!prevTopic?.id}
+                                                            title={!prevTopic?.id ? "No previous topic" : "Previous topic"}
+                                                        >
+                                                            ←
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={goNextTopic}
+                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                            disabled={!nextTopic?.id || (!unlockAll && !viewIsComplete)}
+                                                            title={
+                                                                !nextTopic?.id
+                                                                    ? "No next topic"
+                                                                    : !unlockAll && !viewIsComplete
+                                                                        ? "Complete the topic to continue"
+                                                                        : "Next topic"
+                                                            }
+                                                        >
+                                                            →
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             }
                                             isBillingStatus={false}
@@ -721,48 +944,51 @@ export default function ReviewModuleView({
                                     {/* ✅ FIX: content area uses remaining height */}
                                     <div className="flex-1 min-h-0 w-full p-3 md:p-4">
                                         <div className="h-full min-h-0 flex gap-3">
-                                            {/* LEFT */}
-                                            <aside
-                                                className={cn(
-                                                    "min-h-0 transition-[width] duration-300 ease-out overflow-hidden",
-                                                    panels.leftCollapsed && "w-0",
-                                                )}
-                                                style={{ width: panels.leftCollapsed ? 0 : panels.leftW }}
-                                            >
-                                                <div className="h-full min-h-0 overflow-auto" style={padStyle}>
+                                            {/* LEFT (desktop only) */}
+                                            {showDesktopLeft ? (
+                                                <>
+                                                    <aside
+                                                        className={cn(
+                                                            "min-h-0 transition-[width] duration-300 ease-out overflow-hidden",
+                                                            panels.leftCollapsed && "w-0"
+                                                        )}
+                                                        style={{ width: panels.leftCollapsed ? 0 : panels.leftW }}
+                                                    >
+                                                        <div className="h-full min-h-0 overflow-auto" style={padStyle}>
+                                                            <ModuleSidebar
+                                                                progressHydrated={progressHydrated}
+                                                                mod={mod}
+                                                                topics={topics}
+                                                                progress={progress}
+                                                                activeIdx={activeIdx}
+                                                                activeTopicId={activeTopicId}
+                                                                viewTopicId={viewTopicId}
+                                                                unlockAll={unlockAll}
+                                                                moduleProgress={moduleProgress}
+                                                                topicUnlocked={topicUnlocked}
+                                                                onGoToTopic={goToTopic}
+                                                                onResetModule={requestResetModule}
+                                                                onCollapse={() => panels.setLeftCollapsed(true)}
+                                                                assignmentPct={assignmentPct}
+                                                                assignmentLabel={assignmentLabel}
+                                                                assignmentSublabel={assignmentSublabel}
+                                                                onAssignmentClick={handleAssignmentClick}
+                                                                hasNextModule={hasNextModule}
+                                                                navLoading={navLoading}
+                                                                navError={navError}
+                                                                canGoNextModule={canGoNextModule}
+                                                            />
+                                                        </div>
+                                                    </aside>
 
-                                                <ModuleSidebar
-                                                    progressHydrated={progressHydrated}
-                                                    mod={mod}
-                                                    topics={topics}
-                                                    progress={progress}
-                                                    activeIdx={activeIdx}
-                                                    activeTopicId={activeTopicId}
-                                                    viewTopicId={viewTopicId}
-                                                    unlockAll={unlockAll}
-                                                    moduleProgress={moduleProgress}
-                                                    topicUnlocked={topicUnlocked}
-                                                    onGoToTopic={goToTopic}
-                                                    onResetModule={requestResetModule}
-                                                    onCollapse={() => panels.setLeftCollapsed(true)}
-                                                    assignmentPct={assignmentPct}
-                                                    assignmentLabel={assignmentLabel}
-                                                    assignmentSublabel={assignmentSublabel}
-                                                    onAssignmentClick={handleAssignmentClick}
-                                                    hasNextModule={hasNextModule}
-                                                    navLoading={navLoading}
-                                                    navError={navError}
-                                                    canGoNextModule={canGoNextModule}
-                                                />
-                                                </div>
-                                            </aside>
-
-                                            {!panels.leftCollapsed ? (
-                                                <div
-                                                    onMouseDown={panels.onMouseDownLeftHandle}
-                                                    className="w-2 cursor-col-resize rounded-xl bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
-                                                    title="Drag to resize sidebar"
-                                                />
+                                                    {!panels.leftCollapsed ? (
+                                                        <div
+                                                            onMouseDown={panels.onMouseDownLeftHandle}
+                                                            className="w-2 cursor-col-resize rounded-xl bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
+                                                            title="Drag to resize sidebar"
+                                                        />
+                                                    ) : null}
+                                                </>
                                             ) : null}
 
                                             {/* MAIN (SCROLLER) */}
@@ -770,17 +996,29 @@ export default function ReviewModuleView({
                                                 ref={mainScrollRef}
                                                 className="flex-1 min-w-0 min-h-0 overflow-auto"
                                                 style={padStyle}
-
                                             >
-                                                {panels.leftCollapsed ? (
-                                                    <div className="mb-3">
+                                                {leftCollapsedEff ? (
+                                                    <div className="mb-3 flex gap-2">
                                                         <button
                                                             type="button"
-                                                            onClick={() => panels.setLeftCollapsed(false)}
+                                                            onClick={() => {
+                                                                if (showDesktopLeft) panels.setLeftCollapsed(false);
+                                                                else setMobileTopicsOpen(true);
+                                                            }}
                                                             className="ui-btn ui-btn-secondary text-xs font-extrabold"
                                                         >
                                                             Topics ▶
                                                         </button>
+
+                                                        {!showDesktopRight ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setMobileToolsOpen(true)}
+                                                                className="ui-btn ui-btn-secondary text-xs font-extrabold"
+                                                            >
+                                                                Tools ▶
+                                                            </button>
+                                                        ) : null}
                                                     </div>
                                                 ) : null}
 
@@ -791,7 +1029,9 @@ export default function ReviewModuleView({
                                                             const savedSketch = tp?.sketchState?.[card.id] ?? null;
 
                                                             const isQuizLike = card.type === "quiz" || card.type === "project";
-                                                            const done = isQuizLike ? Boolean(tp?.quizzesDone?.[card.id]) : Boolean(tp?.cardsDone?.[card.id]);
+                                                            const done = isQuizLike
+                                                                ? Boolean(tp?.quizzesDone?.[card.id])
+                                                                : Boolean(tp?.cardsDone?.[card.id]);
 
                                                             const prereqsMet = isQuizLike ? prereqsForAllQuizzes : true;
 
@@ -806,12 +1046,17 @@ export default function ReviewModuleView({
                                                                         savedQuiz={progressHydrated ? savedQuiz : null}
                                                                         versionStr={versionStr}
                                                                         savedSketch={progressHydrated ? savedSketch : null}
-                                                                        onSketchStateChange={(sketchCardId, s) => sketch.saveSketchDebounced(viewTid, sketchCardId, s)}
+                                                                        onSketchStateChange={(sketchCardId, s) =>
+                                                                            sketch.saveSketchDebounced(viewTid, sketchCardId, s)
+                                                                        }
                                                                         onMarkDone={() => {
                                                                             setProgress((p: any) => {
                                                                                 const tp0: any = p.topics?.[viewTid] ?? {};
                                                                                 const cardsDone = { ...(tp0.cardsDone ?? {}), [card.id]: true };
-                                                                                const next = { ...p, topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, cardsDone } } };
+                                                                                const next = {
+                                                                                    ...p,
+                                                                                    topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, cardsDone } },
+                                                                                };
 
                                                                                 queueMicrotask(() => {
                                                                                     flushNow(next);
@@ -825,7 +1070,10 @@ export default function ReviewModuleView({
                                                                             setProgress((p: any) => {
                                                                                 const tp0: any = p.topics?.[viewTid] ?? {};
                                                                                 const quizzesDone = { ...(tp0.quizzesDone ?? {}), [quizId]: true };
-                                                                                const next = { ...p, topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizzesDone } } };
+                                                                                const next = {
+                                                                                    ...p,
+                                                                                    topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizzesDone } },
+                                                                                };
 
                                                                                 queueMicrotask(() => {
                                                                                     flushNow(next);
@@ -839,7 +1087,10 @@ export default function ReviewModuleView({
                                                                             setProgress((p: any) => {
                                                                                 const tp0: any = p.topics?.[viewTid] ?? {};
                                                                                 const quizState = { ...(tp0.quizState ?? {}), [quizCardId]: s };
-                                                                                return { ...p, topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizState } } };
+                                                                                return {
+                                                                                    ...p,
+                                                                                    topics: { ...(p.topics ?? {}), [viewTid]: { ...tp0, quizState } },
+                                                                                };
                                                                             });
                                                                         }}
                                                                         onQuizReset={(quizCardId) => {
@@ -855,7 +1106,11 @@ export default function ReviewModuleView({
                                                                                     ...p,
                                                                                     topics: {
                                                                                         ...(p.topics ?? {}),
-                                                                                        [viewTid]: { ...tp0, quizState: nextQuizState, quizzesDone: nextQuizzesDone },
+                                                                                        [viewTid]: {
+                                                                                            ...tp0,
+                                                                                            quizState: nextQuizState,
+                                                                                            quizzesDone: nextQuizzesDone,
+                                                                                        },
                                                                                     },
                                                                                 };
                                                                             });
@@ -868,7 +1123,10 @@ export default function ReviewModuleView({
 
                                                     {viewIsComplete ? (
                                                         <div className="mt-3">
-                                                            <TopicOutro topic={viewTopic} onContinue={nextTopic?.id ? goNextTopic : undefined} />
+                                                            <TopicOutro
+                                                                topic={viewTopic}
+                                                                onContinue={nextTopic?.id ? goNextTopic : undefined}
+                                                            />
                                                         </div>
                                                     ) : null}
                                                 </TopicShell>
@@ -882,7 +1140,10 @@ export default function ReviewModuleView({
 
                                                         <button
                                                             type="button"
-                                                            className={cn("mt-3 ui-btn ui-btn-primary w-full", !canGetCertificate && "opacity-60 cursor-not-allowed")}
+                                                            className={cn(
+                                                                "mt-3 ui-btn ui-btn-primary w-full",
+                                                                !canGetCertificate && "opacity-60 cursor-not-allowed"
+                                                            )}
                                                             disabled={!canGetCertificate}
                                                             onClick={() => router.push(`/subjects/${encodeURIComponent(subjectSlug)}/certificate`)}
                                                         >
@@ -892,49 +1153,53 @@ export default function ReviewModuleView({
                                                 ) : null}
                                             </main>
 
-                                            {!panels.rightCollapsed ? (
-                                                <div
-                                                    onMouseDown={panels.onMouseDownRightHandle}
-                                                    className="w-2 cursor-col-resize rounded-xl bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
-                                                    title="Drag to resize tools panel"
-                                                />
-                                            ) : null}
+                                            {/* RIGHT (desktop only) */}
+                                            {showDesktopRight ? (
+                                                <>
+                                                    {!panels.rightCollapsed ? (
+                                                        <div
+                                                            onMouseDown={panels.onMouseDownRightHandle}
+                                                            className="w-2 cursor-col-resize rounded-xl bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
+                                                            title="Drag to resize tools panel"
+                                                        />
+                                                    ) : null}
 
-                                            {/* RIGHT */}
-                                            <aside
-                                                className={cn(
-                                                    "min-h-0 transition-[width] duration-300 ease-out overflow-hidden",
-                                                    panels.rightCollapsed && "w-0",
-                                                )}
-                                                style={{ width: panels.rightCollapsed ? 0 : panels.rightW }}
-                                            >
-                                                <ToolsPanel
-                                                    onCollapse={() => panels.setRightCollapsed(true)}
-                                                    onUnbind={tool.unbindCodeInput}
-                                                    boundId={tool.boundId}
-                                                    rightBodyRef={tool.rightBodyRef}
-                                                    codeRunnerRegionH={tool.codeRunnerRegionH}
-                                                    toolLang={tool.toolLang as CodeLanguage}
-                                                    toolCode={tool.toolCode}
-                                                    toolStdin={tool.toolStdin}
-                                                    onChangeLang={(l: CodeLanguage) => {
-                                                        tool.setToolLang(l);
-                                                        tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
-                                                    }}
-                                                    onChangeCode={(c: string) => {
-                                                        tool.setToolCode(c);
-                                                        tool.saveDebounced(tool.toolLang, c, tool.toolStdin);
-                                                    }}
-                                                    onChangeStdin={(s: string) => {
-                                                        tool.setToolStdin(s);
-                                                        tool.saveDebounced(tool.toolLang, tool.toolCode, s);
-                                                    }}
-                                                    subjectSlug={subjectSlug}
-                                                    moduleId={moduleId}
-                                                    locale={locale}
-                                                    codeEnabled={codeEnabled}
-                                                />
-                                            </aside>
+                                                    <aside
+                                                        className={cn(
+                                                            "min-h-0 transition-[width] duration-300 ease-out overflow-hidden",
+                                                            panels.rightCollapsed && "w-0"
+                                                        )}
+                                                        style={{ width: panels.rightCollapsed ? 0 : panels.rightW }}
+                                                    >
+                                                        <ToolsPanel
+                                                            onCollapse={() => panels.setRightCollapsed(true)}
+                                                            onUnbind={tool.unbindCodeInput}
+                                                            boundId={tool.boundId}
+                                                            rightBodyRef={tool.rightBodyRef}
+                                                            codeRunnerRegionH={tool.codeRunnerRegionH}
+                                                            toolLang={tool.toolLang as CodeLanguage}
+                                                            toolCode={tool.toolCode}
+                                                            toolStdin={tool.toolStdin}
+                                                            onChangeLang={(l: CodeLanguage) => {
+                                                                tool.setToolLang(l);
+                                                                tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
+                                                            }}
+                                                            onChangeCode={(c: string) => {
+                                                                tool.setToolCode(c);
+                                                                tool.saveDebounced(tool.toolLang, c, tool.toolStdin);
+                                                            }}
+                                                            onChangeStdin={(s: string) => {
+                                                                tool.setToolStdin(s);
+                                                                tool.saveDebounced(tool.toolLang, tool.toolCode, s);
+                                                            }}
+                                                            subjectSlug={subjectSlug}
+                                                            moduleId={moduleId}
+                                                            locale={locale}
+                                                            codeEnabled={codeEnabled}
+                                                        />
+                                                    </aside>
+                                                </>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>

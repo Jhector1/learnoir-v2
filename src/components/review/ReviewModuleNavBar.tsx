@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/utils";
 
@@ -16,18 +17,11 @@ type Props = {
 };
 
 const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function ReviewModuleNavBar(
-    {
-        locale,
-        subjectSlug,
-        prevModuleId,
-        nextModuleId,
-        canGoNext,
-        isLastModule,
-        canGetCertificate,
-    },
-    ref,
+    { locale, subjectSlug, prevModuleId, nextModuleId, canGoNext, isLastModule, canGetCertificate },
+    ref
 ) {
     const router = useRouter();
+    const t = useTranslations("reviewNav");
 
     const goModule = (mid: string) => {
         router.push(ROUTES.moduleIntro(encodeURIComponent(subjectSlug), encodeURIComponent(mid)));
@@ -48,7 +42,7 @@ const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function Revi
                     className={cn(
                         "ui-card",
                         "bg-white/70 py-2 backdrop-blur-xl dark:bg-black/55",
-                        "!shadow-none !border-0", // ✅ no shadow/line
+                        "!shadow-none !border-0"
                     )}
                 >
                     <div className="flex items-center justify-end gap-3">
@@ -59,11 +53,13 @@ const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function Revi
                             className={cn(
                                 "ui-btn ui-btn-secondary",
                                 "px-2 py-2 text-sm font-extrabold",
-                                !prevModuleId && "opacity-50 cursor-not-allowed",
+                                !prevModuleId && "opacity-50 cursor-not-allowed"
                             )}
+                            aria-label={t("buttons.prevModule")}
+                            title={!prevModuleId ? t("aria.noPrev") : t("buttons.prevModule")}
                         >
                             <span aria-hidden>←</span>
-                            <span>Prev module</span>
+                            <span>{t("buttons.prevModule")}</span>
                         </button>
 
                         {isLastModule ? (
@@ -76,10 +72,12 @@ const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function Revi
                                     "px-2 py-2 text-sm font-extrabold",
                                     canGetCertificate
                                         ? "ui-btn ui-btn-primary"
-                                        : "ui-btn-secondary opacity-60 cursor-not-allowed",
+                                        : "ui-btn-secondary opacity-60 cursor-not-allowed"
                                 )}
+                                aria-label={t("buttons.getCertificate")}
+                                title={!canGetCertificate ? t("aria.lockedCertificate") : t("buttons.getCertificate")}
                             >
-                                <span>Get certificate</span>
+                                <span>{t("buttons.getCertificate")}</span>
                                 <span aria-hidden>→</span>
                             </button>
                         ) : showNextModule ? (
@@ -90,10 +88,12 @@ const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function Revi
                                     "ui-btn",
                                     "px-2 py-2 text-sm font-extrabold",
                                     "border border-emerald-600/25 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/15",
-                                    "dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15",
+                                    "dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90 dark:hover:bg-emerald-300/15"
                                 )}
+                                aria-label={t("buttons.nextModule")}
+                                title={t("buttons.nextModule")}
                             >
-                                <span>Next module</span>
+                                <span>{t("buttons.nextModule")}</span>
                                 <span aria-hidden>→</span>
                             </button>
                         ) : null}
@@ -101,13 +101,17 @@ const ReviewModuleNavBar = React.forwardRef<HTMLDivElement, Props>(function Revi
 
                     {!isLastModule && !canGoNext && nextModuleId ? (
                         <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
-                            Complete this module to unlock <span className="font-black">Next</span>.
+                            {t.rich("hints.unlockNext", {
+                                next: (chunks) => <span className="font-black">{chunks}</span>,
+                            })}
                         </div>
                     ) : null}
 
                     {isLastModule && !canGetCertificate ? (
                         <div className="mt-2 text-xs text-neutral-600 dark:text-white/60">
-                            Complete this module to unlock your <span className="font-black">certificate</span>.
+                            {t.rich("hints.unlockCertificate", {
+                                certificate: (chunks) => <span className="font-black">{chunks}</span>,
+                            })}
                         </div>
                     ) : null}
                 </div>

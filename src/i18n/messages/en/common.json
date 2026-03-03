@@ -25,8 +25,12 @@
 
 
 
-    "toggleMenu": "Toggle menu"
-
+    "toggleMenu": "Toggle menu",
+    "fontSize": "Font size",
+    "fontSizeHint": "Adjust text scale",
+    "fontSmall": "A-",
+    "fontNormal": "A",
+    "fontLarge": "A+"
 
   },
   "UserMenu": {
@@ -36,4 +40,6 @@
     "progress": "Progress",
     "logout": "Log out"
   }
+
+
 }

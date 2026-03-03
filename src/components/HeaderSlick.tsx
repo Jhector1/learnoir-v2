@@ -33,10 +33,93 @@ async function hardLogout(locale: string) {
   window.location.href = `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
 }
 
+
+const FONT_SIZE_STORAGE_KEY = "APP_FONT_SIZE_PX";
+const FONT_SIZE_DEFAULT = 16;
+const FONT_SIZE_OPTIONS = [14, 16, 18] as const;
+
+function clampFontPx(x: number) {
+  // keep it sane (and consistent with options)
+  if (x <= 14) return 14;
+  if (x >= 18) return 18;
+  return 16;
+}
+
+function applyBaseFontSize(px: number) {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.setProperty("--app-font-size", `${px}px`);
+}
+
+function FontSizePicker(props: {
+  value: number;
+  onChange: (px: number) => void;
+  labels: { small: string; normal: string; large: string };
+}) {
+  const { value, onChange, labels } = props;
+
+  const items: Array<{ px: (typeof FONT_SIZE_OPTIONS)[number]; label: string }> = [
+    { px: 14, label: labels.small },
+    { px: 16, label: labels.normal },
+    { px: 18, label: labels.large },
+  ];
+
+  return (
+      <div role="radiogroup" aria-label="Font size" className="inline-flex rounded-xl border border-neutral-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+        {items.map((it) => {
+          const active = it.px === value;
+          return (
+              <button
+                  key={it.px}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onChange(it.px)}
+                  className={cn(
+                      "rounded-lg px-2.5 py-1 text-xs font-black tracking-tight transition",
+                      "focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:focus:ring-white/20",
+                      active
+                          ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                          : "text-neutral-700 hover:bg-neutral-100 dark:text-white/70 dark:hover:bg-white/10"
+                  )}
+              >
+                {it.label}
+              </button>
+          );
+        })}
+      </div>
+  );
+}
+
 function SettingsMenu() {
   const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ Font size state (base rem size)
+  const [fontPx, setFontPx] = useState<number>(FONT_SIZE_DEFAULT);
+
+  // Load saved font size once
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+      const parsed = raw ? Number(raw) : NaN;
+      const next = Number.isFinite(parsed) ? clampFontPx(parsed) : FONT_SIZE_DEFAULT;
+      setFontPx(next);
+      applyBaseFontSize(next);
+    } catch {
+      applyBaseFontSize(FONT_SIZE_DEFAULT);
+    }
+  }, []);
+
+  // Persist + apply whenever it changes
+  useEffect(() => {
+    applyBaseFontSize(fontPx);
+    try {
+      localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(fontPx));
+    } catch {
+      // ignore
+    }
+  }, [fontPx]);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -91,6 +174,23 @@ function SettingsMenu() {
                   </div>
                 </div>
 
+                {/* ✅ NEW: Font size */}
+                <div className={cn("ui-menu-section", "overflow-visible")}>
+                  <div className="ui-menu-label">{t("fontSize")}</div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="text-xs text-neutral-600 dark:text-white/60">{t("fontSizeHint")}</div>
+                    <FontSizePicker
+                        value={fontPx}
+                        onChange={(px) => setFontPx(clampFontPx(px))}
+                        labels={{
+                          small: t("fontSmall"),
+                          normal: t("fontNormal"),
+                          large: t("fontLarge"),
+                        }}
+                    />
+                  </div>
+                </div>
+
                 <div className={cn("ui-menu-section", "overflow-visible")}>
                   <div className="ui-menu-label">{t("language")}</div>
                   <div className="mt-2 pt-1 overflow-visible">
@@ -112,7 +212,6 @@ function SettingsMenu() {
       </div>
   );
 }
-
 export default function HeaderSlick({
                                       brand = "Learnoir",
                                       badge = "BETA",

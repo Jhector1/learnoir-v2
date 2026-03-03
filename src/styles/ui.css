@@ -17,14 +17,20 @@
 @import "./ui/codeRunner.css";
 @import "./ui/reviewModuleSkeleton.css";
 @import "./ui/tooltip.css";
-.ui-tile--active {
-    @apply ring-2 ring-emerald-300/40;
-}
-.dark .ui-tile--active {
-    @apply ring-emerald-300/25;
-}
 
+/* globals.css */
+@layer base {
+    html {
+        font-size: var(--app-font-size, 16px);
+    }
+}
 @layer components {
+    .ui-tile--active {
+        @apply ring-2 ring-emerald-300/40;
+    }
+    .dark .ui-tile--active {
+        @apply ring-emerald-300/25;
+    }
     .ui-playground-bg {
         @apply min-h-screen p-3 md:p-4 text-neutral-900;
         background: radial-gradient(1200px 700px at 20% 0%, #eef2ff 0%, #f8fafc 55%);

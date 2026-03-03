@@ -14,8 +14,8 @@ import { Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 import Badge from "@/components/billing/Badge";
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
-import {ROUTES} from "@/utils";
-import {useSearchParams} from "next/navigation";
+import { ROUTES } from "@/utils";
+import { useSearchParams } from "next/navigation";
 import SoundToggle from "@/lib/sfx/SoundToggle";
 
 type NavItem = { href: string; label: string };
@@ -27,29 +27,21 @@ type HeaderSlotCtx = {
   status: SessionStatus;
   user?: Session["user"];
 };
-async function hardLogout(locale: string) {
-  // 1) clear app session cookies
-  await signOut({ redirect: false });
 
-  // 2) clear Keycloak SSO session
-  window.location.href =
-      `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
+async function hardLogout(locale: string) {
+  await signOut({ redirect: false });
+  window.location.href = `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
 }
 
 function SettingsMenu() {
   const t = useTranslations("Header");
-
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const target = e.target as HTMLElement | null;
-
-      // ✅ If click happened inside a modal, ignore it
       if (target?.closest?.('[data-modal-root="true"]')) return;
-
       if (!wrapRef.current) return;
       if (!wrapRef.current.contains(target as Node)) setOpen(false);
     }
@@ -94,16 +86,13 @@ function SettingsMenu() {
                 <div className={cn("ui-menu-section", "overflow-visible")}>
                   <div className="ui-menu-label">{t("theme")}</div>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="text-xs text-neutral-600 dark:text-white/60">
-                      {t("themeHint")}
-                    </div>
+                    <div className="text-xs text-neutral-600 dark:text-white/60">{t("themeHint")}</div>
                     <ThemeToggle />
                   </div>
                 </div>
 
                 <div className={cn("ui-menu-section", "overflow-visible")}>
                   <div className="ui-menu-label">{t("language")}</div>
-                  {/* ✅ extra top padding + overflow visible prevents “top cut” */}
                   <div className="mt-2 pt-1 overflow-visible">
                     <LocaleSwitcher />
                   </div>
@@ -123,15 +112,14 @@ function SettingsMenu() {
       </div>
   );
 }
+
 export default function HeaderSlick({
                                       brand = "Learnoir",
                                       badge = "BETA",
-
                                       isNav = true,
                                       isUser = true,
                                       isSetting = true,
-                                      isBillingStatus= true,
-                                      // ✅ NEW: optional slot injection
+                                      isBillingStatus = true,
                                       slot,
                                       SlotComponent,
                                     }: {
@@ -143,8 +131,6 @@ export default function HeaderSlick({
   isUser?: boolean;
   isSetting?: boolean;
 
-
-  // ✅ pass either an element or a component
   slot?: React.ReactNode;
   SlotComponent?: React.ComponentType<HeaderSlotCtx>;
 }) {
@@ -158,7 +144,7 @@ export default function HeaderSlick({
 
   const slotCtx = useMemo<HeaderSlotCtx>(
       () => ({ locale, pathname, isAuthed, status, user }),
-      [locale, pathname, isAuthed, status, user],
+      [locale, pathname, isAuthed, status, user]
   );
 
   const slotNode = SlotComponent ? <SlotComponent {...slotCtx} /> : slot ?? null;
@@ -166,10 +152,10 @@ export default function HeaderSlick({
   const NAV: NavItem[] = useMemo(
       () => [
         { href: ROUTES.home, label: t("home") },
-        { href:ROUTES.catalog, label: t("subjects") },
+        { href: ROUTES.catalog, label: t("subjects") },
         { href: ROUTES.pricing, label: t("billing") },
       ],
-      [t],
+      [t]
   );
 
   const [open, setOpen] = useState(false);
@@ -185,18 +171,13 @@ export default function HeaderSlick({
   useEffect(() => setOpen(false), [pathname]);
 
   const activeIndex = useMemo(() => {
-    const idx = NAV.findIndex((n) =>
-        n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href),
-    );
+    const idx = NAV.findIndex((n) => (n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href)));
     return idx < 0 ? 0 : idx;
   }, [pathname, NAV]);
 
   const navWrapRef = useRef<HTMLDivElement | null>(null);
   const labelRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const [marker, setMarker] = useState<{ left: number; width: number }>({
-    left: 0,
-    width: 0,
-  });
+  const [marker, setMarker] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
   useEffect(() => {
     if (!isNav) return;
@@ -219,7 +200,6 @@ export default function HeaderSlick({
 
         const left = pill.offsetLeft;
         const width = pill.offsetWidth;
-
         if (width > 0) setMarker({ left, width });
       });
     };
@@ -246,16 +226,10 @@ export default function HeaderSlick({
     };
   }, [activeIndex, locale, pathname, NAV.length, isNav]);
 
-  const headerShell = cn(
-      "ui-header-shell",
-      elevated && "ui-header-shell--elevated",
-  );
+  const headerShell = cn("ui-header-shell", elevated && "ui-header-shell--elevated");
 
   const mobileItem = (isActive: boolean) =>
-      cn(
-          "ui-mobileitem",
-          isActive ? "ui-mobileitem--active" : "ui-mobileitem--idle",
-      );
+      cn("ui-mobileitem", isActive ? "ui-mobileitem--active" : "ui-mobileitem--idle");
 
   const { headlineBadge } = useBillingStatus();
   const searchParams = useSearchParams();
@@ -263,57 +237,66 @@ export default function HeaderSlick({
   const callbackUrl = useMemo(() => {
     const qs = searchParams?.toString();
     const path = pathname || "/";
-    // ensure locale-prefixed callback
     return `/${locale}${path === "/" ? "" : path}${qs ? `?${qs}` : ""}`;
   }, [locale, pathname, searchParams]);
 
   const authHref = useMemo(() => {
-    // next-intl Link usually supports object hrefs
-    return {
-      pathname: "/authenticate",
-      query: { callbackUrl },
-    } as const;
+    return { pathname: "/authenticate", query: { callbackUrl } } as const;
   }, [callbackUrl]);
 
   return (
       <header className="sticky top-0 z-50">
-        <div className={headerShell} >
+        <div className={headerShell}>
           <div className="mx-auto px-4 md:px-6">
-            <div className="flex h-16 items-center justify-between gap-3">
-              {/* ✅ LEFT GROUP (brand + badges + optional slot) */}
+            {/* MAIN ROW */}
+            <div className="flex h-16 items-center gap-3">
+              {/* LEFT: brand + billing badge */}
               <div className="flex min-w-0 items-center gap-3">
-                <Link href="/" className="group flex items-center gap-2">
-                  <div className="relative grid h-9 w-9 place-items-center rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+                <Link href="/" className="group flex min-w-0 items-center gap-2">
+                  <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
                     <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(120%_120%_at_30%_20%,rgba(122,162,255,0.18)_0%,rgba(255,107,214,0.08)_35%,transparent_70%)] opacity-80" />
-                    <span className="relative text-sm font-black tracking-tight text-neutral-900 dark:text-white">
-                    L
-                  </span>
+                    <span className="relative text-sm font-black tracking-tight text-neutral-900 dark:text-white">L</span>
                   </div>
 
-                  <div className="leading-tight">
-                    <div className="flex items-center gap-2">
-                    <span className="text-sm font-black tracking-tight text-neutral-900 dark:text-white/90">
+                  <div className="min-w-0 leading-tight">
+                    <div className="flex min-w-0 items-center gap-2">
+                    <span
+                        className="min-w-0 truncate text-sm font-black tracking-tight text-neutral-900 dark:text-white/90"
+                        title={brand}
+                    >
                       {brand}
                     </span>
-                      <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-[2px] text-[10px] font-extrabold text-neutral-700 dark:border-white/10 dark:bg-white/10 dark:text-white/70">
+                      <span className="shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-2 py-[2px] text-[10px] font-extrabold text-neutral-700 dark:border-white/10 dark:bg-white/10 dark:text-white/70">
                       {badge}
                     </span>
                     </div>
-                    <div className="text-[11px] font-semibold text-neutral-500 dark:text-white/55">
+                    <div className="truncate text-[11px] font-semibold text-neutral-500 dark:text-white/55">
                       {t("tagline")}
                     </div>
                   </div>
                 </Link>
 
-                {headlineBadge && isBillingStatus? (
-                    <Badge tone={headlineBadge.tone}>{headlineBadge.text}</Badge>
-                ) : null}
-
-                {/* ✅ NEW: optional injected component */}
-                {slotNode ? <div className="shrink-0">{slotNode}</div> : null}
+                {headlineBadge && isBillingStatus ? <Badge tone={headlineBadge.tone}>{headlineBadge.text}</Badge> : null}
               </div>
 
-              {/* Desktop */}
+              {/* ✅ DESKTOP SLOT (CENTER) */}
+              {slotNode ? (
+                  <div className="hidden md:flex flex-1 min-w-0 justify-center">
+                    <div
+                        className={cn(
+                            "max-w-full min-w-0 px-2",
+                            "overflow-x-auto",
+                            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        )}
+                    >
+                      {slotNode}
+                    </div>
+                  </div>
+              ) : (
+                  <div className="hidden md:block flex-1" />
+              )}
+
+              {/* DESKTOP NAV */}
               <nav className="hidden items-center gap-2 md:flex">
                 {isNav && (
                     <div className="ui-navcard">
@@ -327,16 +310,12 @@ export default function HeaderSlick({
                             }}
                         />
                         {NAV.map((n, i) => {
-                          const isActive =
-                              n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href);
+                          const isActive = n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href);
                           return (
                               <Link
                                   key={n.href}
                                   href={n.href}
-                                  className={cn(
-                                      "ui-navlink",
-                                      isActive ? "ui-navlink--active" : "ui-navlink--inactive",
-                                  )}
+                                  className={cn("ui-navlink", isActive ? "ui-navlink--active" : "ui-navlink--inactive")}
                               >
                           <span
                               ref={(el) => {
@@ -359,7 +338,7 @@ export default function HeaderSlick({
                     </Link>
                 )}
 
-                {isSetting && <SettingsMenu  />}
+                {isSetting && <SettingsMenu />}
 
                 {isUser &&
                     status !== "loading" &&
@@ -370,26 +349,23 @@ export default function HeaderSlick({
                             image={user?.image}
                             profileHref="/profile"
                             onSignOut={() => hardLogout(locale)}
-
-                            // onSignOut={() => signOut({ callbackUrl: `/${locale}` })}
                         />
                     ) : (
                         <Link href={authHref} className="ui-authbtn">
                           {t("signIn")}
                         </Link>
-
                     ))}
               </nav>
 
-              {/* Mobile */}
-              <div className="flex items-center gap-2 md:hidden">
+              {/* MOBILE: settings + menu */}
+              <div className="flex items-center gap-2 md:hidden ml-auto">
                 {isSetting && <SettingsMenu />}
                 {(isNav || isUser) && (
                     <button
                         className="ui-mobilebtn"
                         onClick={() => setOpen((v) => !v)}
                         aria-expanded={open}
-                        aria-label="Toggle menu"
+                        aria-label={t("toggleMenu")}
                     >
                       {open ? t("close") : t("menu")}
                     </button>
@@ -397,20 +373,36 @@ export default function HeaderSlick({
               </div>
             </div>
 
-            {/* Mobile panel */}
+            {/* ✅ MOBILE SLOT ROW (under header, NOT inside brand row) */}
+            {slotNode ? (
+                <div className="md:hidden pb-2 -mt-1">
+                  <div className="rounded-2xl border border-neutral-200/70 bg-white/60 backdrop-blur px-2 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                    <div
+                        className={cn(
+                            "flex items-center gap-2",
+                            "overflow-x-auto",
+                            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        )}
+                    >
+                      {slotNode}
+                    </div>
+                  </div>
+                </div>
+            ) : null}
+
+            {/* MOBILE PANEL */}
             {(isNav || isUser) && (
                 <div
                     className={cn(
                         "md:hidden overflow-hidden transition-[max-height,opacity] duration-300",
-                        open ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0",
+                        open ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
                     )}
                 >
                   <div className="pb-4">
                     <div className="mt-2 grid gap-2">
                       {isNav &&
                           NAV.map((n) => {
-                            const isActive =
-                                n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href);
+                            const isActive = n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href);
                             return (
                                 <Link key={n.href} href={n.href} className={mobileItem(isActive)}>
                                   {n.label}
@@ -428,32 +420,21 @@ export default function HeaderSlick({
                           status !== "loading" &&
                           (isAuthed ? (
                               <>
-                                <Link
-                                    href="/profile"
-                                    className={mobileItem(Boolean(pathname?.startsWith("/profile")))}
-                                >
+                                <Link href="/profile" className={mobileItem(Boolean(pathname?.startsWith("/profile")))}>
                                   {t("profile")}
                                 </Link>
-                                <button
-                                    type="button"
-                                    onClick={() => hardLogout(locale)}
-                                    className={mobileItem(false)}
-                                >
+                                <button type="button" onClick={() => hardLogout(locale)} className={mobileItem(false)}>
                                   {t("logout")}
                                 </button>
-
                               </>
                           ) : (
                               <Link href={authHref} className={mobileItem(false)}>
                                 {t("signIn")}
                               </Link>
-
                           ))}
 
                       {(isNav || isUser) && (
-                          <div className="mt-3 text-[11px] text-neutral-500 dark:text-white/55">
-                            {t("tip")}
-                          </div>
+                          <div className="mt-3 text-[11px] text-neutral-500 dark:text-white/55">{t("tip")}</div>
                       )}
                     </div>
                   </div>
@@ -468,5 +449,13 @@ export default function HeaderSlick({
 }
 
 export function LearnHeaderSlick() {
-  return <HeaderSlick isBillingStatus={false} brand={process.env.NEXT_PUBLIC_APP_NAME} badge="MVP" isUser={false} isNav={false} />;
+  return (
+      <HeaderSlick
+          isBillingStatus={false}
+          brand={process.env.NEXT_PUBLIC_APP_NAME}
+          badge="MVP"
+          isUser={false}
+          isNav={false}
+      />
+  );
 }

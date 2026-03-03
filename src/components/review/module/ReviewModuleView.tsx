@@ -863,74 +863,66 @@ export default function ReviewModuleView({
                                     <div className="shrink-0">
                                         <HeaderSlick
                                             slot={
-                                                <div className="flex-1 flex justify-end min-w-0">
-                                                    <div
-                                                        className={cn(
-                                                            "max-w-full flex items-center gap-2 px-2",
-                                                            "overflow-x-auto",
-                                                            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                                                        )}
+                                                <div className="inline-flex items-center gap-2 whitespace-nowrap [&>button]:shrink-0">
+                                                    {/* Topics */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (showDesktopLeft) panels.setLeftCollapsed((v) => !v);
+                                                            else setMobileTopicsOpen(true);
+                                                        }}
+                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                        title="Topics"
                                                     >
-                                                        {/* Topics */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (showDesktopLeft) panels.setLeftCollapsed((v) => !v);
-                                                                else setMobileTopicsOpen(true);
-                                                            }}
-                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                            title="Topics"
-                                                        >
-                                                            {showDesktopLeft ? (panels.leftCollapsed ? "Topics ▶" : "Topics ◀") : "Topics"}
-                                                        </button>
+                                                        {showDesktopLeft ? (panels.leftCollapsed ? "Topics ▶" : "Topics ◀") : "Topics"}
+                                                    </button>
 
-                                                        {/* Tools */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (showDesktopRight) panels.setRightCollapsed((v) => !v);
-                                                                else setMobileToolsOpen(true);
-                                                            }}
-                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                            title="Tools"
-                                                        >
-                                                            {showDesktopRight ? (panels.rightCollapsed ? "Tools ▶" : "Tools ◀") : "Tools"}
-                                                        </button>
+                                                    {/* Tools */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (showDesktopRight) panels.setRightCollapsed((v) => !v);
+                                                            else setMobileToolsOpen(true);
+                                                        }}
+                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                        title="Tools"
+                                                    >
+                                                        {showDesktopRight ? (panels.rightCollapsed ? "Tools ▶" : "Tools ◀") : "Tools"}
+                                                    </button>
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => requestResetTopic(viewTid)}
-                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap hidden sm:inline-flex"
-                                                        >
-                                                            Reset topic
-                                                        </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => requestResetTopic(viewTid)}
+                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap hidden sm:inline-flex"
+                                                    >
+                                                        Reset topic
+                                                    </button>
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={goPrevTopic}
-                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                            disabled={!prevTopic?.id}
-                                                            title={!prevTopic?.id ? "No previous topic" : "Previous topic"}
-                                                        >
-                                                            ←
-                                                        </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={goPrevTopic}
+                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                        disabled={!prevTopic?.id}
+                                                        title={!prevTopic?.id ? "No previous topic" : "Previous topic"}
+                                                    >
+                                                        ←
+                                                    </button>
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={goNextTopic}
-                                                            className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
-                                                            disabled={!nextTopic?.id || (!unlockAll && !viewIsComplete)}
-                                                            title={
-                                                                !nextTopic?.id
-                                                                    ? "No next topic"
-                                                                    : !unlockAll && !viewIsComplete
-                                                                        ? "Complete the topic to continue"
-                                                                        : "Next topic"
-                                                            }
-                                                        >
-                                                            →
-                                                        </button>
-                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={goNextTopic}
+                                                        className="ui-btn ui-btn-secondary text-xs font-extrabold whitespace-nowrap"
+                                                        disabled={!nextTopic?.id || (!unlockAll && !viewIsComplete)}
+                                                        title={
+                                                            !nextTopic?.id
+                                                                ? "No next topic"
+                                                                : !unlockAll && !viewIsComplete
+                                                                    ? "Complete the topic to continue"
+                                                                    : "Next topic"
+                                                        }
+                                                    >
+                                                        →
+                                                    </button>
                                                 </div>
                                             }
                                             isBillingStatus={false}

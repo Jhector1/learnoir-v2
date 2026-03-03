@@ -21,7 +21,10 @@
     "logout": "Dekonekte",
     "menu": "Meni",
     "close": "Fèmen",
-    "tip": "Konsèy: itilize Pratik pou swiv tantativ ou yo, repons ou jwenn kòrèk, ak kestyon ou rate yo."
+    "tip": "Konsèy: itilize Pratik pou swiv tantativ ou yo, repons ou jwenn kòrèk, ak kestyon ou rate yo.",
+    "toggleMenu": "Louvri/fèmen meni an"
+
+
   },
   "UserMenu": {
     "ariaLabel": "Meni itilizatè",

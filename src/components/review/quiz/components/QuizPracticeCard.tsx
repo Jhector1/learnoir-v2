@@ -10,7 +10,7 @@ import type { VectorPadState } from "@/components/vectorpad/types";
 import ExerciseRenderer from "@/components/practice/ExerciseRenderer";
 import RevealAnswerCard from "@/components/practice/RevealAnswerCard";
 import { useReviewTools } from "@/components/review/module/context/ReviewToolsContext";
-import {useTaggedT} from "@/i18n/tagged";
+import { useTaggedT } from "@/i18n/tagged";
 
 export default function QuizPracticeCard(props: {
   q: Extract<ReviewQuestion, { kind: "practice" }>;
@@ -49,16 +49,33 @@ export default function QuizPracticeCard(props: {
   } = props;
 
   const tools = useReviewTools();
+
+  // ✅ desktop-only tools: provider exposes tools?.enabled
+  const toolsEnabled = Boolean(tools?.enabled);
+
+  // ✅ only use tools mode when:
+  // - tools are enabled on this device/page
+  // - and this exercise is code_input
+  const isCodeInput = ps?.exercise?.kind === "code_input";
+  const codeRunnerMode: "embedded" | "tools" = toolsEnabled && isCodeInput ? "tools" : "embedded";
+
+  // Structural typing: ReviewToolsValue includes CodeToolsApi members (+ extras).
+  // ExerciseRenderer expects CodeToolsApi; extra fields are fine, TS may need a cast.
+  const codeTools = toolsEnabled && isCodeInput ? (tools as any) : null;
+  const codeInputId = toolsEnabled && isCodeInput ? q.id : undefined;
+
   const excused = Boolean(props.excused);
   const revealed = Boolean(ps?.item?.revealed);
+
   const ui = useTaggedT("reviewQuizUi");
+
   // ✅ stable patch function (prevents register thrash downstream)
   const updateItemSafe = useCallback(
       (patch: any) => {
         if (!unlocked || isCompleted || locked || excused) return;
         onUpdateItem(patch);
       },
-      [unlocked, isCompleted, locked, excused, onUpdateItem],
+      [unlocked, isCompleted, locked, excused, onUpdateItem]
   );
 
   // ✅ attempts cap that respects null(unlimited)
@@ -78,14 +95,14 @@ export default function QuizPracticeCard(props: {
   }, [ps?.exercise, ps?.item, padRef]);
 
   // ✅ Deterministic binding: report status to provider
+  // Only when Tools are enabled + this is code_input
   useEffect(() => {
+    if (!toolsEnabled) return;
     if (!tools) return;
     if (!ps?.exercise) return;
     if (ps.exercise.kind !== "code_input") return;
 
-    const doneForFlow =
-        ps.ok === true || excused || (!strictSequential && attemptsCapped);
-
+    const doneForFlow = ps.ok === true || excused || (!strictSequential && attemptsCapped);
     const eligible = unlocked && !locked && !isCompleted && !excused;
 
     tools.setCodeInputMeta(q.id, {
@@ -94,6 +111,7 @@ export default function QuizPracticeCard(props: {
       done: doneForFlow,
     });
   }, [
+    toolsEnabled,
     tools,
     q.id,
     ps?.exercise,
@@ -118,29 +136,33 @@ export default function QuizPracticeCard(props: {
       !hasInput;
 
   const disableReveal =
-      !unlocked ||
-      isCompleted ||
-      locked ||
-      excused ||
-      (ps?.busy ?? false) ||
-      ps?.ok === true;
+      !unlocked || isCompleted || locked || excused || (ps?.busy ?? false) || ps?.ok === true;
 
-  const disableSkip =
-      !unlocked || isCompleted || locked || excused || ps?.ok === true;
+  const disableSkip = !unlocked || isCompleted || locked || excused || ps?.ok === true;
 
   const btnLabel = ps?.busy ? (
       <span className="inline-flex items-center gap-2">
-    <span className="h-3 w-3 animate-spin ..." />
+      <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent dark:border-white/40" />
         {ui.t("practice.checking", {}, "Checking…")}
-  </span>
-  ) : ui.t("buttons.checkAnswer", {}, "Check this answer");
+    </span>
+  ) : (
+      ui.t("buttons.checkAnswer", {}, "Check this answer")
+  );
 
+  // Keep renderer happy even if it expects number
   const maxForRenderer = ps?.maxAttempts ?? Number.POSITIVE_INFINITY;
 
   return (
       <div className={["ui-quiz-card", !unlocked ? "opacity-70" : ""].join(" ")}>
-        {!unlocked ? <div className="ui-quiz-hint">{ui.t("unlockHint", {}, "Answer the previous question correctly to unlock this one.")}</div> : null}
-
+        {!unlocked ? (
+            <div className="ui-quiz-hint">
+              {ui.t(
+                  "unlockHint",
+                  {},
+                  "Answer the previous question correctly to unlock this one."
+              )}
+            </div>
+        ) : null}
 
         {ps?.loading ? (
             <div className="mt-2 text-xs text-neutral-500 dark:text-white/60">
@@ -158,7 +180,9 @@ export default function QuizPracticeCard(props: {
                     disableSkip ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
                   ].join(" ")}
               >
-                {props.excused ? ui.t("buttons.excused", {}, "Excused") : ui.t("buttons.continue", {}, "Continue")}
+                {props.excused
+                    ? ui.t("buttons.excused", {}, "Excused")
+                    : ui.t("buttons.continue", {}, "Continue")}
               </button>
             </div>
         ) : ps?.exercise && ps?.item ? (
@@ -169,13 +193,13 @@ export default function QuizPracticeCard(props: {
                     current={ps.item}
                     busy={ps.busy || !unlocked || isCompleted || locked}
                     isAssignmentRun={false}
-                    maxAttempts={maxForRenderer} // ✅ keep renderer happy even if it expects number
+                    maxAttempts={maxForRenderer as any}
                     padRef={padRef as any}
                     updateCurrent={updateItemSafe}
                     readOnly={!unlocked || isCompleted || locked}
-                    codeRunnerMode="tools"
-                    codeTools={tools ?? null}
-                    codeInputId={q.id}
+                    codeRunnerMode={codeRunnerMode}
+                    codeTools={codeTools}
+                    codeInputId={codeInputId}
                 />
               </div>
 
@@ -203,16 +227,17 @@ export default function QuizPracticeCard(props: {
                         disableReveal ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
                       ].join(" ")}
                   >
-                    {ui.t("buttons.reveal", {}, "Reveal")}                  </button>
+                    {ui.t("buttons.reveal", {}, "Reveal")}
+                  </button>
                 </div>
 
                 <div className="min-w-0 text-xs font-extrabold text-neutral-600 dark:text-white/60 sm:text-right">
               <span className="whitespace-normal">
-               {ui.t(
-                   "practice.attempts",
-                   { n: ps.attempts, max: ps.maxAttempts == null ? "∞" : ps.maxAttempts },
-                   `Attempts: ${ps.attempts}/${ps.maxAttempts == null ? "∞" : ps.maxAttempts}`,
-               )}
+                {ui.t(
+                    "practice.attempts",
+                    { n: ps.attempts, max: ps.maxAttempts == null ? "∞" : ps.maxAttempts },
+                    `Attempts: ${ps.attempts}/${ps.maxAttempts == null ? "∞" : ps.maxAttempts}`
+                )}
               </span>
 
                   {ps.ok === true ? (

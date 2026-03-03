@@ -21,7 +21,13 @@
     "themeHint": "Light / Dark",
 
     "sound": "Sound",
-    "tip": "Tip: Use Practice to track attempts, correct answers, and missed questions."
+    "tip": "Tip: Use Practice to track attempts, correct answers, and missed questions.",
+
+
+
+    "toggleMenu": "Toggle menu"
+
+
   },
   "UserMenu": {
     "ariaLabel": "User menu",

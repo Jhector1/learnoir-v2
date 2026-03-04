@@ -1,4 +1,7 @@
 /* modular UI tokens */
+@import "./ui/colors.css";
+@import "./ui/palette.css";
+
 @import "./ui/layout.css";
 @import "./ui/surfaces.css";
 @import "./ui/typography.css";

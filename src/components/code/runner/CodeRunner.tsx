@@ -198,6 +198,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                         "border-neutral-200 bg-neutral-50/60",
                         "dark:border-white/10 dark:bg-black/20",
                         "min-h-0",
+                        "overscroll-contain", // ✅ add
+
                     ].join(" ")}
                 >
                     {/* Editor only */}

@@ -1,91 +1,67 @@
 @layer components {
-  /* =========================
-   * Pill component tokens (tone)
-   * ========================= */
-  /*.ui-pill {*/
-  /*  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold;*/
-  /*}*/
-
-  .ui-pill--good {
-    @apply border-emerald-600/20 bg-emerald-500/10 text-emerald-900;
-  }
-
-  .dark .ui-pill--good {
-    @apply border-emerald-400/30 bg-emerald-300/10 text-emerald-100;
-  }
-
-  .ui-pill--warn {
-    @apply border-amber-600/20 bg-amber-500/10 text-amber-950;
-  }
-
-  .dark .ui-pill--warn {
-    @apply border-amber-400/30 bg-amber-300/10 text-amber-100;
-  }
-
-  .ui-pill--neutral {
-    @apply border-neutral-200/70 bg-white/70 text-neutral-700;
-  }
-
-  .dark .ui-pill--neutral {
-    @apply border-white/10 bg-white/[0.04] text-white/80;
-  }
-
-
-
-
-  /* =========================
-   * Pills / Badges (theme-aware)
-   * ========================= */
-
+  /* Base pill */
   .ui-pill {
-    @apply inline-flex items-center rounded-full border px-2 py-1;
+    @apply inline-flex items-center rounded-full border px-2.5 py-1;
     @apply text-[11px] font-extrabold leading-none;
   }
 
-  /* Neutral pill (default) */
+  /* ---------- NEUTRAL ---------- */
   .ui-pill--neutral {
-    @apply border-neutral-200 bg-white/70 text-neutral-700;
+    border-color: rgb(var(--ui-border) / 0.80);
+    background-color: rgb(var(--ui-surface) / 0.70);
+    color: rgb(var(--ui-text-muted) / 0.90);
   }
   .dark .ui-pill--neutral {
-    @apply border-white/10 bg-white/[0.06] text-white/70;
+    border-color: rgb(var(--ui-border) / 0.10);
+    background-color: rgb(var(--ui-surface) / 0.06);
+    color: rgb(var(--ui-text) / 0.75);
   }
 
-  /* Sky pill (session) */
-  .ui-pill--sky {
-    @apply border-sky-300/60 bg-sky-50 text-sky-950;
+  /* ---------- GOOD (accent/emerald) ---------- */
+  .ui-pill--good {
+    /* uses your --ui-accent */
+    border-color: rgb(var(--ui-accent) / 0.25);
+    background-color: rgb(var(--ui-accent) / 0.10);
+    color: rgb(var(--ui-text) / 0.95);
   }
-  .dark .ui-pill--sky {
-    @apply border-sky-300/25 bg-sky-300/10 text-sky-200/90;
-  }
-
-  /* Amber pill (assignment) */
-  .ui-pill--amber {
-    @apply border-amber-600/25 bg-amber-500/10 text-amber-950;
-  }
-  .dark .ui-pill--amber {
-    @apply border-amber-300/30 bg-amber-300/10 text-amber-200/90;
+  .dark .ui-pill--good {
+    border-color: rgb(var(--ui-accent) / 0.30);
+    background-color: rgb(var(--ui-accent) / 0.10);
+    color: rgb(var(--ui-text) / 0.90);
   }
 
-  /* Emerald pill (optional) */
-  .ui-pill--emerald {
-    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
+  /* ---------- WARN (amber) ---------- */
+  .ui-pill--warn {
+    border-color: rgb(var(--ui-warn) / 0.25);
+    background-color: rgb(var(--ui-warn) / 0.10);
+    color: rgb(var(--ui-text) / 0.95);
   }
-  .dark .ui-pill--emerald {
-    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
+  .dark .ui-pill--warn {
+    border-color: rgb(var(--ui-warn) / 0.30);
+    background-color: rgb(var(--ui-warn) / 0.10);
+    color: rgb(var(--ui-text) / 0.90);
   }
 
-  /* Rose pill (optional) */
-  .ui-pill--rose {
-    @apply border-rose-400/40 bg-rose-50 text-rose-950;
+  /* Optional: INFO / DANGER if you want them */
+  .ui-pill--info {
+    border-color: rgb(var(--ui-info) / 0.25);
+    background-color: rgb(var(--ui-info) / 0.10);
+    color: rgb(var(--ui-text) / 0.95);
   }
-  .dark .ui-pill--rose {
-    @apply border-rose-300/30 bg-rose-300/10 text-rose-200/90;
+  .dark .ui-pill--info {
+    border-color: rgb(var(--ui-info) / 0.30);
+    background-color: rgb(var(--ui-info) / 0.10);
+    color: rgb(var(--ui-text) / 0.90);
+  }
+
+  .ui-pill--danger {
+    border-color: rgb(var(--ui-danger) / 0.25);
+    background-color: rgb(var(--ui-danger) / 0.10);
+    color: rgb(var(--ui-text) / 0.95);
+  }
+  .dark .ui-pill--danger {
+    border-color: rgb(var(--ui-danger) / 0.30);
+    background-color: rgb(var(--ui-danger) / 0.10);
+    color: rgb(var(--ui-text) / 0.90);
   }
 }
-
-
-
-
-
-
-

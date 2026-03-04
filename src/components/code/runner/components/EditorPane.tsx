@@ -80,6 +80,8 @@ export default function EditorPane(props: {
                 wordWrap: "on",
                 automaticLayout: true,
                 readOnly: disabled,
+                scrollbar: { alwaysConsumeMouseWheel: false },
+
             }}
         />
     );

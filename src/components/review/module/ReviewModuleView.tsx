@@ -528,9 +528,11 @@ export default function ReviewModuleView({
      * - desktop => tools UI
      */
     const TOOLS_DESKTOP_ONLY = true;
-    const toolsUiEnabled = Boolean(codeEnabled) && (TOOLS_DESKTOP_ONLY ? lgUp : mdUp);
 
-    // ✅ right panel exists ONLY when tools UI is enabled
+// ✅ tools UI is allowed on desktop regardless of codeEnabled (notes still works)
+    const toolsUiEnabled = TOOLS_DESKTOP_ONLY ? lgUp : mdUp;
+
+// ✅ right panel exists ONLY when tools UI is enabled
     const showDesktopRight = toolsUiEnabled;
 
     const [mobileTopicsOpen, setMobileTopicsOpen] = useState(false);

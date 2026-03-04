@@ -199,6 +199,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                         "dark:border-white/10 dark:bg-black/20",
                         "min-h-0",
                         "overscroll-contain", // ✅ add
+                        "touch-pan-y",        // ✅ allow vertical scroll gestures
 
                     ].join(" ")}
                 >
@@ -222,7 +223,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
                     {/* Terminal only */}
                     {!showEditor && showTerminal ? (
-                        <div className="h-full p-3">
+                        <div className="h-full p-3 overscroll-contain touch-pan-y">
                             <TerminalPane
                                 terminal={term.terminal}
                                 stdinBuffer={term.stdinBuffer}
@@ -267,7 +268,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                     title="Drag to resize terminal"
                                 />
 
-                                <div className="min-h-0 p-3" style={{height: split.bottomTermH}}>
+                                <div className="min-h-0 p-3 overscroll-contain touch-pan-y" style={{height: split.bottomTermH}}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}

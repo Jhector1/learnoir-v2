@@ -13,7 +13,7 @@ export async function fetchReviewQuiz(spec: ReviewQuizSpec, signal?: AbortSignal
   });
 
   const text = await res.text();
-  console.log("review/quiz status", res.status, text);
+  // console.log("review/quiz status", res.status, text);
 
   const json = text ? JSON.parse(text) : null;
   if (!res.ok) throw new Error(json?.message ?? "Failed to load quiz.");

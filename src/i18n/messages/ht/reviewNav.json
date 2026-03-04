@@ -1,5 +1,5 @@
 {
-  "reviewNav": { "buttons": {
+  "buttons": {
     "prevModule": "Modil anvan",
     "nextModule": "Modil apre",
     "getCertificate": "Jwenn sètifika"
@@ -12,4 +12,4 @@
     "noPrev": "Pa gen modil anvan",
     "lockedCertificate": "Fini modil la pou ouvri sètifika a"
   }
-}}
+}

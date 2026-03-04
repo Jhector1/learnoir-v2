@@ -130,8 +130,8 @@ export async function getPricePresentation(intlLocale = "en-US", desiredCurrency
 
         monthlyPriceLabel = `${formatMoneyMinor(monthlyUnitAmountMinor, currency, intlLocale)} / mo`;
         yearlyPriceLabel = `${formatMoneyMinor(yearlyUnitAmountMinor, currency, intlLocale)} / yr`;
-        console.log("MONTHLY priceId", monthlyPriceId, "currency_options", Object.keys((pM as any).currency_options ?? {}));
-        console.log("YEARLY  priceId", yearlyPriceId, "currency_options", Object.keys((pY as any).currency_options ?? {}));
+        // console.log("MONTHLY priceId", monthlyPriceId, "currency_options", Object.keys((pM as any).currency_options ?? {}));
+        // console.log("YEARLY  priceId", yearlyPriceId, "currency_options", Object.keys((pY as any).currency_options ?? {}));
         if (monthlyUnitAmountMinor > 0 && yearlyUnitAmountMinor > 0) {
             const impliedYear = monthlyUnitAmountMinor * 12;
             const pct = Math.round(((impliedYear - yearlyUnitAmountMinor) / impliedYear) * 100);

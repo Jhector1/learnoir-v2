@@ -1,6 +1,3 @@
-/*@import "tailwindcss";*/
-/*@custom-variant dark (&:where(.dark, .dark *));*/
-
 /* modular UI tokens */
 @import "./ui/layout.css";
 @import "./ui/surfaces.css";
@@ -18,19 +15,20 @@
 @import "./ui/reviewModuleSkeleton.css";
 @import "./ui/tooltip.css";
 
-/* globals.css */
 @layer base {
-    html {
-        font-size: var(--app-font-size, 16px);
+    html { font-size: var(--app-font-size, 16px); }
+
+    :root {
+        --app-bg: #ffffff;
+        --app-bg-ink: #f6f7ff;
+    }
+
+    .dark {
+        --app-bg: #0b0d12;
+        --app-bg-ink: #151a2c;
     }
 }
 @layer components {
-    .ui-tile--active {
-        @apply ring-2 ring-emerald-300/40;
-    }
-    .dark .ui-tile--active {
-        @apply ring-emerald-300/25;
-    }
     .ui-playground-bg {
         @apply min-h-screen p-3 md:p-4 text-neutral-900;
         background: radial-gradient(1200px 700px at 20% 0%, #eef2ff 0%, #f8fafc 55%);
@@ -38,5 +36,18 @@
     .dark .ui-playground-bg {
         @apply text-white/90;
         background: radial-gradient(1200px 700px at 20% 0%, #151a2c 0%, #0b0d12 55%);
+    }
+
+    .ui-app-shell {
+        min-height: 100dvh; /* nicer on mobile */
+        color: rgb(17 24 39);
+        background: radial-gradient(
+                1200px 700px at 20% 0%,
+                var(--app-bg-ink) 0%,
+                var(--app-bg) 55%
+        );
+    }
+    .dark .ui-app-shell {
+        color: rgba(255, 255, 255, 0.9);
     }
 }

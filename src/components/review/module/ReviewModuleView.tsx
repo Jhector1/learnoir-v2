@@ -299,13 +299,18 @@ export default function ReviewModuleView({
         ? String((progress as any).assignmentSessionId)
         : null;
 
-    const { status: assignmentStatus, complete: assignmentDone, pct: assignmentPct } =
-        useAssignmentStatus({
-            sessionId: assignmentSessionId,
-            enabled: progressHydrated,
-            subject: subjectSlug,
-            module: moduleId,
-        });
+    const {
+        status: assignmentStatus,
+        complete: assignmentDone,
+        pct: assignmentPct,              // answered/target (keep if you want)
+        rightPct: assignmentRightPct,    // ✅ green
+        missedPct: assignmentMissedPct,  // ✅ red
+    } = useAssignmentStatus({
+        sessionId: assignmentSessionId,
+        enabled: progressHydrated,
+        subject: subjectSlug,
+        module: moduleId,
+    });
 
     const assignmentLabel =
         assignmentStatus.phase === "complete"
@@ -791,7 +796,8 @@ export default function ReviewModuleView({
                         }}
                         onResetModule={requestResetModule}
                         onCollapse={() => setMobileTopicsOpen(false)}
-                        assignmentPct={assignmentPct}
+                        assignmentPct={assignmentRightPct}          // ✅ green = right
+                        assignmentMissedPct={assignmentMissedPct}  // ✅ red = missed
                         assignmentLabel={assignmentLabel}
                         assignmentSublabel={assignmentSublabel}
                         onAssignmentClick={handleAssignmentClick}
@@ -938,7 +944,8 @@ export default function ReviewModuleView({
                                                         onGoToTopic={goToTopic}
                                                         onResetModule={requestResetModule}
                                                         onCollapse={() => panels.setLeftCollapsed(true)}
-                                                        assignmentPct={assignmentPct}
+                                                        assignmentPct={assignmentRightPct}          // ✅ green = right
+                                                        assignmentMissedPct={assignmentMissedPct}  // ✅ red = missed
                                                         assignmentLabel={assignmentLabel}
                                                         assignmentSublabel={assignmentSublabel}
                                                         onAssignmentClick={handleAssignmentClick}

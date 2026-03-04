@@ -21,6 +21,8 @@ export default function ModuleSidebar({
                                           onResetModule,
                                           onCollapse,
                                           assignmentPct,
+                                          assignmentMissedPct = 0, // ✅ NEW (defaults to 0 so nothing breaks)
+
                                           navLoading = false,
                                           navError = false,
                                           assignmentLabel,
@@ -48,6 +50,8 @@ export default function ModuleSidebar({
     onCollapse: () => void;
 
     assignmentPct: number;
+    assignmentMissedPct?: number; // ✅ NEW
+
     assignmentLabel: string;
     assignmentSublabel?: string;
     onAssignmentClick: () => void;
@@ -192,6 +196,7 @@ export default function ModuleSidebar({
                 <div className="mt-3">
                     <RingButton
                         pct={assignmentPct}
+                        missedPct={assignmentMissedPct}
                         label={tt.resolve(assignmentLabel)}
                         sublabel={tt.resolve(assignmentSublabel ?? null) || undefined}
                         onClick={onAssignmentClick}

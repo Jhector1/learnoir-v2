@@ -34,7 +34,6 @@ export default async function BillingPage({
         next: next ? safeInternalPath(next) : null,
         back: pickString(sp, "back") ? safeInternalPath(pickString(sp, "back")!) : null, // ✅ NEW
     };
-    console.log(paywall)
 
     return <BillingPageClient callbackUrl={callbackUrl} paywall={paywall} />;
 }

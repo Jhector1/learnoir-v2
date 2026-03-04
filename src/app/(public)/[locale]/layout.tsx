@@ -33,14 +33,24 @@ export default async function LocaleLayout({
     return (
         <html className={`${inter.variable} ${playfair.variable} ${greatVibes.variable}`} lang={locale}
               suppressHydrationWarning>
-        <body className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-        <Providers session={session}>
-            <NextIntlClientProvider messages={messages}>
-                <SfxProvider>
-                    {children}
-                </SfxProvider>
-            </NextIntlClientProvider>
-        </Providers>
+        <body
+            className="
+    min-h-screen text-neutral-900 dark:text-white
+    bg-[var(--app-bg)]
+  "
+        >
+        <div
+            className="
+      min-h-screen
+      bg-[radial-gradient(1200px_700px_at_20%_0%,var(--app-bg-ink)_0%,transparent_60%)]
+    "
+        >
+            <Providers session={session}>
+                <NextIntlClientProvider messages={messages}>
+                    <SfxProvider>{children}</SfxProvider>
+                </NextIntlClientProvider>
+            </Providers>
+        </div>
         </body>
         </html>
     );

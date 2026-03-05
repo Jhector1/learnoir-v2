@@ -9,30 +9,30 @@ export const PY_MOD1_ERRORS_SKETCHES: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Common Errors: NameError, TypeError, and Debug Tricks",
             bodyMarkdown: String.raw`
-Let’s turn mistakes into skills.
+Mistakes are a normal part of programming.
 
-When Python shows an error, it’s not “mad.”
-It’s telling you exactly what it couldn’t do.
+When Python raises an error, it’s giving you **information about what went wrong**.  
+Learning to read errors is one of the fastest ways to improve.
 
-Here are the big three you’ll see early on.
+Here are three common ones beginners encounter.
 
 ---
 
-## 1) NameError — “That label doesn’t exist”
+## 1) NameError — using a variable that doesn’t exist
 
 ~~~python
 print(score)
 ~~~
 
-If you never created \`score\`, Python can’t guess what it is.
+If the variable \`score\` was never created, Python cannot use it.
 
 Common causes:
-- a typo: \`scroe\` vs \`score\`
-- using a variable before you assign it
+- a typo: \`scroe\` instead of \`score\`
+- using a variable before assigning a value
 
 ---
 
-## Try it (safe version first)
+## Try it
 
 Run this (it works):
 
@@ -41,19 +41,29 @@ score = 10
 print(score)
 ~~~
 
-Now delete the \`score = 10\` line and run again.
-You should see **NameError**.
+Now delete the line:
+
+~~~python
+score = 10
+~~~
+
+Run the code again.  
+You should see a **NameError** because the variable no longer exists.
 
 ---
 
-## 2) TypeError — “Those types don’t mix”
+## 2) TypeError — incompatible types
+
+Sometimes values exist, but they **cannot be combined the way you tried**.
 
 ~~~python
 age = input("Age: ")   # string
 print(age + 1)         # 🚫 string + int
 ~~~
 
-Fix:
+The variable \`age\` contains **text**, not a number.
+
+Fix it by converting the type:
 
 ~~~python
 age = int(input("Age: "))
@@ -62,42 +72,55 @@ print(age + 1)
 
 ---
 
-## 3) ValueError — “That text isn’t a valid number”
+## 3) ValueError — invalid value for a conversion
 
 ~~~python
 age = int("twelve")  # 🚫 ValueError
 ~~~
 
-Python is saying:
-> “I tried to convert it to a number, but that text doesn’t represent a number.”
+Python is trying to convert text into a number, but the text **does not represent a valid number**.
 
-✅ You can only convert strings that *look like numbers* (like \`"12"\`, \`"3.5"\`) into numeric types.
+Valid examples:
+
+~~~python
+int("12")
+float("3.5")
+~~~
+
+Invalid examples:
+
+~~~python
+int("twelve")
+float("hello")
+~~~
 
 ---
 
-## The best beginner debug combo
+## A simple debugging technique
 
-### 1) Print the value
+When something looks wrong, inspect the value and its type.
+
+### Print the value
 ~~~python
 print("value:", x)
 ~~~
 
-### 2) Print the type
+### Print the type
 ~~~python
 print("type:", type(x))
 ~~~
 
-If something feels weird, it’s often a type mismatch.
+This quickly reveals many beginner mistakes.
 
 ---
 
-## A quick story to remember them
+## Quick mental model
 
-- **NameError**: you used a label that was never created.
-- **TypeError**: you tried to combine things that don’t fit together.
-- **ValueError**: the value exists, but it’s not in the format you promised.
+- **NameError** → the variable doesn't exist  
+- **TypeError** → the types don’t work together  
+- **ValueError** → the value is not in the expected format  
 
-If you can read errors calmly, you’ll improve fast.
+Learning to interpret these messages will save you a lot of time while programming.
 `.trim(),
         },
     },

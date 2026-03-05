@@ -146,8 +146,8 @@ export async function GET(req: Request) {
 
             actor: {
                 isGuest: Boolean(actor.guestId && !actor.userId),
-                userId: actor.userId ?? null,
-                guestId: actor.guestId ?? null,
+                // userId: actor.userId ?? null,
+                // guestId: actor.guestId ?? null,
             },
         },
         setGuestId,

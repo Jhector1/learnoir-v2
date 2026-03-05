@@ -1,10 +1,10 @@
 // src/components/practice/shell/SummaryView.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import type { PracticeShellProps } from "../PracticeShell";
 import PracticeReviewList from "@/components/practice/MissedPracticeCard";
-// import PracticeReviewList from "../PracticeReviewList";
+import SummaryViewSkeleton from "@/components/practice/shell/SummaryViewSkeleton";
 
 export default function SummaryView(props: PracticeShellProps) {
   const {
@@ -24,27 +24,45 @@ export default function SummaryView(props: PracticeShellProps) {
     setPhase,
     returnUrl,
     onReturn,
-  } = props;
+  } = props as any;
 
-  const list = reviewStack && reviewStack.length ? reviewStack : stack;
+  // ✅ Loading heuristic: if either list is "not an array yet", show skeleton.
+  // (Once arrays exist, even if empty, render normal UI.)
+  const loading =
+      !Array.isArray(stack) ||
+      (reviewStack != null && !Array.isArray(reviewStack));
+
+  if (loading) {
+    return <SummaryViewSkeleton />;
+  }
+
+  // ✅ ALWAYS prefer the full session list for summary:
+  // - reviewStack (server history) usually has everything
+  // - stack (client) might only have a partial in-memory slice
+  const list = useMemo(() => {
+    const rs = Array.isArray(reviewStack) ? reviewStack : [];
+    const st = Array.isArray(stack) ? stack : [];
+    return rs.length ? rs : st;
+  }, [reviewStack, stack]);
 
   return (
-      <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
+      <div className="min-h-screen ui-bg ui-text">
         <div className="ui-container py-4 md:py-6">
           <div className="grid gap-4">
+            {/* Summary card */}
             <div className="ui-card overflow-hidden">
-              <div className="border-b border-neutral-200/70 bg-white/70 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-black/20">
+              <div className="border-b ui-border ui-surface-2 p-5">
                 <div className="text-lg font-black tracking-tight">
                   {t("summary.title")} 🎉
                 </div>
-                <div className="mt-1 text-sm text-neutral-600 dark:text-white/70">
+                <div className="mt-1 text-sm ui-text-muted">
                   {t("summary.subtitle", { answered: answeredCount, sessionSize })}
                 </div>
               </div>
 
               <div className="p-5">
-                <div className="rounded-2xl border border-emerald-600/25 bg-emerald-500/10 p-4 dark:border-emerald-300/30 dark:bg-emerald-300/10">
-                  <div className="text-xs font-extrabold text-emerald-900/80 dark:text-white/70">
+                <div className="rounded-2xl border ui-border-accent ui-bg-accent-soft p-4">
+                  <div className="text-xs font-extrabold ui-text-muted">
                     {t("summaryCards.score")}
                   </div>
                   <div className="mt-1 text-base font-black">
@@ -56,28 +74,31 @@ export default function SummaryView(props: PracticeShellProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 text-xs text-neutral-500 dark:text-white/55">
+                <div className="mt-3 text-xs ui-text-muted">
                   {t("summaryCards.niceWork")}
                 </div>
               </div>
             </div>
 
+            {/* Return button */}
             {returnUrl ? (
                 <button
                     className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold"
                     onClick={() => onReturn?.()}
+                    type="button"
                 >
                   {t("summary.return")}
                 </button>
             ) : null}
 
+            {/* Review card */}
             <div className="ui-card overflow-hidden">
-              <div className="border-b border-neutral-200/70 bg-white/70 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-black/20 flex items-center justify-between gap-3">
+              <div className="border-b ui-border ui-surface-2 p-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="text-sm font-black tracking-tight">
                     {t("summary.reviewTitle")}
                   </div>
-                  <div className="mt-1 text-xs text-neutral-600 dark:text-white/70">
+                  <div className="mt-1 text-xs ui-text-muted">
                     {t("summary.reviewSubtitle")}
                   </div>
                 </div>
@@ -86,13 +107,17 @@ export default function SummaryView(props: PracticeShellProps) {
                   <button
                       className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold"
                       onClick={() => setShowMissed(!showMissed)}
+                      type="button"
                   >
-                    {!showMissed ? t("summary.toggleMissedHide") : t("summary.toggleMissedShow")}
+                    {!showMissed
+                        ? t("summary.toggleMissedHide")
+                        : t("summary.toggleMissedShow")}
                   </button>
 
                   <button
                       className="ui-btn ui-btn-secondary px-3 py-2 text-xs font-extrabold"
                       onClick={() => setPhase("practice")}
+                      type="button"
                   >
                     {t("summary.backToQuestions")}
                   </button>
@@ -100,7 +125,6 @@ export default function SummaryView(props: PracticeShellProps) {
               </div>
 
               <PracticeReviewList
-                  // t={t}
                   stack={list}
                   showOnlyIncorrect={showMissed}
                   maxAttempts={maxAttempts}

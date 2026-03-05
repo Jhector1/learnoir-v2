@@ -8,78 +8,81 @@ export const PY_STRING_BASICS_SECTION: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "String Basics: Working With Text Like a Pro",
             bodyMarkdown: String.raw`
-You already learned how Python stores values:
+You already learned how Python stores and uses values:
 
 - **Variables** are labeled boxes.
-- **Data types** tell you what’s inside the box.
+- **Data types** tell you what kind of value is inside the box.
 - **Operators + expressions** let you compute results.
 
 Now we meet a type you’ll use constantly:
 
 ✅ **Strings** (\`str\`) — text.
 
-A string is how Python stores things like:
+Strings store things like:
 
-- names
-- messages
-- emails
-- passwords
-- search words
-- anything the user types with \`input()\`
+- names  
+- messages  
+- emails  
+- passwords  
+- search terms  
+- anything the user types using \`input()\`
 
-In fact… remember this from earlier?
+In fact, remember this rule:
 
-> ✅ \`input()\` always returns a string.
+> ✅ \`input()\` always returns a **string**.
 
-So understanding strings is like learning to read the language your program receives.
+So understanding strings means understanding how your program reads and displays text.
 
 ---
 
 ## What is a string?
 
-A string is text inside quotes:
+A string is simply **text inside quotes**.
 
 ~~~python
 name = "Maya"
 city = 'Chicago'
 ~~~
 
-Double or single quotes are both fine—just be consistent.
+Single quotes and double quotes both work.  
+Just pick one style and stay consistent.
 
 ---
 
-## The terminal display tool (print)
+## Showing text with print()
 
 We’ve been using \`print(...)\` to show results in the terminal.
 
-Now we’ll use it to display text nicely.
+Now we’ll use it to display text and variables together.
 
 ---
 
 ## Concatenation vs commas in print()
 
 ### Concatenation (string + string)
-Concatenation means **joining text** with \`+\`.
+
+Concatenation means **joining strings together** using \`+\`.
 
 ~~~python
 first = "Maya"
 last = "Johnson"
+
 full = first + " " + last
 print(full)
 ~~~
 
-That works, but you must be careful:
+This works well, but there’s one rule:
 
-✅ \`+\` works only when both sides are strings.
+✅ Both sides of \`+\` must be **strings**.
 
-If you try to join text with a number using \`+\`, Python complains:
+If you try to join text and numbers directly, Python raises an error.
 
 ~~~python
 age = 16
 print("age: " + age)  # 🚫 TypeError
 ~~~
 
-To fix it, convert the number to a string:
+Fix it by converting the number to a string:
 
 ~~~python
 age = 16
@@ -88,21 +91,20 @@ print("age: " + str(age))
 
 ---
 
-### Commas in print (easy and beginner-friendly)
-When you use commas inside \`print\`, Python prints each piece with a space:
+### Commas in print (simpler)
+
+When you use commas inside \`print\`, Python prints each value separated by a space.
 
 ~~~python
 age = 16
 print("age:", age)
 ~~~
 
-This is super beginner-friendly because it works with numbers too.
-
-✅ If you just want to display values, commas are the easiest.
+This is often the easiest way to display mixed values.
 
 ---
 
-## Try it (editor on the right)
+## Try it
 
 ~~~python
 name = "Maya"
@@ -119,104 +121,111 @@ Run it and compare the outputs.
 
 ---
 
-## f-strings: the cleanest way to mix text + variables
+## f-strings: the cleanest way to mix text and variables
 
-f-strings are the modern “best habit.”
+Modern Python usually uses **f-strings**.
 
-They let you embed variables directly inside text using \`{ }\`.
+They allow you to insert variables directly inside text.
 
 ~~~python
 name = "Maya"
 age = 16
+
 print(f"Hi {name}, you are {age} years old.")
 ~~~
 
-It reads like a real sentence.
+It reads almost like a normal sentence.
 
 ---
 
-## Try it (make it yours)
+## Try it
 
 ~~~python
 name = "YourNameHere"
 city = "YourCityHere"
+
 print(f"Hi {name}! Welcome to {city}.")
 ~~~
 
-Change the values and run again.
+Change the values and run it again.
 
 ---
 
 ## Indexing: strings are sequences of characters
 
-A string is like a row of letters.
+A string is like a row of characters.
 
-Each character has a position (an index).
+Each character has a position called an **index**.
 
-Indexes start at 0:
+Indexes start at **0**:
 
 ~~~python
 word = "Python"
+
 print(word[0])  # P
 print(word[1])  # y
 ~~~
 
-And Python has a neat trick:
+Python also supports negative indexes.
 
-\`-1\` means “last character”:
+\`-1\` means **the last character**:
 
 ~~~python
 word = "Python"
+
 print(word[-1])  # n
 print(word[-2])  # o
 ~~~
 
 ---
 
-## Try it (peek inside the string)
+## Try it
 
 ~~~python
 word = "Learnoir"
+
 print("first:", word[0])
 print("second:", word[1])
 print("last:", word[-1])
 print("second last:", word[-2])
 ~~~
 
-Now change \`word\` to your name and run again.
+Now change \`word\` to your own name and run it again.
 
 ---
 
-## Slicing: grabbing a chunk of a string (light intro)
+## Slicing: taking a piece of a string
 
-Slicing means “give me a piece.”
+Slicing lets you extract part of a string.
 
-Format: \`text[start:end]\`  
+Format: \`text[start:end]\`
+
 - includes \`start\`
 - stops before \`end\`
 
 ~~~python
 word = "Python"
+
 print(word[0:2])  # Py
 print(word[2:6])  # thon
 ~~~
 
-Shortcut rules:
-- \`word[:2]\` means from the start to index 2
-- \`word[2:]\` means from index 2 to the end
+Shortcuts:
 
 ~~~python
 word = "Python"
+
 print(word[:2])  # Py
 print(word[2:])  # thon
 ~~~
 
 ---
 
-## Try it (slice your string)
+## Try it
 
 ~~~python
 word = "Programming"
+
 print(word[:4])
 print(word[4:])
 print(word[1:6])
@@ -224,25 +233,28 @@ print(word[1:6])
 
 ---
 
-## Common string methods (text tools)
+## Common string methods
 
-Methods are built-in tools attached to a string value.
+Methods are built-in tools attached to strings.
 
-For now, treat them like “buttons” that transform text.
+Think of them as **small text utilities**.
 
-### 1) lower() — make everything lowercase
+### lower() — convert to lowercase
+
 ~~~python
 msg = "HeLLo!"
-print(msg.lower())  # hello!
+print(msg.lower())
 ~~~
 
-### 2) strip() — remove extra spaces at the edges
+### strip() — remove extra spaces
+
 ~~~python
 raw = "   hello   "
-print(raw.strip())  # "hello"
+print(raw.strip())
 ~~~
 
-### 3) replace() — swap one piece for another
+### replace() — substitute text
+
 ~~~python
 text = "I like cats"
 print(text.replace("cats", "dogs"))
@@ -250,13 +262,13 @@ print(text.replace("cats", "dogs"))
 
 ---
 
-## Try it (clean up messy user input)
+## Try it: clean user input
 
-Remember: \`input()\` gives strings.
-Users often type extra spaces or weird capitalization.
+User input is often messy.
 
 ~~~python
 name = input("Enter your name: ")
+
 clean = name.strip().lower()
 
 print("raw:", name)
@@ -265,43 +277,48 @@ print(f"Hello, {clean}!")
 ~~~
 
 Try typing:
-- \`   MAya   \`
-and see how it becomes clean.
+
+\`   MAya   \`
+
+Notice how the cleaned version changes.
 
 ---
 
-## A mini mission: polite username generator
+## Mini exercise: simple username generator
 
 ~~~python
 first = input("First name: ").strip()
 last = input("Last name: ").strip()
 
 username = (first[0] + last).lower()
+
 print(f"username: {username}")
 ~~~
 
-Try different names.
 You just used:
-- variables
-- strings
-- indexing
-- methods
-- f-strings
-- print/output
+
+- variables  
+- strings  
+- indexing  
+- methods  
+- f-strings  
+- terminal output
 
 ---
 
 ## What you unlocked
 
-Strings are how your program talks and listens.
+Strings are how programs **communicate**.
 
 Now you can:
-- display messages cleanly
-- mix variables into text
-- grab letters and chunks
+
+- display messages clearly
+- combine text with variables
+- access characters inside text
+- extract pieces of a string
 - clean user input
 
-Next, we’ll combine strings + numbers + input into full mini-program patterns (like calculators).
+Next, we’ll combine **strings + numbers + input** to build small interactive programs.
 `.trim(),
         },
     },

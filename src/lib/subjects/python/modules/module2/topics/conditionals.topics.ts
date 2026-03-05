@@ -3,39 +3,53 @@ import { PY_MOD2 } from "../../../../../../../prisma/seed/data/subjects/python/c
 import { PY_SECTION_PART2, PY_TOPIC_MOD2 } from "@/lib/practice/catalog/subjects/python/slugs";
 import type { PracticeKind } from "@prisma/client";
 
-import { M2_CONDITIONALS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod2/topics/conditionals";
-import {ReviewTopicShape} from "@/lib/subjects/types";
+// import { M2_CONDITIONALS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/conditionals_basics";
+import { ReviewTopicShape } from "@/lib/subjects/types";
+import {M2_CONDITIONALS_POOL} from "@/lib/practice/generator/engines/python/python_part1_mod2/topics/conditionals";
 
 const ID = "conditionals_basics" as const;
-const LABEL = "Conditionals: Teaching Your Program to Decide" as const;
 const MINUTES = 12 as const;
+
+// ✅ keys match your JSON exactly
+const K = {
+    label: `@:topics.python.python-2.${ID}.label`,
+    summary: `@:topics.python.python-2.${ID}.summary`,
+
+    sketchCardTitle: `@:topics.python.python-2.${ID}.cards.sketch.title`,
+    projectCardTitle: `@:topics.python.python-2.${ID}.cards.project.title`,
+    quizCardTitle: `@:topics.python.python-2.${ID}.cards.quiz.title`,
+
+    stepAgeGate: `@:topics.python.python-2.${ID}.projectSteps.age_gate.title`,
+    stepMemberDiscount: `@:topics.python.python-2.${ID}.projectSteps.member_discount.title`,
+    stepPasswordCheck: `@:topics.python.python-2.${ID}.projectSteps.password_check.title`,
+} as const;
 
 const PK = {
     code_input: "code_input" as PracticeKind,
     single_choice: "single_choice" as PracticeKind,
+    multi_choice: "multi_choice" as PracticeKind,
 } as const;
 
 export const PY_CONDITIONALS = {
     topic: {
         id: ID,
-        label: LABEL,
+        label: K.label as any,
         minutes: MINUTES,
-        summary:
-            "Use if/elif/else with comparisons and boolean logic (and/or/not) to control program flow, including truthy/falsey checks.",
+        summary: K.summary as any,
+
         cards: [
             {
                 type: "sketch",
                 id: `${ID}_s0`,
-                title: "Conditionals (if / elif / else + boolean logic)",
+                title: K.sketchCardTitle as any,
                 sketchId: "py.cond.basics",
                 height: 640,
             },
 
-            // ✅ PROJECT: connected “Kiosk decisions” mini-app
             {
                 type: "project",
                 id: `${ID}_p0`,
-                title: "Project: Kiosk decisions (gate → discount → login)",
+                title: K.projectCardTitle as any,
                 passScore: 0.75,
                 spec: {
                     subject: "python",
@@ -51,7 +65,7 @@ export const PY_CONDITIONALS = {
                     steps: [
                         {
                             id: "age_gate",
-                            title: "Age gate (ALLOWED / DENIED)",
+                            title: K.stepAgeGate as any,
                             topic: PY_TOPIC_MOD2.conditionals_basics,
                             difficulty: "easy",
                             preferKind: PK.code_input,
@@ -61,7 +75,7 @@ export const PY_CONDITIONALS = {
                         },
                         {
                             id: "member_discount",
-                            title: "Member discount (10% off)",
+                            title: K.stepMemberDiscount as any,
                             topic: PY_TOPIC_MOD2.conditionals_basics,
                             difficulty: "easy",
                             preferKind: PK.code_input,
@@ -71,7 +85,7 @@ export const PY_CONDITIONALS = {
                         },
                         {
                             id: "password_check",
-                            title: "Admin login (password check)",
+                            title: K.stepPasswordCheck as any,
                             topic: PY_TOPIC_MOD2.conditionals_basics,
                             difficulty: "easy",
                             preferKind: PK.code_input,
@@ -83,33 +97,33 @@ export const PY_CONDITIONALS = {
                 },
             },
 
-            // ✅ QUICK CHECK (deterministic: only 1 single_choice key in this topic pool)
-            {
-                type: "quiz",
-                id: `${ID}_q0`,
-                title: "Quick check: elif",
-                passScore: 1,
-                spec: {
-                    subject: "python",
-                    module: PY_MOD2,
-                    section: PY_SECTION_PART2,
-                    topic: PY_TOPIC_MOD2.conditionals_basics,
-                    difficulty: "easy",
-                    n: 1,
-                    allowReveal: true,
-                    preferKind: PK.single_choice,
-                    maxAttempts: 1,
-                },
-            },
+            // // ✅ now that you have many quiz items, let the quiz pull multiple
+            // {
+            //     type: "quiz",
+            //     id: `${ID}_q0`,
+            //     title: K.quizCardTitle as any,
+            //     passScore: 0.75,
+            //     spec: {
+            //         subject: "python",
+            //         module: PY_MOD2,
+            //         section: PY_SECTION_PART2,
+            //         topic: PY_TOPIC_MOD2.conditionals_basics,
+            //         difficulty: "easy",
+            //         n: 6,
+            //         allowReveal: true,
+            //         preferKind: null, // allow mixed single + multi
+            //         maxAttempts: 10,
+            //     },
+            // },
         ],
     } satisfies ReviewTopicShape,
 
     def: {
         id: ID,
         meta: {
-            label: LABEL,
+            label: K.label as any,
             minutes: MINUTES,
             pool: M2_CONDITIONALS_POOL.map((p) => ({ ...p })),
         },
-   }  satisfies TopicDefCompat,
+    } satisfies TopicDefCompat,
 } satisfies { topic: ReviewTopicShape; def: TopicDefCompat };

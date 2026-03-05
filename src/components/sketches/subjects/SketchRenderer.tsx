@@ -8,6 +8,7 @@ import { useTaggedT, isTaggedKey, stripTag } from "@/i18n/tagged";
 import { ParagraphSketch } from "@/components/sketches/_archetypes/ParagraphSketch";
 import ImageSketch from "@/components/sketches/_archetypes/ImageSketch";
 
+// NOTE: tKey should be RAW-safe (no ICU parsing)
 function resolveDeep(input: unknown, tKey: (k: string) => string): unknown {
     if (typeof input === "string") {
         if (isTaggedKey(input)) return tKey(stripTag(input));
@@ -33,11 +34,13 @@ export default function SketchRenderer({
     onChange: (s: SavedSketchState) => void;
     readOnly?: boolean;
 }) {
-    const { t } = useTaggedT(); // root translator (safe)
+    // ✅ get RAW-safe translator too
+    const { raw } = useTaggedT();
 
     const specT = React.useMemo(
-        () => resolveDeep(spec, (k) => t(k, {}, "")) as SketchSpec,
-        [spec, t],
+        // ✅ tagged values must use raw() so `{name}` / `{}` in code doesn't crash
+        () => resolveDeep(spec, (k) => raw(k, "")) as SketchSpec,
+        [spec, raw]
     );
 
     switch (specT.archetype) {

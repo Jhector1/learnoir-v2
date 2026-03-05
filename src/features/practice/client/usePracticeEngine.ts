@@ -324,8 +324,14 @@ export function usePracticeEngine(args: {
   }, [stack]);
 
   const missed = useMemo(() => {
+    const serverAns = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
+    const stackLooksPartial = completed && serverAns > stack.length;
+
+    // ✅ if stack is partial, trust server missed (full run)
+    if (stackLooksPartial) return serverMissed;
+
     return localMissed.length ? localMissed : serverMissed;
-  }, [localMissed, serverMissed]);
+  }, [localMissed, serverMissed, serverStatus, completed, stack.length]);
 
   // ---------------- Summary lock ----------------
   useEffect(() => {
@@ -387,8 +393,19 @@ export function usePracticeEngine(args: {
   );
 
   const reviewStack = useMemo(() => {
-    return stack.length ? stack : serverHistoryStack;
-  }, [stack, serverHistoryStack]);
+    const serverAns = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
+
+    // ✅ if server has a fuller picture (typical when you resumed a session),
+    // use serverHistoryStack for summary/review UI
+    const serverIsMoreComplete =
+        Array.isArray(serverHistoryStack) &&
+        serverHistoryStack.length > 0 &&
+        (completed || serverAns > stack.length || serverHistoryStack.length > stack.length);
+
+    if (serverIsMoreComplete) return serverHistoryStack;
+
+    return stack;
+  }, [stack, serverHistoryStack, serverStatus, completed]);
 
   const serverAnswered = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
   const serverCorrect = serverStatus?.correctCount ?? 0;

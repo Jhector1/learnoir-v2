@@ -8,28 +8,42 @@ export const PY_INPUT_OUTPUT_PATTERNS_SECTION: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Input + Output Patterns: From Answers to Real Mini-Programs",
             bodyMarkdown: String.raw`
-So far, you’ve learned the building blocks:
+So far you’ve learned the building blocks of Python:
 
-- **Variables** are labeled boxes.
-- **Types** tell you what’s in the box.
-- **Operators + expressions** let you compute results.
-- **Strings** let you work with text (and \`input()\` gives strings).
+- **Variables** store values.
+- **Types** describe what those values are.
+- **Operators + expressions** compute new results.
+- **Strings** represent text (and \`input()\` returns strings).
 
-Now we combine everything into one simple loop of reality:
+Now we combine everything into the basic structure of a program.
 
-**Ask → Convert → Compute → Show**
+Most beginner programs follow the same loop:
 
-That’s the heart of most beginner programs.
+### Ask → Convert → Compute → Show
+
+1. **Ask** the user for information  
+2. **Convert** it into the correct type  
+3. **Compute** something with it  
+4. **Show** the result  
+
+Once you understand this pattern, you can build many small programs.
 
 ---
 
-## The “Ask” tool: input()
+## The “Ask” tool: \`input()\`
 
-When you use \`input("...")\`, Python pauses and waits for the user to type.
+\`input()\` pauses the program and waits for the user to type something.
 
-But here’s the rule that changes everything:
+Example:
 
-✅ **\`input()\` always returns a string (\`str\`). Always.**
+~~~python
+name = input("What is your name? ")
+print("Hello", name)
+~~~
+
+But there is one important rule:
+
+> ✅ **\`input()\` always returns a string (\`str\`).**
 
 Even if the user types a number.
 
@@ -37,95 +51,157 @@ Even if the user types a number.
 
 ## Try it (prove it)
 
-Run this and type a number like \`25\`:
+Run this and type something like \`25\`.
 
 ~~~python
 x = input("Type something: ")
+
 print("You typed:", x)
 print("type:", type(x))
 ~~~
 
-It’s still \`str\`.
+Even when you type a number, Python still stores it as **text**.
 
 ---
 
 ## The “Convert” step: casting
 
-If you want math, you must convert text into numbers:
+If you want to do math, you must convert the text into a number.
 
-- \`int(...)\` for whole numbers
-- \`float(...)\` for decimals
+Common conversions:
 
-### Example: converting age to int
+- \`int(...)\` → whole numbers
+- \`float(...)\` → decimals
+
+Example:
 
 ~~~python
 age = int(input("Age: "))
 print("Next year:", age + 1)
 ~~~
 
+Now Python can perform arithmetic.
+
 ---
 
-## Try it (change what you type)
+## Try it
 
 ~~~python
 age = int(input("Age: "))
 print(f"Next year you will be {age + 1}.")
 ~~~
 
-Run it twice with different ages.
+Run it twice with different numbers.
 
 ---
 
-## Quick warning: conversion can fail
+## Quick warning: conversions can fail
 
-If the user types \`hello\` when you expect a number:
+If the user types something that is **not a number**, conversion fails.
 
 ~~~python
 age = int("hello")  # 🚫 ValueError
 ~~~
 
-That means:
-> “I can’t turn that text into a number.”
+Python is saying:
 
-For Module 0, it’s enough to understand why it happens.
-Later, you’ll learn how to handle it safely with loops and checks.
+> “I tried to convert that text to a number, but it isn’t valid.”
+
+For now, it’s enough to understand **why the error happens**.  
+Later you’ll learn how to handle this safely.
 
 ---
 
-## The “Show” step: clean output (f-strings)
+## The “Show” step: clear output
 
-You already met f-strings in the strings lesson.
+You already saw **f-strings** in the strings lesson.
 
-They’re perfect for output because they mix text + variables naturally:
+They are the cleanest way to display results.
 
 ~~~python
 name = "Maya"
 age = 16
+
 print(f"Hi {name}, you are {age} years old.")
 ~~~
+
+F-strings combine **text + variables** naturally.
 
 ---
 
 ## Pattern 1: Ask → Convert → Compute → Show
 
-Here’s the most important pattern in this lesson:
+Let’s put the entire pattern together.
 
 ~~~python
 value = float(input("Enter a number: "))
 result = value * 2
+
 print(f"Double is {result}")
 ~~~
 
-Try changing the math to \`value + 10\` or \`value / 3\`.
+The program does four things:
+
+1️⃣ Ask for input  
+2️⃣ Convert it to a number  
+3️⃣ Compute a result  
+4️⃣ Show the result  
 
 ---
 
+## Try modifying the computation
 
+Change the math and run again.
 
-This is the real beginner foundation.
+~~~python
+value = float(input("Enter a number: "))
 
-Next, we’ll add **conditionals** so your programs can make decisions:
-**“if this happens… do that.”**
+print("plus ten:", value + 10)
+print("times three:", value * 3)
+print("half:", value / 2)
+~~~
+
+Notice how the same input can produce different results.
+
+---
+
+## A tiny calculator
+
+Here’s a small real program using the same pattern.
+
+~~~python
+a = float(input("First number: "))
+b = float(input("Second number: "))
+
+sum_result = a + b
+print(f"The sum is {sum_result}")
+~~~
+
+You just built a **two-number calculator**.
+
+---
+
+## The key idea
+
+Many beginner programs follow the same structure:
+
+**Input → Process → Output**
+
+or more concretely:
+
+**Ask → Convert → Compute → Show**
+
+Once this pattern feels natural, programming starts to feel much simpler.
+
+---
+
+## What comes next
+
+Right now your programs always run the same instructions.
+
+Next, we’ll unlock **conditionals**, so your program can decide:
+
+> *“If this happens… do that instead.”*
 `.trim(),
         },
     },

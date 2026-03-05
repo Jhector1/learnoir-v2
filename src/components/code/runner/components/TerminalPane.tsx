@@ -312,7 +312,7 @@ export default function TerminalPane(props: {
             `}</style>
             <div
                 className={[
-                    "h-full rounded-2xl border p-3 flex flex-col",
+                    "h-full rouncded-2xl border-t p-3u flex flex-col",
                     "bg-white/80 dark:bg-black/40",
                     terminalHasError ? "border-rose-300/30" : "border-neutral-200 dark:border-white/10",
                 ].join(" ")}
@@ -331,7 +331,7 @@ export default function TerminalPane(props: {
                 <div
                     ref={scrollRef}
                     className={[
-                        "mt-2 flex-1 overflow-auto rounded-xl border p-2",
+                        "mt-2 flex-1 overflow-auto  border-t py-2",
                         "bg-white/60 dark:bg-black/30",
                         terminalHasError ? "border-rose-300/20" : "border-neutral-200 dark:border-white/10",
                     ].join(" ")}
@@ -350,6 +350,7 @@ export default function TerminalPane(props: {
                             "font-mono text-xs leading-5",
                             "whitespace-pre-wrap px-2 break-words",
                             "focus:ring-2 focus:ring-emerald-300/30 focus:rounded-lg",
+                            "mx-1"
                         ].join(" ")}
                     >
                         {terminal.map((l, i) => {

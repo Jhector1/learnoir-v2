@@ -9,19 +9,32 @@ export const PY_MOD1_VARIABLES_SKETCHES: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Variables: Labeled Boxes for Your Data",
             bodyMarkdown: String.raw`
-Imagine you’re organizing your room.
+Imagine your computer's memory as a **huge storage room**.
 
-You don’t want to hold everything in your hands, so you grab **boxes**.
-But a box is only useful if you **label it**:
+Inside that room, the computer keeps many pieces of information:
 
-- **"snacks"**
-- **"homework"**
-- **"cables"**
-- **"important stuff"**
+- numbers  
+- text  
+- results of calculations  
 
-In Python, a **variable** is that label.
+But if everything were thrown into the room without organization, it would be impossible to find anything.
 
-✅ A variable is a **name** that points to a **value**.
+So we use **labeled boxes**.
+
+Each box holds a piece of data, and the **label tells us what’s inside**.
+
+For example, you might have boxes labeled:
+
+- **snacks**
+- **homework**
+- **cables**
+- **important_stuff**
+
+Now, instead of searching the whole room, you can just look for the **label**.
+
+In Python, a **variable** is exactly that label.
+
+✅ A variable is a **name that refers to a value stored in memory**.
 
 ---
 
@@ -29,51 +42,58 @@ In Python, a **variable** is that label.
 
 You’ll see \`print(...)\` used a lot, and you might be wondering what it does.
 
-For now, don’t worry about the official definition. Just treat \`print(...)\` like a **screen display**:
+For now, think of \`print(...)\` as a **display tool**.
 
-> Whatever you put inside \`print(...)\` will show up in the terminal output when you run the code.
+> Whatever you put inside \`print(...)\` will appear in the **terminal output** when the program runs.
 
-(We’ll explain these “tools with parentheses” later.)
+We’ll talk more about these **tools with parentheses** (called functions) later.
 
 ---
 
 ## The moment a variable is created
 
-In Python, a variable exists the instant you assign a value:
+In Python, a variable is created the moment you assign a value to it.
 
 ~~~python
 age = 16
 name = "Maya"
 ~~~
 
-Read it like this:
+Read this like a story:
 
 - Put **16** in a box labeled **age**
 - Put **"Maya"** in a box labeled **name**
 
-Python uses \`=\` to **assign** a value to a variable.
-In math, \`=\` usually means “is equal to,” but in programming (here) it means **assignment**.
+Python uses the symbol \`=\` for **assignment**.
 
-*(When you want to compare values for equality in Python, you use \`==\`, we'll get more into this later.)*
+In mathematics, \`=\` means **is equal to**.  
+In programming, it means:
+
+> “Store this value inside this variable.”
+
+*(When we want to compare values later, we use \`==\`. We'll learn that soon.)*
 
 ---
 
 ## Try it (editor on the right)
 
-Copy this into the editor on the **right**, then run it and watch the terminal output:
+Copy this code into the editor on the **right**, then run it and watch the terminal output:
 
 ~~~python
 age = 16
 name = "Maya"
+
 print("age =", age)
 print("name =", name)
 ~~~
 
-Now change the values (try a different name and age) and run again.
+Now change the values (try a different name and age) and run it again.
 
 ---
 
 ## Variables can change (that’s the whole point)
+
+Variables are useful because the value inside the box can **change**.
 
 ~~~python
 score = 10
@@ -83,7 +103,9 @@ print(score)  # 15
 
 That second line means:
 
-> “Take what’s inside \`score\`, add 5, and store it back into \`score\`.”
+> Take the value inside **score**, add 5, and store the new result back into **score**.
+
+The label stays the same — but the **value inside the box changes**.
 
 ---
 
@@ -100,15 +122,22 @@ score = score - 2
 print("after -2:", score)
 ~~~
 
-Change the \`+5\` and \`-2\` to other numbers and run again.
+Change the \`+5\` and \`-2\` to other numbers and run the code again.
+
+Watch how the value keeps updating.
 
 ---
 
 ## Variable names (label rules)
 
+Because variables are **labels**, they must follow some rules.
+
 ✅ Allowed:
-- letters, numbers, underscores
-- can’t start with a number
+- letters
+- numbers
+- underscores
+
+❗ But they **cannot start with a number**.
 
 ❌ Not allowed:
 - spaces
@@ -127,19 +156,25 @@ studentName = "Ayo"    # also valid
 
 ## Quick mental model
 
-A variable is not the value itself.
+A variable is **not the value itself**.
 
-It’s a **name tag** so you can reuse the value easily:
+It is a **name tag** that lets you reuse and organize your data.
 
 ~~~python
 price = 4.99
 tax = 0.10
 total = price + (price * tax)
+
 print(total)
 ~~~
 
-Without variables, you’d repeat numbers everywhere.
-With variables, your code becomes clearer, easier to change, and easier to read.
+Without variables, you would repeat numbers everywhere.
+
+With variables, your programs become:
+
+- easier to read
+- easier to change
+- easier to understand
 `.trim(),
         },
     },

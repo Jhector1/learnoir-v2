@@ -9,15 +9,17 @@ export const PY_MOD1_TYPES_SKETCHES: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Data Types: What’s Inside the Box?",
             bodyMarkdown: String.raw`
-So you have labeled boxes (variables). Now a key question:
+You already have labeled boxes (variables). Now the next question is:
 
 **What kind of thing is inside the box?**
 
-Python calls this idea a **data type**.
+Python calls that a **data type**.
+
+A type tells Python what the value *is*, and what you’re allowed to do with it.
 
 ---
 
-## The 5 types you’ll use constantly
+## 5 types you’ll use constantly
 
 (There are more than five, but these show up everywhere.)
 
@@ -62,20 +64,21 @@ message = "Welcome!"
 is_logged_in = True
 nickname = None
 
-print("students:", students, "type:", type(students))
-print("price:", price, "type:", type(price))
-print("message:", message, "type:", type(message))
-print("is_logged_in:", is_logged_in, "type:", type(is_logged_in))
-print("nickname:", nickname, "type:", type(nickname))
+print("students:", students, "| type:", type(students))
+print("price:", price, "| type:", type(price))
+print("message:", message, "| type:", type(message))
+print("is_logged_in:", is_logged_in, "| type:", type(is_logged_in))
+print("nickname:", nickname, "| type:", type(nickname))
 ~~~
 
 ---
 
 ## Why types matter
 
-In Python:
+Types affect how operations behave:
+
 - numbers add like math
-- strings “add” by joining text (concatenation)
+- strings “add” by joining text (**concatenation**)
 - mixing incompatible types can cause errors
 
 Numbers add like math:
@@ -86,7 +89,7 @@ b = 5
 print(a + b)  # 15
 ~~~
 
-Text joins together:
+Strings join together:
 
 ~~~python
 a = "10"
@@ -109,7 +112,7 @@ print("hi" + " there")
 ~~~
 
 Then run it and check your guesses.
-`.trim(),
+      `.trim(),
         },
     },
 
@@ -124,16 +127,13 @@ Here’s a classic beginner surprise.
 
 ---
 
-## Heads-up: \`input(...)\` asks the user a question
+## Heads-up: \`input(...)\` always returns text
 
-\`input("...")\` asks the user for input.
-
-For now, treat it like a **question box**:
-Python asks, and the user types an answer.
+\`input("...")\` asks the user a question, and the user types an answer.
 
 One rule matters most:
 
-✅ **\`input()\` always returns text (a string).**
+✅ **\`input()\` always returns a string (\`str\`).**
 
 ---
 
@@ -153,7 +153,7 @@ No matter what you type, the type is still \`str\`.
 
 ## Convert the type (casting)
 
-If you want Python to treat your input as a number, you must convert it:
+If you want Python to treat input as a number, you must convert it:
 
 - use \`int(...)\` for whole numbers
 - use \`float(...)\` for decimals
@@ -179,7 +179,7 @@ print(msg)
 
 ---
 
-## Try it (play with it)
+## Try it (mini checkout)
 
 ~~~python
 price = float(input("Price: "))
@@ -189,7 +189,7 @@ print("Total =", total)
 ~~~
 
 Run it again with different numbers.
-`.trim(),
+      `.trim(),
         },
     },
 };

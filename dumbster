@@ -71,71 +71,413 @@ npx dotenv -e .env.local -- npx tsx scripts/resetBilling.ts tutoring@student.lea
 
 
 
+----- standard format ------- import { TopicDefCompat } from "../../../../../../../prisma/seed/data/subjects/_types";
+import { PY_MOD0 } from "../../../../../../../prisma/seed/data/subjects/python/constants";
+import { PY_SECTION_PART0, PY_TOPIC_MOD0 } from "@/lib/practice/catalog/subjects/python/slugs";
 
+import { M0_COMMENTS_POOL } from "@/lib/practice/generator/engines/python/python_part1_mod0/topics/comments";
+import { ReviewTopicShape } from "@/lib/subjects/types";
 
-        // case "pipeline_builder":
-        //      return <PipelineBuilderSketch spec={spec} value={value} onChange={onChange} readOnly={readOnly}/>;
-        // case "ui_path_guide":
-        //     return <UIPathGuideSketch spec={spec} value={value} onChange={onChange} readOnly={readOnly}/>;
-        // case "code_runner":
-            // return <CodeSketch spec={spec}  />
-        // case "intro_stepper":
-        //     return <IntroStepperSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "template_picker":
-        //     return <TemplatePickerSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "checklist":
-        //     return <ChecklistSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "flashcards":
-        //     return <FlashcardsSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "lab_runner":
-        //     return <LabRunnerSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "classifier_gate":
-        //     return <ClassifierGateSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "transform_toggle":
-        //     return <TransformToggleSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "reorder_tokens":
-        //     return <ReorderTokensSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "fill_blank":
-        //     return <FillBlankSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "prompt_builder":
-        //     return <PromptBuilderSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "compare_before_after":
-        //     return <CompareBeforeAfterSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "timeline":
-        //     return <TimelineSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "scenario_branch":
-        //     return <ScenarioBranchSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "rubric_self_check":
-        //     return <RubricSelfCheckSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "error_hunt":
-        //     return <ErrorHuntSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "code_trace":
-        //     return <CodeTraceSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "io_transcript":
-        //     return <IOTranscriptSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "video_lesson":
-        //     return <VideoLessonSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // // case "diagram_callouts":
-        //     return <DiagramCalloutsSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "dataset_explorer":
-        //     return <DatasetExplorerSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "chart_explorer":
-        //     return <ChartExplorerSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "vocab_match":
-        //     return <VocabMatchSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "sentence_builder":
-        //     return <SentenceBuilderSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "spaced_recall_queue":
-        //     return <SpacedRecallQueueSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "mini_quiz":
-        //     return <MiniQuizSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "multi_step_form":
-        //     return <MultiStepFormSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "inspector_panel":
-        //     return <InspectorPanelSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "canvas_hud":
-        //     return <CanvasHudSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "vectorpad_hud":
-        //     return <VectorPadHudSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
-        // case "matrix_hud":
-        //     return <MatrixHudSketch spec={spec as any} value={value} onChange={onChange} readOnly={readOnly} />;
+const ID = "comments_intro" as const;
+const MINUTES = 4 as const;
+
+// ✅ keys match your JSON exactly
+const K = {
+    label: `@:topics.python.python-0.${ID}.label`,
+    summary: `@:topics.python.python-0.${ID}.summary`,
+    sketchCardTitle: `@:topics.python.python-0.${ID}.cards.sketch.title`,
+    quizCardTitle: `@:topics.python.python-0.${ID}.cards.quiz.title`,
+} as const;
+
+export const PY_COMMENTS = {
+    topic: {
+        id: ID,
+        label: K.label as any,
+        minutes: MINUTES,
+        summary: K.summary as any,
+        cards: [
+            {
+                type: "sketch",
+                id: `${ID}_s0`,
+                title: K.sketchCardTitle as any,
+                sketchId: "py.syntax.comments",
+                height: 520,
+            },
+            {
+                type: "quiz",
+                id: `${ID}_q0`,
+                title: K.quizCardTitle as any,
+                passScore: 0.75,
+                spec: {
+                    subject: "python",
+                    module: PY_MOD0,
+                    section: PY_SECTION_PART0,
+                    topic: PY_TOPIC_MOD0.comments_intro,
+                    difficulty: "easy",
+                    n: M0_COMMENTS_POOL.length,
+                    allowReveal: true,
+                    preferKind: null,
+                    maxAttempts: 10,
+                },
+            },
+        ],
+    } satisfies ReviewTopicShape,
+
+    def: {
+        id: ID,
+        meta: {
+            // Keep label as key too (renderer resolves @:)
+            label: K.label as any,
+            minutes: MINUTES,
+            pool: M0_COMMENTS_POOL.map((p) => ({ ...p })),
+        },
+    } satisfies TopicDefCompat,
+} satisfies { topic: ReviewTopicShape; def: TopicDefCompat };// src/lib/practice/generator/engines/python/python_part1_mod0/topics/comments_intro.ts
+import {
+    defineTopic,
+    type Handler,
+    type TopicBundle,
+    makeSingleChoiceOut,
+    makeMultiChoiceOut,
+    makeCodeInputOut, HandlerArgs,
+} from "@/lib/practice/generator/engines/utils";
+
+import { makeCodeExpected } from "../../_shared";
+import {ExerciseKind} from "@/lib/practice/types";
+import {GenOut} from "@/lib/practice/generator/shared/expected";
+
+// -----------------------------
+// Pool
+// -----------------------------
+export const M0_COMMENTS_POOL = [
+    { key: "m0_comments_symbol", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_comments_ignored_by_python", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_comments_best_reason", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_comments_multiline_true", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    { key: "m0_comments_docstring_vs_comment", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m0_comments_inline_comment", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    { key: "m0_comments_multiline_valid_ways", w: 1, kind: "multi_choice", purpose: "quiz" },
+    { key: "m0_comments_which_lines_are_comments", w: 1, kind: "multi_choice", purpose: "quiz" },
+
+    { key: "m0_comments_disable_error_line", w: 1, kind: "code_input", purpose: "quiz" },
+    { key: "m0_comments_disable_wrong_math_line", w: 1, kind: "code_input", purpose: "quiz" },
+] as const;
+
+export type M0CommentsKey = (typeof M0_COMMENTS_POOL)[number]["key"];
+
+function Q(key: M0CommentsKey) {
+    return `quiz.${key}`;
+}
+
+// -----------------------------
+// Helpers: options builder
+// (IMPORTANT: only include option ids that exist in JSON)
+// -----------------------------
+type OptId = "a" | "b" | "c" | "d";
+
+function buildOptions(key: M0CommentsKey, ids: OptId[]) {
+    return ids.map((id) => ({
+        id,
+        text: `@:${Q(key)}.options.${id}`,
+    }));
+}
+
+// Single choice helper (wrapper return via makeSingleChoiceOut)
+function sc(key: M0CommentsKey, answerOptionId: OptId, optionIds: OptId[] = ["a", "b", "c"]): Handler {
+    return ({ diff, id, topic }: any) =>
+        makeSingleChoiceOut({
+            archetype: key,
+            id,
+            topic,
+            diff,
+            title: `@:${Q(key)}.title`,
+            prompt: `@:${Q(key)}.prompt`,
+            options: buildOptions(key, optionIds),
+            answerOptionId,
+            hint: `@:${Q(key)}.hint`,
+        });
+}
+
+// Multi choice helper (wrapper return via makeMultiChoiceOut)
+function mc(key: M0CommentsKey, answerOptionIds: OptId[], optionIds: OptId[] = ["a", "b", "c", "d"]): Handler {
+    return ({ diff, id, topic }: any) =>
+        makeMultiChoiceOut({
+            archetype: key,
+            id,
+            topic,
+            diff,
+            title: `@:${Q(key)}.title`,
+            prompt: `@:${Q(key)}.prompt`,
+            options: buildOptions(key, optionIds),
+            answerOptionIds,
+            hint: `@:${Q(key)}.hint`,
+        });
+}
+
+// -----------------------------
+// Handlers (ALL return the SAME wrapper shape)
+// -----------------------------
+export const M0_COMMENTS_HANDLERS: {
+    m0_comments_inline_comment: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_which_lines_are_comments: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_symbol: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_disable_wrong_math_line: ({diff, id, topic}: any) => {
+        archetype: string;
+        expected: any;
+        exercise: {
+            difficulty: any;
+            starterStdin: string;
+            editorHeight: number;
+            kind: string;
+            starterCode: string;
+            topic: any;
+            language: "python" | "javascript" | "c" | "cpp" | "java";
+            id: string;
+            title: string;
+            prompt: string
+        }
+    };
+    m0_comments_ignored_by_python: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_docstring_vs_comment: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_best_reason: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_multiline_true: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_disable_error_line: ({diff, id, topic}: any) => {
+        archetype: string;
+        expected: any;
+        exercise: {
+            difficulty: any;
+            starterStdin: string;
+            editorHeight: number;
+            kind: string;
+            starterCode: string;
+            topic: any;
+            language: "python" | "javascript" | "c" | "cpp" | "java";
+            id: string;
+            title: string;
+            prompt: string
+        }
+    };
+    m0_comments_multiline_valid_ways: (args: HandlerArgs) => GenOut<ExerciseKind>
+} = {
+    // single_choice (3-option)
+    m0_comments_symbol: sc("m0_comments_symbol", "b", ["a", "b", "c"]),
+    m0_comments_ignored_by_python: sc("m0_comments_ignored_by_python", "a", ["a", "b", "c"]),
+    m0_comments_best_reason: sc("m0_comments_best_reason", "b", ["a", "b", "c"]),
+    m0_comments_multiline_true: sc("m0_comments_multiline_true", "b", ["a", "b", "c"]),
+
+    // single_choice (could be 4-option if your JSON has d; set ids accordingly)
+    m0_comments_docstring_vs_comment: sc("m0_comments_docstring_vs_comment", "c", ["a", "b", "c", "d"]),
+    m0_comments_inline_comment: sc("m0_comments_inline_comment", "a", ["a", "b", "c", "d"]),
+
+    // multi_choice (4-option)
+    m0_comments_multiline_valid_ways: mc("m0_comments_multiline_valid_ways", ["a", "b"], ["a", "b", "c", "d"]),
+    m0_comments_which_lines_are_comments: mc("m0_comments_which_lines_are_comments", ["a", "c", "d"], ["a", "b", "c", "d"]),
+
+    // code_input (wrapper return via makeCodeInputOut)
+    m0_comments_disable_error_line: ({ diff, id, topic }: any) =>
+        makeCodeInputOut({
+            archetype: "m0_comments_disable_error_line",
+            id,
+            topic,
+            diff,
+            title: `@:${Q("m0_comments_disable_error_line")}.title`,
+            prompt: `@:${Q("m0_comments_disable_error_line")}.prompt`,
+            hint: `@:${Q("m0_comments_disable_error_line")}.hint`,
+            language: "python",
+            starterCode: String.raw`
+print("Start")
+print(not_defined)  # TODO: comment out this line so the program runs
+print("End")
+`.trim(),
+            expected: makeCodeExpected({
+                language: "python",
+                tests: [{ stdin: "", stdout: "Start\nEnd\n", match: "exact" }],
+                solutionCode: `print("Start")\n# print(not_defined)\nprint("End")\n`,
+            }),
+            editorHeight: 360,
+        }),
+
+    m0_comments_disable_wrong_math_line: ({ diff, id, topic }: any) =>
+        makeCodeInputOut({
+            archetype: "m0_comments_disable_wrong_math_line",
+            id,
+            topic,
+            diff,
+            title: `@:${Q("m0_comments_disable_wrong_math_line")}.title`,
+            prompt: `@:${Q("m0_comments_disable_wrong_math_line")}.prompt`,
+            hint: `@:${Q("m0_comments_disable_wrong_math_line")}.hint`,
+            language: "python",
+            starterCode: String.raw`
+price = 4
+qty = 3
+
+total = price * qty
+total = total + 100  # TODO: this line is wrong — comment it out
+
+print(total)
+`.trim(),
+            expected: makeCodeExpected({
+                language: "python",
+                tests: [{ stdin: "", stdout: "12\n", match: "exact" }],
+                solutionCode:
+                    `price = 4\n` +
+                    `qty = 3\n` +
+                    `total = price * qty\n` +
+                    `# total = total + 100\n` +
+                    `print(total)\n`,
+            }),
+            editorHeight: 420,
+        }),
+};
+
+export const M0_COMMENTS_TOPIC: TopicBundle = defineTopic(
+    "comments_intro",
+    M0_COMMENTS_POOL as any,
+    M0_COMMENTS_HANDLERS as any,
+);import { SketchEntry } from "@/components/sketches/subjects";
+
+export const PY_SYNTAX_COMMENTS_SECTION: Record<string, SketchEntry> = {
+    "py.syntax.comments": {
+        kind: "archetype",
+        spec: {
+            archetype: "paragraph",
+            specVersion: 1,
+
+            // ✅ keys match your JSON exactly
+            title: "@:sketches.py.syntax.comments.title",
+            bodyMarkdown: "@:sketches.py.syntax.comments.bodyMarkdown",
+        },
+    },
+};{
+  "topics": {
+    "python": {
+      "python-0": {
+        "comments_intro": {
+          "label": "Comments: Notes to Humans (Python Ignores Them)",
+          "summary": "Use comments to explain intent, label steps, and temporarily disable code while debugging (including multi-line notes).",
+          "cards": {
+            "sketch": { "title": "Comments in Python (#)" },
+            "quiz": { "title": "Quick check: comments" }
+          }
+        }
+      }
+    }
+  },
+  "sketches": {
+    "py": {
+      "syntax": {
+        "comments": {
+          "title": "Comments: Notes to Humans (Python Ignores Them)",
+          "bodyMarkdown": "When you write code, you’re writing for **two audiences**:\n\n1) The computer (Python)\n2) Future you (and other humans)\n\nA **comment** is a note for humans that Python completely ignores.\n\nThink of comments like sticky notes on a recipe:\nThey help you remember *why* you did something, not just *what* you did.\n\n---\n\n## Two ways to write comments in Python\n\nIn Python, you’ll mainly use:\n\n1) **Single-line comments** using `#`\n2) **Multi-line notes** (written as multiple `#` lines, or sometimes triple quotes)\n\n---\n\n## Single-line comments: `#`\n\nAnything after `#` on a line is ignored by Python.\n\n~~~python\n# This is a comment.\nprint(\"Hello\")  # This part is also a comment\n~~~\n\n---\n\n## Multi-line comments (multi-line notes).\n\nFor multi-line notes, you have two common options:\n\n### Option A: Multiple `#` lines (recommended)\n\n~~~python\n# Step 1: ask the user for input\n# Step 2: convert it to a number\n# Step 3: do the math\n# Step 4: print the result\n~~~\n\n### Option B: Triple quotes (`\"\"\" ... \"\"\"` or `''' ... '''`)\n\nThese create a **multi-line string**. If it’s not assigned to a variable, Python will usually ignore it at runtime, so some people use it like a block comment.\n\n~~~python\n\"\"\"\nMulti-line note:\n- This is a string literal\n- People sometimes use it as a \"block comment\"\n\"\"\"\n~~~\n\n> **Tip:** Use triple quotes mainly for **docstrings** (documentation for functions/classes). For regular comments, prefer `#` lines.\n\n---\n\n## Why comments matter (Module 0 reasons)\n\nUse comments to:\n- explain *why* a line exists\n- label steps in a mini-program (ask → convert → compute → show)\n- temporarily disable a line while debugging\n\n---\n\n## Try it (editor on the right)\n\nRun this:\n\n~~~python\n# Step 1: store values in variables\nprice = 4.99\nqty = 3\n\n# Step 2: compute\ntotal = price * qty\n\n# Step 3: show output\nprint(\"total =\", total)\n~~~\n\nNow **comment out** the line that computes `total` and run again:\n\n~~~python\nprice = 4.99\nqty = 3\n\n# total = price * qty\n\nprint(\"total =\", total)\n~~~\n\nYou should get an error — that’s expected.\nIt proves that comments truly “remove” code from execution.\n\n---\n\n## Notes\n\n✅ Write comments to explain **intent** (the *why*).\n❌ Don’t write comments that only repeat the code.\n\nA useful comment:\n~~~python\n# Convert input (text) into a number so we can do math\nage = int(input(\"Age: \"))\n~~~\n\nNot useful (repeats the code):\n~~~python\n# Set age to input\nage = int(input(\"Age: \"))\n~~~\n\n---\n\nNext up: we’ll use comments to label our steps while learning **variables** and **data types**."
+        }
+      }
+    }
+  },
+
+  "quiz": {
+    "m0_comments_symbol": {
+      "title": "Comment symbol (#)",
+      "prompt": "Which symbol starts a single-line comment in Python?",
+      "options": {
+        "a": "`//`",
+        "b": "`#`",
+        "c": "`/* ... */`"
+      },
+      "hint": "Python uses `#` for single-line comments."
+    },
+
+    "m0_comments_ignored_by_python": {
+      "title": "Python ignores comments",
+      "prompt": "Comments are mainly for:",
+      "options": {
+        "a": "Humans reading the code",
+        "b": "Making Python run faster",
+        "c": "Changing the output automatically"
+      },
+      "hint": "Python ignores comments; they help humans understand the code."
+    },
+
+    "m0_comments_best_reason": {
+      "title": "Best reason to comment",
+      "prompt": "Which is the best reason to write a comment?",
+      "options": {
+        "a": "To repeat exactly what the code already says",
+        "b": "To explain intent or a tricky step",
+        "c": "To make the file longer"
+      },
+      "hint": "Good comments explain intent (the why), not obvious code (the what)."
+    },
+
+    "m0_comments_multiline_true": {
+      "title": "Multi-line comments",
+      "prompt": "Which is the recommended way to write multi-line comments in Python?",
+      "options": {
+        "a": "Use `/* ... */`",
+        "b": "Use multiple lines starting with `#`",
+        "c": "Use `//` on each line"
+      },
+      "hint": "Python doesn’t use `/* */` or `//`. For multi-line notes, use multiple `#` lines."
+    },
+
+    "m0_comments_docstring_vs_comment": {
+      "title": "Docstring vs comment",
+      "prompt": "Which statement is true about docstrings (triple quotes) vs comments?",
+      "options": {
+        "a": "Docstrings are ignored by Python exactly like `#` comments",
+        "b": "Docstrings only work at the top of a file, nowhere else",
+        "c": "Docstrings are strings used for documentation; `#` is the real comment symbol",
+        "d": "Python does not support docstrings"
+      },
+      "hint": "Docstrings are strings used for documentation (e.g., function docs). `#` is the comment syntax."
+    },
+
+    "m0_comments_inline_comment": {
+      "title": "Inline comments",
+      "prompt": "Which line correctly uses an inline comment in Python?",
+      "options": {
+        "a": "`total = price * qty  # compute total`",
+        "b": "`total = price * qty  // compute total`",
+        "c": "`total = price * qty  /* compute total */`",
+        "d": "`total = price * qty  -- compute total`"
+      },
+      "hint": "Inline comments use `#` after code: `value = ...  # explanation`."
+    },
+
+    "m0_comments_multiline_valid_ways": {
+      "title": "Valid ways to write multi-line notes",
+      "prompt": "Which are valid ways to write multi-line notes/comments in Python? (Choose all that apply.)",
+      "options": {
+        "a": "Multiple lines starting with `#`",
+        "b": "A docstring-style triple-quoted string used as a note",
+        "c": "`/* ... */` blocks",
+        "d": "`//` at the start of each line"
+      },
+      "hint": "Python’s real comments are `#` lines. Triple quotes can be used as docstrings/notes, but `/* */` and `//` are not Python."
+    },
+
+    "m0_comments_which_lines_are_comments": {
+      "title": "Find the comment lines",
+      "prompt": "Look at the lines below. Which lines are comments? (Choose all that apply.)\n\n1) `# Hello`\n2) `print(\"Hi\")`\n3) `x = 3  # set x`\n4) `#x = 10`\n",
+      "options": {
+        "a": "Line 1",
+        "b": "Line 2",
+        "c": "Line 3",
+        "d": "Line 4"
+      },
+      "hint": "A comment line starts with `#`. Code can also have an inline comment after it."
+    },
+
+    "m0_comments_disable_error_line": {
+      "title": "Fix by commenting out a line",
+      "prompt": "The program crashes because of one bad line.\n\nYour task:\n- Comment out the line that causes the error\n- Keep the other lines\n- The output should be:\n  - `Start`\n  - `End`\n",
+      "hint": "Put `#` at the start of the failing line (or delete the line)."
+    },
+
+    "m0_comments_disable_wrong_math_line": {
+      "title": "Disable the wrong math line",
+      "prompt": "The program computes a total correctly, then one extra line ruins it.\n\nYour task:\n- Comment out ONLY the wrong line\n- The program should print `12`\n",
+      "hint": "The `total = total + 100` line is the bug—comment it out."
+    }
+}}

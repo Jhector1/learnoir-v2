@@ -8,15 +8,22 @@ export const PY_SYNTAX_SECTION: Record<string, SketchEntry> = {
             specVersion: 1,
             title: "Syntax: The Rules of a Programming Language",
             bodyMarkdown: String.raw`
-Every programming language has a set of rules for how instructions must be written. These rules are called syntax.
+Every programming language has a set of rules that determine **how instructions must be written**.  
+These rules are called **syntax**.
 
-- Python has its own syntax
-- Java has its own syntax
-- C has its own syntax
+Just like spoken languages have **grammar rules**, programming languages have **syntax rules** that define how code must be structured so the computer can understand it.
 
-If you break the syntax rules, Python will produce a **SyntaxError**, and your program will stop because the computer can’t understand what you wrote.
+Each programming language has its own syntax:
 
-In this module, you’ll start getting comfortable with Python syntax, so you can write instructions clearly and confidently.
+- Python has its own syntax  
+- Java has its own syntax  
+- C has its own syntax  
+
+Even though many languages share similar ideas, the **exact way you write instructions** can be different in each language.
+
+If you break these syntax rules, Python will raise a **SyntaxError**, and the program will stop running because the **interpreter cannot understand the instruction**.
+
+In this module, you will begin getting comfortable with Python syntax so you can write **clear and correct instructions** for the computer to execute.
       `.trim(),
         },
     },

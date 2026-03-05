@@ -208,7 +208,7 @@ export default function ExerciseRenderer({
     // const lockInputs = readOnly || busy || ok === true || outOfAttempts;
 
 
-    const t = useTranslations("ExerciseRenderer");
+    // const t = useTranslations("ExerciseRenderer");
 
 
     const maxA =
@@ -225,13 +225,14 @@ export default function ExerciseRenderer({
         (current as any)?.result?.revealUsed ||
         (current as any)?.result?.revealAnswer
     );
-    const { t: tSafe } = useTaggedT(); // safe + no throw
+    // const { t: tSafe } = useTaggedT(); // safe + no throw
 
 // ✅ Translate tagged "@:..." in the whole exercise object once.
-// Literal strings remain untouched.
+    const { raw } = useTaggedT();
+
     const ex = useMemo(() => {
-        return resolveDeepTagged(exercise, (key) => tSafe(key, {}, "")) as Exercise;
-    }, [exercise, tSafe]);
+        return resolveDeepTagged(exercise, (key) => raw(key, "")) as Exercise;
+    }, [exercise, raw]);
 // ✅ ok should be null on reveal (prevents red/green UI)
     const ok: boolean | null =
         !isRevealResult && typeof (current as any).result?.ok === "boolean"

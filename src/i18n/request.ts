@@ -48,8 +48,14 @@ async function loadBundles(locale: string) {
         safeJsonImport(import(`./messages/${locale}/billing.json`)),
         safeJsonImport(import(`./messages/${locale}/authenticate.json`)),
         safeJsonImport(import(`./messages/${locale}/subjects.json`)),
+        safeJsonImport(import(`./messages/${locale}/missedQuestions.json`)),
+
         safeJsonImport(import(`./messages/${locale}/sketchBlockUi.json`)),
-        safeJsonImport(import(`./messages/${locale}/python_mod0.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/conditionals.json`)),
+
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module0/comments.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module0/computer_intro.json`)),
+
         safeJsonImport(import(`./messages/${locale}/quizblock.json`)),
         safeJsonImport(import(`./messages/${locale}/reviewNav.json`)),
 

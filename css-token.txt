@@ -1,544 +1,433 @@
 @layer components {
+
   /* =========================
-   * Buttons (home page ButtonLink)
+   * Base button
    * ========================= */
+
   .ui-btn {
-    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300/50 focus:ring-offset-0;
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition;
   }
+
+  /* focus ring (token based) */
+  .ui-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--ui-ring) / 0.35);
+  }
+
+
+
+  /* =========================
+   * Primary Button
+   * ========================= */
 
   .ui-btn-primary {
-    @apply bg-emerald-400 text-neutral-950 hover:bg-emerald-300;
+    background-color: rgb(var(--ui-accent) / 1);
+    color: rgb(var(--ui-text-invert) / 1);
   }
+
+  .ui-btn-primary:hover {
+    background-color: rgb(var(--ui-accent) / 0.85);
+  }
+
+  .ui-btn-primary:active {
+    transform: translateY(1px);
+  }
+
+
+
+  /* =========================
+   * Secondary Button
+   * ========================= */
 
   .ui-btn-secondary {
-    @apply border border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50;
+    border: 1px solid rgb(var(--ui-border) / 1);
+    background-color: rgb(var(--ui-surface) / 0.9);
+    color: rgb(var(--ui-text) / 0.92);
   }
 
-  .dark .ui-btn-secondary {
-    @apply border-white/10 bg-white/10 text-white hover:bg-white/[0.15];
+  .ui-btn-secondary:hover {
+    background-color: rgb(var(--ui-surface) / 0.7);
   }
+
+  .ui-btn-secondary:active {
+    transform: translateY(1px);
+  }
+
+
+
+  /* =========================
+   * Ghost Button
+   * ========================= */
 
   .ui-btn-ghost {
-    @apply text-neutral-700 hover:text-neutral-950;
+    color: rgb(var(--ui-text-muted) / 0.85);
   }
 
-  .dark .ui-btn-ghost {
-    @apply text-white/80 hover:text-white;
+  .ui-btn-ghost:hover {
+    color: rgb(var(--ui-text) / 0.95);
+    background-color: rgb(var(--ui-surface-2) / 0.7);
   }
-}
-@layer components {
+
+  .ui-btn-ghost:active {
+    transform: translateY(1px);
+  }
+
+
+
   /* =========================
-   * Drag Reorder tokens (final)
+   * Disabled
    * ========================= */
-  .ui-drag-zone {
-    @apply relative;
+
+  .ui-btn:disabled,
+  .ui-btn-disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
-  .ui-drag-chip {
-    @apply relative inline-flex items-center gap-2 rounded-xl border px-3 py-2;
-    @apply text-xs font-extrabold select-none transform-gpu;
-    @apply transition duration-150;
-    @apply border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50;
-    @apply shadow-sm;
+}@layer base {
+     :root {
+         /* =========================
+            BRAND COLORS
+         ========================= */
 
-    transition-property: background-color, border-color, box-shadow, transform, opacity;
-  }
+         --ui-accent: 16 185 129;   /* emerald */
+         --ui-info: 99 102 241;     /* indigo */
+         --ui-warn: 245 158 11;     /* amber/orange */
+         --ui-danger: 244 63 94;    /* rose/red */
 
-  .dark .ui-drag-chip {
-    @apply border-white/10 bg-white/[0.07] text-white/90 hover:bg-white/[0.11];
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
-  }
 
-  .ui-drag-chip--disabled {
-    @apply opacity-70 cursor-not-allowed;
-  }
+         /* =========================
+            TEXT
+         ========================= */
 
-  .ui-drag-chip--dragging {
-    @apply cursor-grabbing;
-  }
+         --ui-text: 17 24 39;       /* neutral-900 */
+         --ui-text-muted: 75 85 99; /* neutral-600 */
+         --ui-text-soft: 107 114 128;
+         --ui-text-invert: 255 255 255;
 
-  .ui-drag-chip--over {
-    @apply ring-2 ring-emerald-300/40;
-  }
 
-  .dark .ui-drag-chip--over {
-    @apply ring-emerald-300/25;
-  }
+         /* =========================
+            BACKGROUNDS
+         ========================= */
 
-  .ui-drag-handle {
-    @apply text-neutral-500;
-  }
+         --ui-bg: 255 255 255;      /* page background */
 
-  .dark .ui-drag-handle {
-    @apply text-white/60;
-  }
+         --ui-surface: 255 255 255; /* cards */
+         --ui-surface-2: 248 250 252; /* soft panels */
+         --ui-surface-3: 241 245 249; /* hover surfaces */
 
-  .ui-drag-indicator {
-    @apply pointer-events-none absolute top-1 bottom-1 w-1 rounded-full;
-    @apply bg-emerald-500/70;
-  }
+         --ui-hover: 241 245 249;
 
-  .dark .ui-drag-indicator {
-    @apply bg-emerald-300/40;
-  }
 
-  .ui-drag-indicator--before { @apply left-1; }
-  .ui-drag-indicator--after  { @apply right-1; }
+         /* =========================
+            BORDERS
+         ========================= */
 
-  .ui-drag-actions {
-    @apply inline-flex items-center gap-1;
-  }
+         --ui-border: 226 232 240;
+         --ui-border-soft: 241 245 249;
+         --ui-border-strong: 203 213 225;
 
-  @media (hover: hover) and (pointer: fine) {
-    .ui-drag-actions {
-      opacity: 0;
-      transition: opacity 150ms;
+
+         /* =========================
+            SHADOWS
+         ========================= */
+
+         --ui-shadow-soft: 0 1px 2px rgba(0,0,0,0.04);
+         --ui-shadow-md: 0 6px 16px rgba(0,0,0,0.08);
+         --ui-shadow-lg: 0 12px 30px rgba(0,0,0,0.12);
+
+
+         /* =========================
+            FOCUS
+         ========================= */
+
+         --ui-ring: var(--ui-accent);
+     }
+
+
+     /* =========================
+        DARK MODE
+     ========================= */
+
+     .dark {
+
+         /* text */
+
+         --ui-text: 255 255 255;
+         --ui-text-muted: 255 255 255;
+         --ui-text-soft: 255 255 255;
+
+
+         /* surfaces */
+
+         --ui-bg: 11 13 18;
+         --ui-surface: 21 26 44;
+         --ui-surface-2: 28 35 55;
+         --ui-surface-3: 36 44 66;
+
+         --ui-hover: 255 255 255;
+
+
+         /* borders */
+
+         --ui-border: 255 255 255;
+         --ui-border-soft: 255 255 255;
+         --ui-border-strong: 255 255 255;
+
+
+         /* shadows */
+
+         --ui-shadow-soft: 0 0 0 1px rgba(255,255,255,0.05);
+         --ui-shadow-md: 0 8px 30px rgba(0,0,0,0.35);
+         --ui-shadow-lg: 0 12px 40px rgba(0,0,0,0.45);
+
+
+         --ui-ring: var(--ui-accent);
+     }
+ }@layer components {
+    .ui-drag-chip {
+      @apply relative inline-flex items-center gap-2 rounded-xl border px-3 py-2;
+      @apply text-xs font-extrabold select-none transform-gpu transition duration-150;
+
+      /* replace @apply ui-border ui-surface ui-text */
+      border-color: rgb(var(--ui-border) / 1);
+      background-color: rgb(var(--ui-surface) / 0.90);
+      color: rgb(var(--ui-text) / 0.92);
+
+      box-shadow: var(--ui-shadow-soft);
+      transition-property: background-color, border-color, box-shadow, transform, opacity;
     }
-    .ui-drag-chip:hover .ui-drag-actions,
-    .ui-drag-chip:focus-within .ui-drag-actions {
-      opacity: 1;
+
+    .ui-drag-chip:hover {
+      background-color: rgb(var(--ui-surface-3) / 0.85);
     }
-  }
 
-  .ui-drag-actionbtn {
-    @apply rounded-md border px-2 py-1 text-[10px] font-black transition;
-    @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-40;
-  }
+    .ui-drag-chip:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px rgb(var(--ui-ring) / 0.35), var(--ui-shadow-soft);
+    }
 
-  .dark .ui-drag-actionbtn {
-    @apply border-white/10 bg-white/[0.07] text-white/80 hover:bg-white/[0.11];
-  }
-}
-@layer components {
-  /* =========================
-   * Header tokens (HeaderSlick)
-   * ========================= */
-  .ui-header-shell {
-    @apply border-b border-neutral-200 bg-white/40 backdrop-blur-md;
-  }
+    .ui-drag-handle {
+      color: rgb(var(--ui-text-muted) / 0.70);
+    }
 
-  .dark .ui-header-shell {
-    @apply border-white/10 bg-black/20;
-  }
+    .ui-drag-actionbtn {
+      @apply rounded-md border px-2 py-1 text-[10px] font-black transition disabled:opacity-40;
 
-  .ui-header-shell--elevated {
-    @apply bg-white/70 backdrop-blur-xl;
-  }
+      border-color: rgb(var(--ui-border) / 1);
+      background-color: rgb(var(--ui-surface) / 0.90);
+      color: rgb(var(--ui-text-muted) / 0.70);
+    }
 
-  .dark .ui-header-shell--elevated {
-    @apply bg-black/55;
-  }
+    .ui-drag-actionbtn:hover {
+      background-color: rgb(var(--ui-surface-3) / 0.85);
+      color: rgb(var(--ui-text) / 0.88);
+    }
+  }@layer utilities {
+       /* -------- text -------- */
+       .ui-text { color: rgb(var(--ui-text) / 0.92); }
+       .ui-text-muted { color: rgb(var(--ui-text-muted) / 0.70); }
 
-  .ui-navcard {
-    @apply relative rounded-2xl border p-1 border-neutral-200 bg-white shadow-sm;
-  }
+       /* semantic text */
+       .ui-text-accent { color: rgb(var(--ui-accent) / 0.95); }
+       .ui-text-info   { color: rgb(var(--ui-info) / 0.95); }
+       .ui-text-warn   { color: rgb(var(--ui-warn) / 0.95); }
+       .ui-text-danger { color: rgb(var(--ui-danger) / 0.95); }
 
-  .ui-navcard-unround {
-    @apply relative  border p-1 border-neutral-200 bg-white shadow-sm;
-  }
-  .dark .ui-navcard, .dark .ui-navcard-unround  {
-    @apply border-white/10 bg-white/[0.06];
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-  }
+       /* -------- borders -------- */
+       .ui-border { border-color: rgb(var(--ui-border) / 1); }
 
-  .ui-navglow {
-    @apply absolute inset-0 rounded-2xl;
-    background-image: radial-gradient(
-      900px 280px at 50% 0%,
-      rgba(0, 0, 0, 0.06) 0%,
-      transparent 60%
-    );
-  }
+       /* semantic borders */
+       .ui-border-accent { border-color: rgb(var(--ui-accent) / 0.30); }
+       .ui-border-info   { border-color: rgb(var(--ui-info) / 0.30); }
+       .ui-border-warn   { border-color: rgb(var(--ui-warn) / 0.30); }
+       .ui-border-danger { border-color: rgb(var(--ui-danger) / 0.30); }
 
-  .dark .ui-navglow {
-    background-image: radial-gradient(
-      900px 280px at 50% 0%,
-      rgba(255, 255, 255, 0.10) 0%,
-      transparent 60%
-    );
-  }
+       /* -------- surfaces -------- */
+       .ui-bg { background-color: rgb(var(--ui-bg) / 1); }
+       .ui-surface { background-color: rgb(var(--ui-surface) / 0.90); }
+       .ui-surface-2 { background-color: rgb(var(--ui-surface-2) / 0.75); }
 
-  /* ✅ FIX: no spaces inside [] in @apply */
-  .ui-navmarker {
-    @apply pointer-events-none absolute top-1 bottom-1 rounded-xl border transition-all duration-300 border-neutral-200 bg-neutral-100/80;
-    transition-property: transform, width;
-  }
+       /* semantic surface tints */
+       .ui-bg-accent-soft { background-color: rgb(var(--ui-accent) / 0.10); }
+       .ui-bg-info-soft   { background-color: rgb(var(--ui-info) / 0.10); }
+       .ui-bg-warn-soft   { background-color: rgb(var(--ui-warn) / 0.10); }
+       .ui-bg-danger-soft { background-color: rgb(var(--ui-danger) / 0.10); }
 
-  .dark .ui-navmarker {
-    @apply border-white/10 bg-white/10;
-  }
+       /* solid accents */
+       .ui-bg-accent { background-color: rgb(var(--ui-accent) / 1); }
+       .ui-bg-info   { background-color: rgb(var(--ui-info) / 1); }
+       .ui-bg-warn   { background-color: rgb(var(--ui-warn) / 1); }
+       .ui-bg-danger { background-color: rgb(var(--ui-danger) / 1); }
 
-  .ui-navlink {
-    @apply relative z-10 rounded-xl px-3 py-2 text-xs font-extrabold transition;
-  }
+       /* -------- focus ring -------- */
+       .ui-ring-focus {
+           outline: none;
+           box-shadow: 0 0 0 2px rgb(var(--ui-ring) / 0.35);
+       }
 
-  .ui-navlink--inactive {
-    @apply text-neutral-600 hover:text-neutral-900;
-  }
+       /* optional: only show ring on keyboard focus */
+       .ui-focus:focus-visible {
+           outline: none;
+           box-shadow: 0 0 0 2px rgb(var(--ui-ring) / 0.35);
+       }
+   }@layer components {
+      /* Base pill */
+      .ui-pill {
+        @apply inline-flex items-center rounded-full border px-2.5 py-1;
+        @apply text-[11px] font-extrabold leading-none;
+      }
 
-  .dark .ui-navlink--inactive {
-    @apply text-white/70 hover:text-white/90;
-  }
+      /* ---------- NEUTRAL ---------- */
+      .ui-pill--neutral {
+        border-color: rgb(var(--ui-border) / 0.80);
+        background-color: rgb(var(--ui-surface) / 0.70);
+        color: rgb(var(--ui-text-muted) / 0.90);
+      }
+      .dark .ui-pill--neutral {
+        border-color: rgb(var(--ui-border) / 0.10);
+        background-color: rgb(var(--ui-surface) / 0.06);
+        color: rgb(var(--ui-text) / 0.75);
+      }
 
-  .ui-navlink--active {
-    @apply text-neutral-900;
-  }
+      /* ---------- GOOD (accent/emerald) ---------- */
+      .ui-pill--good {
+        /* uses your --ui-accent */
+        border-color: rgb(var(--ui-accent) / 0.25);
+        background-color: rgb(var(--ui-accent) / 0.10);
+        color: rgb(var(--ui-text) / 0.95);
+      }
+      .dark .ui-pill--good {
+        border-color: rgb(var(--ui-accent) / 0.30);
+        background-color: rgb(var(--ui-accent) / 0.10);
+        color: rgb(var(--ui-text) / 0.90);
+      }
 
-  .dark .ui-navlink--active {
-    @apply text-white/95;
-  }
+      /* ---------- WARN (amber) ---------- */
+      .ui-pill--warn {
+        border-color: rgb(var(--ui-warn) / 0.25);
+        background-color: rgb(var(--ui-warn) / 0.10);
+        color: rgb(var(--ui-text) / 0.95);
+      }
+      .dark .ui-pill--warn {
+        border-color: rgb(var(--ui-warn) / 0.30);
+        background-color: rgb(var(--ui-warn) / 0.10);
+        color: rgb(var(--ui-text) / 0.90);
+      }
 
-  .ui-cta {
-    @apply rounded-2xl border px-3 py-2 text-xs font-extrabold active:translate-y-[1px] transition border-emerald-600/25 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/15;
-  }
+      /* Optional: INFO / DANGER if you want them */
+      .ui-pill--info {
+        border-color: rgb(var(--ui-info) / 0.25);
+        background-color: rgb(var(--ui-info) / 0.10);
+        color: rgb(var(--ui-text) / 0.95);
+      }
+      .dark .ui-pill--info {
+        border-color: rgb(var(--ui-info) / 0.30);
+        background-color: rgb(var(--ui-info) / 0.10);
+        color: rgb(var(--ui-text) / 0.90);
+      }
 
-  .dark .ui-cta {
-    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90 hover:bg-emerald-300/15;
-  }
+      .ui-pill--danger {
+        border-color: rgb(var(--ui-danger) / 0.25);
+        background-color: rgb(var(--ui-danger) / 0.10);
+        color: rgb(var(--ui-text) / 0.95);
+      }
+      .dark .ui-pill--danger {
+        border-color: rgb(var(--ui-danger) / 0.30);
+        background-color: rgb(var(--ui-danger) / 0.10);
+        color: rgb(var(--ui-text) / 0.90);
+      }
+    }@layer components {
+         /* =========================
+          * Portal Tooltip (theme-aware)
+          * ========================= */
+         .ui-tooltip {
 
-  .ui-authbtn {
-    @apply rounded-2xl border px-3 py-2 text-xs font-extrabold transition border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50;
-  }
+             @apply pointer-events-none fixed z-[9999];
+             @apply rounded-2xl border px-2 py-1;
+             @apply text-[11px] font-extrabold shadow-lg;
+             @apply border-neutral-200 bg-white text-neutral-800;
+         }
 
-  .dark .ui-authbtn {
-    @apply border-white/10 bg-white/[0.06] text-white/85 hover:bg-white/[0.10];
-  }
+         .dark .ui-tooltip {
+             @apply border-white/10 bg-black/80 text-white/90;
+         }
 
-  .ui-mobilebtn {
-    @apply md:hidden rounded-2xl border px-3 py-2 text-xs font-extrabold transition border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
-  }
+         .ui-tooltip-arrow {
+             @apply absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45;
+             @apply border border-neutral-200 bg-white;
+         }
 
-  .dark .ui-mobilebtn {
-    @apply border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10];
-  }
+         .dark .ui-tooltip-arrow {
+             @apply border-white/10 bg-black/80;
+         }
 
-  .ui-mobileitem {
-    @apply rounded-2xl border px-3 py-3 text-sm font-extrabold transition;
-  }
+         .ui-tooltip--below-lg {
+             @apply lg:hidden; /* ✅ tooltip shows only when <lg */
+         }
 
-  .ui-mobileitem--active {
-    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
-  }
-
-  .dark .ui-mobileitem--active {
-    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
-  }
-
-  .ui-mobileitem--idle {
-    @apply border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50;
-  }
-
-  .dark .ui-mobileitem--idle {
-    @apply border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.08];
-  }
-
-  .ui-bottomline {
-    @apply h-px w-full;
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      rgba(16, 185, 129, 0.45),
-      rgba(99, 102, 241, 0.35),
-      transparent
-    );
-  }
-
-  .dark .ui-bottomline {
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      rgba(122, 162, 255, 0.45),
-      rgba(255, 107, 214, 0.35),
-      transparent
-    );
-  }
-
-  /* =========================
-     * Tooltips (icon-only on xs)
+     }
+ v@layer components {
+    /* =========================
+     * Layout
      * ========================= */
-
-  /* Wrap any button/content that should show a tooltip on hover/focus */
-  .ui-tipwrap {
-    @apply relative overflow-visible group;
-  }
-
-  /* Tooltip bubble (ONLY on xs; hidden on sm+) */
-  .ui-tip {
-    @apply pointer-events-none absolute left-1/2 top-full z-50 mt-2;
-    @apply -translate-x-1/2 whitespace-nowrap;
-    @apply rounded-2xl border px-2 py-1 text-[11px] font-extrabold shadow-lg;
-    @apply opacity-0 translate-y-1 transition;
-    @apply border-neutral-200 bg-white text-neutral-800;
-    @apply dark:border-white/10 dark:bg-black/80 dark:text-white/90;
-    @apply sm:hidden; /* ✅ only show tooltip in icon-only breakpoint */
-  }
-
-  /* Show on hover/focus */
-  .ui-tipwrap:hover .ui-tip,
-  .ui-tipwrap:focus-within .ui-tip,
-  .ui-tipwrap:focus-visible .ui-tip {
-    @apply opacity-100 translate-y-0;
-  }
-
-  /* Optional: don't show tooltips on touch-only devices */
-  @media (hover: none) {
-    .ui-tip {
-      display: none;
+    .ui-container {
+      @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
     }
   }
+/* modular UI tokens */
+@import "./ui/colors.css";
+@import "./ui/palette.css";
 
+@import "./ui/layout.css";
+@import "./ui/surfaces.css";
+@import "./ui/typography.css";
+@import "./ui/buttons.css";
+@import "./ui/header.css";
+@import "./ui/menus.css";
+@import "./ui/pills.css";
+@import "./ui/subjects.css";
+@import "./ui/quiz.css";
+@import "./ui/sketch.css";
+@import "./ui/drag.css";
+@import "./ui/ide.css";
+@import "./ui/codeRunner.css";
+@import "./ui/reviewModuleSkeleton.css";
+@import "./ui/tooltip.css";
 
-}
+@layer base {
+    html { font-size: var(--app-font-size, 16px); }
 
-@layer components {
-  /* =========================
-   * Layout
-   * ========================= */
-  .ui-container {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
-  }
-}
-@layer components {
-  /* =========================
-   * Sketch tokens (review sketches)
-   * ========================= */
-  .ui-sketch-grid {
-    @apply grid gap-3;
-  }
+    :root {
+        --app-bg: #ffffff;
+        --app-bg-ink: #f6f7ff;
+    }
 
-  .ui-sketch-panel {
-    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm p-4;
-  }
-
-  .dark .ui-sketch-panel {
-    @apply border-white/10 bg-white/[0.03];
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
-  }
-
-  .ui-sketch-label {
-    @apply text-xs font-extrabold text-neutral-600;
-  }
-
-  .dark .ui-sketch-label {
-    @apply text-white/60;
-  }
-
-  .ui-sketch-chip {
-    @apply rounded-xl border px-3 py-1 text-xs font-extrabold transition;
-  }
-
-  .ui-sketch-chip--idle {
-    @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
-  }
-
-  .dark .ui-sketch-chip--idle {
-    @apply border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10];
-  }
-
-  .ui-sketch-chip--active-sky {
-    @apply border-sky-300/60 bg-sky-50 text-sky-950;
-  }
-
-  .dark .ui-sketch-chip--active-sky {
-    @apply border-sky-300/30 bg-sky-300/10 text-white/90;
-  }
-
-  .ui-sketch-chip--active-rose {
-    @apply border-rose-300/60 bg-rose-50 text-rose-950;
-  }
-
-  .dark .ui-sketch-chip--active-rose {
-    @apply border-rose-300/30 bg-rose-300/10 text-white/90;
-  }
-
-  .ui-sketch-chip--active-emerald {
-    @apply border-emerald-600/25 bg-emerald-500/10 text-emerald-950;
-  }
-
-  .dark .ui-sketch-chip--active-emerald {
-    @apply border-emerald-300/30 bg-emerald-300/10 text-white/90;
-  }
-
-  .ui-sketch-input {
-    @apply mt-1 w-full rounded-xl border px-3 py-2 text-xs font-extrabold outline-none transition border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300;
-  }
-
-  .dark .ui-sketch-input {
-    @apply border-white/10 bg-white/[0.06] text-white/90 placeholder:text-white/35 focus:border-white/20;
-  }
-
-  .ui-sketch-codeblock {
-    @apply rounded-2xl border p-3 border-neutral-200 bg-neutral-50;
-  }
-
-  .dark .ui-sketch-codeblock {
-    @apply border-white/10 bg-black/30;
-  }
-
-  .ui-sketch-code {
-    @apply mt-2 whitespace-pre-wrap text-xs text-neutral-800;
-  }
-
-  .dark .ui-sketch-code {
-    @apply text-white/85;
-  }
-
-  .ui-sketch-muted {
-    @apply text-xs text-neutral-500;
-  }
-
-  .dark .ui-sketch-muted {
-    @apply text-white/50;
-  }
-
-  /* MathMarkdown default */
-  .ui-math {
-    @apply text-sm text-neutral-700;
-  }
-
-  .dark .ui-math {
-    @apply text-white/80;
-  }
-
-  .dark .ui-math .katex {
-    @apply text-white/90;
-  }
+    .dark {
+        --app-bg: #0b0d12;
+        --app-bg-ink: #151a2c;
+    }
 }
 @layer components {
-  /* =========================
-   * SubjectPicker + SubjectTile tokens
-   * ========================= */
-  .ui-surface {
-    @apply relative overflow-hidden rounded-3xl border border-neutral-200/70 bg-white shadow-sm;
-  }
+    .ui-playground-bg {
+        @apply min-h-screen p-3 md:p-4 text-neutral-900;
+        background: radial-gradient(1200px 700px at 20% 0%, #eef2ff 0%, #f8fafc 55%);
+    }
+    .dark .ui-playground-bg {
+        @apply text-white/90;
+        background: radial-gradient(1200px 700px at 20% 0%, #151a2c 0%, #0b0d12 55%);
+    }
 
-  .dark .ui-surface {
-    @apply border-white/10 bg-neutral-950/60;
-  }
-
-  .ui-surface-head {
-    @apply relative border-b border-neutral-200/70 bg-white/70 p-6 backdrop-blur-xl;
-  }
-
-  .dark .ui-surface-head {
-    @apply border-white/10 bg-black/20;
-  }
-
-  .ui-search-overlay {
-    @apply pointer-events-none absolute inset-0 rounded-2xl;
-  }
-
-  .ui-search-input {
-    @apply relative w-full rounded-2xl border px-4 py-3 text-sm font-extrabold outline-none transition border-neutral-200/80 bg-white/80 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:bg-white;
-  }
-
-  .dark .ui-search-input {
-    @apply border-white/10 bg-black/30 text-white/90 placeholder:text-white/35 focus:border-white/20 focus:bg-black/40;
-  }
-
-  .ui-tile {
-    @apply text-left overflow-hidden rounded-3xl border transition border-neutral-200/70 bg-white/80 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0;
-  }
-
-  .dark .ui-tile {
-    @apply border-white/10 bg-white/[0.04] shadow-none hover:bg-white/[0.06];
-  }
-
-  .ui-tile--disabled {
-    @apply opacity-60 cursor-not-allowed hover:translate-y-0;
-  }
-
-  .ui-tile-chip {
-    @apply mt-0.5 h-8 w-8 rounded-2xl border border-neutral-200/70 bg-white/70 shadow-sm;
-  }
-
-  .dark .ui-tile-chip {
-    @apply border-white/10 bg-white/[0.06];
-  }
+    .ui-app-shell {
+        min-height: 100dvh; /* nicer on mobile */
+        color: rgb(17 24 39);
+        background: radial-gradient(
+                1200px 700px at 20% 0%,
+                var(--app-bg-ink) 0%,
+                var(--app-bg) 55%
+        );
+    }
+    .dark .ui-app-shell {
+        color: rgba(255, 255, 255, 0.9);
+    }
 }
-@layer components {
-  /* =========================
-   * Surfaces
-   * ========================= */
-  .ui-card {
-    @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
-  }
-
-  .dark .ui-card {
-    @apply border-white/10 bg-white/[0.03];
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
-  }
-
-  .ui-soft {
-    @apply rounded-xl border border-neutral-200 bg-neutral-50;
-  }
-
-  .dark .ui-soft {
-    @apply border-white/10 bg-neutral-900/40;
-  }
-
-  /* Home pills */
-  .ui-home-pill {
-    @apply inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-700;
-  }
-
-  .dark .ui-home-pill {
-    @apply border-white/10 bg-white/5 text-white/80;
-  }
-}
-@layer components {
-  /* =========================
-   * Section text
-   * ========================= */
-  .ui-section-kicker {
-    @apply mb-2 text-xs font-semibold tracking-wider text-emerald-700;
-  }
-
-  .dark .ui-section-kicker {
-    @apply text-emerald-300/90;
-  }
-
-  .ui-section-title {
-    @apply text-2xl font-semibold text-neutral-900 sm:text-3xl;
-  }
-
-  .dark .ui-section-title {
-    @apply text-white;
-  }
-
-  .ui-section-subtitle {
-    @apply mt-3 max-w-2xl text-sm leading-6 text-neutral-600 sm:text-base;
-  }
-
-  .dark .ui-section-subtitle {
-    @apply text-white/70;
-  }
-}@layer components {
-   /* =========================
-    * Portal Tooltip (theme-aware)
-    * ========================= */
-   .ui-tooltip {
-     @apply pointer-events-none fixed z-[9999];
-     @apply rounded-2xl border px-2 py-1;
-     @apply text-[11px] font-extrabold shadow-lg;
-     @apply border-neutral-200 bg-white text-neutral-800;
-   }
-
-   .dark .ui-tooltip {
-     @apply border-white/10 bg-black/80 text-white/90;
-   }
-
-   .ui-tooltip-arrow {
-     @apply absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45;
-     @apply border border-neutral-200 bg-white;
-   }
-
-   .dark .ui-tooltip-arrow {
-     @apply border-white/10 bg-black/80;
-   }
-
-   .ui-tooltip--xs-only {
-     @apply sm:hidden; /* optional: only show tooltip on xs */
-   }
- }
-

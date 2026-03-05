@@ -1,13 +1,35 @@
-// src/lib/practice/generator/engines/python/python_part1_mod1/topics/conditionals_basics.ts
-import type { CodeInputExercise } from "../../../../../types";
-import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, safeInt, pickName, terminalFence } from "../../_shared";
+import {
+    defineTopic,
+    type Handler,
+    type TopicBundle,
+    type HandlerArgs,
+    makeSingleChoiceOut,
+    makeMultiChoiceOut,
+    makeCodeInputOut,
+} from "@/lib/practice/generator/engines/utils";
 
+import { makeCodeExpected, safeInt, pickName } from "../../_shared";
+import type { ExerciseKind } from "@/lib/practice/types";
+import type { GenOut } from "@/lib/practice/generator/shared/expected";
+
+// -----------------------------
+// Pool
+// -----------------------------
 export const M2_CONDITIONALS_POOL = [
+    // project (code_input)
     { key: "m2_cond_age_gate_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m2_cond_member_discount_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m2_cond_password_check_code", w: 1, kind: "code_input", purpose: "project" },
-    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice", purpose: "project" },
+
+    // quiz
+    { key: "m2_cond_elif_meaning_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m2_cond_indent_matters_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m2_cond_elif_order_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m2_cond_comparison_vs_assignment_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m2_cond_and_or_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    { key: "m2_cond_falsey_values_mc", w: 1, kind: "multi_choice", purpose: "quiz" },
+    { key: "m2_cond_logical_ops_mc", w: 1, kind: "multi_choice", purpose: "quiz" },
 ] as const;
 
 export type M2ConditionalsKey = (typeof M2_CONDITIONALS_POOL)[number]["key"];
@@ -18,180 +40,175 @@ function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
     return x;
 }
 
+function Q(key: M2ConditionalsKey) {
+    return `quiz.${key}`;
+}
+
+// -----------------------------
+// Helpers
+// -----------------------------
+type OptId = "a" | "b" | "c" | "d";
+type AnyOut = GenOut<ExerciseKind>;
+
+function buildOptions(key: M2ConditionalsKey, ids: OptId[]) {
+    return ids.map((id) => ({
+        id,
+        text: `@:${Q(key)}.options.${id}`,
+    }));
+}
+
+function sc(
+    key: M2ConditionalsKey,
+    answerOptionId: OptId,
+    optionIds: OptId[] = ["a", "b", "c"]
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
+        makeSingleChoiceOut({
+            archetype: key,
+            id,
+            topic,
+            diff,
+            title: `@:${Q(key)}.title`,
+            prompt: `@:${Q(key)}.prompt`,
+            options: buildOptions(key, optionIds),
+            answerOptionId,
+            hint: `@:${Q(key)}.hint`,
+        }) as unknown as AnyOut; // ✅ widen invariant GenOut
+}
+
+function mc(
+    key: M2ConditionalsKey,
+    answerOptionIds: OptId[],
+    optionIds: OptId[] = ["a", "b", "c", "d"]
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
+        makeMultiChoiceOut({
+            archetype: key,
+            id,
+            topic,
+            diff,
+            title: `@:${Q(key)}.title`,
+            prompt: `@:${Q(key)}.prompt`,
+            options: buildOptions(key, optionIds),
+            answerOptionIds,
+            hint: `@:${Q(key)}.hint`,
+        }) as unknown as AnyOut; // ✅ widen invariant GenOut
+}
+
+// -----------------------------
+// Handlers
+// -----------------------------
 export const M2_CONDITIONALS_HANDLERS: Record<M2ConditionalsKey, Handler> = {
-    m2_cond_age_gate_code: ({ rng, diff, id, topic }) => {
+    // project: code_input
+    m2_cond_age_gate_code: ({ rng, diff, id, topic }: HandlerArgs) => {
         const a1 = safeInt(rng, 12, 17);
         const a2 = safeInt(rng, 18, 30);
 
-        const exStdin = `${a1}\n`;
-        const exStdout = `DENIED\n`;
-
-        const exercise: CodeInputExercise = {
+        return makeCodeInputOut({
+            archetype: "m2_cond_age_gate_code",
             id,
             topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Snack Shop Gate: adult or minor",
-            prompt: String.raw`
-Story: you’re building a kiosk at a snack shop. Some items are 18+.
-
-Read **ONE integer** age.
-
-If age >= 18 print:
-ALLOWED
-
-Else print:
-DENIED
-
-${terminalFence(exStdin, exStdout)}
-`.trim(),
+            diff,
+            title: `@:${Q("m2_cond_age_gate_code")}.title`,
+            prompt: `@:${Q("m2_cond_age_gate_code")}.prompt`,
+            hint: `@:${Q("m2_cond_age_gate_code")}.hint`,
             language: "python",
             starterCode: String.raw`age = int(input())
 # TODO: if/else
 # TODO: print ALLOWED or DENIED
-`,
-            hint: "Use: if age >= 18: ... else: ...",
-        };
-
-        const expected = makeCodeExpected({
-            language: "python",
-            tests: [
-                { stdin: `${a1}\n`, stdout: `DENIED\n`, match: "exact" },
-                { stdin: `${a2}\n`, stdout: `ALLOWED\n`, match: "exact" },
-            ],
-            solutionCode: `age = int(input())\nprint("ALLOWED" if age >= 18 else "DENIED")\n`,
-        });
-
-        return { archetype: "m2_cond_age_gate_code", exercise, expected };
+`.trim(),
+            expected: makeCodeExpected({
+                language: "python",
+                tests: [
+                    { stdin: `${a1}\n`, stdout: `DENIED\n`, match: "exact" },
+                    { stdin: `${a2}\n`, stdout: `ALLOWED\n`, match: "exact" },
+                ],
+                solutionCode: `age = int(input())\nprint("ALLOWED" if age >= 18 else "DENIED")\n`,
+            }),
+            editorHeight: 360,
+        }) as unknown as AnyOut; // ✅ widen
     },
 
-    m2_cond_member_discount_code: ({ rng, diff, id, topic }) => {
+    m2_cond_member_discount_code: ({ rng, diff, id, topic }: HandlerArgs) => {
         const subtotal1 = safeInt(rng, 10, 200);
         const subtotal2 = pickDifferentInt(rng, 10, 200, subtotal1);
-
-        const flag1 = "y";
-        const flag2 = "n";
-
         const totalMember = (s: number) => s - Math.floor((s * 10) / 100);
 
-        const exStdin = `${subtotal1}\n${flag1}\n`;
-        const exStdout = `Total = ${totalMember(subtotal1)}\n`;
-
-        const exercise: CodeInputExercise = {
+        return makeCodeInputOut({
+            archetype: "m2_cond_member_discount_code",
             id,
             topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Snack Shop Discount: member saves 10%",
-            prompt: String.raw`
-Story: the snack shop gives members a 10% discount.
-
-Read TWO inputs:
-1) subtotal (integer dollars)
-2) member flag (y/n)
-
-Rules:
-- if member is "y" (or "Y"), apply 10% discount using integer math
-- otherwise no discount
-
-Print exactly:
-Total = <total>
-
-${terminalFence(exStdin, exStdout)}
-`.trim(),
+            diff,
+            title: `@:${Q("m2_cond_member_discount_code")}.title`,
+            prompt: `@:${Q("m2_cond_member_discount_code")}.prompt`,
+            hint: `@:${Q("m2_cond_member_discount_code")}.hint`,
             language: "python",
             starterCode: String.raw`subtotal = int(input())
 member = input().strip()
 # TODO: apply discount if member is y/Y
 # TODO: print Total = <total>
-`,
-            hint: `Use: member.lower() == "y" and discount = subtotal * 10 // 100`,
-        };
-
-        const expected = makeCodeExpected({
-            language: "python",
-            tests: [
-                { stdin: `${subtotal1}\n${flag1}\n`, stdout: `Total = ${totalMember(subtotal1)}\n`, match: "exact" },
-                { stdin: `${subtotal2}\n${flag2}\n`, stdout: `Total = ${subtotal2}\n`, match: "exact" },
-            ],
-            solutionCode:
-                `subtotal = int(input())\n` +
-                `member = input().strip().lower()\n` +
-                `total = subtotal\n` +
-                `if member == "y":\n` +
-                `    total = subtotal - (subtotal * 10 // 100)\n` +
-                `print(f"Total = {total}")\n`,
-        });
-
-        return { archetype: "m2_cond_member_discount_code", exercise, expected };
+`.trim(),
+            expected: makeCodeExpected({
+                language: "python",
+                tests: [
+                    { stdin: `${subtotal1}\ny\n`, stdout: `Total = ${totalMember(subtotal1)}\n`, match: "exact" },
+                    { stdin: `${subtotal2}\nn\n`, stdout: `Total = ${subtotal2}\n`, match: "exact" },
+                ],
+                solutionCode:
+                    `subtotal = int(input())\n` +
+                    `member = input().strip().lower()\n` +
+                    `total = subtotal\n` +
+                    `if member == "y":\n` +
+                    `    total = subtotal - (subtotal * 10 // 100)\n` +
+                    `print(f"Total = {total}")\n`,
+            }),
+            editorHeight: 420,
+        }) as unknown as AnyOut; // ✅ widen
     },
 
-    m2_cond_password_check_code: ({ rng, diff, id, topic }) => {
+    m2_cond_password_check_code: ({ rng, diff, id, topic }: HandlerArgs) => {
         const correct = "letmein";
         const wrong = pickName(rng);
 
-        const exStdin = `${correct}\n`;
-        const exStdout = `Logged in\n`;
-
-        const exercise: CodeInputExercise = {
+        return makeCodeInputOut({
+            archetype: "m2_cond_password_check_code",
             id,
             topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Kiosk Login: password check",
-            prompt: String.raw`
-Story: the kiosk has an admin mode.
-
-Read ONE input password.
-
-If password == "letmein" print:
-Logged in
-
-Else print:
-Wrong password
-
-${terminalFence(exStdin, exStdout)}
-`.trim(),
+            diff,
+            title: `@:${Q("m2_cond_password_check_code")}.title`,
+            prompt: `@:${Q("m2_cond_password_check_code")}.prompt`,
+            hint: `@:${Q("m2_cond_password_check_code")}.hint`,
             language: "python",
             starterCode: String.raw`pw = input().strip()
 # TODO: compare pw
 # TODO: print Logged in or Wrong password
-`,
-            hint: `Use == (comparison), not = (assignment).`,
-        };
-
-        const expected = makeCodeExpected({
-            language: "python",
-            tests: [
-                { stdin: `${correct}\n`, stdout: `Logged in\n`, match: "exact" },
-                { stdin: `${wrong}\n`, stdout: `Wrong password\n`, match: "exact" },
-            ],
-            solutionCode: `pw = input().strip()\nprint("Logged in" if pw == "letmein" else "Wrong password")\n`,
-        });
-
-        return { archetype: "m2_cond_password_check_code", exercise, expected };
+`.trim(),
+            expected: makeCodeExpected({
+                language: "python",
+                tests: [
+                    { stdin: `${correct}\n`, stdout: `Logged in\n`, match: "exact" },
+                    { stdin: `${wrong}\n`, stdout: `Wrong password\n`, match: "exact" },
+                ],
+                solutionCode: `pw = input().strip()\nprint("Logged in" if pw == "letmein" else "Wrong password")\n`,
+            }),
+            editorHeight: 360,
+        }) as unknown as AnyOut; // ✅ widen
     },
 
-    m2_cond_elif_meaning_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m2_cond_elif_meaning_sc",
-            id,
-            topic,
-            diff,
-            title: "`elif` meaning",
-            prompt: "In Python, `elif` is best described as:",
-            options: [
-                { id: "a", text: "A loop that repeats code" },
-                { id: "b", text: "An 'else if' branch (another condition to test)" },
-                { id: "c", text: "A way to import libraries" },
-            ],
-            answerOptionId: "b",
-            hint: "`elif` = else if (check another condition).",
-        }),
+    // quiz: single_choice
+    m2_cond_elif_meaning_sc: sc("m2_cond_elif_meaning_sc", "b", ["a", "b", "c"]),
+    m2_cond_indent_matters_sc: sc("m2_cond_indent_matters_sc", "c", ["a", "b", "c", "d"]),
+    m2_cond_elif_order_sc: sc("m2_cond_elif_order_sc", "b", ["a", "b", "c"]),
+    m2_cond_comparison_vs_assignment_sc: sc("m2_cond_comparison_vs_assignment_sc", "a", ["a", "b", "c", "d"]),
+    m2_cond_and_or_sc: sc("m2_cond_and_or_sc", "b", ["a", "b", "c"]),
+
+    // quiz: multi_choice
+    m2_cond_falsey_values_mc: mc("m2_cond_falsey_values_mc", ["a", "b", "c"], ["a", "b", "c", "d"]),
+    m2_cond_logical_ops_mc: mc("m2_cond_logical_ops_mc", ["a", "b", "c"], ["a", "b", "c", "d"]),
 };
 
 export const M2_CONDITIONALS_TOPIC: TopicBundle = defineTopic(
     "conditionals_basics",
     M2_CONDITIONALS_POOL as any,
-    M2_CONDITIONALS_HANDLERS as any,
+    M2_CONDITIONALS_HANDLERS as any
 );

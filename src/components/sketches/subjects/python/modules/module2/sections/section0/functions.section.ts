@@ -19,57 +19,115 @@ You’ve been building bigger and bigger programs:
 - repetition (loops)  
 - collections (lists)
 
-At some point, you usually hit this pain:
+At some point you hit the same problem:
 
-> “I keep writing the same logic again.”
+> “I keep rewriting the same steps.”
 
-That’s the signal you’re ready for **functions**.
+That’s the moment functions become useful.
 
-A function is like a small machine:
+A **function** is a small reusable machine:
 
-- you **give it inputs**
-- it **does a job**
-- it can **give you an output**
+- it can take **inputs**
+- it performs a **job**
+- it can produce an **output**
 
-You can run the same “machine” many times without rewriting the logic.
+Once the machine exists, you can run it as many times as you want without rewriting the logic.
+
+---
+
+## The problem: repeated code (hard to maintain)
+
+Here’s an example of code that repeats itself.
+
+It works… but it’s not practical:
+
+~~~python
+# Calculate totals for 3 different customers
+
+bill1 = float(input("Customer 1 bill: "))
+tip1 = bill1 * 0.15
+total1 = bill1 + tip1
+print("Customer 1 total:", total1)
+
+bill2 = float(input("Customer 2 bill: "))
+tip2 = bill2 * 0.15
+total2 = bill2 + tip2
+print("Customer 2 total:", total2)
+
+bill3 = float(input("Customer 3 bill: "))
+tip3 = bill3 * 0.15
+total3 = bill3 + tip3
+print("Customer 3 total:", total3)
+~~~
+
+Why this is a problem:
+
+- it’s long and repetitive
+- if you want to change the tip rate, you must change it in multiple places
+- repeated logic increases bugs (you might fix one spot and forget another)
+
+---
+
+## The solution: one function, used many times
+
+Instead of repeating the same steps, build a reusable machine:
+
+~~~python
+def total_with_tip(bill, tip_rate):
+    tip = bill * tip_rate
+    return bill + tip
+~~~
+
+Now the main program becomes clean:
+
+~~~python
+bill1 = float(input("Customer 1 bill: "))
+print("Customer 1 total:", total_with_tip(bill1, 0.15))
+
+bill2 = float(input("Customer 2 bill: "))
+print("Customer 2 total:", total_with_tip(bill2, 0.15))
+
+bill3 = float(input("Customer 3 bill: "))
+print("Customer 3 total:", total_with_tip(bill3, 0.15))
+~~~
+
+Now if you change the tip rule, you change it **once** inside the function.
 
 ---
 
 ## You already used functions (built-in)
 
-You already used built-in functions—functions that come with Python.
+You’ve already been calling functions this whole time:
 
-**Keep this in mind:** we talked about these already, and I promise we’ll go deeper into them later.  
-For now, we’re learning the *magic of functions* by understanding how they work and how to make our own.
+- \`print(...)\` displays output
+- \`input(...)\` asks the user a question
+- \`type(...)\` reports a value’s type
+- \`len(...)\` counts items in a list or string
 
-- \`print(...)\` shows output
-- \`input(...)\` asks a question
-- \`type(...)\` checks a type
-- \`len(...)\` counts items
+These are **built-in functions** (Python gives them to you).
 
-Yes—these are functions. They’re called **built-in functions** because Python provides them for you.  
-There are many more built-in functions, but for now we’ll focus on building our own **user-defined functions**.
+Now we’ll learn to write our own: **user-defined functions**.
 
 ---
 
 ## Defining a function
 
-A function definition has:
+A function definition includes:
 
 - the keyword \`def\`
-- a **name**
+- a function **name**
 - parentheses \`( )\` for parameters
-- a colon \`: \`
-- an indented body
+- a colon \`:\`
+- an indented body (the steps the function runs)
 
 ~~~python
 def greet():
     print("Hello!")
 ~~~
 
-### Calling it
+### Calling a function
 
-Calling (running) the function means writing its name with parentheses:
+To run the function, write its name followed by parentheses:
 
 ~~~python
 greet()
@@ -90,14 +148,12 @@ greet()
 
 ---
 
-## Parameters vs. arguments (very important)
+## Parameters vs. arguments (important)
 
-People mix these up at first—here’s the clean rule:
+This is a common confusion. Here’s the rule:
 
-- **Parameters** are the *names* inside the function definition.
-- **Arguments** are the *actual values* you pass in when calling the function.
-
-Example:
+- **Parameters** are the names inside the function definition.
+- **Arguments** are the real values you pass in when you call the function.
 
 ~~~python
 def greet(name):        # name is a PARAMETER
@@ -107,8 +163,7 @@ greet("Maya")           # "Maya" is an ARGUMENT
 greet("Ayo")            # "Ayo" is an ARGUMENT
 ~~~
 
-### Why parameters matter
-Parameters let your function become flexible instead of hard-coded.
+Parameters make your function flexible instead of hard-coded.
 
 ---
 
@@ -124,12 +179,12 @@ greet(name)
 
 ---
 
-## Return values (output you can *use*)
+## Return values: output you can *use*
 
-Sometimes you don’t want to **print** inside a function.
+Sometimes you want a function to produce a value for the rest of your program.
 
-- \`print()\` shows something to the user, but it does **not** give a value back to your program.
-- \`return\` sends a value back to the caller so you can store it, combine it, or use it in expressions.
+- \`print()\` shows something to the user, but it does **not** give a usable value back.
+- \`return\` sends a value back to the caller.
 
 ~~~python
 def add(a, b):
@@ -139,10 +194,10 @@ result = add(10, 5)
 print("result =", result)
 ~~~
 
-### What does \`return\` do?
-When Python hits \`return\`:
-1) it immediately ends the function  
-2) it sends the returned value back to the line that called the function  
+When Python reaches \`return\`:
+
+1) the function stops immediately  
+2) the value is sent back to the line that called it  
 
 ---
 
@@ -160,10 +215,9 @@ print(f"x + y = {add(x, y)}")
 
 ---
 
-## A practical refactor (tip calculator)
+## A practical refactor: tip calculator (full)
 
-Earlier, you wrote tip math directly in your program.
-Now we turn that logic into a reusable machine:
+Here’s the same idea using tip percent (like a real checkout):
 
 ~~~python
 def total_with_tip(bill, tip_percent):
@@ -181,16 +235,11 @@ total = total_with_tip(bill, tip_percent)
 print(f"Total = {total}")
 ~~~
 
-### Why this is better
-- You can reuse \`total_with_tip\` anywhere (even in a bigger app).
-- Your main program becomes easier to read.
-- You can test the function by itself.
-
 ---
 
-## Scope (very light, but crucial)
+## Scope (light but important)
 
-Variables created inside a function live **only** inside that function.
+Variables created inside a function exist only inside that function.
 
 ~~~python
 def demo():
@@ -200,18 +249,18 @@ def demo():
 demo()
 ~~~
 
-That \`x\` does not “leak out” to the rest of the program.
+That \`x\` does not exist outside the function.
 
-For Module 0, remember this simple rule:
+For now, remember:
 
-✅ **What happens inside the function stays inside the function**  
+✅ What happens inside the function stays inside the function  
 (unless you \`return\` something).
 
 ---
 
 ## What you unlocked
 
-Functions let you:
+Functions help you:
 
 - avoid repeating code
 - write cleaner programs

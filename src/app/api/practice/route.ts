@@ -1,6 +1,6 @@
 // src/app/api/practice/route.ts
 import { prisma } from "@/lib/prisma";
-import { attachGuestCookie } from "@/lib/practice/actor";
+import {actorKeyOf, attachGuestCookie} from "@/lib/practice/actor";
 
 import { GetParamsSchema } from "@/lib/practice/api/practiceGet/schemas";
 import { withGuestCookie } from "@/lib/practice/api/practiceGet/response";
@@ -33,12 +33,14 @@ function hardenResponse(res: Response) {
 }
 
 function getClientIp(req: Request) {
-    // Works behind Vercel/most proxies
-    const xff = req.headers.get("x-forwarded-for");
-    if (xff) return xff.split(",")[0]?.trim() ?? "unknown";
-    return req.headers.get("x-real-ip") ?? "unknown";
-}
+    const real = req.headers.get("x-real-ip");
+    if (real) return real.trim() || "unknown";
 
+    const xff = req.headers.get("x-forwarded-for");
+    if (xff) return xff.split(",")[0]?.trim() || "unknown";
+
+    return "unknown";
+}
 function safeSameOriginReturnUrl(req: Request, input: string | null | undefined) {
     if (!input) return null;
 
@@ -58,11 +60,6 @@ function safeSameOriginReturnUrl(req: Request, input: string | null | undefined)
     }
 }
 
-function actorKey(actor: { userId: string | null; guestId: string | null }) {
-    if (actor.userId) return `u:${actor.userId}`;
-    if (actor.guestId) return `g:${actor.guestId}`;
-    return "g:missing";
-}
 
 /* ---------------------------------- route --------------------------------- */
 
@@ -75,7 +72,7 @@ export async function GET(req: Request) {
     // 2) Production-safe abuse limiting (shared store)
     // Key by actor + IP to reduce NAT collateral without being purely per-IP
     const ip = getClientIp(req);
-    const rlKey = `practice:${actorKey(actor)}:${ip}`;
+    const rlKey = `practice:${actorKeyOf(actor)}:${ip}`;
 
     try {
         const rl = await rateLimit(rlKey);

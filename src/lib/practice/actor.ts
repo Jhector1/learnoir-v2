@@ -10,7 +10,7 @@ export type Actor = { userId: string | null; guestId: string | null };
 
 // Keep name if you already rely on it.
 // Optional hardening: rename to "__Host-guest" (requires Secure + path="/" + no domain).
-const GUEST_COOKIE = "guestId";
+const GUEST_COOKIE = "__Host-guest";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 // ---- signing ----
@@ -21,9 +21,9 @@ function getGuestSecrets(): string[] {
 
   const secrets = [cur, old].filter(Boolean) as string[];
 
-  if (process.env.NODE_ENV === "production" && secrets.length === 0) {
+  if ( secrets.length === 0) {
     // Fail hard in prod so you don’t accidentally run unsigned
-    throw new Error("Missing GUEST_COOKIE_SECRET in production.");
+    throw new Error("Missing GUEST_COOKIE_SECRET.");
   }
 
   // In dev, allow missing secret (cookie will be treated invalid -> new guest each time)
@@ -127,8 +127,11 @@ export function attachGuestCookie(res: NextResponse, setGuestId?: string | null)
   return res;
 }
 
+import { createHash } from "node:crypto";
+const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+
 export function actorKeyOf(actor: Actor): string {
-  if (actor.userId) return `u:${actor.userId}`;
-  if (actor.guestId) return `g:${actor.guestId}`;
+  if (actor.userId) return `u:${sha(actor.userId)}`;
+  if (actor.guestId) return `g:${sha(actor.guestId)}`;
   return "g:missing";
 }

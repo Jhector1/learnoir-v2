@@ -1,6 +1,6 @@
 // import {PracticeKind, PracticePurpose} from "@prisma/client";
 import {RNG} from "@/lib/practice/generator/shared/rng";
-import {Difficulty, ExerciseKind, SingleChoiceExercise} from "@/lib/practice/types";
+import {CodeLanguage, Difficulty, ExerciseKind, SingleChoiceExercise} from "@/lib/practice/types";
 import {GenOut} from "@/lib/practice/generator/shared/expected";
 // import {Handler} from "@/lib/practice/generator/engines/python/_shared";
 import {TopicContext} from "@/lib/practice/generator/generatorTypes";
@@ -317,5 +317,179 @@ export function makeNoGenerator(engineName: string, topicSlugRaw: string) {
         (err as any).topicSlug = topicSlugRaw;
         (err as any).engineName = engineName;
         throw err;
+    };
+}
+
+// src/lib/practice/generator/engines/utils.ts
+
+// If you already export these types, reuse them instead of redefining.
+export type Opt = { id: string; text: string };
+
+// This should already exist in your file.
+// export type GenOut<K extends Exercise["kind"]> = ...
+// export type Handler = (args: { diff: any; id: string; topic: any }) => GenOut<any>;
+// ^ If you're editing the same file, remove this import and use the local GenOut type.
+import type {
+    MultiChoiceExercise,
+    CodeInputExercise,
+} from "@/lib/practice/types";
+
+// import type { GenOut } from "@/lib/practice/generator/shared/expected";
+// import { makeMultiExpected, makeCodeExpected } from "@/lib/practice/generator/shared/expected";
+// // ^ If makeCodeExpected lives elsewhere in your project, DO NOT import it here.
+// // Keep makeCodeExpected where it is, and accept `expected` as `any` for code_input.
+//
+// export type Opt = { id: string; text: string };
+//
+// export type Opt = { id: string; text: string };
+// type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
+export type DragExpected = { kind: "drag_reorder"; tokenIds: string[] };
+export type MultiExpected = { kind: "multi_choice"; optionIds: string[] };
+export type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
+
+export function makeTextExpected(answers: string[], match: "exact" | "includes" = "includes"): TextExpected {
+    return { kind: "text_input", answers, match };
+}
+export function makeDragExpected(tokenIds: string[]): DragExpected {
+    return { kind: "drag_reorder", tokenIds };
+}
+
+
+export function makeMultiExpected(optionIds: string[]): MultiExpected {
+    return { kind: "multi_choice", optionIds };
+}
+export function makeMultiChoiceOut(args: {
+    archetype: string;
+    id: string;
+    topic: any;
+    diff: any;
+
+    title: string;
+    prompt: string;
+    options: Opt[];
+
+    answerOptionIds: string[];
+    hint?: string; // ✅ not null
+}): GenOut<"multi_choice"> {
+    const exercise: MultiChoiceExercise = {
+        id: args.id,
+        topic: args.topic,
+        difficulty: args.diff,
+        kind: "multi_choice",
+        title: args.title,
+        prompt: args.prompt,
+        options: args.options,
+        // ✅ do NOT set null
+        ...(args.hint ? { hint: args.hint } : {}),
+    };
+
+    return {
+        archetype: args.archetype,
+        exercise,
+        expected: makeMultiExpected(args.answerOptionIds),
+    };
+}
+//
+// import type { GenOut } from "@/lib/practice/generator/shared/expected";
+// import type { MultiChoiceExercise, CodeInputExercise } from "@/lib/practice/types";
+// import { makeMultiExpected } from "@/lib/practice/generator/shared/expected"; // ✅ use your real path
+// // If makeMultiExpected lives elsewhere, adjust the import.
+//
+// export type Opt = { id: string; text: string };
+
+// export function makeMultiChoiceOut(args: {
+//     archetype: string;
+//     id: string;
+//     topic: any;
+//     diff: any;
+//
+//     title: string;
+//     prompt: string;
+//     options: Opt[];
+//
+//     answerOptionIds: string[];
+//     hint?: string; // ✅ not null
+// }): GenOut<"multi_choice"> {
+//     const exercise: MultiChoiceExercise = {
+//         id: args.id,
+//         topic: args.topic,
+//         difficulty: args.diff,
+//         kind: "multi_choice",
+//         title: args.title,
+//         prompt: args.prompt,
+//         options: args.options,
+//         ...(args.hint ? { hint: args.hint } : {}),
+//     };
+//
+//     return {
+//         archetype: args.archetype,
+//         exercise,
+//         expected: makeMultiExpected(args.answerOptionIds),
+//     };
+// }
+
+export function makeCodeInputOut(args: {
+    archetype: string;
+    id: string;
+    topic: any;
+    diff: any;
+
+    title: string;
+    prompt: string;
+
+    starterCode: string;
+    starterStdin?: string;
+
+    language?: "python" | "javascript" | "c" | "cpp" | "java";
+
+    expected: any;
+    hint?: string; // ✅ not null
+
+    editorHeight?: number;
+}): {
+    archetype: string;
+    expected: any;
+    exercise: {
+        difficulty: any;
+        starterStdin: string;
+        editorHeight: number;
+        kind: string;
+        starterCode: string;
+        topic: any;
+        language: "python" | "javascript" | "c" | "cpp" | "java";
+        id: string;
+        title: string;
+        prompt: string
+    }
+} {
+    const exercise: {
+        difficulty: any;
+        starterStdin: string;
+        editorHeight: number;
+        kind: string;
+        starterCode: string;
+        topic: any;
+        language: "python" | "javascript" | "c" | "cpp" | "java";
+        id: string;
+        title: string;
+        prompt: string
+    } = {
+        id: args.id,
+        topic: args.topic,
+        difficulty: args.diff,
+        kind: "code_input",
+        title: args.title,
+        prompt: args.prompt,
+        language: args.language ?? "python",
+        starterCode: args.starterCode,
+        starterStdin: args.starterStdin ?? "",
+        editorHeight: args.editorHeight ?? 520,
+        ...(args.hint ? { hint: args.hint } : {}),
+    };
+
+    return {
+        archetype: args.archetype,
+        exercise,
+        expected: args.expected,
     };
 }

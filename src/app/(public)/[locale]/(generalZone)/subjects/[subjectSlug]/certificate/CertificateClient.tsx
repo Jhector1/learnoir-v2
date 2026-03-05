@@ -20,8 +20,7 @@ type Status = {
         assignmentCompleted: boolean;
     }>;
     certificate: { id: string; issuedAt: string; completedAt: string | null } | null;
-    actor: { isGuest: boolean; userId: string | null; guestId: string | null };
-};
+    actor: { isGuest: boolean };};
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
 export default function CertificateClient() {
     const params = useParams<{ locale: string; subjectSlug: string }>();

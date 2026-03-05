@@ -74,14 +74,22 @@ function safeSameOriginUrl(req: Request, input: string | null | undefined) {
 }
 
 function enforceSameOriginPost(req: Request) {
-  // CSRF guard for cookie-auth POSTs (prod only)
   if (process.env.NODE_ENV !== "production") return true;
 
-  const origin = req.headers.get("origin");
   const allowed = process.env.APP_ORIGIN;
-  if (!allowed) return false; // fail closed: set APP_ORIGIN in prod
+  if (!allowed) return false;
 
-  return origin === allowed;
+  const origin = req.headers.get("origin");
+  if (origin) return origin === allowed;
+
+  const referer = req.headers.get("referer");
+  if (!referer) return false;
+
+  try {
+    return new URL(referer).origin === allowed;
+  } catch {
+    return false;
+  }
 }
 
 /* ---------------------------------- route --------------------------------- */

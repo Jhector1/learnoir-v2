@@ -36,13 +36,13 @@ async function hardLogout(locale: string) {
 
 const FONT_SIZE_STORAGE_KEY = "APP_FONT_SIZE_PX";
 const FONT_SIZE_DEFAULT = 16;
-const FONT_SIZE_OPTIONS = [14, 16, 18] as const;
+const FONT_SIZE_OPTIONS = [16, 20, 24] as const;
 
 function clampFontPx(x: number) {
   // keep it sane (and consistent with options)
-  if (x <= 14) return 14;
-  if (x >= 18) return 18;
-  return 16;
+  if (x <= 16) return 16;
+  if (x >= 20) return 20;
+  return 24;
 }
 
 function applyBaseFontSize(px: number) {
@@ -58,9 +58,9 @@ function FontSizePicker(props: {
   const { value, onChange, labels } = props;
 
   const items: Array<{ px: (typeof FONT_SIZE_OPTIONS)[number]; label: string }> = [
-    { px: 14, label: labels.small },
-    { px: 16, label: labels.normal },
-    { px: 18, label: labels.large },
+    { px: 16, label: labels.small },
+    { px: 20, label: labels.normal },
+    { px: 24, label: labels.large },
   ];
 
   return (

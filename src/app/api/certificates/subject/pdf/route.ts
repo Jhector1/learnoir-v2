@@ -12,6 +12,7 @@ import {
     attachGuestCookie,
     actorKeyOf,
 } from "@/lib/practice/actor";
+import {CERT_REQUIRE_ASSIGNMENT} from "@/lib/certificates/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,8 +91,7 @@ async function getCourseStatus(opts: { actorKey: string; subjectSlug: string; lo
     const progressByModuleId = new Map(progressRows.map((r) => [r.moduleId, r as any]));
 
     // ✅ decide whether assignment is required for certificate
-    const requireAssignment = false;
-
+    const requireAssignment = CERT_REQUIRE_ASSIGNMENT;
     const modules = await Promise.all(
         reviewModules.map(async (m) => {
             const row = progressByModuleId.get(m.id);

@@ -1,4 +1,3 @@
-// src/components/review/quiz/quiz/components/QuizPracticeCard.tsx
 "use client";
 
 import React, { useCallback, useEffect, useMemo } from "react";
@@ -10,7 +9,10 @@ import type { VectorPadState } from "@/components/vectorpad/types";
 import ExerciseRenderer from "@/components/practice/ExerciseRenderer";
 import RevealAnswerCard from "@/components/practice/RevealAnswerCard";
 import { useReviewTools } from "@/components/review/module/context/ReviewToolsContext";
+
 import { useTaggedT } from "@/i18n/tagged";
+import { resolveDeepTagged } from "@/i18n/resolveDeepTagged";
+import type { Exercise } from "@/lib/practice/types";
 
 export default function QuizPracticeCard(props: {
   q: Extract<ReviewQuestion, { kind: "practice" }>;
@@ -50,24 +52,31 @@ export default function QuizPracticeCard(props: {
 
   const tools = useReviewTools();
 
+  const excused = Boolean(props.excused);
+  const revealed = Boolean(ps?.item?.revealed);
+
+  const ui = useTaggedT("reviewQuizUi");
+  const { raw } = useTaggedT(); // ✅ RAW resolver for deep-tagged exercise strings
+
+  // ✅ Resolve @: keys inside the whole exercise once (safe for {name}, <total>, etc.)
+  const ex: Exercise | null = useMemo(() => {
+    if (!ps?.exercise) return null;
+    return resolveDeepTagged(ps.exercise, (key) => raw(key, "")) as Exercise;
+  }, [ps?.exercise, raw]);
+
   // ✅ desktop-only tools: provider exposes tools?.enabled
   const toolsEnabled = Boolean(tools?.enabled);
 
   // ✅ only use tools mode when:
   // - tools are enabled on this device/page
   // - and this exercise is code_input
-  const isCodeInput = ps?.exercise?.kind === "code_input";
+  const isCodeInput = ex?.kind === "code_input";
   const codeRunnerMode: "embedded" | "tools" = toolsEnabled && isCodeInput ? "tools" : "embedded";
 
   // Structural typing: ReviewToolsValue includes CodeToolsApi members (+ extras).
   // ExerciseRenderer expects CodeToolsApi; extra fields are fine, TS may need a cast.
   const codeTools = toolsEnabled && isCodeInput ? (tools as any) : null;
   const codeInputId = toolsEnabled && isCodeInput ? q.id : undefined;
-
-  const excused = Boolean(props.excused);
-  const revealed = Boolean(ps?.item?.revealed);
-
-  const ui = useTaggedT("reviewQuizUi");
 
   // ✅ stable patch function (prevents register thrash downstream)
   const updateItemSafe = useCallback(
@@ -90,17 +99,18 @@ export default function QuizPracticeCard(props: {
   }, [ps, unlimitedAttempts]);
 
   const hasInput = useMemo(() => {
-    if (!ps?.exercise || !ps?.item) return false;
-    return !isEmptyPracticeAnswer(ps.exercise, ps.item, padRef?.current);
-  }, [ps?.exercise, ps?.item, padRef]);
+    if (!ex || !ps?.item) return false;
+    return !isEmptyPracticeAnswer(ex, ps.item, padRef?.current);
+  }, [ex, ps?.item, padRef]);
 
   // ✅ Deterministic binding: report status to provider
   // Only when Tools are enabled + this is code_input
   useEffect(() => {
     if (!toolsEnabled) return;
     if (!tools) return;
-    if (!ps?.exercise) return;
-    if (ps.exercise.kind !== "code_input") return;
+    if (!ex) return;
+    if (ex.kind !== "code_input") return;
+    if (!ps) return;
 
     const doneForFlow = ps.ok === true || excused || (!strictSequential && attemptsCapped);
     const eligible = unlocked && !locked && !isCompleted && !excused;
@@ -113,9 +123,9 @@ export default function QuizPracticeCard(props: {
   }, [
     toolsEnabled,
     tools,
+    ex,
+    ps,
     q.id,
-    ps?.exercise,
-    ps?.ok,
     unlocked,
     locked,
     isCompleted,
@@ -156,11 +166,7 @@ export default function QuizPracticeCard(props: {
       <div className={["ui-quiz-card", !unlocked ? "opacity-70" : ""].join(" ")}>
         {!unlocked ? (
             <div className="ui-quiz-hint">
-              {ui.t(
-                  "unlockHint",
-                  {},
-                  "Answer the previous question correctly to unlock this one."
-              )}
+              {ui.t("unlockHint", {}, "Answer the previous question correctly to unlock this one.")}
             </div>
         ) : null}
 
@@ -180,16 +186,14 @@ export default function QuizPracticeCard(props: {
                     disableSkip ? "ui-quiz-action--disabled" : "ui-quiz-action--ghost",
                   ].join(" ")}
               >
-                {props.excused
-                    ? ui.t("buttons.excused", {}, "Excused")
-                    : ui.t("buttons.continue", {}, "Continue")}
+                {props.excused ? ui.t("buttons.excused", {}, "Excused") : ui.t("buttons.continue", {}, "Continue")}
               </button>
             </div>
-        ) : ps?.exercise && ps?.item ? (
+        ) : ex && ps?.item ? (
             <div className="mt-1">
               <div className="mt-2">
                 <ExerciseRenderer
-                    exercise={ps.exercise}
+                    exercise={ex} // ✅ resolved exercise (no @: keys)
                     current={ps.item}
                     busy={ps.busy || !unlocked || isCompleted || locked}
                     isAssignmentRun={false}
@@ -241,13 +245,9 @@ export default function QuizPracticeCard(props: {
               </span>
 
                   {ps.ok === true ? (
-                      <span className="ml-2 whitespace-nowrap text-emerald-700 dark:text-emerald-300/80">
-                  ✓ Correct
-                </span>
+                      <span className="ml-2 whitespace-nowrap text-emerald-700 dark:text-emerald-300/80">✓ Correct</span>
                   ) : ps.ok === false && ps.item?.result && !revealed ? (
-                      <span className="ml-2 whitespace-nowrap text-rose-700 dark:text-rose-300/80">
-                  ✕ Not correct
-                </span>
+                      <span className="ml-2 whitespace-nowrap text-rose-700 dark:text-rose-300/80">✕ Not correct</span>
                   ) : null}
                 </div>
               </div>
@@ -255,7 +255,7 @@ export default function QuizPracticeCard(props: {
               {revealed && ps.item?.result ? (
                   <div className="mt-3">
                     <RevealAnswerCard
-                        exercise={ps.exercise}
+                        exercise={ex} // ✅ resolved exercise (options text already translated)
                         current={ps.item}
                         result={ps.item.result}
                         updateCurrent={updateItemSafe}

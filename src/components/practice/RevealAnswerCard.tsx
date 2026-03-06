@@ -1,4 +1,3 @@
-// src/components/practice/RevealAnswerCard.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +7,10 @@ import type { QItem } from "./practiceType";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 import MatrixInputPanel from "./MatrixInputPanel";
 import { scrollIntoViewSmart } from "@/lib/ui/flowScroll";
+
+// ✅ NEW: resolve @: keys so reveal never shows raw keys
+import { useTaggedT } from "@/i18n/tagged";
+import { resolveDeepTagged } from "@/i18n/resolveDeepTagged";
 
 function cn(...cls: Array<string | false | undefined | null>) {
     return cls.filter(Boolean).join(" ");
@@ -68,10 +71,17 @@ export default function RevealAnswerCard({
     // ✅ MUST be declared before any conditional returns (Rules of Hooks)
     const rootRef = useRef<HTMLDivElement | null>(null);
 
+    // ✅ Resolve @: keys inside exercise (options, prompt fragments, etc.)
+    const { raw } = useTaggedT();
+    const exT: Exercise | null = useMemo(() => {
+        if (!exercise) return null;
+        return resolveDeepTagged(exercise, (key) => raw(key, "")) as Exercise;
+    }, [exercise, raw]);
+
     const model: RevealModel | null = useMemo(() => {
         if (!reveal || typeof reveal !== "object") return null;
 
-        const kind = String(reveal.kind ?? exercise?.kind);
+        const kind = String(reveal.kind ?? exT?.kind ?? exercise?.kind);
 
         if (kind === "numeric") {
             const v = reveal.value;
@@ -110,29 +120,21 @@ export default function RevealAnswerCard({
                 node: (
                     <div className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden">
                         <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-black/30 px-3 py-2">
-                            <div className="text-[11px] font-extrabold text-white/70">
-                                {lang.toUpperCase()}
-                            </div>
-                            <div className="text-[11px] text-white/45">
-                                Copy/paste into the editor, then Submit.
-                            </div>
+                            <div className="text-[11px] font-extrabold text-white/70">{lang.toUpperCase()}</div>
+                            <div className="text-[11px] text-white/45">Copy/paste into the editor, then Submit.</div>
                         </div>
 
+                        {/* ✅ render solution as plain text (no markdown parsing) */}
                         <pre className="p-3 text-xs leading-relaxed text-white/85 overflow-x-auto">
-              {code ? (
-                  <MathMarkdown
-                      content={code}
-                      className="prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-code:text-white"
-                  />
-              ) : (
-                  "// (no solutionCode provided)"
-              )}
+              <code>{code?.trim() ? code : "// (no solutionCode provided)"}</code>
             </pre>
 
                         {stdin ? (
                             <div className="border-t border-white/10 px-3 py-2">
                                 <div className="text-[11px] font-extrabold text-white/60">stdin</div>
-                                <pre className="mt-1 text-xs text-white/80 overflow-x-auto">{stdin}</pre>
+                                <pre className="mt-1 text-xs text-white/80 overflow-x-auto">
+                  <code>{stdin}</code>
+                </pre>
                             </div>
                         ) : null}
                     </div>
@@ -215,7 +217,7 @@ export default function RevealAnswerCard({
 
         if (kind === "drag_reorder") {
             const order = Array.isArray(reveal.order) ? reveal.order.map(String) : [];
-            const tokens = Array.isArray((exercise as any)?.tokens) ? (exercise as any).tokens : [];
+            const tokens = Array.isArray((exT as any)?.tokens) ? (exT as any).tokens : [];
             const byId = new Map(tokens.map((t: any) => [String(t.id), String(t.text ?? t.label ?? t.id)]));
 
             const copyText = order
@@ -256,10 +258,13 @@ export default function RevealAnswerCard({
         }
 
         // ✅ unified branch for text-like answers
-        if (kind === "text_input" || kind === "listen_build" || kind === "word_bank_arrange" || kind === "fill_blank_choice") {
+        if (
+            kind === "text_input" ||
+            kind === "listen_build" ||
+            kind === "word_bank_arrange" ||
+            kind === "fill_blank_choice"
+        ) {
             const answers = Array.isArray(reveal.answers) ? reveal.answers.map(String) : [];
-
-            // reveal may come as { value } (safe payload) OR { answers } (full expected)
             const preferred = String(reveal.preferred ?? reveal.value ?? (answers[0] ?? "")).trim();
             const copyText = preferred || (answers[0] ?? "");
 
@@ -275,8 +280,6 @@ export default function RevealAnswerCard({
             return {
                 title,
                 copyText,
-                // ✅ your builders + fill_blank all use item.text in your ExerciseRenderer
-                // ✅ also set single so anything choice-ish stays consistent
                 fillPatch: copyText ? ({ text: copyText, single: copyText } as Partial<QItem>) : null,
                 node: (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
@@ -309,7 +312,7 @@ export default function RevealAnswerCard({
 
         if (kind === "single_choice") {
             const optionId = String(reveal.optionId ?? "");
-            const options = (exercise as any)?.options ?? [];
+            const options = (exT as any)?.options ?? [];
             const found = options.find((o: any) => String(o.id) === optionId);
             const label = found?.label ?? found?.text ?? found?.markdown ?? found?.latex ?? optionId;
 
@@ -334,6 +337,9 @@ export default function RevealAnswerCard({
 
         if (kind === "multi_choice") {
             const optionIds = Array.isArray(reveal.optionIds) ? reveal.optionIds.map(String) : [];
+            const options = (exT as any)?.options ?? [];
+            const byId = new Map(options.map((o: any) => [String(o.id), String(o.text ?? o.label ?? o.id)]));
+
             const copyText = optionIds.join(", ");
 
             return {
@@ -343,7 +349,21 @@ export default function RevealAnswerCard({
                 node: (
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                         <div className="text-xs text-white/70 font-extrabold">Options</div>
-                        <div className="mt-1 text-sm text-white/90">{copyText || "—"}</div>
+
+                        {optionIds.length ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {optionIds.map((id: any) => (
+                                    <span
+                                        key={id}
+                                        className="rounded-xl border border-white/10 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85"
+                                    >
+                    {byId.get(id) ?? id}
+                  </span>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mt-1 text-sm text-white/60">—</div>
+                        )}
                     </div>
                 ),
             };
@@ -374,7 +394,7 @@ export default function RevealAnswerCard({
         }
 
         return null;
-    }, [reveal, exercise, current.codeLang]);
+    }, [reveal, exT, exercise, current.codeLang]);
 
     // ✅ scroll when the reveal block appears/changes
     useEffect(() => {
@@ -392,8 +412,6 @@ export default function RevealAnswerCard({
     }, [model]);
 
     if (!model) return null;
-
-    // ✅ model is non-null in this scope
     const m = model;
 
     async function onCopy() {
@@ -419,7 +437,7 @@ export default function RevealAnswerCard({
                         onClick={onCopy}
                         disabled={!m.copyText}
                         className={cn(
-                            "rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50",
+                            "rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-[11px] font-extrabold hover:bg-white/15 disabled:opacity-50"
                         )}
                     >
                         {copied ? "Copied ✓" : "Copy"}

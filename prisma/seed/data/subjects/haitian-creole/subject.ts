@@ -9,8 +9,9 @@ export const HAITIAN_CREOLE = defineSubject({
     order: 20,
     title: "Haitian Creole",
     description: "Haitian Creole language practice.",
-    imagePublicId: "IMG_0299_c9rkdr", // ✅ Cloudinary public id
-    imageAlt: "Python subject cover",
+    imagePublicId: "IMG_0299_c9rkdr",
+    imageAlt: "Haitian Creole subject cover",
+    status: "disabled",
   },
   modules: HC_MODULES,
   topicGroups: HC_SECTIONS,

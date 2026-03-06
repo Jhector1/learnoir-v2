@@ -1,12 +1,12 @@
-// SubjectTile.tsx
 "use client";
 
 import React, { useMemo } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
 import type { SubjectCard } from "./SubjectPicker";
 import { cloudinaryImageUrl } from "@/lib/cloudinary/url";
 import { cn } from "@/lib/cn";
+import Pill from "./Pill";
+import { useTaggedT } from "@/i18n/tagged";
 
 function publicIdFallback(slug: string) {
   const map: Record<string, string> = {
@@ -25,9 +25,10 @@ export default function SubjectTile({
   onPick: (s: SubjectCard) => void;
   enrolling: boolean;
 }) {
-  const t = useTranslations("subjectsUi");
+  const { t } = useTaggedT("subjectsUi");
 
-  const disabled = !s.defaultModuleSlug || enrolling;
+  const isComingSoon = s.status === "coming_soon";
+  const disabled = !s.defaultModuleSlug || enrolling || isComingSoon;
 
   const publicId = s.imagePublicId ?? publicIdFallback(s.slug);
 
@@ -51,10 +52,11 @@ export default function SubjectTile({
               : "from-neutral-400/20 to-neutral-400/10";
 
   const cta = useMemo(() => {
+    if (isComingSoon) return t("comingSoon");
     if (enrolling) return t("enrolling");
     if (s.enrolled) return t("continue");
     return t("openModules");
-  }, [enrolling, s.enrolled, t]);
+  }, [enrolling, isComingSoon, s.enrolled, t]);
 
   return (
       <button
@@ -62,7 +64,15 @@ export default function SubjectTile({
           disabled={disabled}
           aria-busy={enrolling}
           onClick={() => onPick(s)}
-          className={cn("group ui-tile", disabled && "ui-tile--disabled")}
+          className={cn(
+              "group overflow-hidden rounded-3xl border text-left transition",
+              "ui-border ui-focus",
+              disabled ? "cursor-not-allowed opacity-70" : "hover:-translate-y-0.5",
+          )}
+          style={{
+            backgroundColor: "rgb(var(--ui-surface) / 0.92)",
+            boxShadow: "var(--ui-shadow-md)",
+          }}
       >
         <div className="relative h-28 w-full">
           <Image
@@ -77,53 +87,56 @@ export default function SubjectTile({
           <div className={cn("absolute inset-0 bg-gradient-to-br", accent)} />
           <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/20 to-transparent opacity-60 dark:from-white/10" />
 
-          {/* Enrolled badge */}
-          {s.enrolled && !enrolling ? (
-              <div className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 text-[10px] font-extrabold tracking-wide text-white backdrop-blur">
-                {t("enrolled")}
-              </div>
-          ) : null}
-
-          {/* Enrolling badge */}
-          {enrolling ? (
-              <div className="absolute right-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/50 px-2 py-1 text-[10px] font-extrabold tracking-wide text-white backdrop-blur">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
-                {t("enrolling")}
-              </div>
-          ) : null}
+          <div className="absolute right-3 top-3 flex flex-wrap items-center gap-2">
+            {isComingSoon ? <Pill tone="warn">{t("comingSoon")}</Pill> : null}
+            {s.enrolled && !enrolling && !isComingSoon ? <Pill tone="good">{t("enrolled")}</Pill> : null}
+            {enrolling ? <Pill tone="neutral">{t("enrolling")}</Pill> : null}
+          </div>
         </div>
 
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-sm font-black tracking-tight text-neutral-900 dark:text-white/90">
+              <div className="text-sm font-black tracking-tight ui-text">
                 {s.title}
               </div>
-              <div className="mt-1 text-xs font-semibold text-neutral-500 dark:text-white/60">
+
+              <div className="mt-1 text-xs font-semibold ui-text-muted">
                 {s.slug}
               </div>
             </div>
 
-            <div className="ui-tile-chip">
+            <div
+                className="h-10 w-10 shrink-0 rounded-2xl"
+                style={{ backgroundColor: "rgb(var(--ui-surface-2) / 0.65)" }}
+            >
               <div className={cn("h-full w-full rounded-2xl bg-gradient-to-br", accent)} />
             </div>
           </div>
 
-          <div className="mt-3 text-sm leading-6 text-neutral-600 dark:text-white/70">
+          <div className="mt-3 text-sm leading-6 ui-text-muted">
             {s.description}
           </div>
 
           {!s.defaultModuleSlug ? (
-              <div className="mt-4 text-[11px] font-extrabold text-amber-700 dark:text-amber-200/70">
+              <div className="mt-4 text-[11px] font-extrabold ui-text-warn">
                 {t("noModulesYet")}
               </div>
           ) : (
-              <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-extrabold text-neutral-700 dark:text-white/70">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/70 dark:bg-emerald-300/70" />
+              <div className="mt-4 inline-flex items-center gap-2 text-[11px] font-extrabold ui-text">
+                {!isComingSoon ? (
+                    <span className="h-1.5 w-1.5 rounded-full ui-bg-accent" />
+                ) : (
+                    <span className="h-1.5 w-1.5 rounded-full ui-bg-warn" />
+                )}
+
                 {cta}
-                <span className={cn("transition", !enrolling && "group-hover:translate-x-0.5")}>
-              →
-            </span>
+
+                {!isComingSoon ? (
+                    <span className={cn("transition", !enrolling && "group-hover:translate-x-0.5")}>
+                →
+              </span>
+                ) : null}
               </div>
           )}
         </div>

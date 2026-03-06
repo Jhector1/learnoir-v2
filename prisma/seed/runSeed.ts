@@ -1,4 +1,3 @@
-// prisma/seed/seed.ts
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -9,6 +8,7 @@ import { SUBJECTS, MODULES, TOPICS, SECTIONS } from "./data";
 function getPrisma() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set");
+
   return new PrismaClient({
     adapter: new PrismaPg(new Pool({ connectionString })),
   });
@@ -31,29 +31,28 @@ export async function runSeed() {
           update: {
             order: s.order,
             title: s.title,
-            description: s.description,
+            description: s.description ?? null,
             meta: s.meta ?? undefined,
-            imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
-            imageAlt: (s as any).imageAlt ?? null,
-            // ✅ ADD
-            // ✅ add
-            accessPolicy: (s as any).accessPolicy ?? "free",
-            entitlementKey: (s as any).entitlementKey ?? null,
-
+            imagePublicId: s.imagePublicId ?? null,
+            imageAlt: s.imageAlt ?? null,
+            accessPolicy: s.accessPolicy ?? "free",
+            entitlementKey: s.entitlementKey ?? null,
+            status: s.status ?? "active",
           },
           create: {
             slug: s.slug,
             order: s.order,
             title: s.title,
-            description: s.description,
+            description: s.description ?? null,
             meta: s.meta ?? undefined,
-            imagePublicId: (s as any).imagePublicId ?? null, // ✅ ADD
-            imageAlt: (s as any).imageAlt ?? null,           // ✅ ADD
-            // ✅ add
-            accessPolicy: (s as any).accessPolicy ?? "free",
-            entitlementKey: (s as any).entitlementKey ?? null,
+            imagePublicId: s.imagePublicId ?? null,
+            imageAlt: s.imageAlt ?? null,
+            accessPolicy: s.accessPolicy ?? "free",
+            entitlementKey: s.entitlementKey ?? null,
+            status: s.status ?? "active",
           },
         });
+
         subjectIdBySlug.set(s.slug, row.id);
       }
 
@@ -70,11 +69,11 @@ export async function runSeed() {
           update: {
             order: m.order,
             title: m.title,
-            description: m.description,
+            description: m.description ?? null,
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
-            meta: m.meta ?? undefined, // ✅ ADD
+            meta: m.meta ?? undefined,
             accessOverride: m.accessOverride ?? "inherit",
             entitlementKey: m.entitlementKey ?? null,
           },
@@ -82,11 +81,11 @@ export async function runSeed() {
             slug: m.slug,
             order: m.order,
             title: m.title,
-            description: m.description,
+            description: m.description ?? null,
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
-            meta: m.meta ?? undefined, // ✅ ADD
+            meta: m.meta ?? undefined,
             accessOverride: m.accessOverride ?? "inherit",
             entitlementKey: m.entitlementKey ?? null,
           },
@@ -96,7 +95,7 @@ export async function runSeed() {
       }
 
       // -------------------------
-      // 3) Topics (source of truth: TOPICS dataset)
+      // 3) Topics
       // -------------------------
       const topicIdBySlug = new Map<string, string>();
 
@@ -104,11 +103,10 @@ export async function runSeed() {
         const subjectId = subjectIdBySlug.get(t.subjectSlug) ?? null;
         const moduleId = moduleIdBySlug.get(t.moduleSlug) ?? null;
 
-        // store variant inside meta, so API can read it
         const meta =
-          t.variant === undefined
-            ? (t.meta ?? undefined)
-            : { ...(t.meta ?? {}), variant: t.variant };
+            t.variant === undefined
+                ? (t.meta ?? undefined)
+                : { ...(t.meta ?? {}), variant: t.variant };
 
         const row = await tx.practiceTopic.upsert({
           where: { slug: t.slug },
@@ -137,7 +135,7 @@ export async function runSeed() {
       }
 
       // -------------------------
-      // 4) Sections + section<->topic links
+      // 4) Sections + section-topic links
       // -------------------------
       for (const s of SECTIONS) {
         const subjectId = subjectIdBySlug.get(s.subjectSlug) ?? null;
@@ -164,14 +162,21 @@ export async function runSeed() {
           },
         });
 
-        await tx.practiceSectionTopic.deleteMany({ where: { sectionId: section.id } });
+        await tx.practiceSectionTopic.deleteMany({
+          where: { sectionId: section.id },
+        });
 
-        if (s.topicSlugs.length) {
+        if (s.topicSlugs.length > 0) {
           await tx.practiceSectionTopic.createMany({
             data: s.topicSlugs.map((topicSlug, idx) => {
               const topicId = topicIdBySlug.get(topicSlug);
               if (!topicId) throw new Error(`Missing topicId for ${topicSlug}`);
-              return { sectionId: section.id, topicId, order: idx };
+
+              return {
+                sectionId: section.id,
+                topicId,
+                order: idx,
+              };
             }),
           });
         }

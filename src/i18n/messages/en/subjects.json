@@ -17,6 +17,8 @@
     "enrolling": "Enrolling…",
     "continue": "Continue",
     "openModules": "Open modules",
-    "noModulesYet": "No modules yet"
+    "noModulesYet": "No modules yet",
+
+    "comingSoon": "Coming soon"
   }
 }

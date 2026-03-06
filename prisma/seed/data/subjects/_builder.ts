@@ -65,7 +65,11 @@ export function defineSubject(input: {
   // SubjectSeed.accessPolicy?: "free" | "paid"
   assertOneOf(input.subject.accessPolicy, ["free", "paid"] as const, "subject.accessPolicy");
   assertNullableString(input.subject.entitlementKey, "subject.entitlementKey");
-
+  assertOneOf(
+      input.subject.status,
+      ["active", "coming_soon", "disabled"] as const,
+      "subject.status"
+  );
   // -------------------------
   // ✅ Module meta + access validation
   // -------------------------

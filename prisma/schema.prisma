@@ -33,7 +33,11 @@ enum AccessPolicy {
   free
   paid
 }
-
+enum SubjectStatus {
+  active
+  coming_soon
+  disabled
+}
 enum AccessOverride {
   inherit
   free
@@ -480,18 +484,19 @@ model Subscription {
 
 model PracticeSubject {
   id          String  @id @default(cuid())
-  slug        String  @unique // e.g. "linear-algebra", "python", "java", "ansible"
+  slug        String  @unique
   title       String
   description String?
   order       Int     @default(0)
   meta        Json?
 
-  //  Cloudinary image reference
-  imagePublicId  String? // e.g. "learnoir/subjects/linear-algebra"
-  imageAlt       String?
-  // ✅ NEW: subject-level access control
+  imagePublicId String?
+  imageAlt      String?
+
   accessPolicy   AccessPolicy @default(free)
-  entitlementKey String? // optional label like "subject:python" or "pro"
+  entitlementKey String?
+
+  status SubjectStatus @default(active)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -500,9 +505,10 @@ model PracticeSubject {
   sections     PracticeSection[]
   topics       PracticeTopic[]
   enrollments  SubjectEnrollment[]
-  accessGrants SubjectAccessGrant[] // ✅ add
+  accessGrants SubjectAccessGrant[]
 
   @@index([order])
+  @@index([status, order])
 }
 
 model ReviewProgress {

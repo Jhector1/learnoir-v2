@@ -41,7 +41,7 @@ const FONT_SIZE_OPTIONS = [16, 20, 24] as const;
 function clampFontPx(x: number) {
   // keep it sane (and consistent with options)
   if (x <= 16) return 16;
-  if (x >= 20) return 20;
+  if (x <= 20) return 20;
   return 24;
 }
 

@@ -8,7 +8,7 @@ export function toIntlLocale(appLocale: string) {
 }
 
 /**
- * amountMinor = Stripe minor units (cents, etc.). Works for zero-decimal currencies too.
+ * amountMinor b = Stripe minor units (cents, etc.). Works for zero-decimal currencies too.
  */
 export function formatMoneyMinor(
     amountMinor: number,

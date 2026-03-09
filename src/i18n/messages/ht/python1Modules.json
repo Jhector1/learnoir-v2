@@ -2,7 +2,7 @@
   "modules": {
     "python": {
       "python-0": {
-        "title": "Python 0 — Fondasyon",
+        "title": "Module 0 — Fondasyon",
         "description": "Espas travay + baz pwogramasyon: modèl IPO, sentaks, ak kòmantè.",
         "meta": {
           "prereqs": [
@@ -21,11 +21,11 @@
         }
       },
       "python-1": {
-        "title": "Python 1 — Blòk Debaz",
+        "title": "Module 1 — Blòk Debaz",
         "description": "Varyab/kalite, operatè/ekspresyon, string, ak modèl ti pwogram.",
         "meta": {
           "prereqs": [
-            "Python 0 — Fondasyon"
+            "Module 0 — Fondasyon"
           ],
           "outcomes": [
             "Mete valè nan varyab epi esplike kalite (types)",
@@ -40,11 +40,11 @@
         }
       },
       "python-2": {
-        "title": "Python 2 — Kontwòl Koule + Koleksyon",
+        "title": "Module 2 — Kontwòl Koule + Koleksyon",
         "description": "Kondisyon, bouk, lis, ak fonksyon — mare ansanm nan mini-pwojè ak istwa.",
         "meta": {
           "prereqs": [
-            "Python 1 — Blòk Debaz"
+            "Module 1 — Blòk Debaz"
           ],
           "outcomes": [
             "Sèvi ak if/elif/else ak konparezon ak lojik boolean",

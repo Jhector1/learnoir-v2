@@ -10,7 +10,7 @@ export const PY_MODULE1 = defineModule({
         slug: PY_MOD1,
         subjectSlug: PY_SUBJECT_SLUG,
         order: 1,
-        title: "Python 1 — Core Building Blocks",
+        title: "Module 1 — Core Building Blocks",
         description: "Variables/types, operators/expressions, strings, and mini-program patterns.",
         weekStart: 3,
         weekEnd: 5,
@@ -18,7 +18,7 @@ export const PY_MODULE1 = defineModule({
         entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD1}`,
         meta: {
             estimatedMinutes: 90,
-            prereqs: ["Python 0 — Foundations"],
+            prereqs: ["Module 0 — Foundations"],
             outcomes: [
                 "Store values in variables and explain types",
                 "Use operators + expressions to compute results",

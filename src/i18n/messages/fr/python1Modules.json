@@ -2,7 +2,7 @@
   "modules": {
     "python": {
       "python-0": {
-        "title": "Python 0 — Fondations",
+        "title": "Module 0 — Fondations",
         "description": "Espace de travail + bases de programmation : modèle IPO, syntaxe et commentaires.",
         "meta": {
           "prereqs": [
@@ -21,11 +21,11 @@
         }
       },
       "python-1": {
-        "title": "Python 1 — Blocs de base",
+        "title": "Module 1 — Blocs de base",
         "description": "Variables/types, opérateurs/expressions, chaînes de caractères et patrons de mini-programmes.",
         "meta": {
           "prereqs": [
-            "Python 0 — Fondations"
+            "Module 0 — Fondations"
           ],
           "outcomes": [
             "Stocker des valeurs dans des variables et expliquer les types",
@@ -40,11 +40,11 @@
         }
       },
       "python-2": {
-        "title": "Python 2 — Contrôle du flux + Collections",
+        "title": "Module 2 — Contrôle du flux + Collections",
         "description": "Conditions, boucles, listes et fonctions — assemblées dans des mini-projets scénarisés.",
         "meta": {
           "prereqs": [
-            "Python 1 — Blocs de base"
+            "Module 1 — Blocs de base"
           ],
           "outcomes": [
             "Utiliser if/elif/else avec comparaisons et logique booléenne",

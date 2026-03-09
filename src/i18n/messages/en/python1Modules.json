@@ -2,7 +2,7 @@
   "modules": {
     "python": {
       "python-0": {
-        "title": "Python 0 — Foundations",
+        "title": "Module 0 — Foundations",
         "description": "Workspace + programming basics: IPO model, syntax, and comments.",
         "meta": {
           "prereqs": ["None — you can start here"],
@@ -19,10 +19,10 @@
         }
       },
       "python-1": {
-        "title": "Python 1 — Core Building Blocks",
+        "title": "Module 1 — Core Building Blocks",
         "description": "Variables/types, operators/expressions, strings, and mini-program patterns.",
         "meta": {
-          "prereqs": ["Python 0 — Foundations"],
+          "prereqs": ["Module 0 — Foundations"],
           "outcomes": [
             "Store values in variables and explain types",
             "Use operators + expressions to compute results",
@@ -36,10 +36,10 @@
         }
       },
       "python-2": {
-        "title": "Python 2 — Control Flow + Collections",
+        "title": "Module 2 — Control Flow + Collections",
         "description": "Conditionals, loops, lists, and functions — stitched into story-based mini-projects.",
         "meta": {
-          "prereqs": ["Python 1 — Core Building Blocks"],
+          "prereqs": ["Module 1 — Core Building Blocks"],
           "outcomes": [
             "Use if/elif/else with comparisons and boolean logic",
             "Write while loops for validation and repeating actions",

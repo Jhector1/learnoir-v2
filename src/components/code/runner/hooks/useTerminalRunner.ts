@@ -144,8 +144,7 @@ export function useTerminalRunner(args: {
     const [inputLine, setInputLine] = React.useState("");
 
     // focusable terminal surface
-    const inputRef = React.useRef<HTMLDivElement | null>(null);
-
+    const inputRef = React.useRef<HTMLTextAreaElement | null>(null);
     const [busy, setBusy] = React.useState(false);
     const [lastResult, setLastResult] = React.useState<RunResult | null>(null);
 

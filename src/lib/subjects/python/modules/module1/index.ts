@@ -15,7 +15,7 @@ export const PY_MODULE1 = defineModule({
         weekStart: 3,
         weekEnd: 5,
         accessOverride: "paid",
-        entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD1}`,
+        // entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD1}`,
         meta: {
             estimatedMinutes: 90,
             prereqs: ["Module 0 — Foundations"],

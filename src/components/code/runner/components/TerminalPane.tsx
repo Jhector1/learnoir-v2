@@ -1,10 +1,9 @@
-// src/components/code/runner/components/TerminalPane.tsx
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import type {RunResult} from "@/lib/code/runCode";
-import type {TermLine} from "../types";
-import {cleanTermText} from "../utils/text";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { RunResult } from "@/lib/code/runCode";
+import type { TermLine } from "../types";
+import { cleanTermText } from "../utils/text";
 
 const lineCls = (t: TermLine["type"]) => {
     switch (t) {
@@ -40,13 +39,11 @@ export default function TerminalPane(props: {
     inputPrompt: string;
     inputLine: string;
     setInputLine: (v: string) => void;
-    inputRef: React.RefObject<HTMLDivElement | null>;
+    inputRef: React.RefObject<HTMLTextAreaElement | null>;
     busy: boolean;
     disabled: boolean;
     lastResult: RunResult | null;
     onSubmitInput: () => void;
-
-    // ✅ NEW: history lines (already submitted inputs)
     typedLines: string[];
 }) {
     const {
@@ -64,11 +61,9 @@ export default function TerminalPane(props: {
     } = props;
 
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const surfaceRef = useRef<HTMLDivElement | null>(null);
 
-    // caret position inside inputLine
     const [caret, setCaret] = useState<number>(0);
-
-    // history navigation
     const [histPos, setHistPos] = useState<number | null>(null);
     const [histDraft, setHistDraft] = useState<string>("");
 
@@ -78,26 +73,28 @@ export default function TerminalPane(props: {
         el.scrollTop = el.scrollHeight;
     }, [terminal, awaitingInput, inputLine]);
 
-    // focus terminal surface when awaiting input
     useEffect(() => {
-        if (awaitingInput) {
-            setTimeout(() => inputRef.current?.focus(), 0);
-        }
-    }, [awaitingInput, inputRef]);
+        if (!awaitingInput || disabled || busy) return;
+        const id = window.setTimeout(() => {
+            inputRef.current?.focus();
+            const len = (inputLine ?? "").length;
+            inputRef.current?.setSelectionRange(len, len);
+        }, 0);
+        return () => window.clearTimeout(id);
+    }, [awaitingInput, disabled, busy, inputRef, inputLine]);
 
-    // keep caret valid when inputLine changes externally
     useEffect(() => {
         setCaret((c) => clamp(c, 0, (inputLine ?? "").length));
     }, [inputLine]);
 
-    // when we start waiting for input, default caret to end
     useEffect(() => {
         if (awaitingInput) {
-            setCaret((inputLine ?? "").length);
+            const len = (inputLine ?? "").length;
+            setCaret(len);
             setHistPos(null);
             setHistDraft("");
         }
-    }, [awaitingInput]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [awaitingInput, inputLine]);
 
     const terminalHasError = !!lastResult && lastResult.ok === false && !awaitingInput;
 
@@ -107,64 +104,73 @@ export default function TerminalPane(props: {
         return p.endsWith(" ") ? p : p + " ";
     }, [inputPrompt]);
 
-    const insertTextAtCaret = (txt: string) => {
-        const s = String(inputLine ?? "");
-        const i = clamp(caret, 0, s.length);
-        const next = s.slice(0, i) + txt + s.slice(i);
-        setInputLine(next);
-        setCaret(i + txt.length);
+    const syncCaretFromTextarea = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        setCaret(el.selectionStart ?? 0);
     };
 
-    const backspaceAtCaret = () => {
-        const s = String(inputLine ?? "");
-        if (caret <= 0) return;
-        const i = clamp(caret, 0, s.length);
-        const next = s.slice(0, i - 1) + s.slice(i);
-        setInputLine(next);
-        setCaret(i - 1);
-    };
-
-    const deleteAtCaret = () => {
-        const s = String(inputLine ?? "");
-        const i = clamp(caret, 0, s.length);
-        if (i >= s.length) return;
-        const next = s.slice(0, i) + s.slice(i + 1);
-        setInputLine(next);
-        setCaret(i);
+    const placeCaretAtEnd = (value: string) => {
+        requestAnimationFrame(() => {
+            const el = inputRef.current;
+            if (!el) return;
+            const len = value.length;
+            el.focus();
+            el.setSelectionRange(len, len);
+            setCaret(len);
+        });
     };
 
     const recallHistory = (nextPos: number | null) => {
         if (nextPos == null) {
             setHistPos(null);
             setInputLine(histDraft);
-            setCaret(histDraft.length);
+            placeCaretAtEnd(histDraft);
             return;
         }
+
         const line = String(typedLines[nextPos] ?? "");
         setHistPos(nextPos);
         setInputLine(line);
-        setCaret(line.length);
+        placeCaretAtEnd(line);
     };
 
-    const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const insertAtNativeSelection = (text: string) => {
+        const el = inputRef.current;
+        if (!el) return;
+
+        const start = el.selectionStart ?? 0;
+        const end = el.selectionEnd ?? start;
+        const value = inputLine ?? "";
+        const next = value.slice(0, start) + text + value.slice(end);
+
+        setInputLine(next);
+
+        requestAnimationFrame(() => {
+            el.focus();
+            const pos = start + text.length;
+            el.setSelectionRange(pos, pos);
+            setCaret(pos);
+        });
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (!awaitingInput || disabled || busy) return;
 
-        // Handle helpful Ctrl shortcuts (don’t block everything)
         if (e.ctrlKey && !e.metaKey) {
             if (e.key.toLowerCase() === "a") {
                 e.preventDefault();
+                inputRef.current?.setSelectionRange(0, 0);
                 setCaret(0);
                 return;
             }
             if (e.key.toLowerCase() === "e") {
                 e.preventDefault();
-                setCaret((inputLine ?? "").length);
+                placeCaretAtEnd(inputLine ?? "");
                 return;
             }
-            // otherwise let browser do its thing
         }
 
-        // Enter submits
         if (e.key === "Enter") {
             e.preventDefault();
             e.stopPropagation();
@@ -172,10 +178,8 @@ export default function TerminalPane(props: {
             return;
         }
 
-        // History: Up/Down
         if (e.key === "ArrowUp") {
             e.preventDefault();
-            e.stopPropagation();
             if (!typedLines.length) return;
 
             if (histPos == null) {
@@ -189,7 +193,6 @@ export default function TerminalPane(props: {
 
         if (e.key === "ArrowDown") {
             e.preventDefault();
-            e.stopPropagation();
             if (histPos == null) return;
 
             if (histPos >= typedLines.length - 1) {
@@ -200,119 +203,75 @@ export default function TerminalPane(props: {
             return;
         }
 
-        // Caret navigation: Left/Right/Home/End
-        if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            e.stopPropagation();
-            setCaret((c) => Math.max(0, c - 1));
-            return;
-        }
-
-        if (e.key === "ArrowRight") {
-            e.preventDefault();
-            e.stopPropagation();
-            setCaret((c) => Math.min((inputLine ?? "").length, c + 1));
-            return;
-        }
-
-        if (e.key === "Home") {
-            e.preventDefault();
-            e.stopPropagation();
-            setCaret(0);
-            return;
-        }
-
-        if (e.key === "End") {
-            e.preventDefault();
-            e.stopPropagation();
-            setCaret((inputLine ?? "").length);
-            return;
-        }
-
-        // Editing: Backspace/Delete
-        if (e.key === "Backspace") {
-            e.preventDefault();
-            e.stopPropagation();
-            backspaceAtCaret();
-            return;
-        }
-
-        if (e.key === "Delete") {
-            e.preventDefault();
-            e.stopPropagation();
-            deleteAtCaret();
-            return;
-        }
-
-        // Escape clears line
         if (e.key === "Escape") {
             e.preventDefault();
-            e.stopPropagation();
             setInputLine("");
-            setCaret(0);
+            placeCaretAtEnd("");
             setHistPos(null);
             setHistDraft("");
             return;
         }
 
-        // Tab inserts spaces
         if (e.key === "Tab") {
             e.preventDefault();
-            e.stopPropagation();
-            insertTextAtCaret("  ");
+            insertAtNativeSelection("  ");
             return;
         }
 
-        // Printable characters insert at caret
-        if (e.key.length === 1 && !e.altKey && !e.metaKey && !e.ctrlKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            insertTextAtCaret(e.key);
-            return;
-        }
+        requestAnimationFrame(syncCaretFromTextarea);
     };
 
-    const onPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const next = e.target.value.replace(/\r?\n/g, "");
+        setInputLine(next);
+        setCaret(e.target.selectionStart ?? next.length);
+    };
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         if (!awaitingInput || disabled || busy) return;
         e.preventDefault();
-        e.stopPropagation();
 
         const text = e.clipboardData.getData("text") ?? "";
-        const cleaned = text.replace(/\r?\n/g, " "); // keep single-line stdin behavior
+        const cleaned = text.replace(/\r?\n/g, " ");
         if (!cleaned) return;
 
-        insertTextAtCaret(cleaned);
+        insertAtNativeSelection(cleaned);
     };
 
-    // Render input line with caret inside it
+    const focusNativeInput = () => {
+        if (!awaitingInput || disabled || busy) return;
+        inputRef.current?.focus();
+    };
+
     const inputBefore = cleanTermText(String(inputLine ?? "").slice(0, caret));
     const inputAfter = cleanTermText(String(inputLine ?? "").slice(caret));
 
     return (
         <>
             <style jsx global>{`
-              @keyframes ui-term-blink {
-                0%,
-                49% {
-                  opacity: 1;
-                }
-                50%,
-                100% {
-                  opacity: 0;
-                }
-              }
+        @keyframes ui-term-blink {
+          0%,
+          49% {
+            opacity: 1;
+          }
+          50%,
+          100% {
+            opacity: 0;
+          }
+        }
 
-              .ui-term-cursor {
-                display: inline-block;
-                margin-left: 1px;
-                opacity: 0.75;
-                animation: ui-term-blink 1s step-end infinite;
-                will-change: opacity;
-              }
-            `}</style>
+        .ui-term-cursor {
+          display: inline-block;
+          margin-left: 1px;
+          opacity: 0.75;
+          animation: ui-term-blink 1s step-end infinite;
+          will-change: opacity;
+        }
+      `}</style>
+
             <div
                 className={[
-                    "h-full rouncded-2xl border-t p-3u flex flex-col",
+                    "h-full  border-t p-3 flex flex-col",
                     "bg-white/80 dark:bg-black/40",
                     terminalHasError ? "border-rose-300/30" : "border-neutral-200 dark:border-white/10",
                 ].join(" ")}
@@ -331,26 +290,42 @@ export default function TerminalPane(props: {
                 <div
                     ref={scrollRef}
                     className={[
-                        "mt-2 flex-1 overflow-auto  border-t py-2",
+                        "mt-2 flex-1 overflow-auto border-t py-2 relative",
                         "bg-white/60 dark:bg-black/30",
                         terminalHasError ? "border-rose-300/20" : "border-neutral-200 dark:border-white/10",
                     ].join(" ")}
                 >
+          <textarea
+              ref={inputRef}
+              value={inputLine}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onSelect={syncCaretFromTextarea}
+              onClick={syncCaretFromTextarea}
+              onKeyUp={syncCaretFromTextarea}
+              onPaste={handlePaste}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              enterKeyHint="send"
+              aria-label="Terminal input"
+              className="absolute opacity-0 pointer-events-none h-0 w-0"
+          />
+
                     <div
-                        ref={inputRef}
+                        ref={surfaceRef}
                         tabIndex={0}
-                        role="textbox"
-                        aria-label="Terminal input"
-                        onKeyDown={onKeyDown}
-                        onPaste={onPaste}
-                        onMouseDown={() => inputRef.current?.focus()}
-                        spellCheck={false}
+                        role="button"
+                        aria-label="Terminal surface"
+                        onMouseDown={focusNativeInput}
+                        onTouchStart={focusNativeInput}
                         className={[
                             "outline-none",
                             "font-mono text-xs leading-5",
                             "whitespace-pre-wrap px-2 break-words",
                             "focus:ring-2 focus:ring-emerald-300/30 focus:rounded-lg",
-                            "mx-1"
+                            "mx-1 cursor-text"
                         ].join(" ")}
                     >
                         {terminal.map((l, i) => {
@@ -365,13 +340,12 @@ export default function TerminalPane(props: {
 
                         {awaitingInput ? (
                             <span className={lineCls("in")}>
-              {terminal.length ? "\n" : ""}
+                {terminal.length ? "\n" : ""}
                                 {livePrompt}
                                 {inputBefore}
-                                {/* ✅ blinking cursor class you already added */}
                                 <span className="ui-term-cursor">▋</span>
                                 {inputAfter}
-            </span>
+              </span>
                         ) : null}
                     </div>
                 </div>

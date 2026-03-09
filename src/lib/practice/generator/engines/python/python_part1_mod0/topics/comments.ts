@@ -1,11 +1,11 @@
 import {
     defineTopic,
-    type Handler,
+    type Handler, type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
     makeMultiChoiceOut,
-    makeCodeInputOut,
+    makeCodeInputOut, SubjectModuleGenerator,
 } from "@/lib/practice/generator/engines/utils";
 
 import { makeCodeExpected } from "../../_shared";
@@ -42,7 +42,8 @@ function Q(key: M0CommentsKey) {
 // Helpers
 // -----------------------------
 type OptId = "a" | "b" | "c" | "d";
-type AnyOut = GenOut<ExerciseKind>;
+
+
 
 function buildOptions(key: M0CommentsKey, ids: OptId[]) {
     return ids.map((id) => ({
@@ -55,7 +56,7 @@ function sc(
     key: M0CommentsKey,
     answerOptionId: OptId,
     optionIds: OptId[] = ["a", "b", "c"]
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -67,14 +68,14 @@ function sc(
             options: buildOptions(key, optionIds),
             answerOptionId,
             hint: `@:${Q(key)}.hint`,
-        }) as unknown as AnyOut; // ✅ cast fixes invariant GenOut
+        }) ; // ✅ cast fixes invariant GenOut
 }
 
 function mc(
     key: M0CommentsKey,
     answerOptionIds: OptId[],
     optionIds: OptId[] = ["a", "b", "c", "d"]
-): Handler {
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -86,13 +87,13 @@ function mc(
             options: buildOptions(key, optionIds),
             answerOptionIds,
             hint: `@:${Q(key)}.hint`,
-        }) as unknown as AnyOut; // ✅ cast fixes invariant GenOut
+        }) ; // ✅ cast fixes invariant GenOut
 }
 
 // -----------------------------
 // Handlers
 // -----------------------------
-export const M0_COMMENTS_HANDLERS: Record<M0CommentsKey, Handler> = {
+export const M0_COMMENTS_HANDLERS = {
     m0_comments_symbol: sc("m0_comments_symbol", "b", ["a", "b", "c"]),
     m0_comments_ignored_by_python: sc("m0_comments_ignored_by_python", "a", ["a", "b", "c"]),
     m0_comments_best_reason: sc("m0_comments_best_reason", "b", ["a", "b", "c"]),
@@ -125,7 +126,7 @@ print("End")
                 solutionCode: `print("Start")\n# print(not_defined)\nprint("End")\n`,
             }),
             editorHeight: 360,
-        }) as unknown as AnyOut, // ✅ cast
+        }) , // ✅ cast
 
     m0_comments_disable_wrong_math_line: ({ diff, id, topic }: HandlerArgs) =>
         makeCodeInputOut({
@@ -157,7 +158,7 @@ print(total)
                     `print(total)\n`,
             }),
             editorHeight: 420,
-        }) as unknown as AnyOut, // ✅ cast
+        }) , // ✅ cast
 };
 
 export const M0_COMMENTS_GENERATOR_TOPIC: TopicBundle = defineTopic(

@@ -1,7 +1,7 @@
 import type { CodeInputExercise } from "../../../../../types";
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -36,7 +36,8 @@ function Q(key: M1TypesKey) {
 }
 
 type OptId = "a" | "b" | "c";
-type AnyOut = GenOut<ExerciseKind>;
+
+
 
 function buildOptions(
     key: Extract<
@@ -63,7 +64,7 @@ function sc(
         | "m1_types_none_sc"
     >,
     answerOptionId: OptId
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -75,10 +76,10 @@ function sc(
             options: buildOptions(key, ["a", "b", "c"]),
             answerOptionId,
             hint: tag(`${Q(key)}.hint`),
-        }) as unknown as AnyOut;
+        }) ;
 }
 
-export const M1_TYPES_HANDLERS: Record<M1TypesKey, Handler> = {
+export const M1_TYPES_HANDLERS = {
     m1_types_string_vs_int_sc: sc("m1_types_string_vs_int_sc", "b"),
     m1_types_int_vs_float_sc: sc("m1_types_int_vs_float_sc", "b"),
     m1_types_bool_sc: sc("m1_types_bool_sc", "a"),
@@ -162,7 +163,7 @@ age = input()
                     `age_next = age + 1\n` +
                     pyFStringPrint(outputTemplate),
             }),
-        } as unknown as AnyOut;
+        } ;
     },
 
     m1_types_tip_total_code: (args: HandlerArgs) => {
@@ -253,7 +254,7 @@ pct = int(input())
                     pyFStringPrint(tipLineTemplate) +
                     pyFStringPrint(totalLineTemplate),
             }),
-        } as unknown as AnyOut;
+        } ;
     },
 
     m1_types_c_to_f_code: (args: HandlerArgs) => {
@@ -303,7 +304,7 @@ Print ONLY F.`
                 ],
                 solutionCode: `c = int(input())\nf = int(c * 9 / 5 + 32)\nprint(f)\n`,
             }),
-        } as unknown as AnyOut;
+        } ;
     },
 };
 

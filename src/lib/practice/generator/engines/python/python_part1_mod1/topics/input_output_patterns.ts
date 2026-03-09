@@ -1,7 +1,7 @@
 import { makeCodeExpected, safeInt, pickName } from "../../_shared";
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -353,7 +353,7 @@ Print ONLY F.`
             answerOptionIds: ["a", "b", "d"],
             hint: tag(`${Q("m1_io_convert_then_compute_truths")}.hint`),
         }),
-} satisfies Record<M1IoKey, Handler>;
+} satisfies Record<M1IoKey, AnyHandler>;
 
 export const M1_IO_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/operators_expressions.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type HandlerArgs,
     makeSingleChoiceOut,
     makeMultiChoiceOut,
@@ -85,7 +85,7 @@ function sc(
         | "m1_ops_checkout_formula_sc"
     >,
     answerOptionId: OptId3
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -108,7 +108,7 @@ function mc(
         | "m1_ops_checkout_outputs_mc"
     >,
     answerOptionIds: OptId4[]
-): Handler {
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -337,7 +337,7 @@ Total = <total>`
             expected,
         });
     },
-} satisfies Record<M1OperatorsKey, Handler>;
+} satisfies Record<M1OperatorsKey, AnyHandler>;
 
 export const M1_GENERATOR_OPERATORS_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

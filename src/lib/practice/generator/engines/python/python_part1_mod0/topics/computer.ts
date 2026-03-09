@@ -2,9 +2,9 @@
 
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
-    makeSingleChoiceOut,
+    makeSingleChoiceOut, HandlerArgs,
 } from "@/lib/practice/generator/engines/utils";
 import {TOPIC_ID} from "@/lib/subjects/python/modules/module0/topics/computer_intro/meta";
 
@@ -33,8 +33,8 @@ function sc(
     key: M0ComputerKey,
     answerOptionId: OptId,
     optionIds: OptId[] = ["a", "b", "c"],
-): Handler {
-    return ({ diff, id, topic }: any) =>
+): Handler<"single_choice"> {
+    return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
             id,
@@ -48,7 +48,7 @@ function sc(
         });
 }
 
-export const M0_COMPUTER_HANDLERS: Record<M0ComputerKey, Handler> = {
+export const M0_COMPUTER_HANDLERS= {
     m0_computer_ipo_order: sc("m0_computer_ipo_order", "b"),
     m0_computer_algorithm_definition: sc("m0_computer_algorithm_definition", "a"),
     m0_computer_input_examples: sc("m0_computer_input_examples", "a"),

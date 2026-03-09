@@ -90,7 +90,6 @@ async function main() {
         },
     });
 
-    console.log("Updated user:");
     console.log(JSON.stringify(updated, null, 2));
 }
 

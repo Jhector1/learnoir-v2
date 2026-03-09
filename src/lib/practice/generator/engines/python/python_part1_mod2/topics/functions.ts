@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod2/topics/functions_basics.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -80,7 +80,7 @@ function sc(
         | "m2_func_scope_rule_sc"
     >,
     answerOptionId: OptId3
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -103,7 +103,7 @@ function mc(
         | "m2_func_sum_list_steps_mc"
     >,
     answerOptionIds: OptId4[]
-): Handler {
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -352,7 +352,7 @@ sum = <value>`
     m2_func_return_stops_mc: mc("m2_func_return_stops_mc", ["a", "c"]),
     m2_func_calls_and_arguments_mc: mc("m2_func_calls_and_arguments_mc", ["a", "b", "d"]),
     m2_func_sum_list_steps_mc: mc("m2_func_sum_list_steps_mc", ["a", "c", "d"]),
-} satisfies Record<M2FunctionsKey, Handler>;
+} satisfies Record<M2FunctionsKey, AnyHandler>;
 
 export const M2_FUNCTIONS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

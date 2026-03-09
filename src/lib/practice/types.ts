@@ -19,30 +19,9 @@ export type Topic = TopicSlug;
  */
 
 export type GenKey =
-    | "dot"
-    | "projection"
-    | "angle"
-    | "vectors"
-    | "vectors_part1"
-    | "vectors_part2"
-    | "linear_systems"
-    | "augmented"
-    | "rref"
-    | "solution_types"
-    | "parametric"
-    | "matrix_ops"
-    | "matrix_inverse"
-    | "matrix_properties"
-    | "matrices_part1"
-    | "matrices_part2" // ✅ NEW
+
     | "python_part1" // ✅ NEW
-    | "linear_algebra_mod0"
-    | "linear_algebra_mod1"
-    | "linear_algebra_mod2"
-    | "linear_algebra_mod3"
-    | "haitian_creole_part1"
-    | "linear_algebra_mod4"
-    | "ai_mod0"; // ✅ NEW
+
 
 export type ExerciseKind =
     | "single_choice"

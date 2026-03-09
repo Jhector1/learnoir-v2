@@ -1,7 +1,8 @@
-import type { SketchEntry } from "@/components/sketches/registryTypes";
+// import type { SketchEntry } from "@/components/sketches/registryTypes";
 import type { ReviewTopicShape } from "@/lib/subjects/types";
 import type { CourseBundle } from "./defineCourse";
 import type { TopicGeneratorRegistration, TopicMeta } from "./defineTopicBundle";
+import {SketchEntry} from "@/components/sketches/subjects";
 
 export type BuiltSubject = CourseBundle["subject"];
 export type BuiltModule = {

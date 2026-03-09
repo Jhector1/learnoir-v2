@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/variables.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type HandlerArgs,
     makeSingleChoiceOut,
     makeCodeInputOut,
@@ -61,7 +61,7 @@ function sc(
         | "m1_vars_update_value_sc"
     >,
     answerOptionId: OptId
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -288,7 +288,7 @@ Total = <total>`
             expected,
         });
     },
-} satisfies Record<M1VarsKey, Handler>;
+} satisfies Record<M1VarsKey, AnyHandler>;
 
 export const VARS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

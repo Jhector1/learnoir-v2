@@ -1,7 +1,8 @@
 // src/lib/practice/generator/generatorTypes.ts
 import { PracticeKind } from "@prisma/client";
 import type { Difficulty, ExerciseKind, TopicSlug } from "../types";
-import type { GenOut } from "./shared/expected";
+import {SubjectModuleGenerator} from "@/lib/practice/generator/engines/utils";
+
 import type { RNG } from "./shared/rng";
 
 /**
@@ -42,5 +43,5 @@ export type TopicGenerator = (
   rng: RNG,
   diff: Difficulty,
   id: string,
-) => GenOut<ExerciseKind>;
+) => SubjectModuleGenerator;
 export type GenFactory = (ctx: TopicContext) => TopicGenerator;

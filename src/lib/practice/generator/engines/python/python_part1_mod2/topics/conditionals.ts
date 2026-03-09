@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod2/topics/conditionals_basics.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -59,7 +59,7 @@ function sc(
     >,
     answerOptionId: OptId,
     optionIds: OptId[] = ["a", "b", "c"]
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -82,7 +82,7 @@ function mc(
     >,
     answerOptionIds: OptId[],
     optionIds: OptId[] = ["a", "b", "c", "d"]
-): Handler {
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -300,7 +300,7 @@ Wrong password`
 
     m2_cond_falsey_values_mc: mc("m2_cond_falsey_values_mc", ["a", "b", "c"], ["a", "b", "c", "d"]),
     m2_cond_logical_ops_mc: mc("m2_cond_logical_ops_mc", ["a", "b", "c"], ["a", "b", "c", "d"]),
-} satisfies Record<M2ConditionalsKey, Handler>;
+} satisfies Record<M2ConditionalsKey, AnyHandler>;
 
 export const M2_CONDITIONALS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

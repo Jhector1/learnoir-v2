@@ -42,7 +42,6 @@ export function buildReviewRegistry(): Record<string, Record<string, ReviewModul
             };
         }
     }
-    console.log(out)
 
     return out;
 }

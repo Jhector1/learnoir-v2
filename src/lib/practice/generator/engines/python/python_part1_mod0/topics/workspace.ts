@@ -1,6 +1,6 @@
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type HandlerArgs,
     makeSingleChoiceOut,
     type TopicBundle,
@@ -32,7 +32,7 @@ function sc(
     key: M0WorkspaceKey,
     answerOptionId: OptId,
     optionIds: OptId[] = ["a", "b", "c"]
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -47,7 +47,7 @@ function sc(
         });
 }
 
-export const M0_WORKSPACE_HANDLERS: Record<M0WorkspaceKey, Handler> = {
+export const M0_WORKSPACE_HANDLERS={
     m0_workspace_run_button: sc("m0_workspace_run_button", "b"),
     m0_workspace_terminal_output: sc("m0_workspace_terminal_output", "b"),
     m0_workspace_editor_area: sc("m0_workspace_editor_area", "a"),

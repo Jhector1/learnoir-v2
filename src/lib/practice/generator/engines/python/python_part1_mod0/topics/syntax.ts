@@ -1,6 +1,6 @@
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type HandlerArgs,
     makeSingleChoiceOut,
     type TopicBundle,
@@ -32,7 +32,7 @@ function sc(
     key: M0SyntaxKey,
     answerOptionId: OptId,
     optionIds: OptId[] = ["a", "b", "c"]
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -47,7 +47,7 @@ function sc(
         });
 }
 
-export const M0_SYNTAX_HANDLERS: Record<M0SyntaxKey, Handler> = {
+export const M0_SYNTAX_HANDLERS= {
     m0_syntax_definition: sc("m0_syntax_definition", "a"),
     m0_syntax_syntaxerror: sc("m0_syntax_syntaxerror", "a"),
     m0_syntax_indentation_rule: sc("m0_syntax_indentation_rule", "b"),

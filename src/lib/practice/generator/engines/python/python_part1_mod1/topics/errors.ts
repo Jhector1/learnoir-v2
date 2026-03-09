@@ -1,6 +1,6 @@
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type HandlerArgs,
     makeSingleChoiceOut,
     makeCodeInputOut,
@@ -52,7 +52,7 @@ function sc(
         | "m1_err_debug_combo_sc"
     >,
     answerOptionId: OptId
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -176,7 +176,7 @@ Invalid age`
             expected,
         });
     },
-} satisfies Record<M1ErrorsKey, Handler>;
+} satisfies Record<M1ErrorsKey, AnyHandler>;
 
 export const M1_ERRORS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

@@ -1,7 +1,7 @@
 // src/lib/practice/generator/engines/python/python_part1_mod2/topics/lists_basics.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -77,7 +77,7 @@ function sc(
         | "m2_list_append_sc"
     >,
     answerOptionId: OptId3
-): Handler {
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -100,7 +100,7 @@ function mc(
         | "m2_list_loop_sum_steps_mc"
     >,
     answerOptionIds: OptId4[]
-): Handler {
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -355,7 +355,7 @@ names[1] = <second>`
             expected,
         });
     },
-} satisfies Record<M2ListsKey, Handler>;
+} satisfies Record<M2ListsKey, AnyHandler>;
 
 export const M2_LISTS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

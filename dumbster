@@ -135,7 +135,7 @@ export const PY_COMMENTS = {
 } satisfies { topic: ReviewTopicShape; def: TopicDefCompat };// src/lib/practice/generator/engines/python/python_part1_mod0/topics/comments_intro.ts
 import {
     defineTopic,
-    type Handler,
+    type Handler,type AnyHandler,
     type TopicBundle,
     makeSingleChoiceOut,
     makeMultiChoiceOut,
@@ -185,8 +185,8 @@ function buildOptions(key: M0CommentsKey, ids: OptId[]) {
 }
 
 // Single choice helper (wrapper return via makeSingleChoiceOut)
-function sc(key: M0CommentsKey, answerOptionId: OptId, optionIds: OptId[] = ["a", "b", "c"]): Handler {
-    return ({ diff, id, topic }: any) =>
+function sc(key: M0CommentsKey, answerOptionId: OptId, optionIds: OptId[] = ["a", "b", "c"]): Handler<"single_choice"> {
+    return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
             id,
@@ -220,9 +220,9 @@ function mc(key: M0CommentsKey, answerOptionIds: OptId[], optionIds: OptId[] = [
 // Handlers (ALL return the SAME wrapper shape)
 // -----------------------------
 export const M0_COMMENTS_HANDLERS: {
-    m0_comments_inline_comment: (args: HandlerArgs) => GenOut<ExerciseKind>;
-    m0_comments_which_lines_are_comments: (args: HandlerArgs) => GenOut<ExerciseKind>;
-    m0_comments_symbol: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_inline_comment: (args: HandlerArgs) => SubjectModuleGenerator;
+    m0_comments_which_lines_are_comments: (args: HandlerArgs) => SubjectModuleGenerator;
+    m0_comments_symbol: (args: HandlerArgs) => SubjectModuleGenerator;
     m0_comments_disable_wrong_math_line: ({diff, id, topic}: any) => {
         archetype: string;
         expected: any;
@@ -239,10 +239,10 @@ export const M0_COMMENTS_HANDLERS: {
             prompt: string
         }
     };
-    m0_comments_ignored_by_python: (args: HandlerArgs) => GenOut<ExerciseKind>;
-    m0_comments_docstring_vs_comment: (args: HandlerArgs) => GenOut<ExerciseKind>;
-    m0_comments_best_reason: (args: HandlerArgs) => GenOut<ExerciseKind>;
-    m0_comments_multiline_true: (args: HandlerArgs) => GenOut<ExerciseKind>;
+    m0_comments_ignored_by_python: (args: HandlerArgs) => SubjectModuleGenerator;
+    m0_comments_docstring_vs_comment: (args: HandlerArgs) => SubjectModuleGenerator;
+    m0_comments_best_reason: (args: HandlerArgs) => SubjectModuleGenerator;
+    m0_comments_multiline_true: (args: HandlerArgs) => SubjectModuleGenerator;
     m0_comments_disable_error_line: ({diff, id, topic}: any) => {
         archetype: string;
         expected: any;
@@ -259,7 +259,7 @@ export const M0_COMMENTS_HANDLERS: {
             prompt: string
         }
     };
-    m0_comments_multiline_valid_ways: (args: HandlerArgs) => GenOut<ExerciseKind>
+    m0_comments_multiline_valid_ways: (args: HandlerArgs) => SubjectModuleGenerator
 } = {
     // single_choice (3-option)
     m0_comments_symbol: sc("m0_comments_symbol", "b", ["a", "b", "c"]),

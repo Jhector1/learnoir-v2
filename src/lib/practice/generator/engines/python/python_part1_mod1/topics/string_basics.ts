@@ -1,6 +1,7 @@
 import {
     defineTopic,
-    type Handler,
+
+    type Handler,type AnyHandler,
     type TopicBundle,
     type HandlerArgs,
     makeSingleChoiceOut,
@@ -50,7 +51,7 @@ function buildOptions3(
         | "m1_str_fstring_placeholder_sc"
         | "m1_str_strip_sc"
         | "m1_str_lower_sc"
-    >
+    >,
 ) {
     return (["a", "b", "c"] as const).map((id) => ({
         id,
@@ -64,7 +65,7 @@ function buildOptions4(
         | "m1_str_username_steps_mc"
         | "m1_str_concat_truths_mc"
         | "m1_str_indexing_first_char_mc"
-    >
+    >,
 ) {
     return (["a", "b", "c", "d"] as const).map((id) => ({
         id,
@@ -80,8 +81,8 @@ function sc(
         | "m1_str_strip_sc"
         | "m1_str_lower_sc"
     >,
-    answerOptionId: OptId3
-): Handler {
+    answerOptionId: OptId3,
+): Handler<"single_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
             archetype: key,
@@ -103,8 +104,8 @@ function mc(
         | "m1_str_concat_truths_mc"
         | "m1_str_indexing_first_char_mc"
     >,
-    answerOptionIds: OptId4[]
-): Handler {
+    answerOptionIds: OptId4[],
+): Handler<"multi_choice"> {
     return ({ diff, id, topic }: HandlerArgs) =>
         makeMultiChoiceOut({
             archetype: key,
@@ -139,7 +140,7 @@ export const M1_STRINGS_HANDLERS = {
         const outputTemplate = i18nText(
             args,
             `${Q("m1_str_fstring_greeting_code")}.runtime.outputTemplate`,
-            "Hello, {name}!"
+            "Hello, {name}!",
         );
 
         const promptText = i18nText(
@@ -148,7 +149,7 @@ export const M1_STRINGS_HANDLERS = {
             `Read ONE input (name).
 
 Print EXACTLY:
-Hello, <name>!`
+Hello, <name>!`,
         );
 
         const exStdin = `${name1}\n`;
@@ -168,9 +169,7 @@ Hello, <name>!`
                     match: "exact",
                 },
             ],
-            solutionCode:
-                `name = input()\n` +
-                pyFStringPrint(outputTemplate),
+            solutionCode: `name = input()\n` + pyFStringPrint(outputTemplate),
         });
 
         return makeCodeInputOut({
@@ -212,7 +211,7 @@ Rules:
 - strip spaces
 - username = first letter of first + last
 - lowercase
-Print ONLY the username.`
+Print ONLY the username.`,
         );
 
         const exStdin = `${stdinFirst1}\n${stdinLast1}\n`;
@@ -252,7 +251,7 @@ Print ONLY the username.`
             expected,
         });
     },
-} satisfies Record<M1StringsKey, Handler>;
+} satisfies Record<M1StringsKey, AnyHandler>;
 
 export const M1_STRINGS_GENERATOR_TOPIC: TopicBundle = defineTopic(
     TOPIC_ID,

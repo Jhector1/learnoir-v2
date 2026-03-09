@@ -4,12 +4,11 @@ import type { RNG } from "../../../shared/rng";
 import type { TopicContext } from "../../../generatorTypes";
 
 import { makePythonModuleGenerator } from "../_shared";
-
-import { M0_WORKSPACE_TOPIC } from "./topics/workspace";
-import { M0_SYNTAX_TOPIC } from "./topics/syntax";
-import { M0_PROGRAMMING_TOPIC } from "./topics/programming";
-import { M0_COMPUTER_TOPIC } from "./topics/computer";
-import { M0_COMMENTS_TOPIC } from "./topics/comments";
+import {M0_WORKSPACE_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module0/topics/workspace/generator";
+import {M0_SYNTAX_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module0/topics/syntax_intro/generator";
+import {M0_PROGRAMMING_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module0/topics/programming_intro/generator";
+import {M0_COMPUTER_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module0/topics/computer_intro/generator";
+import {M0_COMMENTS_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module0/topics/comments_intro/generator";
 
 export function makeGenPythonStatementsPart1Mod0(ctx: TopicContext) {
     return makePythonModuleGenerator({
@@ -17,6 +16,6 @@ export function makeGenPythonStatementsPart1Mod0(ctx: TopicContext) {
         ctx,
         defaultPurpose: "quiz",
         enablePurpose: true,
-        topics: [M0_WORKSPACE_TOPIC, M0_SYNTAX_TOPIC, M0_PROGRAMMING_TOPIC, M0_COMPUTER_TOPIC, M0_COMMENTS_TOPIC],
+        topics: [M0_WORKSPACE_GENERATOR_TOPIC, M0_SYNTAX_GENERATOR_TOPIC, M0_PROGRAMMING_GENERATOR_TOPIC, M0_COMPUTER_GENERATOR_TOPIC, M0_COMMENTS_GENERATOR_TOPIC],
     }) as unknown as (rng: RNG, diff: Difficulty, id: string) => GenOut<ExerciseKind>;
 }

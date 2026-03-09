@@ -40,8 +40,9 @@ export type GenKey =
     | "linear_algebra_mod1"
     | "linear_algebra_mod2"
     | "linear_algebra_mod3"
-    | "haitian_creole_part1" |
-    "linear_algebra_mod4" | "ai_mod0"; // ✅ NEW
+    | "haitian_creole_part1"
+    | "linear_algebra_mod4"
+    | "ai_mod0"; // ✅ NEW
 
 export type ExerciseKind =
     | "single_choice"

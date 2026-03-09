@@ -1,7 +1,20 @@
-// src/lib/practice/generator/engines/python/python_part1_mod1/topics/errors.ts
-import type { CodeInputExercise } from "../../../../../types";
-import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, safeInt, terminalFence } from "../../_shared";
+import {
+    defineTopic,
+    type Handler,
+    type HandlerArgs,
+    makeSingleChoiceOut,
+    makeCodeInputOut,
+    type TopicBundle,
+} from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, safeInt } from "../../_shared";
+import { TOPIC_ID } from "@/lib/subjects/python/modules/module1/topics/errors_intro/meta";
+import {
+    i18nText,
+    terminalFenceI18n,
+    fillTemplate,
+    tag,
+    pyFStringPrint,
+} from "@/lib/practice/generator/shared/i18n";
 
 export const M1_ERRORS_POOL = [
     { key: "m1_types_errors_sc", w: 1, kind: "single_choice", purpose: "quiz" },
@@ -16,161 +29,69 @@ export const M1_ERRORS_POOL = [
 
 export type M1ErrorsKey = (typeof M1_ERRORS_POOL)[number]["key"];
 
-export const M1_ERRORS_HANDLERS: Record<M1ErrorsKey, Handler> = {
-    /* ------------------------------ single choice ------------------------------ */
+function Q(key: M1ErrorsKey) {
+    return `quiz.${key}`;
+}
 
-    m1_types_errors_sc: ({ diff, id, topic }) =>
+type OptId = "a" | "b" | "c";
+
+function buildOptions(key: M1ErrorsKey, ids: OptId[]) {
+    return ids.map((id) => ({
+        id,
+        text: tag(`${Q(key)}.options.${id}`),
+    }));
+}
+
+function sc(
+    key: Extract<
+        M1ErrorsKey,
+        | "m1_types_errors_sc"
+        | "m1_err_nameerror_sc"
+        | "m1_err_typeerror_sc"
+        | "m1_err_valueerror_sc"
+        | "m1_err_debug_combo_sc"
+    >,
+    answerOptionId: OptId
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
-            archetype: "m1_types_errors_sc",
+            archetype: key,
             id,
             topic,
             diff,
-            title: "Match the error to the problem",
-            prompt: String.raw`
-A student runs this code:
+            title: tag(`${Q(key)}.title`),
+            prompt: tag(`${Q(key)}.prompt`),
+            options: buildOptions(key, ["a", "b", "c"]),
+            answerOptionId,
+            hint: tag(`${Q(key)}.hint`),
+        });
+}
 
-~~~python
-age = input("Age: ")
-print(age + 1)
-~~~
+export const M1_ERRORS_HANDLERS = {
+    m1_types_errors_sc: sc("m1_types_errors_sc", "b"),
+    m1_err_nameerror_sc: sc("m1_err_nameerror_sc", "a"),
+    m1_err_typeerror_sc: sc("m1_err_typeerror_sc", "b"),
+    m1_err_valueerror_sc: sc("m1_err_valueerror_sc", "c"),
+    m1_err_debug_combo_sc: sc("m1_err_debug_combo_sc", "a"),
 
-What error will Python raise?
-`.trim(),
-            options: [
-                { id: "a", text: "NameError" },
-                { id: "b", text: "TypeError" },
-                { id: "c", text: "ValueError" },
-            ],
-            answerOptionId: "b",
-            hint: "input() returns a string, and you can’t add a string and an int.",
-        }),
+    m1_err_fix_type_mismatch_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
 
-    m1_err_nameerror_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_err_nameerror_sc",
-            id,
-            topic,
-            diff,
-            title: "NameError: label doesn’t exist",
-            prompt: String.raw`
-What error do you get if you run this?
-
-~~~python
-print(score)
-~~~
-
-(Assume \`score\` was never created.)
-`.trim(),
-            options: [
-                { id: "a", text: "NameError" },
-                { id: "b", text: "TypeError" },
-                { id: "c", text: "ValueError" },
-            ],
-            answerOptionId: "a",
-            hint: "NameError happens when you use a variable name that doesn’t exist yet.",
-        }),
-
-    m1_err_typeerror_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_err_typeerror_sc",
-            id,
-            topic,
-            diff,
-            title: "TypeError: types don’t mix",
-            prompt: String.raw`
-A shopping app stores the item count as a number:
-
-~~~python
-count = 3
-print("Items: " + count)
-~~~
-
-What error will this cause?
-`.trim(),
-            options: [
-                { id: "a", text: "NameError" },
-                { id: "b", text: "TypeError" },
-                { id: "c", text: "ValueError" },
-            ],
-            answerOptionId: "b",
-            hint: "You can’t concatenate a string and an int. Convert with str(count).",
-        }),
-
-    m1_err_valueerror_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_err_valueerror_sc",
-            id,
-            topic,
-            diff,
-            title: "ValueError: invalid conversion",
-            prompt: String.raw`
-A user typed \`twelve\` for their age.
-
-What happens here?
-
-~~~python
-age = int("twelve")
-~~~
-`.trim(),
-            options: [
-                { id: "a", text: "NameError" },
-                { id: "b", text: "TypeError" },
-                { id: "c", text: "ValueError" },
-            ],
-            answerOptionId: "c",
-            hint: "ValueError happens when conversion fails because the text isn’t a valid number.",
-        }),
-
-    m1_err_debug_combo_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_err_debug_combo_sc",
-            id,
-            topic,
-            diff,
-            title: "Best quick debug combo",
-            prompt: "When something behaves weirdly, what’s the best quick debug combo for beginners?",
-            options: [
-                { id: "a", text: "Print the value and print the type" },
-                { id: "b", text: "Restart the computer" },
-                { id: "c", text: "Delete the file and rewrite everything" },
-            ],
-            answerOptionId: "a",
-            hint: "Value + type solves most beginner confusion fast.",
-        }),
-
-    /* -------------------------------- code input -------------------------------- */
-
-    m1_err_fix_type_mismatch_code: ({ rng, diff, id, topic }) => {
         const a1 = safeInt(rng, 1, 50);
         const b1 = safeInt(rng, 1, 50);
         const a2 = safeInt(rng, 1, 50);
         const b2 = safeInt(rng, 1, 50);
 
+        const promptText = i18nText(
+            args,
+            `${Q("m1_err_fix_type_mismatch_code")}.prompt`,
+            `Read TWO inputs.
+
+They come in as text, so convert them to integers and print ONLY their sum.`
+        );
+
         const exStdin = `${a1}\n${b1}\n`;
         const exStdout = `${a1 + b1}\n`;
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Fix the type mismatch (add two numbers)",
-            prompt: String.raw`
-A calculator app reads two numbers from the user.
-
-Read TWO inputs.
-Convert them to integers.
-Print ONLY their sum.
-
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`a = input()
-b = input()
-# TODO: convert and print sum
-`,
-            hint: "int(a) and int(b)",
-        };
 
         const expected = makeCodeExpected({
             language: "python",
@@ -181,66 +102,84 @@ b = input()
             solutionCode: `a = int(input())\nb = int(input())\nprint(a + b)\n`,
         });
 
-        return { archetype: "m1_err_fix_type_mismatch_code", exercise, expected };
-    },
-
-    m1_err_parse_age_safely_code: ({ diff, id, topic }) => {
-        const ex1In = `16\n`;
-        const ex1Out = `Next year = 17\n`;
-        const ex2In = `twelve\n`;
-        const ex2Out = `Invalid age\n`;
-
-        const exercise: CodeInputExercise = {
+        return makeCodeInputOut({
+            archetype: "m1_err_fix_type_mismatch_code",
             id,
             topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Avoid ValueError (basic validation)",
-            prompt: String.raw`
-A website asks for age as text.
-
-Read ONE input (a string).
-
-Rules:
-- If it looks like a whole number (digits only), convert it to int and print:
-  Next year = <age+1>
-- Otherwise print:
-  Invalid age
-
-Examples:
-
-${terminalFence(ex1In, ex1Out)}
-
-${terminalFence(ex2In, ex2Out)}
-`.trim(),
+            diff,
+            title: tag(`${Q("m1_err_fix_type_mismatch_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
             language: "python",
-            starterCode: String.raw`text = input().strip()
-# TODO
-`,
-            hint: "Use text.isdigit() to check. Then int(text).",
-        };
+            starterCode: tag(`${Q("m1_err_fix_type_mismatch_code")}.starterCode`),
+            hint: tag(`${Q("m1_err_fix_type_mismatch_code")}.hint`),
+            expected,
+        });
+    },
+
+    m1_err_parse_age_safely_code: (args: HandlerArgs) => {
+        const { diff, id, topic } = args;
+
+        const nextYearTemplate = i18nText(
+            args,
+            `${Q("m1_err_parse_age_safely_code")}.runtime.nextYearTemplate`,
+            "Next year = {age_next}"
+        );
+        const invalidAgeText = i18nText(
+            args,
+            `${Q("m1_err_parse_age_safely_code")}.invalidAgeText`,
+            "Invalid age"
+        );
+        const promptText = i18nText(
+            args,
+            `${Q("m1_err_parse_age_safely_code")}.prompt`,
+            `Read ONE input called age text.
+
+If it contains only digits:
+- convert it to an integer
+- print: Next year = <age+1>
+
+Otherwise print:
+Invalid age`
+        );
+
+        const ex1In = `16\n`;
+        const ex1Out = `${fillTemplate(nextYearTemplate, { age_next: 17 })}\n`;
+        const ex2In = `twelve\n`;
+        const ex2Out = `${invalidAgeText}\n`;
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `16\n`, stdout: `Next year = 17\n`, match: "exact" },
-                { stdin: `twelve\n`, stdout: `Invalid age\n`, match: "exact" },
+                { stdin: ex1In, stdout: ex1Out, match: "exact" },
+                { stdin: ex2In, stdout: ex2Out, match: "exact" },
             ],
             solutionCode:
                 `text = input().strip()\n` +
                 `if text.isdigit():\n` +
                 `    age = int(text)\n` +
-                `    print(f"Next year = {age + 1}")\n` +
+                `    age_next = age + 1\n` +
+                `    ${pyFStringPrint(nextYearTemplate).trimEnd()}\n` +
                 `else:\n` +
-                `    print("Invalid age")\n`,
+                `    print(${JSON.stringify(invalidAgeText)})\n`,
         });
 
-        return { archetype: "m1_err_parse_age_safely_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_err_parse_age_safely_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_err_parse_age_safely_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, ex1In, ex1Out)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_err_parse_age_safely_code")}.starterCode`),
+            hint: tag(`${Q("m1_err_parse_age_safely_code")}.hint`),
+            expected,
+        });
     },
-};
+} satisfies Record<M1ErrorsKey, Handler>;
 
-export const M1_ERRORS_TOPIC: TopicBundle = defineTopic(
-    "errors_intro",
-    M1_ERRORS_POOL as any,
-    M1_ERRORS_HANDLERS as any,
+export const M1_ERRORS_GENERATOR_TOPIC: TopicBundle = defineTopic(
+    TOPIC_ID,
+    M1_ERRORS_POOL,
+    M1_ERRORS_HANDLERS
 );

@@ -4,11 +4,12 @@ import type { RNG } from "../../../shared/rng";
 import type { TopicContext } from "../../../generatorTypes";
 
 import { makePythonModuleGenerator } from "../_shared";
-
-import { M2_CONDITIONALS_TOPIC } from "./topics/conditionals";
-import { M2_LOOPS_TOPIC } from "./topics/loops";
-import { M2_LISTS_TOPIC } from "./topics/lists";
-import { M2_FUNCTIONS_TOPIC } from "./topics/functions";
+import {
+    M2_CONDITIONALS_GENERATOR_TOPIC
+} from "@/lib/subjects/python/modules/module2/topics/conditionals_basics/generator";
+import {M2_LOOPS_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module2/topics/loops_basics/generator";
+import {M2_LISTS_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module2/topics/lists_basics/generator";
+import {M2_FUNCTIONS_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module2/topics/functions_basics/generator";
 
 export function makeGenPythonStatementsPart1Mod2(ctx: TopicContext) {
     return makePythonModuleGenerator({
@@ -16,6 +17,6 @@ export function makeGenPythonStatementsPart1Mod2(ctx: TopicContext) {
         ctx,
         defaultPurpose: "project",
         enablePurpose: true,
-        topics: [M2_CONDITIONALS_TOPIC, M2_LOOPS_TOPIC, M2_LISTS_TOPIC, M2_FUNCTIONS_TOPIC],
+        topics: [M2_CONDITIONALS_GENERATOR_TOPIC, M2_LOOPS_GENERATOR_TOPIC, M2_LISTS_GENERATOR_TOPIC, M2_FUNCTIONS_GENERATOR_TOPIC],
     }) as unknown as (rng: RNG, diff: Difficulty, id: string) => GenOut<ExerciseKind>;
 }

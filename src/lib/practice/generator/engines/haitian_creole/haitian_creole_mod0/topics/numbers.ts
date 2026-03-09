@@ -9,8 +9,8 @@ import { defineTopic, type Handler, type TopicBundle, makeSingleChoiceOut } from
 import { makeTextExpected, makeVoiceExpected } from "../../_shared";
 
 export const HC_NUMBERS_POOL = [
-    { key: "hc_num_10_is_dis_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_num_kat_is_which_number_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_num_10_is_dis_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_num_kat_is_which_number_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
 
     { key: "hc_num_fill_blank_2_equals", w: 1, kind: "fill_blank_choice", purpose: "quiz" },
     { key: "hc_num_fill_blank__equals_5", w: 1, kind: "fill_blank_choice", purpose: "quiz" },
@@ -22,40 +22,40 @@ export const HC_NUMBERS_POOL = [
 export type HcNumbersKey = (typeof HC_NUMBERS_POOL)[number]["key"];
 
 export const HC_NUMBERS_HANDLERS: Record<HcNumbersKey, Handler> = {
-    hc_num_10_is_dis_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_num_10_is_dis_mcq",
-            id,
-            topic,
-            diff,
-            title: "Number: 10",
-            prompt: "Which Haitian Creole word means **10**?",
-            options: [
-                { id: "a", text: "senk" },
-                { id: "b", text: "dis" },
-                { id: "c", text: "kat" },
-            ],
-            answerOptionId: "b",
-            hint: "10 = **dis**.",
-        }),
-
-    hc_num_kat_is_which_number_mcq: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "kat",
-            prompt: `**kat** is which number?`,
-            options: [
-                { id: "a", text: "2" },
-                { id: "b", text: "4" },
-                { id: "c", text: "10" },
-            ],
-            hint: "kat = 4",
-        };
-        return { archetype: "hc_num_kat_is_which_number_mcq", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+    // hc_num_10_is_dis_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_num_10_is_dis_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Number: 10",
+    //         prompt: "Which Haitian Creole word means **10**?",
+    //         options: [
+    //             { id: "a", text: "senk" },
+    //             { id: "b", text: "dis" },
+    //             { id: "c", text: "kat" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: "10 = **dis**.",
+    //     }),
+    //
+    // hc_num_kat_is_which_number_mcq: ({ diff, id, topic }) => {
+    //     const exercise: SingleChoiceExercise = {
+    //         id,
+    //         topic,
+    //         difficulty: diff,
+    //         kind: "single_choice",
+    //         title: "kat",
+    //         prompt: `**kat** is which number?`,
+    //         options: [
+    //             { id: "a", text: "2" },
+    //             { id: "b", text: "4" },
+    //             { id: "c", text: "10" },
+    //         ],
+    //         hint: "kat = 4",
+    //     };
+    //     return { archetype: "hc_num_kat_is_which_number_mcq", exercise, expected: { kind: "single_choice", optionId: "b" } };
+    // },
 
     hc_num_fill_blank_2_equals: ({ diff, id, topic }) => {
         const exercise: FillBlankChoiceExercise = {

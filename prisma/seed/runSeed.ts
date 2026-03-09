@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -12,6 +12,11 @@ function getPrisma() {
   return new PrismaClient({
     adapter: new PrismaPg(new Pool({ connectionString })),
   });
+}
+
+function toJson(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) return undefined;
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
 export async function runSeed() {
@@ -32,7 +37,7 @@ export async function runSeed() {
             order: s.order,
             title: s.title,
             description: s.description ?? null,
-            meta: s.meta ?? undefined,
+            meta: toJson(s.meta),
             imagePublicId: s.imagePublicId ?? null,
             imageAlt: s.imageAlt ?? null,
             accessPolicy: s.accessPolicy ?? "free",
@@ -44,7 +49,7 @@ export async function runSeed() {
             order: s.order,
             title: s.title,
             description: s.description ?? null,
-            meta: s.meta ?? undefined,
+            meta: toJson(s.meta),
             imagePublicId: s.imagePublicId ?? null,
             imageAlt: s.imageAlt ?? null,
             accessPolicy: s.accessPolicy ?? "free",
@@ -73,7 +78,7 @@ export async function runSeed() {
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
-            meta: m.meta ?? undefined,
+            meta: toJson(m.meta),
             accessOverride: m.accessOverride ?? "inherit",
             entitlementKey: m.entitlementKey ?? null,
           },
@@ -85,7 +90,7 @@ export async function runSeed() {
             weekStart: m.weekStart ?? null,
             weekEnd: m.weekEnd ?? null,
             subjectId,
-            meta: m.meta ?? undefined,
+            meta: toJson(m.meta),
             accessOverride: m.accessOverride ?? "inherit",
             entitlementKey: m.entitlementKey ?? null,
           },
@@ -105,7 +110,7 @@ export async function runSeed() {
 
         const meta =
             t.variant === undefined
-                ? (t.meta ?? undefined)
+                ? t.meta
                 : { ...(t.meta ?? {}), variant: t.variant };
 
         const row = await tx.practiceTopic.upsert({
@@ -117,7 +122,7 @@ export async function runSeed() {
             genKey: t.genKey ?? null,
             subjectId,
             moduleId,
-            meta: meta ?? undefined,
+            meta: toJson(meta),
           },
           create: {
             slug: t.slug,
@@ -127,7 +132,7 @@ export async function runSeed() {
             genKey: t.genKey ?? null,
             subjectId,
             moduleId,
-            meta: meta ?? undefined,
+            meta: toJson(meta),
           },
         });
 
@@ -147,7 +152,7 @@ export async function runSeed() {
             order: s.order,
             title: s.title,
             description: s.description ?? null,
-            meta: s.meta ?? undefined,
+            meta: toJson(s.meta),
             subjectId,
             moduleId,
           },
@@ -156,7 +161,7 @@ export async function runSeed() {
             order: s.order,
             title: s.title,
             description: s.description ?? null,
-            meta: s.meta ?? undefined,
+            meta: toJson(s.meta),
             subjectId,
             moduleId,
           },

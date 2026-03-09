@@ -5,7 +5,7 @@ import { LA_MODULES } from "./modules";
 import { LA_SECTIONS } from "./sections";
 // import { LA_TOPICS } from "./topics";
 
-// const SUBJECT_SLUG = "linear-algebra";
+// const PY_SUBJECT_SLUG = "linear-algebra";
 // const MOD0 = "linear-algebra-0";
 // const PREFIX0 = "la0";
 

@@ -29,6 +29,9 @@ import type { VectorPadState } from "@/components/vectorpad/types";
 import { getEffectiveSid } from "./storage";
 import type { SessionHistoryRow } from "./sessionStatus";
 import { PurposeMode, PurposePolicy } from "@/lib/subjects/types";
+import {useTaggedT} from "@/i18n/tagged";
+import {resolveDeepTagged} from "@/i18n/resolveDeepTagged";
+import {emitSfx} from "@/lib/sfx/bus";
 
 export type Phase = "practice" | "summary";
 
@@ -265,7 +268,12 @@ export function usePracticeEngine(args: {
 
   const current = stack[idx] ?? null;
   const exercise = current?.exercise ?? null;
+  const tt = useTaggedT();
+  const rawKeyRef = useRef<(key: string) => string>((key) => key);
+  const resolveTextRef = useRef<(value: string) => string>((value) => value);
 
+  rawKeyRef.current = (key: string) => tt.raw(key, key);
+  resolveTextRef.current = (value: string) => tt.resolve(value, value);
   // ✅ kill old action errors when navigating between questions
   useEffect(() => {
     setActionErr(null);
@@ -509,7 +517,16 @@ export function usePracticeEngine(args: {
 
       if ((res as any).sessionId) setSessionId(String((res as any).sessionId));
 
-      const item = initItemFromExercise(ex as Exercise, key);
+// ✅ resolve all tagged fields before storing in stack/state
+      const resolvedEx = resolveDeepTagged(
+          ex as Exercise,
+          (k) => rawKeyRef.current(k),
+      ) as Exercise;
+
+      const item = initItemFromExercise(resolvedEx, key, {
+        resolveText: (value) => resolveTextRef.current(value),
+      });
+
       setStack((prev) => {
         const next = [...prev, item];
         setIdx(next.length - 1);
@@ -717,6 +734,8 @@ export function usePracticeEngine(args: {
       const data = await submitPracticeAnswer({ key: current.key, answer } as any);
 
       const ok = Boolean((data as any)?.ok);
+      emitSfx(ok ? "answer:correct" : "answer:wrong");
+
       const serverFinalized = Boolean((data as any)?.finalized);
       const serverUsed = Number((data as any)?.attempts?.used);
 

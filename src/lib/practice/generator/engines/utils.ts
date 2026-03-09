@@ -1,10 +1,17 @@
-// import {PracticeKind, PracticePurpose} from "@prisma/client";
-import {RNG} from "@/lib/practice/generator/shared/rng";
-import {CodeLanguage, Difficulty, ExerciseKind, SingleChoiceExercise} from "@/lib/practice/types";
-import {GenOut} from "@/lib/practice/generator/shared/expected";
-// import {Handler} from "@/lib/practice/generator/engines/python/_shared";
-import {TopicContext} from "@/lib/practice/generator/generatorTypes";
-import {PracticeKind} from "@prisma/client";
+import { PracticeKind } from "@prisma/client";
+import { RNG } from "@/lib/practice/generator/shared/rng";
+import {
+    CodeInputExercise,
+    CodeLanguage,
+    Difficulty,
+    ExerciseKind,
+    MultiChoiceExercise,
+    SingleChoiceExercise,
+} from "@/lib/practice/types";
+import { GenOut } from "@/lib/practice/generator/shared/expected";
+import { TopicContext } from "@/lib/practice/generator/generatorTypes";
+import {pickName, safeInt} from "@/lib/practice/generator/engines/python/_shared";
+
 export type PracticePurpose = "quiz" | "project";
 
 export type PoolItem = {
@@ -21,9 +28,11 @@ export function parseTopicSlug(raw: string) {
     const prefix = parts.length > 1 ? parts[0] : null;
     return { raw: s, base, prefix };
 }
+
 export function readPoolFromMeta(meta: any): PoolItem[] {
     const pool = meta?.pool;
     if (!Array.isArray(pool)) return [];
+
     return pool
         .map((p: any) => ({
             key: String(p?.key ?? "").trim(),
@@ -40,9 +49,11 @@ export function weightedKey(rng: RNG, pool: PoolItem[]): string {
         (err as any).code = "EMPTY_POOL";
         throw err;
     }
+
     const picked = rng.weighted(pool.map((p) => ({ value: p.key, w: p.w })));
     return String(picked);
 }
+
 export function makeSingleChoiceOut(args: {
     archetype: string;
     id: string;
@@ -53,7 +64,7 @@ export function makeSingleChoiceOut(args: {
     options: Array<{ id: string; text: string }>;
     answerOptionId: string;
     hint?: string;
-}): GenOut<ExerciseKind> {
+}): GenOut<"single_choice"> {
     const exercise: SingleChoiceExercise = {
         id: args.id,
         topic: args.topic,
@@ -62,7 +73,7 @@ export function makeSingleChoiceOut(args: {
         title: args.title,
         prompt: args.prompt,
         options: args.options,
-        hint: args.hint,
+        ...(args.hint ? { hint: args.hint } : {}),
     };
 
     return {
@@ -72,11 +83,107 @@ export function makeSingleChoiceOut(args: {
     };
 }
 
-export type HandlerArgs = { rng: RNG; diff: Difficulty; id: string; topic: string };
+export type Opt = { id: string; text: string };
+
+export type DragExpected = { kind: "drag_reorder"; tokenIds: string[] };
+export type MultiExpected = { kind: "multi_choice"; optionIds: string[] };
+export type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
+
+export function makeTextExpected(
+    answers: string[],
+    match: "exact" | "includes" = "includes"
+): TextExpected {
+    return { kind: "text_input", answers, match };
+}
+
+export function makeDragExpected(tokenIds: string[]): DragExpected {
+    return { kind: "drag_reorder", tokenIds };
+}
+
+export function makeMultiExpected(optionIds: string[]): MultiExpected {
+    return { kind: "multi_choice", optionIds };
+}
+
+export function makeMultiChoiceOut(args: {
+    archetype: string;
+    id: string;
+    topic: string;
+    diff: Difficulty;
+    title: string;
+    prompt: string;
+    options: Opt[];
+    answerOptionIds: string[];
+    hint?: string;
+}): GenOut<"multi_choice"> {
+    const exercise: MultiChoiceExercise = {
+        id: args.id,
+        topic: args.topic,
+        difficulty: args.diff,
+        kind: "multi_choice",
+        title: args.title,
+        prompt: args.prompt,
+        options: args.options,
+        ...(args.hint ? { hint: args.hint } : {}),
+    };
+
+    return {
+        archetype: args.archetype,
+        exercise,
+        expected: makeMultiExpected(args.answerOptionIds),
+    };
+}
+
+export function makeCodeInputOut(args: {
+    archetype: string;
+    id: string;
+    topic: string;
+    diff: Difficulty;
+    title: string;
+    prompt: string;
+    starterCode: string;
+    language?: CodeLanguage;
+    expected: any;
+    hint?: string;
+    editorHeight?: number;
+    allowLanguageSwitch?: boolean;
+    stdinHint?: string;
+    examples?: Array<{ stdin?: string; stdout: string }>;
+}): GenOut<"code_input"> {
+    const exercise: CodeInputExercise = {
+        id: args.id,
+        topic: args.topic,
+        difficulty: args.diff,
+        kind: "code_input",
+        title: args.title,
+        prompt: args.prompt,
+        language: args.language ?? "python",
+        starterCode: args.starterCode,
+        ...(args.hint ? { hint: args.hint } : {}),
+        ...(args.editorHeight != null ? { editorHeight: args.editorHeight } : {}),
+        ...(args.allowLanguageSwitch != null ? { allowLanguageSwitch: args.allowLanguageSwitch } : {}),
+        ...(args.stdinHint ? { stdinHint: args.stdinHint } : {}),
+        ...(args.examples ? { examples: args.examples } : {}),
+    };
+
+    return {
+        archetype: args.archetype,
+        exercise,
+        expected: args.expected,
+    };
+}
+
+export type HandlerArgs = {
+    rng: RNG;
+    diff: Difficulty;
+    id: string;
+    topic: string;
+    ctx: TopicContext;
+};
+
 export type Handler = (args: HandlerArgs) => GenOut<ExerciseKind>;
 
 export type TopicBundle = {
-    slug: string; // base slug
+    slug: string;
     pool: readonly PoolItem[];
     handlers: Record<string, Handler>;
 };
@@ -84,16 +191,19 @@ export type TopicBundle = {
 export function defineTopic(
     slug: string,
     pool: readonly PoolItem[],
-    handlers: Record<string, Handler>,
+    handlers: Record<string, Handler>
 ): TopicBundle {
     return { slug, pool, handlers };
 }
 
 function toKeySet(v: any): Set<string> {
     const out = new Set<string>();
-    if (Array.isArray(v)) for (const x of v) out.add(String(x));
+    if (Array.isArray(v)) {
+        for (const x of v) out.add(String(x));
+    }
     return out;
 }
+
 export function normalizeExcludedKeys(ctx: TopicContext): Set<string> {
     const anyCtx = ctx as any;
     const s = new Set<string>();
@@ -121,16 +231,14 @@ export function filterExcluded(pool: PoolItem[], excluded: Set<string>): PoolIte
     return pool.filter((p) => !excluded.has(p.key));
 }
 
-
-
 function normalizePurpose(p?: PracticePurpose | null): PracticePurpose {
     return p === "project" || p === "quiz" ? p : "quiz";
 }
 
 function safeMixedPoolFor(validKeys: string[], defaultPurpose: PracticePurpose): PoolItem[] {
-    // last resort: you forgot to define any pool
     return validKeys.map((key) => ({ key, w: 1, purpose: defaultPurpose }));
 }
+
 export function makeSubjectModuleGenerator(args: {
     engineName: string;
     ctx: TopicContext;
@@ -139,15 +247,15 @@ export function makeSubjectModuleGenerator(args: {
     enablePurpose?: boolean;
 }) {
     const topicHandlers: Record<string, Record<string, Handler>> = Object.fromEntries(
-        args.topics.map((t) => [t.slug, t.handlers]),
+        args.topics.map((t) => [t.slug, t.handlers])
     );
 
     const topicValidKeys: Record<string, string[]> = Object.fromEntries(
-        args.topics.map((t) => [t.slug, t.pool.map((p) => p.key)]),
+        args.topics.map((t) => [t.slug, t.pool.map((p) => p.key)])
     );
 
     const topicDefaultPools: Record<string, PoolItem[]> = Object.fromEntries(
-        args.topics.map((t) => [t.slug, t.pool.map((p) => ({ ...p }))]),
+        args.topics.map((t) => [t.slug, t.pool.map((p) => ({ ...p }))])
     );
 
     return makeSubjectTopicGenerator({
@@ -161,15 +269,11 @@ export function makeSubjectModuleGenerator(args: {
     });
 }
 
-
-
 export function makeSubjectTopicGenerator(args: {
     engineName: string;
     ctx: TopicContext;
-
     topicHandlers: Record<string, Record<string, Handler>>;
     topicValidKeys: Record<string, string[]>;
-
     topicDefaultPools?: Record<string, PoolItem[]>;
     defaultPurpose?: PracticePurpose;
     enablePurpose?: boolean;
@@ -196,8 +300,8 @@ export function makeSubjectTopicGenerator(args: {
         if (!handlers || !validKeys?.length) {
             const err = new Error(
                 `${engineName}: unknown topicSlug="${topicSlugRaw}" (base="${topicSlugBase}") valid=[${Object.keys(
-                    topicHandlers,
-                ).join(", ")}]`,
+                    topicHandlers
+                ).join(", ")}]`
             );
             (err as any).code = "UNKNOWN_TOPIC";
             throw err;
@@ -205,7 +309,7 @@ export function makeSubjectTopicGenerator(args: {
 
         const metaPoolRaw = readPoolFromMeta(ctx.meta).filter((p) => validKeys.includes(p.key));
         const fallbackPoolRaw = (topicDefaultPools?.[topicSlugBase] ?? []).filter((p) =>
-            validKeys.includes(p.key),
+            validKeys.includes(p.key)
         );
 
         const preferKindRaw = (ctx as any).preferKind ?? (ctx as any).meta?.preferKind ?? null;
@@ -220,14 +324,13 @@ export function makeSubjectTopicGenerator(args: {
 
             const purposeFiltered = preferPurpose
                 ? kindFiltered.filter(
-                    (p) => normalizePurpose((p as any).purpose ?? defaultPurpose) === preferPurpose,
+                    (p) => normalizePurpose((p as any).purpose ?? defaultPurpose) === preferPurpose
                 )
                 : kindFiltered;
 
             return purposeFiltered;
         };
 
-        // base pool: DB meta -> fallback -> last resort
         let basePool =
             metaPoolRaw.length
                 ? metaPoolRaw
@@ -237,16 +340,14 @@ export function makeSubjectTopicGenerator(args: {
 
         let filtered = applyFilters(basePool);
 
-        // if meta pool exists but yields nothing, try fallback pool
         if (filtered.length === 0 && metaPoolRaw.length && fallbackPoolRaw.length) {
             basePool = fallbackPoolRaw;
             filtered = applyFilters(basePool);
         }
 
-        // still nothing => this topic cannot satisfy the requested purpose/kind
         if (filtered.length === 0) {
             const err = new Error(
-                `${engineName}: NO_QUESTIONS_AVAILABLE topic="${topicSlugRaw}" base="${topicSlugBase}" preferPurpose="${preferPurpose ?? ""}" preferKind="${preferKind ?? ""}"`,
+                `${engineName}: NO_QUESTIONS_AVAILABLE topic="${topicSlugRaw}" base="${topicSlugBase}" preferPurpose="${preferPurpose ?? ""}" preferKind="${preferKind ?? ""}"`
             );
             (err as any).code = "NO_QUESTIONS_AVAILABLE";
             (err as any).details = {
@@ -262,20 +363,18 @@ export function makeSubjectTopicGenerator(args: {
             throw err;
         }
 
-        // uniqueness is SOFT: if uniq empties, allow repeats (this is what lets 30 work even if only 1 exists)
         const excluded = normalizeExcludedKeys(ctx);
         const uniq = filterExcluded(filtered, excluded);
         const pool = uniq.length ? uniq : filtered;
 
         if (!pool.length) {
             const err = new Error(
-                `${engineName}: EMPTY_POOL topic="${topicSlugRaw}" base="${topicSlugBase}" preferPurpose="${preferPurpose ?? ""}" preferKind="${preferKind ?? ""}"`,
+                `${engineName}: EMPTY_POOL topic="${topicSlugRaw}" base="${topicSlugBase}" preferPurpose="${preferPurpose ?? ""}" preferKind="${preferKind ?? ""}"`
             );
             (err as any).code = "EMPTY_POOL";
             throw err;
         }
 
-        // force keys only if present in the *filtered* pool (prevents forcing a "project" key during quiz runs)
         const forceKey = String((ctx as any).meta?.forceKey ?? "").trim();
         const exerciseKey = String((ctx as any).exerciseKey ?? "").trim();
 
@@ -295,7 +394,7 @@ export function makeSubjectTopicGenerator(args: {
         const chosenItem = pool.find((p) => p.key === chosen) ?? null;
         const chosenPurpose = normalizePurpose((chosenItem as any)?.purpose ?? defaultPurpose);
 
-        const out = handler({ rng: R, diff, id, topic });
+        const out = handler({ rng: R, diff, id, topic, ctx });
 
         return {
             ...(out as any),
@@ -320,176 +419,13 @@ export function makeNoGenerator(engineName: string, topicSlugRaw: string) {
     };
 }
 
-// src/lib/practice/generator/engines/utils.ts
-
-// If you already export these types, reuse them instead of redefining.
-export type Opt = { id: string; text: string };
-
-// This should already exist in your file.
-// export type GenOut<K extends Exercise["kind"]> = ...
-// export type Handler = (args: { diff: any; id: string; topic: any }) => GenOut<any>;
-// ^ If you're editing the same file, remove this import and use the local GenOut type.
-import type {
-    MultiChoiceExercise,
-    CodeInputExercise,
-} from "@/lib/practice/types";
-
-// import type { GenOut } from "@/lib/practice/generator/shared/expected";
-// import { makeMultiExpected, makeCodeExpected } from "@/lib/practice/generator/shared/expected";
-// // ^ If makeCodeExpected lives elsewhere in your project, DO NOT import it here.
-// // Keep makeCodeExpected where it is, and accept `expected` as `any` for code_input.
-//
-// export type Opt = { id: string; text: string };
-//
-// export type Opt = { id: string; text: string };
-// type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
-export type DragExpected = { kind: "drag_reorder"; tokenIds: string[] };
-export type MultiExpected = { kind: "multi_choice"; optionIds: string[] };
-export type TextExpected = { kind: "text_input"; answers: string[]; match?: "exact" | "includes" };
-
-export function makeTextExpected(answers: string[], match: "exact" | "includes" = "includes"): TextExpected {
-    return { kind: "text_input", answers, match };
+export function pickDifferentName(rng: any, avoid: string) {
+    let x = pickName(rng);
+    for (let i = 0; i < 6 && x === avoid; i++) x = pickName(rng);
+    return x;
 }
-export function makeDragExpected(tokenIds: string[]): DragExpected {
-    return { kind: "drag_reorder", tokenIds };
-}
-
-
-export function makeMultiExpected(optionIds: string[]): MultiExpected {
-    return { kind: "multi_choice", optionIds };
-}
-export function makeMultiChoiceOut(args: {
-    archetype: string;
-    id: string;
-    topic: any;
-    diff: any;
-
-    title: string;
-    prompt: string;
-    options: Opt[];
-
-    answerOptionIds: string[];
-    hint?: string; // ✅ not null
-}): GenOut<"multi_choice"> {
-    const exercise: MultiChoiceExercise = {
-        id: args.id,
-        topic: args.topic,
-        difficulty: args.diff,
-        kind: "multi_choice",
-        title: args.title,
-        prompt: args.prompt,
-        options: args.options,
-        // ✅ do NOT set null
-        ...(args.hint ? { hint: args.hint } : {}),
-    };
-
-    return {
-        archetype: args.archetype,
-        exercise,
-        expected: makeMultiExpected(args.answerOptionIds),
-    };
-}
-//
-// import type { GenOut } from "@/lib/practice/generator/shared/expected";
-// import type { MultiChoiceExercise, CodeInputExercise } from "@/lib/practice/types";
-// import { makeMultiExpected } from "@/lib/practice/generator/shared/expected"; // ✅ use your real path
-// // If makeMultiExpected lives elsewhere, adjust the import.
-//
-// export type Opt = { id: string; text: string };
-
-// export function makeMultiChoiceOut(args: {
-//     archetype: string;
-//     id: string;
-//     topic: any;
-//     diff: any;
-//
-//     title: string;
-//     prompt: string;
-//     options: Opt[];
-//
-//     answerOptionIds: string[];
-//     hint?: string; // ✅ not null
-// }): GenOut<"multi_choice"> {
-//     const exercise: MultiChoiceExercise = {
-//         id: args.id,
-//         topic: args.topic,
-//         difficulty: args.diff,
-//         kind: "multi_choice",
-//         title: args.title,
-//         prompt: args.prompt,
-//         options: args.options,
-//         ...(args.hint ? { hint: args.hint } : {}),
-//     };
-//
-//     return {
-//         archetype: args.archetype,
-//         exercise,
-//         expected: makeMultiExpected(args.answerOptionIds),
-//     };
-// }
-
-export function makeCodeInputOut(args: {
-    archetype: string;
-    id: string;
-    topic: any;
-    diff: any;
-
-    title: string;
-    prompt: string;
-
-    starterCode: string;
-    starterStdin?: string;
-
-    language?: "python" | "javascript" | "c" | "cpp" | "java";
-
-    expected: any;
-    hint?: string; // ✅ not null
-
-    editorHeight?: number;
-}): {
-    archetype: string;
-    expected: any;
-    exercise: {
-        difficulty: any;
-        starterStdin: string;
-        editorHeight: number;
-        kind: string;
-        starterCode: string;
-        topic: any;
-        language: "python" | "javascript" | "c" | "cpp" | "java";
-        id: string;
-        title: string;
-        prompt: string
-    }
-} {
-    const exercise: {
-        difficulty: any;
-        starterStdin: string;
-        editorHeight: number;
-        kind: string;
-        starterCode: string;
-        topic: any;
-        language: "python" | "javascript" | "c" | "cpp" | "java";
-        id: string;
-        title: string;
-        prompt: string
-    } = {
-        id: args.id,
-        topic: args.topic,
-        difficulty: args.diff,
-        kind: "code_input",
-        title: args.title,
-        prompt: args.prompt,
-        language: args.language ?? "python",
-        starterCode: args.starterCode,
-        starterStdin: args.starterStdin ?? "",
-        editorHeight: args.editorHeight ?? 520,
-        ...(args.hint ? { hint: args.hint } : {}),
-    };
-
-    return {
-        archetype: args.archetype,
-        exercise,
-        expected: args.expected,
-    };
+export function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
+    let x = safeInt(rng, lo, hi);
+    for (let i = 0; i < 6 && x === avoid; i++) x = safeInt(rng, lo, hi);
+    return x;
 }

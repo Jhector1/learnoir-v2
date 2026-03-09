@@ -11,6 +11,7 @@ import {
 import { makeCodeExpected } from "../../_shared";
 import type { ExerciseKind } from "@/lib/practice/types";
 import type { GenOut } from "@/lib/practice/generator/shared/expected";
+import {TOPIC_ID} from "@/lib/subjects/python/modules/module0/topics/comments_intro/meta";
 
 // -----------------------------
 // Pool
@@ -159,8 +160,8 @@ print(total)
         }) as unknown as AnyOut, // ✅ cast
 };
 
-export const M0_COMMENTS_TOPIC: TopicBundle = defineTopic(
-    "comments_intro",
+export const M0_COMMENTS_GENERATOR_TOPIC: TopicBundle = defineTopic(
+    TOPIC_ID,
     M0_COMMENTS_POOL as any,
     M0_COMMENTS_HANDLERS as any
 );

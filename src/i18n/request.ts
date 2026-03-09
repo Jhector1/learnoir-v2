@@ -51,10 +51,29 @@ async function loadBundles(locale: string) {
         safeJsonImport(import(`./messages/${locale}/missedQuestions.json`)),
 
         safeJsonImport(import(`./messages/${locale}/sketchBlockUi.json`)),
-        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/conditionals.json`)),
 
         safeJsonImport(import(`./messages/${locale}/subjects/python/module0/comments.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module0/workspace.json`)),
+
         safeJsonImport(import(`./messages/${locale}/subjects/python/module0/computer_intro.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module0/programming_intro.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module0/syntax_intro.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/errors_intro.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/data_types_intro.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/variables.json`)),
+
+
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/input_output_patterns.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/string_basics.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module1/operators_expressions.json`)),
+
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/conditionals.json`)),
+
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/loop_basics.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/list_basics.json`)),
+        safeJsonImport(import(`./messages/${locale}/subjects/python/module2/function_basics.json`)),
+
+        safeJsonImport(import(`./messages/${locale}/subjects/linear_algebra/module0/vectors1.json`)),
 
         safeJsonImport(import(`./messages/${locale}/quizblock.json`)),
         safeJsonImport(import(`./messages/${locale}/reviewNav.json`)),

@@ -99,7 +99,7 @@ export const PY_COMMENTS = {
             {
                 type: "sketch",
                 id: `${ID}_s0`,
-                title: K.sketchCardTitle as any,
+                title: K.cardTitle("sketch") as any,
                 sketchId: "py.syntax.comments",
                 height: 520,
             },

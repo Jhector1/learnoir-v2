@@ -6,14 +6,26 @@
           "label": "Conditionals: Teaching Your Program to Make Decisions",
           "summary": "Use if/elif/else with comparisons and boolean logic (and/or/not) to control program flow, including truthy/falsey checks.",
           "cards": {
-            "sketch": { "title": "Conditionals (if / elif / else + boolean logic)" },
-            "project": { "title": "Project: Kiosk decisions (gate → discount → login)" },
-            "quiz": { "title": "Quick check: conditionals" }
+            "sketch": {
+              "title": "Conditionals (if / elif / else + boolean logic)"
+            },
+            "project": {
+              "title": "Project: Kiosk decisions (gate → discount → login)"
+            },
+            "quiz": {
+              "title": "Quick check: conditionals"
+            }
           },
           "projectSteps": {
-            "age_gate": { "title": "Age gate (ALLOWED / DENIED)" },
-            "member_discount": { "title": "Member discount (10% off)" },
-            "password_check": { "title": "Admin login (password check)" }
+            "age_gate": {
+              "title": "Age gate (ALLOWED / DENIED)"
+            },
+            "member_discount": {
+              "title": "Member discount (10% off)"
+            },
+            "password_check": {
+              "title": "Admin login (password check)"
+            }
           }
         }
       }
@@ -29,23 +41,40 @@
       }
     }
   },
+  "common": {
+    "terminalInputLabel": "input",
+    "terminalOutputLabel": "output"
+  },
   "quiz": {
     "m2_cond_age_gate_code": {
       "title": "Snack Shop Gate: adult or minor",
-      "prompt": "Story: you’re building a kiosk at a snack shop. Some items are 18+.\n\nRead **ONE integer** `age`.\n\nIf `age >= 18` print:\n`ALLOWED`\n\nElse print:\n`DENIED`",
-      "hint": "Use `if age >= 18:` and an `else:` block."
+      "prompt": "Story: you’re building a kiosk at a snack shop. Some items are 18+.\n\nRead ONE integer age.\n\nIf age >= 18 print:\nALLOWED\n\nElse print:\nDENIED",
+      "hint": "Use `if age >= 18:` and an `else:` block.",
+      "starterCode": "# TODO\n",
+      "runtime": {
+        "allowedText": "ALLOWED",
+        "deniedText": "DENIED"
+      }
     },
     "m2_cond_member_discount_code": {
       "title": "Snack Shop Discount: member saves 10%",
-      "prompt": "Story: the snack shop gives members a 10% discount.\n\nRead TWO inputs:\n1) `subtotal` (integer dollars)\n2) member flag (`y`/`n`)\n\nRules:\n- if member is `y` (or `Y`), apply 10% discount using integer math\n- otherwise no discount\n\nPrint exactly:\n`Total = <total>`",
-      "hint": "Use: `member.lower() == \"y\"` and compute `subtotal * 10 // 100`."
+      "prompt": "Story: the snack shop gives members a 10% discount.\n\nRead TWO inputs:\n1) subtotal (integer dollars)\n2) member flag (y/n)\n\nRules:\n- if member is y (or Y), apply 10% discount using integer math\n- otherwise no discount\n\nPrint exactly:\nTotal = <total>",
+      "hint": "Use: `member.lower() == \"y\"` and compute `subtotal * 10 // 100`.",
+      "starterCode": "# TODO\n",
+      "runtime": {
+        "totalLineTemplate": "Total = {total}"
+      }
     },
     "m2_cond_password_check_code": {
       "title": "Kiosk Login: password check",
-      "prompt": "Story: the kiosk has an admin mode.\n\nRead ONE input `password`.\n\nIf `password == \"letmein\"` print:\n`Logged in`\n\nElse print:\n`Wrong password`",
-      "hint": "Use `==` (comparison), not `=` (assignment)."
+      "prompt": "Story: the kiosk has an admin mode.\n\nRead ONE input password.\n\nIf password == \"letmein\" print:\nLogged in\n\nElse print:\nWrong password",
+      "hint": "Use `==` (comparison), not `=` (assignment).",
+      "starterCode": "# TODO\n",
+      "runtime": {
+        "loggedInText": "Logged in",
+        "wrongPasswordText": "Wrong password"
+      }
     },
-
     "m2_cond_elif_meaning_sc": {
       "title": "`elif` meaning",
       "prompt": "In Python, `elif` is best described as:",
@@ -56,7 +85,6 @@
       },
       "hint": "`elif` = else if (check another condition)."
     },
-
     "m2_cond_indent_matters_sc": {
       "title": "Indentation defines the block",
       "prompt": "Which statement is true about indentation in Python `if` blocks?",
@@ -68,7 +96,6 @@
       },
       "hint": "Python uses indentation to group lines into a block."
     },
-
     "m2_cond_elif_order_sc": {
       "title": "`elif` order",
       "prompt": "When Python evaluates an `if / elif / else` chain, it:",
@@ -79,7 +106,6 @@
       },
       "hint": "Only the first matching condition runs."
     },
-
     "m2_cond_comparison_vs_assignment_sc": {
       "title": "`==` vs `=`",
       "prompt": "Which operator compares two values for equality in Python?",
@@ -91,10 +117,9 @@
       },
       "hint": "`==` checks equality. `=` assigns a value."
     },
-
     "m2_cond_and_or_sc": {
       "title": "`and` vs `or`",
-      "prompt": "If you need **both** conditions to be True, you should use:",
+      "prompt": "If you need both conditions to be True, you should use:",
       "options": {
         "a": "`or`",
         "b": "`and`",
@@ -102,10 +127,9 @@
       },
       "hint": "`and` requires both sides to be True."
     },
-
     "m2_cond_falsey_values_mc": {
       "title": "Falsey values",
-      "prompt": "Which of these are considered **falsey** in Python? (Choose all that apply.)",
+      "prompt": "Which of these are considered falsey in Python? (Choose all that apply.)",
       "options": {
         "a": "`0`",
         "b": "`\"\"` (empty string)",
@@ -114,7 +138,6 @@
       },
       "hint": "Empty/zero/None-like values behave as False in conditions."
     },
-
     "m2_cond_logical_ops_mc": {
       "title": "Logical operators",
       "prompt": "Which of these are Python logical operators? (Choose all that apply.)",

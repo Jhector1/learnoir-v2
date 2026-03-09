@@ -6,20 +6,29 @@ import type { TopicContext } from "../../../generatorTypes";
 
 import { makePythonModuleGenerator } from "../_shared";
 
-// import { M1_VARS_TOPIC } from "./topics/variables_types";
-import { M1_OPERATORS_TOPIC } from "./topics/operators_expressions";
-import { M1_STRINGS_TOPIC } from "./topics/string_basics";
-import { M1_IO_TOPIC } from "./topics/input_output_patterns";
-import {M1_VARS_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/variables";
-import {M1_TYPES_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/types";
-import {M1_ERRORS_TOPIC} from "@/lib/practice/generator/engines/python/python_part1_mod1/topics/errors";
+import { VARS_GENERATOR_TOPIC} from "@/lib/subjects/python/modules/module1/topics/variables/generator";
+import { M1_ERRORS_GENERATOR_TOPIC } from "@/lib/subjects/python/modules/module1/topics/errors_intro/generator";
+import { M1_TYPES_GENERATOR_TOPIC } from "@/lib/subjects/python/modules/module1/topics/data_types_intro/generator";
+import { M1_GENERATOR_OPERATORS_TOPIC } from "@/lib/subjects/python/modules/module1/topics/operators_expressions/generator";
+import { M1_STRINGS_GENERATOR_TOPIC } from "@/lib/subjects/python/modules/module1/topics/string_basics/generator";
+import { M1_IO_GENERATOR_TOPIC } from "@/lib/subjects/python/modules/module1/topics/input_output_patterns/generator";
 
 export function makeGenPythonStatementsPart1Mod1(ctx: TopicContext) {
+    console.log("I18N common:", ctx?.meta?.i18n?.common);
+    console.log("I18N quiz item:", ctx?.meta?.i18n?.quiz?.m1_io_age_next_year);
+    // console.log("Resolved prompt:", i18nText(ctx, "quiz.m1_io_age_next_year.prompt", "__MISSING__"));
     return makePythonModuleGenerator({
         engineName: "python_part1_mod1",
         ctx,
         defaultPurpose: "quiz",
         enablePurpose: true,
-        topics: [ M1_OPERATORS_TOPIC, M1_STRINGS_TOPIC, M1_IO_TOPIC, M1_VARS_TOPIC, M1_ERRORS_TOPIC, M1_TYPES_TOPIC],
+        topics: [
+            VARS_GENERATOR_TOPIC,
+            M1_ERRORS_GENERATOR_TOPIC,
+            M1_TYPES_GENERATOR_TOPIC,
+            M1_GENERATOR_OPERATORS_TOPIC,
+            M1_STRINGS_GENERATOR_TOPIC,
+            M1_IO_GENERATOR_TOPIC,
+        ],
     }) as unknown as (rng: RNG, diff: Difficulty, id: string) => GenOut<ExerciseKind>;
 }

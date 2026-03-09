@@ -10,9 +10,9 @@ import { makeTextExpected, makeVoiceExpected, makeDragExpected } from "../../_sh
 import { defineTopic, makeSingleChoiceOut, type Handler, type TopicBundle } from "@/lib/practice/generator/engines/utils";
 
 export const HC_QUESTIONS_POOL = [
-    { key: "hc_q_ki_kote_means_where_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_q_poukisa_means_why_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_q_kijan_means_how_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_q_ki_kote_means_where_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_q_poukisa_means_why_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_q_kijan_means_how_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
 
     { key: "hc_q_voice_say_kijan_ou_ye", w: 1, kind: "voice_input", purpose: "quiz" },
     { key: "hc_q_listen_build_kijan_ou_ye", w: 1, kind: "listen_build", purpose: "quiz" },
@@ -24,56 +24,56 @@ export const HC_QUESTIONS_POOL = [
 export type HcQuestionsKey = (typeof HC_QUESTIONS_POOL)[number]["key"];
 
 export const HC_QUESTIONS_HANDLERS: Record<HcQuestionsKey, Handler> = {
-    hc_q_ki_kote_means_where_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_q_ki_kote_means_where_mcq",
-            id,
-            topic,
-            diff,
-            title: "Question: Ki kote",
-            prompt: `What does **Ki kote** mean?`,
-            options: [
-                { id: "a", text: "Who" },
-                { id: "b", text: "Where" },
-                { id: "c", text: "When" },
-            ],
-            answerOptionId: "b",
-            hint: "**Ki kote** = where.",
-        }),
-
-    hc_q_poukisa_means_why_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_q_poukisa_means_why_mcq",
-            id,
-            topic,
-            diff,
-            title: "Question: Poukisa",
-            prompt: `What does **Poukisa** mean?`,
-            options: [
-                { id: "a", text: "Why" },
-                { id: "b", text: "Where" },
-                { id: "c", text: "How" },
-            ],
-            answerOptionId: "a",
-            hint: "**Poukisa** = why.",
-        }),
-
-    hc_q_kijan_means_how_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_q_kijan_means_how_mcq",
-            id,
-            topic,
-            diff,
-            title: "Question: Kijan",
-            prompt: `What does **Kijan** mean?`,
-            options: [
-                { id: "a", text: "How" },
-                { id: "b", text: "When" },
-                { id: "c", text: "Who" },
-            ],
-            answerOptionId: "a",
-            hint: "**Kijan** = how.",
-        }),
+    // hc_q_ki_kote_means_where_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_q_ki_kote_means_where_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Question: Ki kote",
+    //         prompt: `What does **Ki kote** mean?`,
+    //         options: [
+    //             { id: "a", text: "Who" },
+    //             { id: "b", text: "Where" },
+    //             { id: "c", text: "When" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: "**Ki kote** = where.",
+    //     }),
+    //
+    // hc_q_poukisa_means_why_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_q_poukisa_means_why_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Question: Poukisa",
+    //         prompt: `What does **Poukisa** mean?`,
+    //         options: [
+    //             { id: "a", text: "Why" },
+    //             { id: "b", text: "Where" },
+    //             { id: "c", text: "How" },
+    //         ],
+    //         answerOptionId: "a",
+    //         hint: "**Poukisa** = why.",
+    //     }),
+    //
+    // hc_q_kijan_means_how_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_q_kijan_means_how_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Question: Kijan",
+    //         prompt: `What does **Kijan** mean?`,
+    //         options: [
+    //             { id: "a", text: "How" },
+    //             { id: "b", text: "When" },
+    //             { id: "c", text: "Who" },
+    //         ],
+    //         answerOptionId: "a",
+    //         hint: "**Kijan** = how.",
+    //     }),
 
     hc_q_voice_say_kijan_ou_ye: ({ diff, id, topic }) => {
         const exercise: VoiceInputExercise = {

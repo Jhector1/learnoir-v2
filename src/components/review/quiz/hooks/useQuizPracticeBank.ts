@@ -21,6 +21,8 @@ import {
 } from "@/lib/practice/uiHelpers";
 import type { SavedQuizState } from "@/lib/subjects/progressTypes";
 import { emitSfx } from "@/lib/sfx/bus";
+import {useTaggedT} from "@/i18n/tagged";
+import {resolveDeepTagged} from "@/i18n/resolveDeepTagged";
 
 /** null => unlimited (server truth) */
 function coerceMaxAttempts(v: any): number | null {
@@ -145,7 +147,12 @@ export function useQuizPracticeBank(args: {
   } = args;
 
   const specMaxAttempts = (spec as any).maxAttempts;
+  const tt = useTaggedT();
+  const rawKeyRef = useRef<(key: string) => string>((key) => key);
+  const resolveTextRef = useRef<(value: string) => string>((value) => value);
 
+  rawKeyRef.current = (key: string) => tt.raw(key, key);
+  resolveTextRef.current = (value: string) => tt.resolve(value, value);
   const [practice, setPractice] = useState<Record<string, PracticeState>>({});
   const practiceRef = useRef(practice);
   useEffect(() => {
@@ -238,12 +245,18 @@ export function useQuizPracticeBank(args: {
           throw new Error("Malformed response from /api/practice (missing exercise/key).");
         }
 
-        // ✅ server truth (may be null/unlimited)
         const serverRunMax = coerceMaxAttempts((res as any)?.run?.maxAttempts);
 
-        // Base item from exercise
-        let item: any = initItemFromExercise(ex as Exercise, key);
+// ✅ resolve fetched exercise before creating the item
+        const resolvedEx = resolveDeepTagged(
+            ex as Exercise,
+            (k) => rawKeyRef.current(k),
+        ) as Exercise;
 
+// Base item from exercise
+        let item: any = initItemFromExercise(resolvedEx, key, {
+          resolveText: (value) => resolveTextRef.current(value),
+        });
         // ----------------------------
         // ✅ Carry code from previous step (project mode)
         // ----------------------------
@@ -256,15 +269,21 @@ export function useQuizPracticeBank(args: {
           const prevQ = idx > 0 ? questions[idx - 1] : null;
 
           // if current already has saved code, don't override
-          const currentPatch = initialState?.practiceItemPatch?.[q.id];
+          const rawCurrentPatch = initialState?.practiceItemPatch?.[q.id];
+          const currentPatch = rawCurrentPatch
+              ? resolveDeepTagged(rawCurrentPatch, (k) => rawKeyRef.current(k))
+              : null;
           const current = extractCodeLike(currentPatch);
 
-          // Prefer live previous item (if already loaded), else saved patch
           let prevSource: any = null;
           if (prevQ) {
             const livePrevItem = (practiceRef.current as any)?.[prevQ.id]?.item;
-            prevSource =
+            const rawPrevSource =
                 livePrevItem ?? initialState?.practiceItemPatch?.[prevQ.id] ?? null;
+
+            prevSource = rawPrevSource
+                ? resolveDeepTagged(rawPrevSource, (k) => rawKeyRef.current(k))
+                : null;
           }
 
           const prev = extractCodeLike(prevSource);
@@ -284,9 +303,12 @@ export function useQuizPracticeBank(args: {
         if (cancelled) return;
 
         // Apply saved patch LAST so user-saved state always wins
-        const patch = initialState?.practiceItemPatch?.[q.id];
-        const patchedItem = patch ? { ...item, ...patch } : item;
+        const rawPatch = initialState?.practiceItemPatch?.[q.id];
+        const resolvedPatch = rawPatch
+            ? (resolveDeepTagged(rawPatch, (k) => rawKeyRef.current(k)) as Partial<QItem>)
+            : null;
 
+        const patchedItem = resolvedPatch ? { ...item, ...resolvedPatch } : item;
         setPractice((prev) => {
           const base = prev[q.id];
           return {
@@ -295,7 +317,7 @@ export function useQuizPracticeBank(args: {
               ...base,
               loading: false,
               error: null,
-              exercise: ex as Exercise,
+              exercise: resolvedEx,
               item: patchedItem,
 
               // keep seeded attempts/ok; do not overwrite with nulls

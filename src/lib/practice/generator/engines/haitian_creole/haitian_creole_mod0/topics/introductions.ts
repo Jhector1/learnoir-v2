@@ -10,8 +10,8 @@ import { defineTopic, type Handler, type TopicBundle, makeSingleChoiceOut } from
 import { makeTextExpected, makeVoiceExpected, makeDragExpected, pickName } from "../../_shared";
 
 export const HC_INTRO_POOL = [
-    { key: "hc_intro_mwen_rele_means_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_intro_pick_best_intro_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_intro_mwen_rele_means_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_intro_pick_best_intro_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
 
     { key: "hc_intro_reorder_mwen_rele_name", w: 1, kind: "drag_reorder", purpose: "quiz" },
     { key: "hc_intro_reorder_bonjou_mwen_rele_name", w: 1, kind: "drag_reorder", purpose: "quiz" },
@@ -26,41 +26,41 @@ export const HC_INTRO_POOL = [
 export type HcIntroKey = (typeof HC_INTRO_POOL)[number]["key"];
 
 export const HC_INTRO_HANDLERS: Record<HcIntroKey, Handler> = {
-    hc_intro_mwen_rele_means_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_intro_mwen_rele_means_mcq",
-            id,
-            topic,
-            diff,
-            title: "Meaning",
-            prompt: `What does **"Mwen rele"** mean in an introduction?`,
-            options: [
-                { id: "a", text: "I am hungry" },
-                { id: "b", text: "My name is / I'm called" },
-                { id: "c", text: "Good night" },
-            ],
-            answerOptionId: "b",
-            hint: `"Mwen rele ..." is a common way to say your name.`,
-        }),
-
-    hc_intro_pick_best_intro_mcq: ({ rng, diff, id, topic }) => {
-        const name = pickName(rng);
-        const exercise: SingleChoiceExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Pick the best",
-            prompt: `Which sentence means **"My name is ${name}."**?`,
-            options: [
-                { id: "a", text: `Mwen byen.` },
-                { id: "b", text: `Mwen rele ${name}.` },
-                { id: "c", text: `Ki kote?` },
-            ],
-            hint: `Pattern: "Mwen rele <Name>."`,
-        };
-        return { archetype: "hc_intro_pick_best_intro_mcq", exercise, expected: { kind: "single_choice", optionId: "b" } };
-    },
+    // hc_intro_mwen_rele_means_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_intro_mwen_rele_means_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Meaning",
+    //         prompt: `What does **"Mwen rele"** mean in an introduction?`,
+    //         options: [
+    //             { id: "a", text: "I am hungry" },
+    //             { id: "b", text: "My name is / I'm called" },
+    //             { id: "c", text: "Good night" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: `"Mwen rele ..." is a common way to say your name.`,
+    //     }),
+    //
+    // hc_intro_pick_best_intro_mcq: ({ rng, diff, id, topic }) => {
+    //     const name = pickName(rng);
+    //     const exercise: SingleChoiceExercise = {
+    //         id,
+    //         topic,
+    //         difficulty: diff,
+    //         kind: "single_choice",
+    //         title: "Pick the best",
+    //         prompt: `Which sentence means **"My name is ${name}."**?`,
+    //         options: [
+    //             { id: "a", text: `Mwen byen.` },
+    //             { id: "b", text: `Mwen rele ${name}.` },
+    //             { id: "c", text: `Ki kote?` },
+    //         ],
+    //         hint: `Pattern: "Mwen rele <Name>."`,
+    //     };
+    //     return { archetype: "hc_intro_pick_best_intro_mcq", exercise, expected: { kind: "single_choice", optionId: "b" } };
+    // },
 
     hc_intro_reorder_mwen_rele_name: ({ rng, diff, id, topic }) => {
         const name = pickName(rng);

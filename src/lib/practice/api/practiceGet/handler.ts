@@ -34,6 +34,7 @@ function statusOf(err: any, fallback = 500) {
     return Number(err?.status) || fallback;
 }
 import { computeMaxAttemptsCore, type RunMode } from "@/lib/practice/policies/attempts";
+import {loadPracticeTopicI18n} from "@/i18n/loadPracticeTopicI18n";
 
 function buildRunMeta(args: {
     session: any | null;
@@ -324,8 +325,9 @@ export async function handlePracticeGet(args: {
     prisma: PrismaClient;
     actor: { userId?: string | null; guestId?: string | null };
     params: GetParams;
+    locale?: string;
 }): Promise<PracticeGetResult> {
-    const { prisma, actor, params } = args;
+    const { prisma, actor,locale, params } = args;
 
     const {
         subject,
@@ -703,9 +705,27 @@ export async function handlePracticeGet(args: {
                 `salt=${reqSalt ?? ""}`,
             ].join("|"),
         });
+        const practiceI18n = await loadPracticeTopicI18n({
+            locale: locale ?? "en",
+            subjectSlug: subject ?? session?.section?.subject?.slug ?? null,
+            moduleSlug: module ?? session?.section?.module?.slug ?? null,
+            topicSlug,
+        });
 
         const meta2 = {
             ...(resolved.meta ?? {}),
+            i18n: {
+                ...((resolved.meta as any)?.i18n ?? {}),
+                ...(practiceI18n ?? {}),
+                common: {
+                    ...(((resolved.meta as any)?.i18n?.common) ?? {}),
+                    ...((practiceI18n as any)?.common ?? {}),
+                },
+                quiz: {
+                    ...(((resolved.meta as any)?.i18n?.quiz) ?? {}),
+                    ...((practiceI18n as any)?.quiz ?? {}),
+                },
+            },
             forceKey: (params as any).exerciseKey ?? undefined,
             preferPurpose: preferPurposeForGenerator,
         };

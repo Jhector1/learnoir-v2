@@ -89,8 +89,8 @@ function CodeInputWithTools(props: {
     } = props;
 
     const curLang = ((current as any).codeLang ?? "python") as CodeLanguage;
-    const curCode = (current as any).code ?? "";
-    const curStdin = (current as any).codeStdin ?? "";
+    const curCode = (current as any).code ?? exercise.starterCode ?? "";
+    const curStdin = (current as any).codeStdin ?? exercise.starterStdin ?? "";
 
     const onPatch = useCallback((patch: any) => updateCurrent(patch), [updateCurrent]);
 
@@ -572,8 +572,8 @@ export default function ExerciseRenderer({
 
         // ✅ embedded fallback (important)
         const curLang = ((current as any).codeLang ?? "python") as CodeLanguage;
-        const curCode = (current as any).code ?? "";
-        const curStdin = (current as any).codeStdin ?? "";
+        const curCode = (current as any).code ?? ex.starterCode ?? "";
+        const curStdin = (current as any).codeStdin ??"" //ex.starterStdin ?? "";
 
         return (
             <CodeInputExerciseUI

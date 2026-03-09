@@ -15,36 +15,36 @@ import { LA_TOPICS } from "./topics";
 import type { SectionDef, TopicDef } from "../_types";
 
 export const LA_SECTIONS: Array<SectionDef> = [
-  {
-    moduleSlug: LA_MOD0,
-    prefix: LA_PREFIX0,
-    genKey: "linear_algebra_mod0",
-    topics: LA_TOPICS[LA_MOD0],
-    section: {
-      slug: "linear-algebra-0-vectors",
-      order: 0,
-      title: "Linear Algebra 0 — Vectors",
-      description: "Dot product, angles, projection, and vector foundations.",
-      meta: {
-        module: 0,
-        weeks: "Week 0",
-        bullets: [
-          "Dot product meaning + computation",
-          "Angle & cosine relationship",
-          "Vector projection + decomposition",
-          "Vectors Part 1: ℝⁿ, shapes, norms",
-          "Vectors Part 2: span, basis, independence",
-        ],
-        skills: [
-          "Compute dot products",
-          "Compute/interpret angles between vectors",
-          "Project a onto b",
-          "Work with norms/unit vectors",
-          "Decide independence and span",
-        ],
-      },
-    },
-  },
+  // {
+  //   moduleSlug: LA_MOD0,
+  //   prefix: LA_PREFIX0,
+  //   genKey: "linear_algebra_mod0",
+  //   topics: LA_TOPICS[LA_MOD0],
+  //   section: {
+  //     slug: "linear-algebra-0-vectors",
+  //     order: 0,
+  //     title: "Linear Algebra 0 — Vectors",
+  //     description: "Dot product, angles, projection, and vector foundations.",
+  //     meta: {
+  //       module: 0,
+  //       weeks: "Week 0",
+  //       bullets: [
+  //         "Dot product meaning + computation",
+  //         "Angle & cosine relationship",
+  //         "Vector projection + decomposition",
+  //         "Vectors Part 1: ℝⁿ, shapes, norms",
+  //         "Vectors Part 2: span, basis, independence",
+  //       ],
+  //       skills: [
+  //         "Compute dot products",
+  //         "Compute/interpret angles between vectors",
+  //         "Project a onto b",
+  //         "Work with norms/unit vectors",
+  //         "Decide independence and span",
+  //       ],
+  //     },
+  //   },
+  // },
 
   {
     moduleSlug: LA_MOD1,

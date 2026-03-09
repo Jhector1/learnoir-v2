@@ -85,7 +85,7 @@ export default function QuestionPanel(props: PracticeShellProps) {
                         maxAttempts={maxAttempts}
                         padRef={padRef}
                         updateCurrent={updateCurrent}
-                        showPrompt={false}
+                        showPrompt={true}
                     />
                 )}
             </div>

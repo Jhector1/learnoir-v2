@@ -10,8 +10,8 @@ import { makeTextExpected, makeVoiceExpected, makeDragExpected } from "../../_sh
 import { defineTopic, makeSingleChoiceOut, type Handler, type TopicBundle } from "@/lib/practice/generator/engines/utils";
 
 export const HC_SENTENCES_POOL = [
-    { key: "hc_sent_svo_order_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_sent_renmen_means_like_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_sent_svo_order_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_sent_renmen_means_like_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
 
     { key: "hc_sent_reorder_mwen_renmen_diri", w: 1, kind: "drag_reorder", purpose: "quiz" },
     { key: "hc_sent_voice_say_mwen_byen", w: 1, kind: "voice_input", purpose: "quiz" },
@@ -24,40 +24,40 @@ export const HC_SENTENCES_POOL = [
 export type HcSentencesKey = (typeof HC_SENTENCES_POOL)[number]["key"];
 
 export const HC_SENTENCES_HANDLERS: Record<HcSentencesKey, Handler> = {
-    hc_sent_svo_order_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_sent_svo_order_mcq",
-            id,
-            topic,
-            diff,
-            title: "Sentence order",
-            prompt: "Most simple Haitian Creole sentences use:",
-            options: [
-                { id: "a", text: "Verb → Subject → Object" },
-                { id: "b", text: "Subject → Verb → Object" },
-                { id: "c", text: "Object → Verb → Subject" },
-            ],
-            answerOptionId: "b",
-            hint: "Basic order is usually **S + V + O**.",
-        }),
-
-    hc_sent_renmen_means_like_mcq: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Vocabulary",
-            prompt: `What does **renmen** mean?`,
-            options: [
-                { id: "a", text: "to like / to love" },
-                { id: "b", text: "to eat" },
-                { id: "c", text: "to sleep" },
-            ],
-            hint: `"Mwen renmen diri." = I like rice.`,
-        };
-        return { archetype: "hc_sent_renmen_means_like_mcq", exercise, expected: { kind: "single_choice", optionId: "a" } };
-    },
+    // hc_sent_svo_order_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_sent_svo_order_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Sentence order",
+    //         prompt: "Most simple Haitian Creole sentences use:",
+    //         options: [
+    //             { id: "a", text: "Verb → Subject → Object" },
+    //             { id: "b", text: "Subject → Verb → Object" },
+    //             { id: "c", text: "Object → Verb → Subject" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: "Basic order is usually **S + V + O**.",
+    //     }),
+    //
+    // hc_sent_renmen_means_like_mcq: ({ diff, id, topic }) => {
+    //     const exercise: SingleChoiceExercise = {
+    //         id,
+    //         topic,
+    //         difficulty: diff,
+    //         kind: "single_choice",
+    //         title: "Vocabulary",
+    //         prompt: `What does **renmen** mean?`,
+    //         options: [
+    //             { id: "a", text: "to like / to love" },
+    //             { id: "b", text: "to eat" },
+    //             { id: "c", text: "to sleep" },
+    //         ],
+    //         hint: `"Mwen renmen diri." = I like rice.`,
+    //     };
+    //     return { archetype: "hc_sent_renmen_means_like_mcq", exercise, expected: { kind: "single_choice", optionId: "a" } };
+    // },
 
     hc_sent_reorder_mwen_renmen_diri: ({ rng, diff, id, topic }) => {
         const tokens = [

@@ -1,98 +1,105 @@
 // prisma/seed/data/subjects/linear-algebra/topics.ts
 import {LA_MOD0, LA_MOD1, LA_MOD2, LA_MOD3, LA_MOD4} from "./constants";
 import type { TopicDef, TopicDefCompat } from "../_types";
+// import {LA_MOD0_TOPIC_DEFS} from "@/lib/subjects/linear_algebra/module0/topics/topics";
+// import {LA_VECTORS, LA_DOT, LA_NUMPY, LA_PRODUCTS, LA_PROJECTION} from "@/lib/speech/thumbs_subjects/linear-algebra/modules/module0/topics";
 
 export const LA_TOPICS = {
-  [LA_MOD0]: [
-    {
-      id: "dot",
-      meta: {
-        label: "Dot product",
-        minutes: 0,
-        pool: [
-          { key: "dot_basic_compute", w: 5, kind: "numeric" },
-          { key: "dot_sign_and_magnitude", w: 3, kind: "single_choice" },
-          { key: "dot_orthogonal_zero", w: 4, kind: "single_choice" },
-          { key: "dot_distributive", w: 2, kind: "single_choice" },
-          { key: "dot_scalar_pullout", w: 2, kind: "single_choice" },
-          // if you have interactive ones later:
-          // { key: "dot_drag_vector", w: 2, kind: "vector_drag_dot" },
-        ],
-      },
-    },
-
-    {
-      id: "vectors",
-      meta: {
-        label: "Vectors (overview)",
-        minutes: 0,
-        pool: [
-          { key: "vec_components_read", w: 4, kind: "single_choice" },
-          { key: "vec_addition_basic", w: 4, kind: "vector_drag_target" }, // example
-          { key: "vec_subtraction_basic", w: 3, kind: "vector_drag_target" }, // example
-          { key: "vec_scalar_multiply", w: 4, kind: "single_choice" },
-          { key: "vec_linear_combination", w: 3, kind: "single_choice" },
-        ],
-      },
-    },
-
-    {
-      id: "angle",
-      meta: {
-        label: "Angle between vectors",
-        minutes: 0,
-        pool: [
-          { key: "angle_from_dot_formula", w: 5, kind: "numeric" },
-          { key: "angle_orthogonal_case", w: 4, kind: "single_choice" },
-          { key: "angle_parallel_case", w: 3, kind: "single_choice" },
-          { key: "angle_unit_vectors", w: 2, kind: "single_choice" },
-        ],
-      },
-    },
-
-    {
-      id: "projection",
-      meta: {
-        label: "Vector projection",
-        minutes: 0,
-        pool: [
-          { key: "proj_compute_onto_vector", w: 5, kind: "numeric" },
-          { key: "proj_scalar_component", w: 3, kind: "single_choice" },
-          { key: "proj_orthogonal_component", w: 3, kind: "single_choice" },
-          { key: "proj_geometry_interpret", w: 2, kind: "single_choice" },
-        ],
-      },
-    },
-
-    {
-      id: "vectors_part1",
-      meta: {
-        label: "Vectors — Part 1",
-        minutes: 0,
-        pool: [
-          { key: "vec_components_read", w: 3, kind: "single_choice" },
-          { key: "vec_addition_basic", w: 3, kind: "vector_drag_target" }, // example
-          { key: "vec_scalar_multiply", w: 3, kind: "single_choice" },
-          { key: "dot_basic_compute", w: 3, kind: "numeric" },
-          { key: "angle_from_dot_formula", w: 2, kind: "numeric" },
-        ],
-      },
-    },
-
-    {
-      id: "vectors_part2",
-      meta: {
-        label: "Vectors — Part 2",
-        minutes: 0,
-        pool: [
-          { key: "proj_compute_onto_vector", w: 4, kind: "numeric" },
-          { key: "proj_orthogonal_component", w: 3, kind: "single_choice" },
-          { key: "dot_orthogonal_zero", w: 3, kind: "single_choice" },
-          { key: "angle_from_dot_formula", w: 2, kind: "numeric" },
-        ],
-      },
-    },
-  ],
+  // [LA_MOD0]: [
+  //   LA_VECTORS.def,
+  //     LA_PRODUCTS.def,
+  //     LA_NUMPY.def,
+  //     LA_PROJECTION.def,
+  //     LA_DOT.def
+    // {
+    //   id: "dot",
+    //   meta: {
+    //     label: "Dot product",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "dot_basic_compute", w: 5, kind: "numeric" },
+    //       { key: "dot_sign_and_magnitude", w: 3, kind: "single_choice" },
+    //       { key: "dot_orthogonal_zero", w: 4, kind: "single_choice" },
+    //       { key: "dot_distributive", w: 2, kind: "single_choice" },
+    //       { key: "dot_scalar_pullout", w: 2, kind: "single_choice" },
+    //       // if you have interactive ones later:
+    //       // { key: "dot_drag_vector", w: 2, kind: "vector_drag_dot" },
+    //     ],
+    //   },
+    // },
+    //
+    // {
+    //   id: "vectors",
+    //   meta: {
+    //     label: "Vectors (overview)",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "vec_components_read", w: 4, kind: "single_choice" },
+    //       { key: "vec_addition_basic", w: 4, kind: "vector_drag_target" }, // example
+    //       { key: "vec_subtraction_basic", w: 3, kind: "vector_drag_target" }, // example
+    //       { key: "vec_scalar_multiply", w: 4, kind: "single_choice" },
+    //       { key: "vec_linear_combination", w: 3, kind: "single_choice" },
+    //     ],
+    //   },
+    // },
+    //
+    // {
+    //   id: "angle",
+    //   meta: {
+    //     label: "Angle between vectors",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "angle_from_dot_formula", w: 5, kind: "numeric" },
+    //       { key: "angle_orthogonal_case", w: 4, kind: "single_choice" },
+    //       { key: "angle_parallel_case", w: 3, kind: "single_choice" },
+    //       { key: "angle_unit_vectors", w: 2, kind: "single_choice" },
+    //     ],
+    //   },
+    // },
+    //
+    // {
+    //   id: "projection",
+    //   meta: {
+    //     label: "Vector projection",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "proj_compute_onto_vector", w: 5, kind: "numeric" },
+    //       { key: "proj_scalar_component", w: 3, kind: "single_choice" },
+    //       { key: "proj_orthogonal_component", w: 3, kind: "single_choice" },
+    //       { key: "proj_geometry_interpret", w: 2, kind: "single_choice" },
+    //     ],
+    //   },
+    // },
+    //
+    // {
+    //   id: "vectors_part1",
+    //   meta: {
+    //     label: "Vectors — Part 1",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "vec_components_read", w: 3, kind: "single_choice" },
+    //       { key: "vec_addition_basic", w: 3, kind: "vector_drag_target" }, // example
+    //       { key: "vec_scalar_multiply", w: 3, kind: "single_choice" },
+    //       { key: "dot_basic_compute", w: 3, kind: "numeric" },
+    //       { key: "angle_from_dot_formula", w: 2, kind: "numeric" },
+    //     ],
+    //   },
+    // },
+    //
+    // {
+    //   id: "vectors_part2",
+    //   meta: {
+    //     label: "Vectors — Part 2",
+    //     minutes: 0,
+    //     pool: [
+    //       { key: "proj_compute_onto_vector", w: 4, kind: "numeric" },
+    //       { key: "proj_orthogonal_component", w: 3, kind: "single_choice" },
+    //       { key: "dot_orthogonal_zero", w: 3, kind: "single_choice" },
+    //       { key: "angle_from_dot_formula", w: 2, kind: "numeric" },
+    //     ],
+    //   },
+    // },
+  // ],
 
   [LA_MOD1]: [
     {

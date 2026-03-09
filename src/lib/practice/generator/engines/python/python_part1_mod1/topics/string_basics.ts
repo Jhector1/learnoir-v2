@@ -1,10 +1,34 @@
-// src/lib/practice/generator/engines/python/python_part1_mod1/topics/string_basics.ts
-import type { CodeInputExercise, SingleChoiceExercise } from "../../../../../types";
-import { defineTopic, Handler, TopicBundle } from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, pickName, terminalFence } from "../../_shared";
+import {
+    defineTopic,
+    type Handler,
+    type TopicBundle,
+    type HandlerArgs,
+    makeSingleChoiceOut,
+    makeMultiChoiceOut,
+    makeCodeInputOut,
+    pickDifferentName,
+} from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, pickName } from "../../_shared";
+import { TOPIC_ID } from "@/lib/subjects/python/modules/module1/topics/string_basics/meta";
+import {
+    i18nText,
+    terminalFenceI18n,
+    fillTemplate,
+    tag,
+    pyFStringPrint,
+} from "@/lib/practice/generator/shared/i18n";
 
 export const M1_STRINGS_POOL = [
-    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice", purpose: "project" },
+    { key: "m1_str_concat_vs_comma_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    { key: "m1_str_fstring_placeholder_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m1_str_strip_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+    { key: "m1_str_lower_sc", w: 1, kind: "single_choice", purpose: "quiz" },
+
+    { key: "m1_str_username_steps_mc", w: 1, kind: "multi_choice", purpose: "quiz" },
+    { key: "m1_str_concat_truths_mc", w: 1, kind: "multi_choice", purpose: "quiz" },
+    { key: "m1_str_indexing_first_char_mc", w: 1, kind: "multi_choice", purpose: "quiz" },
+
     { key: "m1_str_fstring_greeting_code", w: 1, kind: "code_input", purpose: "project" },
     { key: "m1_str_username_code", w: 1, kind: "code_input", purpose: "project" },
 ] as const;
@@ -12,76 +36,160 @@ export const M1_STRINGS_POOL = [
 export type M1StringsKey = (typeof M1_STRINGS_POOL)[number]["key"];
 export const M1_STRINGS_VALID_KEYS = M1_STRINGS_POOL.map((p) => p.key) as M1StringsKey[];
 
-function pickDifferentName(rng: any, avoid: string) {
-    let x = pickName(rng);
-    for (let i = 0; i < 6 && x === avoid; i++) x = pickName(rng);
-    return x;
+function Q(key: M1StringsKey) {
+    return `quiz.${key}`;
 }
 
-export const M1_STRINGS_HANDLERS: Record<M1StringsKey, Handler> = {
-    m1_str_concat_vs_comma_sc: ({ diff, id, topic }) => {
-        const exercise: SingleChoiceExercise = {
+type OptId3 = "a" | "b" | "c";
+type OptId4 = "a" | "b" | "c" | "d";
+
+function buildOptions3(
+    key: Extract<
+        M1StringsKey,
+        | "m1_str_concat_vs_comma_sc"
+        | "m1_str_fstring_placeholder_sc"
+        | "m1_str_strip_sc"
+        | "m1_str_lower_sc"
+    >
+) {
+    return (["a", "b", "c"] as const).map((id) => ({
+        id,
+        text: tag(`${Q(key)}.options.${id}`),
+    }));
+}
+
+function buildOptions4(
+    key: Extract<
+        M1StringsKey,
+        | "m1_str_username_steps_mc"
+        | "m1_str_concat_truths_mc"
+        | "m1_str_indexing_first_char_mc"
+    >
+) {
+    return (["a", "b", "c", "d"] as const).map((id) => ({
+        id,
+        text: tag(`${Q(key)}.options.${id}`),
+    }));
+}
+
+function sc(
+    key: Extract<
+        M1StringsKey,
+        | "m1_str_concat_vs_comma_sc"
+        | "m1_str_fstring_placeholder_sc"
+        | "m1_str_strip_sc"
+        | "m1_str_lower_sc"
+    >,
+    answerOptionId: OptId3
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
+        makeSingleChoiceOut({
+            archetype: key,
             id,
             topic,
-            difficulty: diff,
-            kind: "single_choice",
-            title: "Concatenation vs commas",
-            prompt: "Assume `age = 16`. Which line prints **without** an error?",
-            options: [
-                { id: "a", text: "`print(\"age: \" + age)`" },
-                { id: "b", text: "`print(\"age:\", age)`" },
-                { id: "c", text: "`print(\"age: \" + 16)`" },
-            ],
-            hint: "Commas work with numbers. Using + requires strings on both sides.",
-        };
+            diff,
+            title: tag(`${Q(key)}.title`),
+            prompt: tag(`${Q(key)}.prompt`),
+            options: buildOptions3(key),
+            answerOptionId,
+            hint: tag(`${Q(key)}.hint`),
+        });
+}
 
-        return {
-            archetype: "m1_str_concat_vs_comma_sc",
-            exercise,
-            expected: { kind: "single_choice", optionId: "b" },
-        };
-    },
+function mc(
+    key: Extract<
+        M1StringsKey,
+        | "m1_str_username_steps_mc"
+        | "m1_str_concat_truths_mc"
+        | "m1_str_indexing_first_char_mc"
+    >,
+    answerOptionIds: OptId4[]
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
+        makeMultiChoiceOut({
+            archetype: key,
+            id,
+            topic,
+            diff,
+            title: tag(`${Q(key)}.title`),
+            prompt: tag(`${Q(key)}.prompt`),
+            options: buildOptions4(key),
+            answerOptionIds,
+            hint: tag(`${Q(key)}.hint`),
+        });
+}
 
-    m1_str_fstring_greeting_code: ({ rng, diff, id, topic }) => {
+export const M1_STRINGS_HANDLERS = {
+    m1_str_concat_vs_comma_sc: sc("m1_str_concat_vs_comma_sc", "b"),
+
+    m1_str_fstring_placeholder_sc: sc("m1_str_fstring_placeholder_sc", "b"),
+    m1_str_strip_sc: sc("m1_str_strip_sc", "a"),
+    m1_str_lower_sc: sc("m1_str_lower_sc", "c"),
+
+    m1_str_username_steps_mc: mc("m1_str_username_steps_mc", ["a", "c", "d"]),
+    m1_str_concat_truths_mc: mc("m1_str_concat_truths_mc", ["a", "b"]),
+    m1_str_indexing_first_char_mc: mc("m1_str_indexing_first_char_mc", ["b", "d"]),
+
+    m1_str_fstring_greeting_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
+
         const name1 = pickName(rng);
         const name2 = pickDifferentName(rng, name1);
 
-        const exStdin = `${name1}\n`;
-        const exStdout = `Hello, ${name1}!\n`;
+        const outputTemplate = i18nText(
+            args,
+            `${Q("m1_str_fstring_greeting_code")}.runtime.outputTemplate`,
+            "Hello, {name}!"
+        );
 
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "f-string greeting",
-            prompt: String.raw`
-Read ONE input (name).
+        const promptText = i18nText(
+            args,
+            `${Q("m1_str_fstring_greeting_code")}.prompt`,
+            `Read ONE input (name).
 
 Print EXACTLY:
-Hello, <name>!
+Hello, <name>!`
+        );
 
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`# TODO
-`,
-            hint: `print(f"Hello, {name}!")`,
-        };
+        const exStdin = `${name1}\n`;
+        const exStdout = `${fillTemplate(outputTemplate, { name: name1 })}\n`;
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${name1}\n`, stdout: `Hello, ${name1}!\n`, match: "exact" },
-                { stdin: `${name2}\n`, stdout: `Hello, ${name2}!\n`, match: "exact" },
+                {
+                    stdin: `${name1}\n`,
+                    stdout: `${fillTemplate(outputTemplate, { name: name1 })}\n`,
+                    match: "exact",
+                },
+                {
+                    stdin: `${name2}\n`,
+                    stdout: `${fillTemplate(outputTemplate, { name: name2 })}\n`,
+                    match: "exact",
+                },
             ],
-            solutionCode: `name = input()\nprint(f"Hello, {name}!")\n`,
+            solutionCode:
+                `name = input()\n` +
+                pyFStringPrint(outputTemplate),
         });
 
-        return { archetype: "m1_str_fstring_greeting_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_str_fstring_greeting_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_str_fstring_greeting_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_str_fstring_greeting_code")}.starterCode`),
+            hint: tag(`${Q("m1_str_fstring_greeting_code")}.hint`),
+            expected,
+        });
     },
 
-    m1_str_username_code: ({ rng, diff, id, topic }) => {
+    m1_str_username_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
+
         const first1 = pickName(rng);
         const last1 = pickName(rng);
         const first2 = pickDifferentName(rng, first1);
@@ -95,37 +203,34 @@ ${terminalFence(exStdin, exStdout)}
         const stdinLast2 = `  ${last2}  `;
         const out2 = ((first2.trim()[0] ?? "") + last2.trim()).toLowerCase();
 
-        const exStdin = `${stdinFirst1}\n${stdinLast1}\n`;
-        const exStdout = `${out1}\n`;
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Username generator",
-            prompt: String.raw`
-Read TWO inputs (first, last).
+        const promptText = i18nText(
+            args,
+            `${Q("m1_str_username_code")}.prompt`,
+            `Read TWO inputs (first, last).
 
 Rules:
 - strip spaces
 - username = first letter of first + last
 - lowercase
-Print ONLY the username.
+Print ONLY the username.`
+        );
 
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`# TODO
-`,
-            hint: `username = (first.strip()[0] + last.strip()).lower()`,
-        };
+        const exStdin = `${stdinFirst1}\n${stdinLast1}\n`;
+        const exStdout = `${out1}\n`;
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${stdinFirst1}\n${stdinLast1}\n`, stdout: `${out1}\n`, match: "exact" },
-                { stdin: `${stdinFirst2}\n${stdinLast2}\n`, stdout: `${out2}\n`, match: "exact" },
+                {
+                    stdin: `${stdinFirst1}\n${stdinLast1}\n`,
+                    stdout: `${out1}\n`,
+                    match: "exact",
+                },
+                {
+                    stdin: `${stdinFirst2}\n${stdinLast2}\n`,
+                    stdout: `${out2}\n`,
+                    match: "exact",
+                },
             ],
             solutionCode:
                 `first = input().strip()\n` +
@@ -134,12 +239,23 @@ ${terminalFence(exStdin, exStdout)}
                 `print(username)\n`,
         });
 
-        return { archetype: "m1_str_username_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_str_username_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_str_username_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_str_username_code")}.starterCode`),
+            hint: tag(`${Q("m1_str_username_code")}.hint`),
+            expected,
+        });
     },
-};
+} satisfies Record<M1StringsKey, Handler>;
 
-export const M1_STRINGS_TOPIC: TopicBundle = defineTopic(
-    "string_basics",
-    M1_STRINGS_POOL as any,
-    M1_STRINGS_HANDLERS as any,
+export const M1_STRINGS_GENERATOR_TOPIC: TopicBundle = defineTopic(
+    TOPIC_ID,
+    M1_STRINGS_POOL,
+    M1_STRINGS_HANDLERS,
 );

@@ -1,7 +1,21 @@
 // src/lib/practice/generator/engines/python/python_part1_mod1/topics/variables.ts
-import type { CodeInputExercise } from "../../../../../types";
-import { defineTopic, Handler, makeSingleChoiceOut, TopicBundle } from "@/lib/practice/generator/engines/utils";
-import { makeCodeExpected, pickName, safeInt, terminalFence } from "../../_shared";
+import {
+    defineTopic,
+    type Handler,
+    type HandlerArgs,
+    makeSingleChoiceOut,
+    makeCodeInputOut,
+    type TopicBundle,
+} from "@/lib/practice/generator/engines/utils";
+import { makeCodeExpected, pickName, safeInt } from "../../_shared";
+import { TOPIC_ID } from "@/lib/subjects/python/modules/module1/topics/variables/meta";
+import {
+    i18nText,
+    terminalFenceI18n,
+    fillTemplate,
+    tag,
+    pyFStringPrint,
+} from "@/lib/practice/generator/shared/i18n";
 
 export const M1_VARS_POOL = [
     { key: "m1_vars_what_is_variable_sc", w: 1, kind: "single_choice", purpose: "quiz" },
@@ -16,173 +30,168 @@ export const M1_VARS_POOL = [
 
 export type M1VarsKey = (typeof M1_VARS_POOL)[number]["key"];
 
-export const M1_VARS_HANDLERS: Record<M1VarsKey, Handler> = {
-    /* ------------------------------ single choice ------------------------------ */
+function Q(key: M1VarsKey) {
+    return `quiz.${key}`;
+}
 
-    m1_vars_what_is_variable_sc: ({ diff, id, topic }) =>
+type OptId = "a" | "b" | "c";
+
+function buildOptions(
+    key: Extract<
+        M1VarsKey,
+        | "m1_vars_what_is_variable_sc"
+        | "m1_vars_assignment_operator_sc"
+        | "m1_vars_valid_name_sc"
+        | "m1_vars_update_value_sc"
+    >,
+    ids: OptId[]
+) {
+    return ids.map((id) => ({
+        id,
+        text: tag(`${Q(key)}.options.${id}`),
+    }));
+}
+
+function sc(
+    key: Extract<
+        M1VarsKey,
+        | "m1_vars_what_is_variable_sc"
+        | "m1_vars_assignment_operator_sc"
+        | "m1_vars_valid_name_sc"
+        | "m1_vars_update_value_sc"
+    >,
+    answerOptionId: OptId
+): Handler {
+    return ({ diff, id, topic }: HandlerArgs) =>
         makeSingleChoiceOut({
-            archetype: "m1_vars_what_is_variable_sc",
+            archetype: key,
             id,
             topic,
             diff,
-            title: "Variables = labeled boxes",
-            prompt: "In Python, a variable is best described as:",
-            options: [
-                { id: "a", text: "A name that points to a value so you can reuse it" },
-                { id: "b", text: "A special kind of comment" },
-                { id: "c", text: "A function that prints text" },
-            ],
-            answerOptionId: "a",
-            hint: "A variable lets you store a value under a name and reuse it later.",
-        }),
+            title: tag(`${Q(key)}.title`),
+            prompt: tag(`${Q(key)}.prompt`),
+            options: buildOptions(key, ["a", "b", "c"]),
+            answerOptionId,
+            hint: tag(`${Q(key)}.hint`),
+        });
+}
 
-    m1_vars_assignment_operator_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_vars_assignment_operator_sc",
-            id,
-            topic,
-            diff,
-            title: "Assignment uses =",
-            prompt: "Which line correctly assigns the number 5 to a variable named `x`?",
-            options: [
-                { id: "a", text: "`x == 5`" },
-                { id: "b", text: "`x = 5`" },
-                { id: "c", text: "`5 = x`" },
-            ],
-            answerOptionId: "b",
-            hint: "`=` assigns. `==` compares.",
-        }),
+function pickDifferentName(rng: any, avoid: string) {
+    let x = pickName(rng);
+    for (let i = 0; i < 6 && x === avoid; i++) x = pickName(rng);
+    return x;
+}
 
-    m1_vars_valid_name_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_vars_valid_name_sc",
-            id,
-            topic,
-            diff,
-            title: "Valid variable names",
-            prompt: "Which variable name is valid in Python?",
-            options: [
-                { id: "a", text: "`2cool`" },
-                { id: "b", text: "`student name`" },
-                { id: "c", text: "`student_name`" },
-            ],
-            answerOptionId: "c",
-            hint: "Use letters/numbers/underscore, and don’t start with a number.",
-        }),
+function pickDifferentInt(rng: any, lo: number, hi: number, avoid: number) {
+    let x = safeInt(rng, lo, hi);
+    for (let i = 0; i < 6 && x === avoid; i++) x = safeInt(rng, lo, hi);
+    return x;
+}
 
-    m1_vars_update_value_sc: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "m1_vars_update_value_sc",
-            id,
-            topic,
-            diff,
-            title: "Updating a variable",
-            prompt: String.raw`
-A game starts with \`score = 10\`.
-Then the player earns 5 points.
+export const M1_VARS_HANDLERS = {
+    m1_vars_what_is_variable_sc: sc("m1_vars_what_is_variable_sc", "a"),
+    m1_vars_assignment_operator_sc: sc("m1_vars_assignment_operator_sc", "b"),
+    m1_vars_valid_name_sc: sc("m1_vars_valid_name_sc", "c"),
+    m1_vars_update_value_sc: sc("m1_vars_update_value_sc", "a"),
 
-Which line correctly updates \`score\`?
-`.trim(),
-            options: [
-                { id: "a", text: "`score = score + 5`" },
-                { id: "b", text: "`score + 5`" },
-                { id: "c", text: "`score == score + 5`" },
-            ],
-            answerOptionId: "a",
-            hint: "You must assign the new value back into the variable.",
-        }),
+    m1_vars_boxes_print_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
 
-    /* -------------------------------- code input -------------------------------- */
-
-    m1_vars_boxes_print_code: ({ rng, diff, id, topic }) => {
         const name1 = pickName(rng);
         const age1 = safeInt(rng, 10, 40);
-        const name2 = pickName(rng);
-        const age2 = safeInt(rng, 10, 40);
+        const name2 = pickDifferentName(rng, name1);
+        const age2 = pickDifferentInt(rng, 10, 40, age1);
 
-        const exStdin = `${name1}\n${age1}\n`;
-        const exStdout = `name = ${name1}\nage = ${age1}\n`;
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Store inputs in variables and print cleanly",
-            prompt: String.raw`
-A teacher is collecting student info.
-
-Read TWO inputs:
+        const promptText = i18nText(
+            args,
+            `${Q("m1_vars_boxes_print_code")}.prompt`,
+            `Read TWO inputs:
 1) name
 2) age
 
-Store them in variables, then print EXACTLY:
-
+Store them in variables and print EXACTLY:
 name = <name>
-age = <age>
+age = <age>`
+        );
 
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`# Read inputs
-# TODO
+        const nameLineTemplate = i18nText(
+            args,
+            `${Q("m1_vars_boxes_print_code")}.runtime.nameLineTemplate`,
+            "name = {name}"
+        );
 
-# Print exactly:
-# name = <name>
-# age = <age>
-`,
-            hint: "Use input() twice. Converting age is optional if output matches exactly.",
-        };
+        const ageLineTemplate = i18nText(
+            args,
+            `${Q("m1_vars_boxes_print_code")}.runtime.ageLineTemplate`,
+            "age = {age}"
+        );
+
+        const exStdin = `${name1}\n${age1}\n`;
+        const exStdout =
+            `${fillTemplate(nameLineTemplate, { name: name1 })}\n` +
+            `${fillTemplate(ageLineTemplate, { age: age1 })}\n`;
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${name1}\n${age1}\n`, stdout: `name = ${name1}\nage = ${age1}\n`, match: "exact" },
-                { stdin: `${name2}\n${age2}\n`, stdout: `name = ${name2}\nage = ${age2}\n`, match: "exact" },
+                {
+                    stdin: `${name1}\n${age1}\n`,
+                    stdout:
+                        `${fillTemplate(nameLineTemplate, { name: name1 })}\n` +
+                        `${fillTemplate(ageLineTemplate, { age: age1 })}\n`,
+                    match: "exact",
+                },
+                {
+                    stdin: `${name2}\n${age2}\n`,
+                    stdout:
+                        `${fillTemplate(nameLineTemplate, { name: name2 })}\n` +
+                        `${fillTemplate(ageLineTemplate, { age: age2 })}\n`,
+                    match: "exact",
+                },
             ],
             solutionCode:
                 `name = input()\n` +
                 `age = input()\n` +
-                `print(f"name = {name}")\n` +
-                `print(f"age = {age}")\n`,
+                pyFStringPrint(nameLineTemplate) +
+                pyFStringPrint(ageLineTemplate),
         });
 
-        return { archetype: "m1_vars_boxes_print_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_vars_boxes_print_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_vars_boxes_print_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_vars_boxes_print_code")}.starterCode`),
+            hint: tag(`${Q("m1_vars_boxes_print_code")}.hint`),
+            expected,
+        });
     },
 
-    m1_vars_swap_values_code: ({ rng, diff, id, topic }) => {
+    m1_vars_swap_values_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
+
         const a1 = safeInt(rng, 1, 9);
         const b1 = safeInt(rng, 1, 9);
         const a2 = safeInt(rng, 10, 99);
         const b2 = safeInt(rng, 10, 99);
 
+        const promptText = i18nText(
+            args,
+            `${Q("m1_vars_swap_values_code")}.prompt`,
+            `Read TWO integers a and b.
+
+Swap their values, then print:
+- the new value of a
+- the new value of b
+
+Each on its own line.`
+        );
+
         const exStdin = `${a1}\n${b1}\n`;
         const exStdout = `${b1}\n${a1}\n`;
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Swap two values",
-            prompt: String.raw`
-A cashier accidentally typed the two quantities in the wrong order.
-
-Read TWO integers (a then b).
-Swap them, then print:
-1) the new a
-2) the new b
-
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`a = int(input())
-b = int(input())
-# TODO: swap a and b
-# TODO: print a then b
-`,
-            hint: "Python swap: a, b = b, a",
-        };
 
         const expected = makeCodeExpected({
             language: "python",
@@ -190,13 +199,31 @@ b = int(input())
                 { stdin: `${a1}\n${b1}\n`, stdout: `${b1}\n${a1}\n`, match: "exact" },
                 { stdin: `${a2}\n${b2}\n`, stdout: `${b2}\n${a2}\n`, match: "exact" },
             ],
-            solutionCode: `a = int(input())\nb = int(input())\na, b = b, a\nprint(a)\nprint(b)\n`,
+            solutionCode:
+                `a = int(input())\n` +
+                `b = int(input())\n` +
+                `a, b = b, a\n` +
+                `print(a)\n` +
+                `print(b)\n`,
         });
 
-        return { archetype: "m1_vars_swap_values_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_vars_swap_values_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_vars_swap_values_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_vars_swap_values_code")}.starterCode`),
+            hint: tag(`${Q("m1_vars_swap_values_code")}.hint`),
+            expected,
+        });
     },
 
-    m1_vars_running_total_code: ({ rng, diff, id, topic }) => {
+    m1_vars_running_total_code: (args: HandlerArgs) => {
+        const { rng, diff, id, topic } = args;
+
         const d1 = safeInt(rng, 1000, 12000);
         const d2 = safeInt(rng, 1000, 12000);
         const d3 = safeInt(rng, 1000, 12000);
@@ -205,59 +232,66 @@ b = int(input())
         const e2 = safeInt(rng, 1000, 12000);
         const e3 = safeInt(rng, 1000, 12000);
 
-        const exStdin = `${d1}\n${d2}\n${d3}\n`;
-        const exStdout = `Total = ${d1 + d2 + d3}\n`;
-
-        const exercise: CodeInputExercise = {
-            id,
-            topic,
-            difficulty: diff,
-            kind: "code_input",
-            title: "Running total (3 days of steps)",
-            prompt: String.raw`
-A fitness app tracks your steps for 3 days.
-
-Read THREE integers:
+        const promptText = i18nText(
+            args,
+            `${Q("m1_vars_running_total_code")}.prompt`,
+            `Read THREE integers:
 day1
 day2
 day3
 
-Compute total = day1 + day2 + day3
+Store them in variables, compute the total, and print:
+Total = <total>`
+        );
 
-Print EXACTLY:
-Total = <total>
+        const totalLineTemplate = i18nText(
+            args,
+            `${Q("m1_vars_running_total_code")}.runtime.totalLineTemplate`,
+            "Total = {total}"
+        );
 
-${terminalFence(exStdin, exStdout)}
-`.trim(),
-            language: "python",
-            starterCode: String.raw`day1 = int(input())
-day2 = int(input())
-day3 = int(input())
-# TODO
-`,
-            hint: "total = day1 + day2 + day3",
-        };
+        const exStdin = `${d1}\n${d2}\n${d3}\n`;
+        const exStdout = `${fillTemplate(totalLineTemplate, { total: d1 + d2 + d3 })}\n`;
 
         const expected = makeCodeExpected({
             language: "python",
             tests: [
-                { stdin: `${d1}\n${d2}\n${d3}\n`, stdout: `Total = ${d1 + d2 + d3}\n`, match: "exact" },
-                { stdin: `${e1}\n${e2}\n${e3}\n`, stdout: `Total = ${e1 + e2 + e3}\n`, match: "exact" },
+                {
+                    stdin: `${d1}\n${d2}\n${d3}\n`,
+                    stdout: `${fillTemplate(totalLineTemplate, { total: d1 + d2 + d3 })}\n`,
+                    match: "exact",
+                },
+                {
+                    stdin: `${e1}\n${e2}\n${e3}\n`,
+                    stdout: `${fillTemplate(totalLineTemplate, { total: e1 + e2 + e3 })}\n`,
+                    match: "exact",
+                },
             ],
             solutionCode:
                 `day1 = int(input())\n` +
                 `day2 = int(input())\n` +
                 `day3 = int(input())\n` +
                 `total = day1 + day2 + day3\n` +
-                `print(f"Total = {total}")\n`,
+                pyFStringPrint(totalLineTemplate),
         });
 
-        return { archetype: "m1_vars_running_total_code", exercise, expected };
+        return makeCodeInputOut({
+            archetype: "m1_vars_running_total_code",
+            id,
+            topic,
+            diff,
+            title: tag(`${Q("m1_vars_running_total_code")}.title`),
+            prompt: `${promptText}\n\n${terminalFenceI18n(args, exStdin, exStdout)}`.trim(),
+            language: "python",
+            starterCode: tag(`${Q("m1_vars_running_total_code")}.starterCode`),
+            hint: tag(`${Q("m1_vars_running_total_code")}.hint`),
+            expected,
+        });
     },
-};
+} satisfies Record<M1VarsKey, Handler>;
 
-export const M1_VARS_TOPIC: TopicBundle = defineTopic(
-    "variables_intro",
-    M1_VARS_POOL as any,
-    M1_VARS_HANDLERS as any,
+export const VARS_GENERATOR_TOPIC: TopicBundle = defineTopic(
+    TOPIC_ID,
+    M1_VARS_POOL,
+    M1_VARS_HANDLERS
 );

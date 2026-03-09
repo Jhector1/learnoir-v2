@@ -1,4 +1,3 @@
-// src/lib/practice/usePracticeInstance.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,12 +12,14 @@ import {
 } from "@/lib/practice/clientApi";
 
 import { buildSubmitAnswerFromItem, cloneVec, initItemFromExercise } from "@/lib/practice/uiHelpers";
+import { resolveDeepTagged } from "@/i18n/resolveDeepTagged";
+import { useTaggedT } from "@/i18n/tagged";
 
 type LoadArgs = {
   subject?: string;
   module?: string;
   section?: string;
-  topic?: string; // "" or "all" allowed
+  topic?: string;
   difficulty?: "easy" | "medium" | "hard";
   allowReveal?: boolean;
   sessionId?: string;
@@ -50,8 +51,15 @@ export function usePracticeInstance(args: {
   const lockRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // ✅ IMPORTANT: stable signature (prevents infinite reload loop)
   const loadSig = useMemo(() => stableJson(load), [load]);
+
+  // ✅ stable translation resolvers (avoid callback dependency churn)
+  const tt = useTaggedT();
+  const rawKeyRef = useRef<(key: string) => string>((key) => key);
+  const resolveTextRef = useRef<(value: string) => string>((value) => value);
+
+  rawKeyRef.current = (key: string) => tt.raw(key, key);
+  resolveTextRef.current = (value: string) => tt.resolve(value, value);
 
   const update = useCallback((patch: Partial<QItem>) => {
     setItem((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -81,11 +89,19 @@ export function usePracticeInstance(args: {
         throw new Error("Malformed response from /api/practice (missing exercise/key).");
       }
 
-      const q = initItemFromExercise(ex as Exercise, key);
-      setExercise(ex as Exercise);
+      // ✅ resolve all tagged strings before storing
+      const resolvedEx = resolveDeepTagged(
+          ex as Exercise,
+          (k) => rawKeyRef.current(k),
+      ) as Exercise;
+
+      const q = initItemFromExercise(resolvedEx, key, {
+        resolveText: (value) => resolveTextRef.current(value),
+      });
+
+      setExercise(resolvedEx);
       setItem(q);
 
-      // sync pad initial state if needed
       if (padRef?.current) {
         padRef.current.a = cloneVec((q as any).dragA) as any;
         padRef.current.b = cloneVec((q as any).dragB) as any;
@@ -107,10 +123,7 @@ export function usePracticeInstance(args: {
     if (!item || !exercise) return;
     if (busy) return;
 
-    // ✅ if already finalized, do nothing
     if (item.submitted) return;
-
-    // ✅ hard cap
     if ((item.attempts ?? 0) >= maxAttempts) return;
 
     setBusy(true);
@@ -119,7 +132,6 @@ export function usePracticeInstance(args: {
     try {
       let answer = buildSubmitAnswerFromItem(item);
 
-      // vector kinds: prefer padRef values
       if (padRef?.current && exercise.kind === "vector_drag_dot") {
         answer = { kind: "vector_drag_dot", a: cloneVec(padRef.current.a) } as any;
         update({ dragA: cloneVec(padRef.current.a) } as any);
@@ -143,9 +155,8 @@ export function usePracticeInstance(args: {
       const nextAttempts = (item.attempts ?? 0) + 1;
       const ok = Boolean((data as any)?.ok);
 
-      // ✅ SOURCE OF TRUTH (your line)
       const finalize =
-        Boolean((data as any)?.finalized) || ok || nextAttempts >= maxAttempts;
+          Boolean((data as any)?.finalized) || ok || nextAttempts >= maxAttempts;
 
       update({
         result: data as any,
@@ -154,7 +165,6 @@ export function usePracticeInstance(args: {
         revealed: false,
       });
     } catch (e: any) {
-      // If server says already finalized, treat it as finalized in UI too
       const msg = String(e?.message ?? "");
       if (msg.toLowerCase().includes("already finalized")) {
         update({ submitted: true });

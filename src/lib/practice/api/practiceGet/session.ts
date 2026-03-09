@@ -57,9 +57,15 @@ export async function loadSession(prisma: PrismaClient, sessionId?: string) {
           subjectId: true,
           slug: true,
           moduleId: true,
+          subject: {
+            select: {
+              slug: true,
+            },
+          },
           module: {
             select: {
               id: true,
+              slug: true,
               practicePresetId: true,
               practicePreset: {
                 select: {

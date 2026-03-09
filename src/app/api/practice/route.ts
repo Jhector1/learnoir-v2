@@ -144,7 +144,7 @@ export async function GET(req: Request) {
 
     // 7) Handler (defense-in-depth: handler must still scope DB reads/writes by actor)
     try {
-        const out = await handlePracticeGet({ prisma, actor, params });
+        const out = await handlePracticeGet({ prisma, actor, params,locale });
 
         const res =
             out.kind === "res"

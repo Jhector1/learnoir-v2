@@ -10,8 +10,8 @@ import { defineTopic, type Handler, type TopicBundle, makeSingleChoiceOut } from
 import { makeTextExpected, makeVoiceExpected, makeDragExpected } from "../../_shared";
 
 export const HC_GREETINGS_POOL = [
-    { key: "hc_greet_bonjou_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
-    { key: "hc_greet_when_bonswa_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_greet_bonjou_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
+    // { key: "hc_greet_when_bonswa_mcq", w: 1, kind: "single_choice", purpose: "quiz" },
 
     { key: "hc_greet_fill_blank_bon____", w: 1, kind: "fill_blank_choice", purpose: "quiz" },
     { key: "hc_greet_listen_build_bonswa", w: 1, kind: "listen_build", purpose: "quiz" },
@@ -23,39 +23,39 @@ export const HC_GREETINGS_POOL = [
 export type HcGreetingsKey = (typeof HC_GREETINGS_POOL)[number]["key"];
 
 export const HC_GREETINGS_HANDLERS: Record<HcGreetingsKey, Handler> = {
-    hc_greet_bonjou_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_greet_bonjou_mcq",
-            id,
-            topic,
-            diff,
-            title: "Bonjou",
-            prompt: `What does **Bonjou** mean?`,
-            options: [
-                { id: "a", text: "Goodbye" },
-                { id: "b", text: "Hello / Good morning" },
-                { id: "c", text: "Thank you" },
-            ],
-            answerOptionId: "b",
-            hint: "Bonjou is a common greeting in the morning/daytime.",
-        }),
+    // hc_greet_bonjou_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_greet_bonjou_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Bonjou",
+    //         prompt: `What does **Bonjou** mean?`,
+    //         options: [
+    //             { id: "a", text: "Goodbye" },
+    //             { id: "b", text: "Hello / Good morning" },
+    //             { id: "c", text: "Thank you" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: "Bonjou is a common greeting in the morning/daytime.",
+    //     }),
 
-    hc_greet_when_bonswa_mcq: ({ diff, id, topic }) =>
-        makeSingleChoiceOut({
-            archetype: "hc_greet_when_bonswa_mcq",
-            id,
-            topic,
-            diff,
-            title: "Bonswa",
-            prompt: `Which greeting is best for the **evening**?`,
-            options: [
-                { id: "a", text: "Bonjou" },
-                { id: "b", text: "Bonswa" },
-                { id: "c", text: "Mwen" },
-            ],
-            answerOptionId: "b",
-            hint: "Bonswa = Good evening.",
-        }),
+    // hc_greet_when_bonswa_mcq: ({ diff, id, topic }) =>
+    //     makeSingleChoiceOut({
+    //         archetype: "hc_greet_when_bonswa_mcq",
+    //         id,
+    //         topic,
+    //         diff,
+    //         title: "Bonswa",
+    //         prompt: `Which greeting is best for the **evening**?`,
+    //         options: [
+    //             { id: "a", text: "Bonjou" },
+    //             { id: "b", text: "Bonswa" },
+    //             { id: "c", text: "Mwen" },
+    //         ],
+    //         answerOptionId: "b",
+    //         hint: "Bonswa = Good evening.",
+    //     }),
 
     hc_greet_fill_blank_bon____: ({ diff, id, topic }) => {
         const exercise: FillBlankChoiceExercise = {

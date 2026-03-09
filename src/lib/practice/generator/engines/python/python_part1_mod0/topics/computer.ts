@@ -6,6 +6,7 @@ import {
     type TopicBundle,
     makeSingleChoiceOut,
 } from "@/lib/practice/generator/engines/utils";
+import {TOPIC_ID} from "@/lib/subjects/python/modules/module0/topics/computer_intro/meta";
 
 export const M0_COMPUTER_POOL = [
     { key: "m0_computer_ipo_order", w: 1, kind: "single_choice", purpose: "quiz" },
@@ -53,8 +54,8 @@ export const M0_COMPUTER_HANDLERS: Record<M0ComputerKey, Handler> = {
     m0_computer_input_examples: sc("m0_computer_input_examples", "a"),
 };
 
-export const M0_COMPUTER_TOPIC: TopicBundle = defineTopic(
-    "computer_intro",
+export const M0_COMPUTER_GENERATOR_TOPIC: TopicBundle = defineTopic(
+    TOPIC_ID,
     M0_COMPUTER_POOL as any,
     M0_COMPUTER_HANDLERS as any,
 );

@@ -1,4 +1,3 @@
-// src/app/(public)/[locale]/subjects/[subjectSlug]/modules/[moduleSlug]/ModuleIntroClient.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -33,53 +32,96 @@ type Props = {
 
 function Kicker({ children }: { children: React.ReactNode }) {
     return (
-        <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-neutral-500 dark:text-white/45">
+        <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.2em] text-neutral-500 dark:text-white/45">
             {children}
         </div>
     );
 }
 
-function StatPill({ label, value }: { label: string; value: React.ReactNode }) {
+function Surface({
+                     children,
+                     className,
+                 }: {
+    children: React.ReactNode;
+    className?: string;
+}) {
     return (
         <div
             className={cn(
-                "inline-flex items-center gap-2 rounded-full px-3 py-1.5",
-                "bg-white/70 ring-1 ring-black/5",
-                "dark:bg-white/[0.06] dark:ring-white/10",
+                "rounded-[28px] border p-4 sm:p-5 lg:p-6",
+                "bg-white/78 border-black/5 shadow-[0_20px_60px_-28px_rgba(0,0,0,0.28)] backdrop-blur-xl",
+                "dark:bg-white/[0.06] dark:border-white/10 dark:shadow-none",
+                className,
             )}
         >
-            <span className="text-[11px] font-extrabold tracking-wide text-neutral-500 dark:text-white/45">{label}</span>
-            <span className="text-sm font-black tabular-nums">{value}</span>
+            {children}
         </div>
     );
 }
 
-function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+function StatTile({
+                      label,
+                      value,
+                      subtle,
+                  }: {
+    label: string;
+    value: React.ReactNode;
+    subtle?: React.ReactNode;
+}) {
     return (
         <div
             className={cn(
-                "rounded-3xl p-4 md:p-6",
-                "bg-white/70 ring-1 ring-black/5 shadow-[0_14px_50px_-26px_rgba(0,0,0,0.22)]",
-                "backdrop-blur-xl",
-                "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
+                "rounded-2xl px-3 py-3 sm:px-4",
+                "bg-white/75 ring-1 ring-black/5",
+                "dark:bg-white/[0.05] dark:ring-white/10",
             )}
         >
-            <div className="flex items-center gap-2">
-                <Kicker>{title}</Kicker>
-                {icon ? <span className="opacity-80">{icon}</span> : null}
+            <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
+                {label}
             </div>
-            <div className="mt-3">{children}</div>
+            <div className="mt-1 text-base sm:text-lg font-black tracking-tight tabular-nums">
+                {value}
+            </div>
+            {subtle ? (
+                <div className="mt-1 text-xs text-neutral-500 dark:text-white/55">{subtle}</div>
+            ) : null}
         </div>
     );
 }
 
-function BulletList({ items, marker = "✓" }: { items: string[]; marker?: "✓" | "•" | "→" }) {
+function SectionCard({
+                         title,
+                         eyebrow,
+                         children,
+                     }: {
+    title: string;
+    eyebrow?: React.ReactNode;
+    children: React.ReactNode;
+}) {
     return (
-        <ul className="grid gap-2 text-sm text-neutral-700 dark:text-white/75">
+        <Surface className="h-full">
+            {eyebrow ? <Kicker>{eyebrow}</Kicker> : null}
+            <div className="mt-1 text-lg sm:text-xl font-black tracking-tight">{title}</div>
+            <div className="mt-4">{children}</div>
+        </Surface>
+    );
+}
+
+function BulletList({
+                        items,
+                        marker = "✓",
+                    }: {
+    items: string[];
+    marker?: "✓" | "•" | "→";
+}) {
+    return (
+        <ul className="grid gap-2.5 text-sm sm:text-[15px] text-neutral-700 dark:text-white/75">
             {items.map((x) => (
-                <li key={x} className="flex gap-2">
-                    <span className="mt-[2px]">{marker}</span>
-                    <span>{x}</span>
+                <li key={x} className="flex items-start gap-3">
+                    <span className="mt-[2px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[11px] font-black text-white dark:bg-white/12 dark:text-white/90">
+                        {marker}
+                    </span>
+                    <span className="leading-6">{x}</span>
                 </li>
             ))}
         </ul>
@@ -109,20 +151,15 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
     })();
 
     return (
-        <div
-            className={cn(
-                "rounded-3xl overflow-hidden",
-                "bg-white/70 ring-1 ring-black/5 shadow-[0_14px_50px_-26px_rgba(0,0,0,0.22)]",
-                "backdrop-blur-xl",
-                "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-            )}
-        >
-            <div className="p-4 md:p-6 pb-3">
-                <div className="flex items-center justify-between gap-3">
+        <Surface className="overflow-hidden p-0">
+            <div className="p-4 sm:p-5 lg:p-6 pb-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                         <Kicker>{t("introVideoKicker")}</Kicker>
-                        <div className="mt-1 text-base font-black tracking-tight truncate">{title}</div>
-                        <div className="mt-1 text-xs text-neutral-600 dark:text-white/60">{t("introVideoHint")}</div>
+                        <div className="mt-1 text-base sm:text-lg font-black tracking-tight truncate">{title}</div>
+                        <div className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-white/60">
+                            {t("introVideoHint")}
+                        </div>
                     </div>
 
                     <a
@@ -130,8 +167,8 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
                         target="_blank"
                         rel="noreferrer"
                         className={cn(
-                            "shrink-0 inline-flex items-center justify-center rounded-2xl px-3 py-2 text-xs font-extrabold",
-                            "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99] transition",
+                            "inline-flex shrink-0 items-center justify-center rounded-2xl px-3.5 py-2 text-xs sm:text-sm font-extrabold",
+                            "bg-neutral-900 text-white shadow-sm transition hover:shadow-md active:scale-[0.99]",
                             "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
                         )}
                     >
@@ -140,8 +177,8 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
                 </div>
             </div>
 
-            <div className="px-4 md:px-6 pb-4">
-                <div className="relative w-full overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/10">
+            <div className="px-4 sm:px-5 lg:px-6 pb-4 sm:pb-5 lg:pb-6">
+                <div className="relative overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/10">
                     <div className="aspect-video">
                         {isMp4 ? (
                             <video className="h-full w-full" controls preload="metadata">
@@ -159,24 +196,27 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </Surface>
     );
 }
 
 export default function ModuleIntroClient({ locale, subject, module, stats }: Props) {
     const t = useTranslations("moduleIntroUi");
 
+    const progressModuleKey = module.slug;
+
     const { byModuleId, loading } = useReviewProgressMany({
         subjectSlug: subject.slug,
         locale,
-        moduleIds: [module.id], // DB module id
+        moduleIds: [progressModuleKey],
         enabled: true,
         refreshMs: 0,
     });
 
-    const mp = byModuleId[module.id];
+    const mp = byModuleId[progressModuleKey];
+    const completedCount = mp?.completedTopicKeys?.size ?? 0;
     const completed = Boolean(mp?.moduleCompleted);
-    const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0;
+    const hasAnyProgress = completedCount > 0;
 
     const ctaLabel = completed ? t("cta.review") : hasAnyProgress ? t("cta.continue") : t("cta.start");
 
@@ -185,14 +225,10 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
         encodeURIComponent(module.slug),
     )}`;
 
-    const practiceHref = `/${encodeURIComponent(locale)}/${ROUTES.practicePath(
-        encodeURIComponent(subject.slug),
-        encodeURIComponent(module.slug),
-    )}`;
-
     const backHref = `/${encodeURIComponent(locale)}/subjects/${encodeURIComponent(subject.slug)}/modules`;
 
     const meta = useMemo<ModuleMeta>(() => module.meta ?? ({} satisfies ModuleMeta), [module.meta]);
+
     const outcomes = useMemo(() => {
         const xs = meta.outcomes?.filter(Boolean) ?? [];
         return xs.length ? xs : [t("defaults.outcome1"), t("defaults.outcome2"), t("defaults.outcome3")];
@@ -216,120 +252,224 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                 ? t("status.inProgress")
                 : t("status.new");
 
+    const progressPct =
+        stats.topicsCount > 0 ? Math.max(0, Math.min(100, Math.round((completedCount / stats.topicsCount) * 100))) : 0;
+
     const kicker = t("kicker", { subject: subject.title, n: module.order + 1 });
     const videoTitle = t("videoTitle", { module: module.title });
 
     return (
         <div
             className={cn(
-                "min-h-screen text-neutral-900 dark:text-white/90",
-                "bg-[radial-gradient(1200px_700px_at_20%_0%,#eafff5_0%,#ffffff_52%,#f6f7ff_100%)]",
-                "dark:bg-[radial-gradient(1200px_700px_at_20%_0%,#151a2c_0%,#0b0d12_52%)]",
+                "relative min-h-screen overflow-hidden text-neutral-900 dark:text-white/90",
+                "bg-[radial-gradient(1000px_500px_at_0%_0%,rgba(16,185,129,0.14),transparent_60%),radial-gradient(1000px_500px_at_100%_0%,rgba(59,130,246,0.10),transparent_58%),linear-gradient(180deg,#f8fffb_0%,#ffffff_40%,#f7f8ff_100%)]",
+                "dark:bg-[radial-gradient(1000px_500px_at_0%_0%,rgba(16,185,129,0.12),transparent_55%),radial-gradient(1000px_500px_at_100%_0%,rgba(59,130,246,0.10),transparent_55%),linear-gradient(180deg,#0c1018_0%,#0b0d12_45%,#0b0d12_100%)]",
             )}
         >
             <div
                 className={cn(
-                    "pointer-events-none absolute inset-x-0 top-0 h-48",
-                    "bg-[linear-gradient(90deg,rgba(16,185,129,0.10),rgba(59,130,246,0.06),rgba(236,72,153,0.05))]",
-                    "dark:bg-[linear-gradient(90deg,rgba(110,231,183,0.08),rgba(147,197,253,0.05),rgba(251,113,133,0.04))]",
-                    "opacity-70 blur-2xl",
+                    "pointer-events-none absolute -top-20 left-[-10%] h-64 w-64 rounded-full blur-3xl",
+                    "bg-emerald-300/25 dark:bg-emerald-300/10",
+                )}
+                aria-hidden
+            />
+            <div
+                className={cn(
+                    "pointer-events-none absolute right-[-8%] top-10 h-72 w-72 rounded-full blur-3xl",
+                    "bg-sky-300/20 dark:bg-sky-300/10",
                 )}
                 aria-hidden
             />
 
-            <div className="ui-container py-6 md:py-10 grid gap-4 md:gap-6 relative">
-                {/* hero */}
-                <div
-                    className={cn(
-                        "rounded-3xl p-4 md:p-6",
-                        "bg-white/70 ring-1 ring-black/5 shadow-[0_14px_50px_-20px_rgba(0,0,0,0.25)]",
-                        "backdrop-blur-xl",
-                        "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-                    )}
-                >
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <Kicker>{kicker}</Kicker>
+            <div className="ui-container relative py-5 sm:py-7 lg:py-10">
+                <div className="grid gap-4 lg:gap-6">
+                    {/* HERO */}
+                    <Surface className="overflow-hidden">
+                        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.9fr)] lg:gap-6">
+                            {/* LEFT */}
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <Kicker>{kicker}</Kicker>
 
-                            <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">{module.title}</div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <span
+                                                className={cn(
+                                                    "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em]",
+                                                    "bg-neutral-900 text-white dark:bg-white/10 dark:text-white/85",
+                                                )}
+                                            >
+                                                {subject.title}
+                                            </span>
 
-                            {module.description ? (
-                                <div className="mt-2 text-sm md:text-base text-neutral-600 dark:text-white/70">
-                                    {module.description}
+                                            <span
+                                                className={cn(
+                                                    "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em]",
+                                                    "bg-white/75 ring-1 ring-black/5 dark:bg-white/[0.05] dark:ring-white/10",
+                                                )}
+                                            >
+                                                {statusText}
+                                            </span>
+                                        </div>
+
+                                        <h1 className="mt-3 max-w-4xl text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
+                                            {module.title}
+                                        </h1>
+
+                                        {(module.description || subject.description) ? (
+                                            <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-600 sm:text-[15px] dark:text-white/70">
+                                                {module.description ?? subject.description}
+                                            </p>
+                                        ) : null}
+                                    </div>
+
+                                    <Link
+                                        href={backHref}
+                                        className={cn(
+                                            "inline-flex shrink-0 items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
+                                            "bg-white/80 ring-1 ring-black/5 transition hover:bg-white",
+                                            "dark:bg-white/[0.06] dark:ring-white/10 dark:hover:bg-white/[0.09]",
+                                        )}
+                                    >
+                                        {t("actions.back")}
+                                    </Link>
                                 </div>
-                            ) : null}
 
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                <StatPill label={t("labels.sections")} value={stats.sectionsCount} />
-                                <StatPill label={t("labels.topics")} value={stats.topicsCount} />
-
-                                {module.weekStart != null || module.weekEnd != null ? (
-                                    <StatPill
+                                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    <StatTile
+                                        label={t("labels.sections")}
+                                        value={stats.sectionsCount}
+                                    />
+                                    <StatTile
+                                        label={t("labels.topics")}
+                                        value={stats.topicsCount}
+                                    />
+                                    <StatTile
                                         label={t("labels.weeks")}
                                         value={
-                                            <span className="tabular-nums">
-                        {module.weekStart ?? "?"}–{module.weekEnd ?? "?"}
-                      </span>
+                                            module.weekStart != null || module.weekEnd != null
+                                                ? `${module.weekStart ?? "?"}–${module.weekEnd ?? "?"}`
+                                                : "—"
                                         }
                                     />
-                                ) : null}
+                                    <StatTile
+                                        label={t("labels.est")}
+                                        value={est != null ? t("minutesShort", { n: est }) : "—"}
+                                    />
+                                </div>
 
-                                {est != null ? <StatPill label={t("labels.est")} value={t("minutesShort", { n: est })} /> : null}
+                                <div
+                                    className={cn(
+                                        "mt-5 rounded-2xl p-4",
+                                        "bg-white/75 ring-1 ring-black/5",
+                                        "dark:bg-white/[0.05] dark:ring-white/10",
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-sm font-black">Progress</div>
+                                            <div className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-white/60">
+                                                {completedCount} / {stats.topicsCount} topics completed
+                                            </div>
+                                        </div>
 
-                                <StatPill label={t("labels.status")} value={statusText} />
+                                        <div className="text-right">
+                                            <div className="text-xl sm:text-2xl font-black tabular-nums">{progressPct}%</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-neutral-200/80 dark:bg-white/10">
+                                        <div
+                                            className="h-full rounded-full bg-[linear-gradient(90deg,#10b981_0%,#3b82f6_100%)] transition-[width] duration-500"
+                                            style={{ width: `${progressPct}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                                    <Link
+                                        href={learnHref}
+                                        className={cn(
+                                            "inline-flex min-h-12 items-center justify-center rounded-2xl px-5 py-3 text-sm font-extrabold",
+                                            "bg-neutral-900 text-white shadow-sm transition hover:shadow-md active:scale-[0.99]",
+                                            "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
+                                        )}
+                                    >
+                                        {ctaLabel}
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* RIGHT */}
+                            <div className="min-w-0">
+                                <div
+                                    className={cn(
+                                        "h-full rounded-[24px] p-4 sm:p-5",
+                                        "bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.86))]",
+                                        "ring-1 ring-black/5",
+                                        "dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.04))] dark:ring-white/10",
+                                    )}
+                                >
+                                    <Kicker>{t("sections.prereqs")}</Kicker>
+                                    <div className="mt-2 text-lg font-black tracking-tight">
+                                        {prereqs.length ? "Before you start" : "Ready to begin"}
+                                    </div>
+
+                                    <div className="mt-4">
+                                        {prereqs.length ? (
+                                            <BulletList items={prereqs} marker="→" />
+                                        ) : (
+                                            <div className="rounded-2xl bg-white/70 px-4 py-4 text-sm leading-6 text-neutral-700 ring-1 ring-black/5 dark:bg-white/[0.05] dark:text-white/72 dark:ring-white/10">
+                                                This module is ready to start with no required prerequisites listed.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-5 grid gap-3">
+                                        <div
+                                            className={cn(
+                                                "rounded-2xl px-4 py-3",
+                                                "bg-white/80 ring-1 ring-black/5",
+                                                "dark:bg-white/[0.05] dark:ring-white/10",
+                                            )}
+                                        >
+                                            <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
+                                                {t("labels.status")}
+                                            </div>
+                                            <div className="mt-1 text-base font-black">{statusText}</div>
+                                        </div>
+
+                                        <div
+                                            className={cn(
+                                                "rounded-2xl px-4 py-3",
+                                                "bg-white/80 ring-1 ring-black/5",
+                                                "dark:bg-white/[0.05] dark:ring-white/10",
+                                            )}
+                                        >
+                                            <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
+                                                Module order
+                                            </div>
+                                            <div className="mt-1 text-base font-black">#{module.order + 1}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </Surface>
 
-                        <Link
-                            href={backHref}
-                            className={cn(
-                                "shrink-0 inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                                "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99] transition",
-                                "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
-                            )}
-                        >
-                            {t("actions.back")}
-                        </Link>
+                    {/* VIDEO */}
+                    {videoUrl ? <VideoEmbed url={videoUrl} title={videoTitle} /> : null}
+
+                    {/* CONTENT */}
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <SectionCard title={t("sections.whatLearn")} eyebrow={t("sections.whatLearn")}>
+                            <BulletList items={outcomes} marker="✓" />
+                        </SectionCard>
+
+                        <SectionCard title={t("sections.whyMatters")} eyebrow={t("sections.whyMatters")}>
+                            <BulletList items={why} marker="•" />
+                        </SectionCard>
                     </div>
-
-                    <div className="mt-5 justify-center flex flex-col sm:flex-row gap-2">
-                        <Link
-                            href={learnHref}
-                            className={cn(
-                                "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-extrabold",
-                                "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99] transition",
-                                "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
-                            )}
-                        >
-                            {ctaLabel}
-                        </Link>
-
-                        {/* Optional practice button */}
-                        {/* <Link href={practiceHref} className="ui-btn ui-btn-secondary">{t("actions.practice")}</Link> */}
-                    </div>
-
-                    {prereqs.length ? (
-                        <div className="mt-5 pt-4 border-t border-black/5 dark:border-white/10">
-                            <Kicker>{t("sections.prereqs")}</Kicker>
-                            <div className="mt-2">
-                                <BulletList items={prereqs} marker="→" />
-                            </div>
-                        </div>
-                    ) : null}
-                </div>
-
-                {/* optional video */}
-                {videoUrl ? <VideoEmbed url={videoUrl} title={videoTitle} /> : null}
-
-                {/* content */}
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                    <Card title={t("sections.whatLearn")}>
-                        <BulletList items={outcomes} marker="✓" />
-                    </Card>
-
-                    <Card title={t("sections.whyMatters")}>
-                        <BulletList items={why} marker="•" />
-                    </Card>
                 </div>
             </div>
         </div>

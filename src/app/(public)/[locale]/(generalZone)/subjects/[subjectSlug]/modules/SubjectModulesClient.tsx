@@ -1,4 +1,3 @@
-// src/app/(public)/[locale]/subjects/[subjectSlug]/modules/SubjectModulesClient.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -10,8 +9,8 @@ import { ROUTES } from "@/utils";
 import { buildBillingHref } from "@/lib/billing/moduleAccess";
 
 type ModuleRow = {
-  id: string; // db id
-  slug: string; // moduleId in review routes
+  id: string;
+  slug: string;
   title: string;
   description: string | null;
   order: number | null;
@@ -25,13 +24,13 @@ type SectionRow = {
   title: string;
   description: string | null;
   order: number | null;
-  moduleId: string | null; // db module id
+  moduleId: string | null;
 };
 
 export type ModuleAccessView = {
   ok: boolean;
   paid: boolean;
-  reason: string; // "ok" | "requires_login" | "requires_payment" | ...
+  reason: string;
 };
 
 type Props = {
@@ -60,45 +59,41 @@ function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
-function ProgressBar({ pct, label }: { pct: number; label?: React.ReactNode }) {
-  const w = `${Math.round(clamp01(pct) * 100)}%`;
-
-  return (
-      <div className="grid gap-1.5">
-        {label ? (
-            <div className="flex items-center justify-between text-[11px] font-extrabold tracking-wide text-neutral-600 dark:text-white/60">
-              {label}
-              <span className="tabular-nums text-neutral-500 dark:text-white/45">{w}</span>
-            </div>
-        ) : null}
-
-        <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200/80 dark:bg-white/10">
-          <div
-              className={cn(
-                  "h-full rounded-full",
-                  "bg-gradient-to-r from-emerald-400/80 via-emerald-500/70 to-teal-400/70",
-                  "dark:from-emerald-200/40 dark:via-emerald-300/30 dark:to-teal-200/30",
-                  "shadow-[0_0_0_1px_rgba(16,185,129,0.15)] dark:shadow-[0_0_0_1px_rgba(110,231,183,0.12)]",
-              )}
-              style={{ width: w }}
-          />
-        </div>
-      </div>
-  );
-}
-
 function countMatches(topicKeys: string[], completed?: Set<string> | null) {
   if (!topicKeys.length) return 0;
   if (!completed || completed.size === 0) return 0;
 
   let n = 0;
-  for (const k of topicKeys) if (completed.has(k)) n++;
+  for (const k of topicKeys) {
+    if (completed.has(k)) n++;
+  }
   return n;
 }
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
-      <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-neutral-500 dark:text-white/45">
+      <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.18em] text-neutral-500 dark:text-white/45">
+        {children}
+      </div>
+  );
+}
+
+function Surface({
+                   children,
+                   className,
+                 }: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+      <div
+          className={cn(
+              "rounded-3xl",
+              "bg-white/75 ring-1 ring-black/5 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.24)] backdrop-blur-xl",
+              "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
+              className,
+          )}
+      >
         {children}
       </div>
   );
@@ -119,11 +114,66 @@ function Pill({
               : "bg-neutral-500/10 text-neutral-700 ring-1 ring-neutral-500/15 dark:bg-white/8 dark:text-white/70 dark:ring-white/10";
 
   return (
-      <span
-          className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-extrabold", cls)}
-      >
+      <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-extrabold", cls)}>
       {children}
     </span>
+  );
+}
+
+function StatCard({
+                    label,
+                    value,
+                    subvalue,
+                  }: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  subvalue?: React.ReactNode;
+}) {
+  return (
+      <div
+          className={cn(
+              "rounded-2xl p-3 sm:p-4",
+              "bg-white/70 ring-1 ring-black/5",
+              "dark:bg-white/[0.05] dark:ring-white/10",
+          )}
+      >
+        <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
+          {label}
+        </div>
+        <div className="mt-1 text-lg sm:text-xl font-black tracking-tight tabular-nums">{value}</div>
+        {subvalue ? (
+            <div className="mt-1 text-xs font-semibold text-neutral-500 dark:text-white/50">
+              {subvalue}
+            </div>
+        ) : null}
+      </div>
+  );
+}
+
+function ProgressBar({ pct, label }: { pct: number; label?: React.ReactNode }) {
+  const w = `${Math.round(clamp01(pct) * 100)}%`;
+
+  return (
+      <div className="grid gap-1.5">
+        {label ? (
+            <div className="flex items-center justify-between gap-3 text-[11px] font-extrabold tracking-wide text-neutral-600 dark:text-white/60">
+              <div className="min-w-0">{label}</div>
+              <span className="shrink-0 tabular-nums text-neutral-500 dark:text-white/45">{w}</span>
+            </div>
+        ) : null}
+
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-200/80 dark:bg-white/10">
+          <div
+              className={cn(
+                  "h-full rounded-full transition-[width] duration-300",
+                  "bg-gradient-to-r from-emerald-400/85 via-emerald-500/75 to-teal-400/75",
+                  "dark:from-emerald-200/40 dark:via-emerald-300/30 dark:to-teal-200/30",
+                  "shadow-[0_0_0_1px_rgba(16,185,129,0.15)] dark:shadow-[0_0_0_1px_rgba(110,231,183,0.12)]",
+              )}
+              style={{ width: w }}
+          />
+        </div>
+      </div>
   );
 }
 
@@ -131,14 +181,53 @@ function IconCircle({ idx }: { idx: number }) {
   return (
       <div
           className={cn(
-              "h-9 w-9 rounded-xl grid place-items-center font-black tabular-nums",
-              "bg-white/70 ring-1 ring-black/5 shadow-sm",
+              "h-10 w-10 sm:h-11 sm:w-11 rounded-2xl grid place-items-center font-black tabular-nums shrink-0",
+              "bg-white/75 ring-1 ring-black/5 shadow-sm",
               "dark:bg-white/5 dark:ring-white/10 dark:shadow-none",
           )}
           aria-hidden
       >
         {idx + 1}
       </div>
+  );
+}
+
+function ActionLink({
+                      href,
+                      children,
+                      fullWidth = false,
+                    }: {
+  href: string;
+  children: React.ReactNode;
+  fullWidth?: boolean;
+}) {
+  return (
+      <Link
+          href={href}
+          className={cn(
+              "inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-extrabold transition",
+              "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
+              "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
+              fullWidth ? "w-full sm:w-auto" : "",
+          )}
+      >
+        {children}
+      </Link>
+  );
+}
+
+function DisabledAction({ children }: { children: React.ReactNode }) {
+  return (
+      <span
+          className={cn(
+              "inline-flex w-full sm:w-auto items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-extrabold",
+              "bg-neutral-900/10 text-neutral-600 ring-1 ring-black/5",
+              "dark:bg-white/6 dark:text-white/55 dark:ring-white/10",
+              "opacity-80 cursor-not-allowed select-none",
+          )}
+      >
+      {children}
+    </span>
   );
 }
 
@@ -161,16 +250,19 @@ export default function SubjectModulesClient(props: Props) {
   const sortedModules = useMemo(() => modules.slice().sort(sortByOrderThenSlug), [modules]);
 
   const sectionsByModuleDbId = useMemo(() => {
-    const m = new Map<string, SectionRow[]>();
+    const map = new Map<string, SectionRow[]>();
+
     for (const s of sections) {
-      const k = String(s.moduleId ?? "no-module");
-      m.set(k, [...(m.get(k) ?? []), s]);
+      const key = String(s.moduleId ?? "no-module");
+      map.set(key, [...(map.get(key) ?? []), s]);
     }
-    for (const [k, arr] of m) {
+
+    for (const [key, arr] of map) {
       arr.sort(sortByOrderThenSlug);
-      m.set(k, arr);
+      map.set(key, arr);
     }
-    return m;
+
+    return map;
   }, [sections]);
 
   const moduleIds = useMemo(() => sortedModules.map((m) => m.slug), [sortedModules]);
@@ -183,7 +275,6 @@ export default function SubjectModulesClient(props: Props) {
     refreshMs: 0,
   });
 
-  // lock module i unless previous module is completed (unless unlockAll)
   const unlockedBySlug = useMemo(() => {
     const set = new Set<string>();
 
@@ -198,10 +289,12 @@ export default function SubjectModulesClient(props: Props) {
         set.add(cur.slug);
         continue;
       }
+
       const prev = sortedModules[i - 1];
       const prevDone = Boolean(progByModuleSlug[prev.slug]?.moduleCompleted);
       if (prevDone) set.add(cur.slug);
     }
+
     return set;
   }, [sortedModules, progByModuleSlug, unlockAll]);
 
@@ -237,8 +330,9 @@ export default function SubjectModulesClient(props: Props) {
       pct,
       totalModules: sortedModules.length,
       completedModules,
+      totalSections: sections.length,
     };
-  }, [sortedModules, progByModuleSlug, topicIdsByModuleDbId]);
+  }, [sortedModules, progByModuleSlug, topicIdsByModuleDbId, sections.length]);
 
   const backHref = `/${encodeURIComponent(locale)}/subjects`;
 
@@ -252,80 +346,90 @@ export default function SubjectModulesClient(props: Props) {
       >
         <div
             className={cn(
-                "pointer-events-none absolute inset-x-0 top-0 h-48",
+                "pointer-events-none absolute inset-x-0 top-0 h-56",
                 "bg-[linear-gradient(90deg,rgba(16,185,129,0.10),rgba(59,130,246,0.06),rgba(236,72,153,0.05))]",
                 "dark:bg-[linear-gradient(90deg,rgba(110,231,183,0.08),rgba(147,197,253,0.05),rgba(251,113,133,0.04))]",
-                "opacity-70 blur-2xl",
+                "opacity-70 blur-3xl",
             )}
             aria-hidden
         />
 
-        <div className="ui-container py-5 md:py-8 grid gap-4 md:gap-5 relative">
-          {/* Header card */}
-          <div
-              className={cn(
-                  "rounded-3xl p-4 md:p-6",
-                  "bg-white/70 ring-1 ring-black/5 shadow-[0_14px_50px_-20px_rgba(0,0,0,0.25)]",
-                  "backdrop-blur-xl",
-                  "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-              )}
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div className="ui-container relative grid gap-4 py-5 sm:gap-5 md:gap-6 md:py-8">
+          <Surface className="p-4 sm:p-5 md:p-6">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.8fr)] lg:items-start">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Kicker>{t("kickerSubject")}</Kicker>
                   {unlockAll ? <Pill variant="warn">{t("unlockEnabled")}</Pill> : null}
+                  {progressLoading ? <Pill variant="neutral">{t("syncing")}</Pill> : null}
                 </div>
 
-                <div className="mt-1 text-2xl md:text-3xl font-black tracking-tight">{subjectTitle}</div>
+                <div className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
+                  {subjectTitle}
+                </div>
 
                 {subjectDescription ? (
-                    <div className="mt-2 text-sm md:text-base text-neutral-600 dark:text-white/70">
+                    <div className="mt-3 max-w-3xl text-sm leading-6 text-neutral-600 dark:text-white/70 sm:text-base">
                       {subjectDescription}
                     </div>
                 ) : null}
 
-                <div className="mt-4">
+                <div className="mt-5">
                   <ProgressBar
                       pct={subjectStats.pct}
                       label={
-                        <>
+                        <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
                           <span>{t("overallProgress")}</span>
                           <span className="tabular-nums">
                         {progressLoading
                             ? t("syncing")
-                            : t("topicsRatio", { done: subjectStats.doneTopics, total: subjectStats.totalTopics })}
-                            {subjectStats.totalModules ? (
-                                <span className="ml-2 text-neutral-500 dark:text-white/45">
-                            {t("modulesRatio", { done: subjectStats.completedModules, total: subjectStats.totalModules })}
-                          </span>
-                            ) : null}
+                            : t("topicsRatio", {
+                              done: subjectStats.doneTopics,
+                              total: subjectStats.totalTopics,
+                            })}
                       </span>
-                        </>
+                          {subjectStats.totalModules ? (
+                              <span className="tabular-nums text-neutral-500 dark:text-white/45">
+                          {t("modulesRatio", {
+                            done: subjectStats.completedModules,
+                            total: subjectStats.totalModules,
+                          })}
+                        </span>
+                          ) : null}
+                        </div>
                       }
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 md:pt-1">
-                <Link
-                    href={backHref}
-                    className={cn(
-                        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                        "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
-                        "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
-                        "transition",
-                    )}
-                >
-                  {t("changeSubject")}
-                </Link>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <StatCard
+                    label={t("topicsLabel")}
+                    value={`${subjectStats.doneTopics}/${subjectStats.totalTopics}`}
+                />
+                <StatCard
+                    label={t("sectionsLabel")}
+                    value={subjectStats.totalSections}
+                />
+                <StatCard
+                    label={t("kickerModule")}
+                    value={subjectStats.totalModules}
+                    subvalue={t("modulesRatio", {
+                      done: subjectStats.completedModules,
+                      total: subjectStats.totalModules,
+                    })}
+                />
+                <div className="flex items-end">
+                  <ActionLink href={backHref} fullWidth>
+                    {t("changeSubject")}
+                  </ActionLink>
+                </div>
               </div>
             </div>
-          </div>
+          </Surface>
 
-          {/* Modules list */}
           {sortedModules.length ? (
-              <div className="grid gap-3 md:gap-4">
+              <div className="grid gap-4">
                 {sortedModules.map((m, idx) => {
                   const modSections = sectionsByModuleDbId.get(String(m.id)) ?? [];
                   const mp = progByModuleSlug[m.slug];
@@ -333,10 +437,13 @@ export default function SubjectModulesClient(props: Props) {
                   const sequentialUnlocked = unlockedBySlug.has(m.slug);
                   const seqLocked = !unlockAll && !sequentialUnlocked && idx !== 0;
 
-                  const access = accessByModuleSlug?.[m.slug] ?? { ok: true, paid: false, reason: "unknown" };
-                  const paywallLocked = !unlockAll && !access.ok;
+                  const access = accessByModuleSlug?.[m.slug] ?? {
+                    ok: true,
+                    paid: false,
+                    reason: "unknown",
+                  };
 
-                  // don’t upsell payment if user can’t access anyway due to sequencing
+                  const paywallLocked = !unlockAll && !access.ok;
                   const showPremium = paywallLocked && !seqLocked;
 
                   const completed = Boolean(mp?.moduleCompleted);
@@ -351,7 +458,9 @@ export default function SubjectModulesClient(props: Props) {
                           ? Math.min(totalTopics, mp!.completedTopicKeys.size)
                           : directDone;
 
-                  const modulePct = totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
+                  const modulePct =
+                      totalTopics > 0 ? clamp01(doneTopics / totalTopics) : completed ? 1 : 0;
+
                   const hasAnyProgress = (mp?.completedTopicKeys?.size ?? 0) > 0 || doneTopics > 0;
 
                   const moduleHref = `/${encodeURIComponent(locale)}/${ROUTES.moduleIntro(
@@ -381,163 +490,137 @@ export default function SubjectModulesClient(props: Props) {
                               : t("cta.start");
 
                   return (
-                      <div
+                      <Surface
                           key={m.slug}
                           className={cn(
-                              "group relative overflow-hidden rounded-3xl",
-                              "bg-white/70 ring-1 ring-black/5 shadow-[0_16px_55px_-26px_rgba(0,0,0,0.25)]",
-                              "backdrop-blur-xl",
-                              "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-                              "transition-transform duration-200",
+                              "group relative overflow-hidden transition-transform duration-200",
                               !seqLocked && "hover:-translate-y-[2px]",
                           )}
                       >
                         <div
                             className={cn(
-                                "pointer-events-none absolute -inset-24 opacity-0 group-hover:opacity-100 transition-opacity",
+                                "pointer-events-none absolute -inset-24 opacity-0 transition-opacity group-hover:opacity-100",
                                 "bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.14),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(59,130,246,0.10),transparent_55%)]",
                                 "dark:bg-[radial-gradient(circle_at_20%_20%,rgba(110,231,183,0.10),transparent_55%),radial-gradient(circle_at_80%_30%,rgba(147,197,253,0.07),transparent_55%)]",
                             )}
                             aria-hidden
                         />
 
-                        <div className="relative p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          <div className="min-w-0 flex gap-3">
-                            <IconCircle idx={idx} />
+                        <div className="relative p-4 sm:p-5 md:p-6">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex min-w-0 gap-3 sm:gap-4">
+                                <IconCircle idx={idx} />
 
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Kicker>{t("kickerModule")}</Kicker>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Kicker>{t("kickerModule")}</Kicker>
 
-                                {completed ? (
-                                    <Pill variant="good">{t("pillCompleted")}</Pill>
-                                ) : seqLocked ? (
-                                    <Pill variant="neutral">{t("pillLocked")}</Pill>
-                                ) : showPremium ? (
-                                    <Pill variant="warn">{t("pillPremium")}</Pill>
-                                ) : hasAnyProgress ? (
-                                    <Pill variant="warn">{t("pillInProgress")}</Pill>
-                                ) : (
-                                    <Pill variant="neutral">{t("pillNotStarted")}</Pill>
-                                )}
+                                    {completed ? (
+                                        <Pill variant="good">{t("pillCompleted")}</Pill>
+                                    ) : seqLocked ? (
+                                        <Pill variant="neutral">{t("pillLocked")}</Pill>
+                                    ) : showPremium ? (
+                                        <Pill variant="warn">{t("pillPremium")}</Pill>
+                                    ) : hasAnyProgress ? (
+                                        <Pill variant="warn">{t("pillInProgress")}</Pill>
+                                    ) : (
+                                        <Pill variant="neutral">{t("pillNotStarted")}</Pill>
+                                    )}
 
-                                {progressLoading ? <Pill variant="neutral">{t("syncing")}</Pill> : null}
+                                    {progressLoading ? <Pill variant="neutral">{t("syncing")}</Pill> : null}
+                                  </div>
+
+                                  <div className="mt-2 text-lg font-black tracking-tight sm:text-xl md:text-2xl">
+                                    {m.title}
+                                  </div>
+
+                                  {m.description ? (
+                                      <div className="mt-2 text-sm leading-6 text-neutral-600 dark:text-white/70">
+                                        {m.description}
+                                      </div>
+                                  ) : null}
+                                </div>
                               </div>
+                            </div>
 
-                              <div className="mt-1 text-lg md:text-xl font-black tracking-tight">{m.title}</div>
-
-                              {m.description ? (
-                                  <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">{m.description}</div>
-                              ) : null}
-
-                              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-neutral-500 dark:text-white/45">
-                                {m.weekStart != null || m.weekEnd != null ? (
-                                    <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">{t("weeksLabel")}</span>
-                              <span className="tabular-nums">
-                                {m.weekStart ?? "?"}–{m.weekEnd ?? "?"}
-                              </span>
-                            </span>
-                                ) : null}
-
-                                {modSections.length ? (
-                                    <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">{t("sectionsLabel")}</span>
-                              <span className="tabular-nums">{modSections.length}</span>
-                            </span>
-                                ) : null}
-
-                                {totalTopics ? (
-                                    <span className="inline-flex items-center gap-1">
-                              <span className="opacity-70">{t("topicsLabel")}</span>
-                              <span className="tabular-nums">
-                                {doneTopics}/{totalTopics}
-                              </span>
-                            </span>
-                                ) : (
-                                    <span className="opacity-70">{t("noTopics")}</span>
-                                )}
-
-                                <span className="opacity-60">•</span>
-                                <span className="font-mono text-[11px] opacity-70">{m.slug}</span>
-                              </div>
-
-                              <div className="mt-3">
-                                <ProgressBar
-                                    pct={modulePct}
-                                    label={
-                                      <span className="inline-flex items-center gap-2">
-                                <span>
-                                  {totalTopics
-                                      ? t("topicsComplete", { done: doneTopics, total: totalTopics })
-                                      : completed
-                                          ? t("completedShort")
-                                          : t("noTopics")}
-                                </span>
-                              </span>
-                                    }
-                                />
-                              </div>
+                            <div className="w-full lg:w-auto lg:shrink-0">
+                              {seqLocked ? (
+                                  <DisabledAction>{ctaLabel}</DisabledAction>
+                              ) : showPremium ? (
+                                  <ActionLink href={billingHref} fullWidth>
+                                    {ctaLabel}
+                                  </ActionLink>
+                              ) : (
+                                  <ActionLink href={moduleHref} fullWidth>
+                                    {ctaLabel}
+                                  </ActionLink>
+                              )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 md:pl-4">
-                            {seqLocked ? (
-                                <span
-                                    className={cn(
-                                        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                                        "bg-neutral-900/10 text-neutral-600 ring-1 ring-black/5",
-                                        "dark:bg-white/6 dark:text-white/55 dark:ring-white/10",
-                                        "opacity-80 cursor-not-allowed select-none",
-                                    )}
-                                >
-                          {ctaLabel}
-                        </span>
-                            ) : showPremium ? (
-                                <Link
-                                    href={billingHref}
-                                    className={cn(
-                                        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                                        "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
-                                        "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
-                                        "transition",
-                                    )}
-                                >
-                                  {ctaLabel}
-                                </Link>
-                            ) : (
-                                <Link
-                                    href={moduleHref}
-                                    className={cn(
-                                        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                                        "bg-neutral-900 text-white shadow-sm hover:shadow-md active:scale-[0.99]",
-                                        "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
-                                        "transition",
-                                    )}
-                                >
-                                  {ctaLabel}
-                                </Link>
+                          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                            {(m.weekStart != null || m.weekEnd != null) && (
+                                <StatCard
+                                    label={t("weeksLabel")}
+                                    value={
+                                      <span className="tabular-nums">
+                              {m.weekStart ?? "?"}–{m.weekEnd ?? "?"}
+                            </span>
+                                    }
+                                />
                             )}
+
+                            <StatCard
+                                label={t("sectionsLabel")}
+                                value={modSections.length}
+                            />
+
+                            <StatCard
+                                label={t("topicsLabel")}
+                                value={
+                                  totalTopics ? (
+                                      <span className="tabular-nums">
+                              {doneTopics}/{totalTopics}
+                            </span>
+                                  ) : (
+                                      t("noTopics")
+                                  )
+                                }
+                            />
+
+                            <StatCard
+                                label="Slug"
+                                value={<span className="font-mono text-sm">{m.slug}</span>}
+                            />
+                          </div>
+
+                          <div className="mt-4">
+                            <ProgressBar
+                                pct={modulePct}
+                                label={
+                                  <span>
+                            {totalTopics
+                                ? t("topicsComplete", { done: doneTopics, total: totalTopics })
+                                : completed
+                                    ? t("completedShort")
+                                    : t("noTopics")}
+                          </span>
+                                }
+                            />
                           </div>
                         </div>
-
-                        <div className="h-px w-full bg-black/5 dark:bg-white/10" aria-hidden />
-                      </div>
+                      </Surface>
                   );
                 })}
               </div>
           ) : (
-              <div
-                  className={cn(
-                      "rounded-3xl p-4 md:p-6",
-                      "bg-white/70 ring-1 ring-black/5 shadow-[0_14px_50px_-20px_rgba(0,0,0,0.25)]",
-                      "backdrop-blur-xl",
-                      "dark:bg-white/[0.06] dark:ring-white/10 dark:shadow-none",
-                  )}
-              >
+              <Surface className="p-4 sm:p-5 md:p-6">
                 <div className="text-lg font-black tracking-tight">{t("empty.title")}</div>
-                <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">{t("empty.desc")}</div>
-              </div>
+                <div className="mt-2 text-sm text-neutral-600 dark:text-white/70">
+                  {t("empty.desc")}
+                </div>
+              </Surface>
           )}
         </div>
       </div>

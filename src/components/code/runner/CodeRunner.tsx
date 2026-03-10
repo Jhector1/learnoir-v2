@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 
@@ -12,7 +12,7 @@ import TerminalPane from "./components/TerminalPane";
 import { useSplitSizing } from "./hooks/useSplitSizing";
 import { useTerminalRunner } from "./hooks/useTerminalRunner";
 import { CodeLanguage } from "@/lib/practice/types";
-import {runViaApi} from "@/lib/code/runClient";
+import { runViaApi } from "@/lib/code/runClient";
 
 function CodeRunnerContent(props: CodeRunnerProps) {
     const {
@@ -47,12 +47,30 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
     const { resolvedTheme } = useTheme();
     const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
+    const [isNarrowScreen, setIsNarrowScreen] = useState(false);
 
     useEffect(() => {
         if (!showEditorThemeToggle) {
             setEditorTheme(resolvedTheme === "dark" ? "vs-dark" : "vs");
         }
     }, [resolvedTheme, showEditorThemeToggle]);
+
+    useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) return;
+
+        const mq = window.matchMedia("(max-width: 767px)");
+        const update = () => setIsNarrowScreen(mq.matches);
+
+        update();
+
+        if (typeof mq.addEventListener === "function") {
+            mq.addEventListener("change", update);
+            return () => mq.removeEventListener("change", update);
+        }
+
+        mq.addListener(update);
+        return () => mq.removeListener(update);
+    }, []);
 
     const allowedLangs = useMemo(() => {
         const base = allowedLanguages?.length ? allowedLanguages : DEFAULT_LANGS;
@@ -93,10 +111,19 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         (props as any).initialTerminalDock ?? "bottom",
     );
 
-    const dock: TerminalDock = fixedTerminalDock ?? (props as any).terminalDock ?? uDock;
+    const requestedDock: TerminalDock =
+        fixedTerminalDock ?? (props as any).terminalDock ?? uDock;
+
+    // ✅ Force bottom dock on smaller phones
+    const effectiveDock: TerminalDock = isNarrowScreen ? "bottom" : requestedDock;
 
     const setDock = (d: TerminalDock) => {
         if (fixedTerminalDock) return;
+        if (isNarrowScreen) {
+            setUDock("bottom");
+            return;
+        }
+
         const cb = (props as any).onChangeTerminalDock as ((d: TerminalDock) => void) | undefined;
         if (cb) cb(d);
         else setUDock(d);
@@ -115,21 +142,26 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     };
 
     const mainRef = useRef<HTMLDivElement | null>(null);
-
     const numericHeight = typeof height === "number" ? height : 320;
 
     const split = useSplitSizing({
         height: numericHeight,
         showEditor,
         showTerminal,
-        dock,
+        dock: effectiveDock,
         disabled,
         initialTerminalSize: (props as any).initialTerminalSize ?? 240,
         mainRef,
         requestLayout,
     });
-    const defaultOnRun = React.useCallback(
-        (args: any) =>
+
+    const defaultOnRun = useCallback(
+        (args: {
+            language: CodeLanguage;
+            code: string;
+            stdin: string;
+            signal?: AbortSignal;
+        }) =>
             runViaApi(
                 {
                     language: args.language,
@@ -152,7 +184,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
     useEffect(() => {
         requestLayout();
-    }, [dock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]);
+    }, [effectiveDock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]);
 
     const onSwitchLang = (next: CodeLanguage) => {
         if (fixedLanguage) return;
@@ -164,10 +196,23 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
     const showPickerUI = showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
     const showEditorThemeToggleUI = showEditorThemeToggle && showHeaderBar;
+
+    // ✅ Hide dock toggle on phone because dock is forced to bottom
     const showDockToggleUI =
-        showTerminalDockToggle && !fixedTerminalDock && showHeaderBar && showEditor && showTerminal;
+        !isNarrowScreen &&
+        showTerminalDockToggle &&
+        !fixedTerminalDock &&
+        showHeaderBar &&
+        showEditor &&
+        showTerminal;
 
     const outerCls = frame === "plain" ? "w-full" : "ui-card w-full p-4";
+    const regionStyle: React.CSSProperties | undefined =
+        typeof height === "number"
+            ? {
+                height: isNarrowScreen ? `min(${numericHeight}px, 72dvh)` : numericHeight,
+            }
+            : undefined;
 
     return (
         <div className={outerCls}>
@@ -182,8 +227,8 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         editorTheme={editorTheme}
                         onToggleTheme={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
                         showEditorThemeToggle={showEditorThemeToggleUI}
-                        dock={dock}
-                        onToggleDock={() => setDock(dock === "bottom" ? "right" : "bottom")}
+                        dock={effectiveDock}
+                        onToggleDock={() => setDock(effectiveDock === "bottom" ? "right" : "bottom")}
                         showDockToggle={showDockToggleUI}
                         showPicker={showPickerUI}
                         allowedLangs={allowedLangs}
@@ -209,7 +254,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
             {showEditor || showTerminal ? (
                 <div
                     ref={mainRef}
-                    style={typeof height === "number" ? { height } : undefined}
+                    style={regionStyle}
                     className={[
                         "relative z-0",
                         "mt-3 overflow-hidden rounded-2xl border",
@@ -238,7 +283,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                     ) : null}
 
                     {!showEditor && showTerminal ? (
-                        <div className="h-full p-3">
+                        <div className="h-full p-2 sm:p-3">
                             <TerminalPane
                                 terminal={term.terminal}
                                 stdinBuffer={term.stdinBuffer}
@@ -257,7 +302,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                     ) : null}
 
                     {showEditor && showTerminal ? (
-                        dock === "bottom" ? (
+                        effectiveDock === "bottom" ? (
                             <div className="flex h-full flex-col min-h-0">
                                 <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
@@ -274,18 +319,25 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                     />
                                 </div>
 
-                                <div
-                                    onMouseDown={term.busy ? undefined : split.onMouseDownSplit}
-                                    className={[
-                                        "h-2 bg-neutral-200/60 dark:bg-white/5",
-                                        term.busy
-                                            ? "cursor-not-allowed opacity-60"
-                                            : "cursor-row-resize hover:bg-neutral-200 dark:hover:bg-white/10",
-                                    ].join(" ")}
-                                    title={term.busy ? "Cannot resize while running" : "Drag to resize terminal"}
-                                />
+                                {/* ✅ Hide drag handle on narrow screens */}
+                                {!isNarrowScreen ? (
+                                    <div
+                                        onMouseDown={term.runState !== "idle" ? undefined : split.onMouseDownSplit}
+                                        className={[
+                                            "h-2 bg-neutral-200/60 dark:bg-white/5",
+                                            term.runState !== "idle"
+                                                ? "cursor-not-allowed opacity-60"
+                                                : "cursor-row-resize hover:bg-neutral-200 dark:hover:bg-white/10",
+                                        ].join(" ")}
+                                        title={
+                                            term.runState !== "idle"
+                                                ? "Cannot resize while a run session is active"
+                                                : "Drag to resize terminal"
+                                        }
+                                    />
+                                ) : null}
 
-                                <div className="min-h-0 p-3" style={{ height: split.bottomTermH }}>
+                                <div className="min-h-0 p-2 sm:p-3" style={{ height: split.bottomTermH }}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}
@@ -320,17 +372,21 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                 </div>
 
                                 <div
-                                    onMouseDown={term.busy ? undefined : split.onMouseDownSplit}
+                                    onMouseDown={term.runState !== "idle" ? undefined : split.onMouseDownSplit}
                                     className={[
                                         "w-2 bg-neutral-200/60 dark:bg-white/5",
-                                        term.busy
+                                        term.runState !== "idle"
                                             ? "cursor-not-allowed opacity-60"
                                             : "cursor-col-resize hover:bg-neutral-200 dark:hover:bg-white/10",
                                     ].join(" ")}
-                                    title={term.busy ? "Cannot resize while running" : "Drag to resize terminal"}
+                                    title={
+                                        term.runState !== "idle"
+                                            ? "Cannot resize while a run session is active"
+                                            : "Drag to resize terminal"
+                                    }
                                 />
 
-                                <div className="min-w-0 p-3" style={{ width: split.termW, height: split.rightTotalH }}>
+                                <div className="min-w-0 p-2 sm:p-3" style={{ width: split.termW, height: split.rightTotalH }}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}
@@ -356,7 +412,5 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 }
 
 export default function CodeRunner(props: CodeRunnerProps) {
-    return (
-            <CodeRunnerContent {...props} />
-    );
+    return <CodeRunnerContent {...props} />;
 }

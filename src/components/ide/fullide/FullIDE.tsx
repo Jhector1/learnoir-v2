@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
-import type {RunPollResult, RunResult} from "@/lib/code/runCode";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 
 import { useIdeWorkspace } from "./useIdeWorkspace";
@@ -11,32 +11,18 @@ import { exportProjectFiles, pathOf } from "./fsTree";
 import ExplorerTree from "./ExplorerTree";
 import TabsBar from "./TabsBar";
 import DeleteModal from "./DeleteModal";
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
 import { runViaApi } from "@/lib/code/runClient";
 
 type FullIDEProps = {
     title?: string;
-    /** Editor base height passed into CodeRunner (terminal may add on top of this internally). */
     height?: number;
     className?: string;
-
-    /**
-     * If true, the IDE tries to fill the viewport height (minus header area).
-     * If false, the IDE uses a reasonable fixed minimum height.
-     */
     fullHeight?: boolean;
-
-    /** Storage key for local persistence (use per-language keys if you want separate workspaces). */
     storageKey?: string;
-
-    /** Controlled language from parent (optional). */
     language?: CodeLanguage;
     onChangeLanguage?: (l: CodeLanguage) => void;
-
-    /** When controlled language changes, reset the whole workspace instead of soft-switching. */
     resetOnForcedLanguageChange?: boolean;
-
-    /** Show the top language buttons. */
     showTopLanguageButtons?: boolean;
 };
 
@@ -47,16 +33,18 @@ export default function FullIDE(props: FullIDEProps) {
         className,
         fullHeight = false,
         storageKey = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v2`,
-
         language: forcedLanguage,
         onChangeLanguage,
-
         resetOnForcedLanguageChange = false,
         showTopLanguageButtons = true,
     } = props;
 
-    // ref used for split measurements (IMPORTANT: pass this to divider drag)
     const splitRef = useRef<HTMLDivElement | null>(null);
+    const editorHostRef = useRef<HTMLDivElement | null>(null);
+
+    const [isDesktop, setIsDesktop] = useState(false);
+    const [showMobileExplorer, setShowMobileExplorer] = useState(false);
+    const [editorHeight, setEditorHeight] = useState(height);
 
     const { state, derived, actions } = useIdeWorkspace({
         storageKey,
@@ -80,6 +68,41 @@ export default function FullIDE(props: FullIDEProps) {
 
     const { activeFile, entryFile, tabFiles, rootSrc } = derived;
 
+    useEffect(() => {
+        const mq = window.matchMedia("(min-width: 1024px)");
+        const apply = () => setIsDesktop(mq.matches);
+
+        apply();
+
+        if (mq.addEventListener) {
+            mq.addEventListener("change", apply);
+            return () => mq.removeEventListener("change", apply);
+        }
+
+        mq.addListener(apply);
+        return () => mq.removeListener(apply);
+    }, []);
+
+    useEffect(() => {
+        const el = editorHostRef.current;
+        if (!el) return;
+
+        const measure = () => {
+            const next = Math.floor(el.getBoundingClientRect().height);
+            setEditorHeight(next > 0 ? next : height);
+        };
+
+        measure();
+
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        window.addEventListener("resize", measure);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    }, [height, isDesktop, showMobileExplorer, activeFileId]);
 
     const onRunProject = async (args: {
         language: CodeLanguage;
@@ -107,31 +130,123 @@ export default function FullIDE(props: FullIDEProps) {
         [],
     );
 
-    // If parent controls language, prefer calling parent setter (and let parent decide storageKey strategy).
     const setLangUI = (l: CodeLanguage) => {
         if (onChangeLanguage) onChangeLanguage(l);
         else actions.switchLanguage(l);
     };
 
-    // Layout height for the split region.
-    // You can tweak the -offset based on where FullIDE sits in your page.
-    const splitHeightStyle: React.CSSProperties = fullHeight
-        ? { height: "calc(100vh - 200px)" }
-        : { minHeight: 560 };
+    const runnerHeight = Math.max(isDesktop ? 360 : 280, editorHeight || height);
+
+    const actionBtn =
+        "border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10] rounded-none";
+
+    const explorerPanel = (
+        <div className="flex h-full min-h-0 flex-col bg-neutral-50 dark:bg-black/20">
+            <div className="flex items-center justify-between gap-2 border-b border-neutral-200 px-3 py-3 dark:border-white/10">
+                <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
+                    Explorer
+                </div>
+
+                <div className="min-w-0 text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
+                    <span className="hidden sm:inline">entry: </span>
+                    <span className="truncate text-neutral-800 dark:text-white/80">
+                        {entryFile ? pathOf(nodes, entryFile.id) : "—"}
+                    </span>
+                </div>
+            </div>
+
+            <div className="border-b border-neutral-200 p-3 dark:border-white/10">
+                <input
+                    value={filter}
+                    onChange={(e) => actions.setFilter(e.target.value)}
+                    placeholder="Filter files…"
+                    className="h-10 w-full border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/80 rounded-none"
+                />
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+                <ExplorerTree
+                    nodes={nodes}
+                    expanded={expanded}
+                    activeFileId={activeFileId}
+                    entryFileId={entryFileId}
+                    filter={filter}
+                    inlineEdit={inlineEdit}
+                    setInlineEdit={actions.setInlineEdit}
+                    openFile={actions.openFile}
+                    toggleFolder={actions.toggleFolder}
+                    startNewFile={actions.startNewFile}
+                    startNewFolder={actions.startNewFolder}
+                    startRename={actions.startRename}
+                    setEntry={actions.setEntry}
+                    requestDelete={actions.requestDelete}
+                    commitInlineEdit={actions.commitInlineEdit}
+                    cancelInlineEdit={actions.cancelInlineEdit}
+                />
+            </div>
+
+            <div className="border-t border-neutral-200 p-3 dark:border-white/10">
+                <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
+                    stdin
+                </div>
+                <textarea
+                    value={stdin}
+                    onChange={(e) => actions.setStdin(e.target.value)}
+                    placeholder="Shared input…"
+                    className="mt-2 h-28 w-full resize-none border border-neutral-200 bg-white p-2 text-xs text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/80 rounded-none"
+                />
+            </div>
+        </div>
+    );
+
+    const editorPanel = (
+        <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden p-3">
+            <TabsBar
+                nodes={nodes}
+                tabFiles={tabFiles}
+                activeFileId={activeFileId}
+                setActiveFileId={actions.setActiveFileId}
+                closeTab={actions.closeTab}
+            />
+
+            <div ref={editorHostRef} className="mt-3 min-h-0 min-w-0 flex-1 overflow-hidden">
+                {activeFile ? (
+                    <CodeRunner
+                        frame="plain"
+                        title={pathOf(nodes, activeFile.id)}
+                        height={runnerHeight}
+                        language={language}
+                        onChangeLanguage={actions.switchLanguage}
+                        code={activeFile.content}
+                        onChangeCode={actions.onChangeCode}
+                        showLanguagePicker={false}
+                        allowReset={false}
+                        allowRun
+                        resetTerminalOnRun
+                        onRun={onRunProject}
+                    />
+                ) : (
+                    <div className="flex h-full min-h-[280px] items-center justify-center border border-neutral-200 bg-white p-6 text-sm font-extrabold text-neutral-600 dark:border-white/10 dark:bg-black/30 dark:text-white/70 rounded-none">
+                        No file selected.
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 
     return (
         <div
             className={cn(
-                "w-full border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]",
-                fullHeight ? "rounded-none" : "rounded-2xl",
-                "flex flex-col min-h-0", // ✅ allow inner grid to shrink
+                "relative flex h-full min-h-0 w-full flex-col overflow-hidden border border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
+                "rounded-none",
                 className,
             )}
+            style={fullHeight ? { height: "100%" } : { minHeight: height }}
         >
             {toast ? (
                 <div
                     className={cn(
-                        "mb-3 rounded-xl border px-3 py-2 text-xs font-extrabold",
+                        "border-b px-3 py-2 text-xs font-extrabold",
                         toast.kind === "error"
                             ? "border-rose-300/25 bg-rose-300/10 text-rose-900 dark:text-rose-100"
                             : "border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-white/10 dark:bg-white/5 dark:text-white/80",
@@ -141,168 +256,110 @@ export default function FullIDE(props: FullIDEProps) {
                 </div>
             ) : null}
 
-            {/* Top bar */}
-            {/*<div className="flex flex-wrap items-center justify-between gap-2">*/}
-            {/*    <div className="text-sm font-black text-neutral-900 dark:text-white/90">*/}
-            {/*        {title}*/}
-            {/*    </div>*/}
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-neutral-200 px-3 py-2 dark:border-white/10">
+                {!isDesktop ? (
+                    <button
+                        type="button"
+                        onClick={() => setShowMobileExplorer(true)}
+                        className={actionBtn}
+                    >
+                        Files
+                    </button>
+                ) : null}
 
-            {/*    <div className="flex flex-wrap items-center gap-2">*/}
-            {/*        {showTopLanguageButtons ? (*/}
-            {/*            <>*/}
-            {/*                <div className="text-xs font-extrabold text-neutral-600 dark:text-white/60">*/}
-            {/*                    Language*/}
-            {/*                </div>*/}
+                <div className="min-w-0 flex-1 text-sm font-black text-neutral-900 dark:text-white/90">
+                    {title}
+                </div>
 
-            {/*                {languages.map((l) => (*/}
-            {/*                    <button*/}
-            {/*                        key={l}*/}
-            {/*                        type="button"*/}
-            {/*                        onClick={() => setLangUI(l)}*/}
-            {/*                        className={cn(*/}
-            {/*                            "rounded-xl border px-3 py-1 text-xs font-extrabold transition",*/}
-            {/*                            language === l*/}
-            {/*                                ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"*/}
-            {/*                                : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",*/}
-            {/*                        )}*/}
-            {/*                    >*/}
-            {/*                        {l}*/}
-            {/*                    </button>*/}
-            {/*                ))}*/}
+                {showTopLanguageButtons ? (
+                    <div className="flex max-w-full items-center gap-2 overflow-x-auto">
+                        {languages.map((l) => (
+                            <button
+                                key={l}
+                                type="button"
+                                onClick={() => setLangUI(l)}
+                                className={cn(
+                                    "shrink-0 border px-3 py-1 text-xs font-extrabold transition rounded-none",
+                                    language === l
+                                        ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"
+                                        : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",
+                                )}
+                            >
+                                {l}
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
 
-            {/*                <div className="mx-2 hidden h-6 w-px bg-neutral-200 dark:bg-white/10 md:block" />*/}
-            {/*            </>*/}
-            {/*        ) : null}*/}
+                <button
+                    type="button"
+                    onClick={() => actions.startNewFile(rootSrc?.id ?? null)}
+                    className={actionBtn}
+                >
+                    + File
+                </button>
 
-            {/*        <button*/}
-            {/*            type="button"*/}
-            {/*            onClick={() => actions.startNewFile(rootSrc?.id ?? null)}*/}
-            {/*            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"*/}
-            {/*        >*/}
-            {/*            + New file*/}
-            {/*        </button>*/}
+                <button
+                    type="button"
+                    onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}
+                    className={actionBtn}
+                >
+                    + Folder
+                </button>
+            </div>
 
-            {/*        <button*/}
-            {/*            type="button"*/}
-            {/*            onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}*/}
-            {/*            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]"*/}
-            {/*        >*/}
-            {/*            + New folder*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
-
-            {/* Split region */}
-            <div className="mt-4 min-h-0  flex-1">
-                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-black/20">
+            <div className="min-h-0 flex-1">
+                {isDesktop ? (
                     <div
                         ref={splitRef}
-                        className="grid min-h-0 w-full h-screen"
+                        className="grid h-full min-h-0 w-full"
                         style={{
-                            // ✅ KEY FIX: editor column is minmax(0,1fr) so it shrinks instead of pushing
-                            gridTemplateColumns: `${leftPct}% 8px minmax(0, 1fr)`,
-                            ...splitHeightStyle,
+                            gridTemplateColumns: `minmax(240px, ${leftPct}%) 8px minmax(0, 1fr)`,
                         }}
                     >
-                        {/* Left */}
-                        <div className="min-h-0 min-w-0 flex flex-col p-3">
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
-                                    Explorer
-                                </div>
-                                <div className="text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
-                                    entry:{" "}
-                                    <span className="text-neutral-800 dark:text-white/80">
-                    {entryFile ? pathOf(nodes, entryFile.id) : "—"}
-                  </span>
-                                </div>
-                            </div>
-
-                            <input
-                                value={filter}
-                                onChange={(e) => actions.setFilter(e.target.value)}
-                                placeholder="Filter…"
-                                className="mt-2 h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/80"
-                            />
-
-                            {/* Tree (scrollable) */}
-                            <div className="mt-2 min-h-0 flex-1 overflow-auto pr-1">
-                                <ExplorerTree
-                                    nodes={nodes}
-                                    expanded={expanded}
-                                    activeFileId={activeFileId}
-                                    entryFileId={entryFileId}
-                                    filter={filter}
-                                    inlineEdit={inlineEdit}
-                                    setInlineEdit={actions.setInlineEdit}
-                                    openFile={actions.openFile}
-                                    toggleFolder={actions.toggleFolder}
-                                    startNewFile={actions.startNewFile}
-                                    startNewFolder={actions.startNewFolder}
-                                    startRename={actions.startRename}
-                                    setEntry={actions.setEntry}
-                                    requestDelete={actions.requestDelete}
-                                    commitInlineEdit={actions.commitInlineEdit}
-                                    cancelInlineEdit={actions.cancelInlineEdit}
-                                />
-                            </div>
-
-                            {/* Stdin */}
-                            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-black/30">
-                                <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
-                                    stdin (workspace)
-                                </div>
-                                <textarea
-                                    value={stdin}
-                                    onChange={(e) => actions.setStdin(e.target.value)}
-                                    placeholder="Shared input…"
-                                    className="mt-2 h-24 w-full resize-none rounded-xl border border-neutral-200 bg-white p-2 text-xs text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/80"
-                                />
-                            </div>
+                        <div className="min-h-0 border-r border-neutral-200 dark:border-white/10">
+                            {explorerPanel}
                         </div>
 
-                        {/* Divider */}
                         <div
                             onMouseDown={(e) => actions.onMouseDownDivider(e, splitRef.current)}
-                            className="cursor-col-resize bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
+                            className="cursor-col-resize bg-neutral-200/70 hover:bg-neutral-300 dark:bg-white/5 dark:hover:bg-white/10"
                             title="Drag to resize"
                         />
 
-                        {/* Right */}
-                        <div className="min-h-0 min-w-0 flex flex-col p-3 overflow-hidden">
-                            <TabsBar
-                                nodes={nodes}
-                                tabFiles={tabFiles}
-                                activeFileId={activeFileId}
-                                setActiveFileId={actions.setActiveFileId}
-                                closeTab={actions.closeTab}
-                            />
-
-                            <div className="mt-3 min-w-0 flex-1 overflow-hidden">
-                                {activeFile ? (
-                                    <CodeRunner
-                                        frame="plain"
-                                        title={pathOf(nodes, activeFile.id)}
-                                        height={height}
-                                        language={language}
-                                        onChangeLanguage={actions.switchLanguage}
-                                        code={activeFile.content}
-                                        onChangeCode={actions.onChangeCode}
-                                        showLanguagePicker={false}
-                                        allowReset={false}
-                                        allowRun
-                                        resetTerminalOnRun
-                                        onRun={onRunProject}
-                                    />
-                                ) : (
-                                    <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm font-extrabold text-neutral-600 dark:border-white/10 dark:bg-black/30 dark:text-white/70">
-                                        No file selected.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <div className="min-h-0 min-w-0 overflow-hidden">{editorPanel}</div>
                     </div>
-                </div>
+                ) : (
+                    <div className="relative h-full min-h-0">
+                        {showMobileExplorer ? (
+                            <div className="absolute inset-0 z-30 flex bg-black/50 lg:hidden">
+                                <div className="flex h-full w-[88vw] max-w-[360px] flex-col border-r border-neutral-200 bg-white dark:border-white/10 dark:bg-neutral-950">
+                                    <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2 dark:border-white/10">
+                                        <div className="text-sm font-black text-neutral-900 dark:text-white/90">
+                                            Files
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowMobileExplorer(false)}
+                                            className={actionBtn}
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <div className="min-h-0 flex-1">{explorerPanel}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="flex-1"
+                                    onClick={() => setShowMobileExplorer(false)}
+                                    aria-label="Close files panel"
+                                />
+                            </div>
+                        ) : null}
+
+                        <div className="h-full min-h-0">{editorPanel}</div>
+                    </div>
+                )}
             </div>
 
             {pendingDeleteId ? (

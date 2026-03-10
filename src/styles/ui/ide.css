@@ -1,11 +1,8 @@
 @layer components {
-  /* =========================
-   * IDE node kebab menu
-   * ========================= */
   .ui-ide-menubtn {
-    @apply grid place-items-center rounded-xl border px-2 py-2 transition;
+    @apply grid place-items-center border px-2 py-2 transition rounded-none;
     @apply border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
-    @apply opacity-0 group-hover:opacity-100;
+    @apply opacity-100 md:opacity-0 md:group-hover:opacity-100;
   }
 
   .dark .ui-ide-menubtn {
@@ -13,7 +10,7 @@
   }
 
   .ui-ide-menupanel {
-    @apply overflow-hidden rounded-2xl border shadow-xl;
+    @apply overflow-hidden border shadow-xl rounded-none;
     @apply border-neutral-200 bg-white;
   }
 
@@ -22,7 +19,7 @@
   }
 
   .ui-ide-menuitem {
-    @apply w-full text-left px-3 py-2 text-sm font-bold transition flex items-center gap-2;
+    @apply flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-bold transition;
     @apply text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950;
   }
 

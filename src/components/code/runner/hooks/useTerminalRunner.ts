@@ -380,7 +380,7 @@ export function useTerminalRunner(args: {
                         if (mountedRef.current) setLastResult(polled);
                         return polled;
                     }
-                    await sleep(700, ctrl.signal);
+                    await sleep(250, ctrl.signal);
                 }
 
                 const timeoutResult: RunResult = {

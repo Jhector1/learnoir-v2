@@ -35,12 +35,12 @@ function cx(...xs: Array<string | false | null | undefined>) {
 function IconText({ icon, text }: { icon: React.ReactNode; text: React.ReactNode }) {
     return (
         <span className="inline-flex items-center">
-      <span className="inline-flex @lg:hidden">{icon}</span>
-      <span className="hidden @lg:inline-flex items-center gap-2">
-        {icon}
-          <span className="whitespace-nowrap">{text}</span>
-      </span>
-    </span>
+            <span className="inline-flex @lg:hidden">{icon}</span>
+            <span className="hidden @lg:inline-flex items-center gap-2">
+                {icon}
+                <span className="whitespace-nowrap">{text}</span>
+            </span>
+        </span>
     );
 }
 
@@ -143,12 +143,12 @@ export default function HeaderBar(props: {
                 : "Run";
 
     return (
-        <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 truncate text-sm font-black text-neutral-900 dark:text-white/90">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1 truncate text-sm font-black text-neutral-900 dark:text-white/90">
                 {title}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 sm:ml-auto">
                 {showEditorThemeToggle ? (
                     <Tooltip tip={themeIsDark ? "Editor theme: Dark" : "Editor theme: Light"}>
                         <button
@@ -187,7 +187,7 @@ export default function HeaderBar(props: {
                 ) : null}
 
                 {showPicker ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <div className="hidden lg:block text-xs font-extrabold text-neutral-600 dark:text-white/60">
                             Language
                         </div>

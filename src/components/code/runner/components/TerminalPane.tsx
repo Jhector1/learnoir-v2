@@ -1,4 +1,3 @@
-// src/components/code/runner/components/TerminalPane.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -110,8 +109,6 @@ export default function TerminalPane(props: {
         el.scrollTop = el.scrollHeight;
     }, [terminal, awaitingInput, inputLine, useBottomPrompt]);
 
-    // Desktop only: auto-focus when entering waiting mode.
-    // Mobile/touch: let the user tap the prompt.
     useEffect(() => {
         if (!awaitingInput || disabled || busy || useBottomPrompt) return;
 
@@ -330,39 +327,39 @@ export default function TerminalPane(props: {
     return (
         <>
             <style jsx global>{`
-        @keyframes ui-term-blink {
-          0%,
-          49% {
-            opacity: 1;
-          }
-          50%,
-          100% {
-            opacity: 0;
-          }
-        }
+                @keyframes ui-term-blink {
+                    0%,
+                    49% {
+                        opacity: 1;
+                    }
+                    50%,
+                    100% {
+                        opacity: 0;
+                    }
+                }
 
-        .ui-term-cursor {
-          display: inline-block;
-          margin-left: 1px;
-          opacity: 0.75;
-          animation: ui-term-blink 1s step-end infinite;
-          will-change: opacity;
-        }
-      `}</style>
+                .ui-term-cursor {
+                    display: inline-block;
+                    margin-left: 1px;
+                    opacity: 0.75;
+                    animation: ui-term-blink 1s step-end infinite;
+                    will-change: opacity;
+                }
+            `}</style>
 
             <div
                 className={[
-                    "h-full rounded-2xl border-t p-3 flex flex-col",
+                    "h-full rounded-2xl border-t p-2 sm:p-3 flex flex-col",
                     "bg-white/80 dark:bg-black/40",
                     terminalHasError ? "border-rose-300/30" : "border-neutral-200 dark:border-white/10",
                 ].join(" ")}
             >
-                <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] sm:text-[11px] font-extrabold text-neutral-600 dark:text-white/60">
                         Terminal
                     </div>
 
-                    <div className="text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
+                    <div className="text-[10px] sm:text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
                         {statusLabel(busy, awaitingInput)}
                         {lastResult && !awaitingInput ? ` • ${fmtMeta(lastResult)}` : ""}
                     </div>
@@ -378,7 +375,7 @@ export default function TerminalPane(props: {
                 >
                     <div
                         className={[
-                            "font-mono text-xs leading-5",
+                            "font-mono text-[11px] sm:text-xs leading-[1.35rem] sm:leading-5",
                             "whitespace-pre-wrap px-2 break-words",
                             "mx-1",
                         ].join(" ")}
@@ -393,13 +390,12 @@ export default function TerminalPane(props: {
                             );
                         })}
 
-                        {/* Desktop / non-mobile: inline prompt */}
                         {awaitingInput && !useBottomPrompt ? (
                             <div className="relative min-h-[1.25rem]">
                                 <div
                                     aria-hidden="true"
                                     className={[
-                                        "pointer-events-none font-mono text-xs leading-5 whitespace-pre-wrap break-words",
+                                        "pointer-events-none font-mono text-[11px] sm:text-xs leading-[1.35rem] sm:leading-5 whitespace-pre-wrap break-words",
                                         lineCls("in"),
                                     ].join(" ")}
                                 >
@@ -418,11 +414,10 @@ export default function TerminalPane(props: {
                     </div>
                 </div>
 
-                {/* Mobile / touch / narrow: bottom prompt */}
                 {awaitingInput && useBottomPrompt ? (
                     <div
                         className={[
-                            "relative mt-2 border-t px-3 py-2",
+                            "relative mt-2 border-t px-2.5 py-2 sm:px-3",
                             "bg-white/70 dark:bg-black/25",
                             "border-neutral-200 dark:border-white/10",
                         ].join(" ")}
@@ -430,7 +425,7 @@ export default function TerminalPane(props: {
                         <div
                             aria-hidden="true"
                             className={[
-                                "pointer-events-none font-mono text-xs leading-5 whitespace-pre-wrap break-words",
+                                "pointer-events-none font-mono text-[11px] sm:text-xs leading-[1.35rem] sm:leading-5 whitespace-pre-wrap break-words",
                                 lineCls("in"),
                             ].join(" ")}
                         >

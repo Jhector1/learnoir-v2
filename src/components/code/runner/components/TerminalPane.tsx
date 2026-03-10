@@ -1,3 +1,4 @@
+// src/components/code/runner/components/TerminalPane.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -61,27 +62,72 @@ export default function TerminalPane(props: {
     } = props;
 
     const scrollRef = useRef<HTMLDivElement | null>(null);
-    const surfaceRef = useRef<HTMLDivElement | null>(null);
 
     const [caret, setCaret] = useState<number>(0);
     const [histPos, setHistPos] = useState<number | null>(null);
     const [histDraft, setHistDraft] = useState<string>("");
 
+    const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+    const [isNarrowScreen, setIsNarrowScreen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) return;
+
+        const coarseMq = window.matchMedia("(pointer: coarse)");
+        const narrowMq = window.matchMedia("(max-width: 767px)");
+
+        const update = () => {
+            setIsCoarsePointer(coarseMq.matches);
+            setIsNarrowScreen(narrowMq.matches);
+        };
+
+        update();
+
+        const add = (mq: MediaQueryList, fn: () => void) => {
+            if (typeof mq.addEventListener === "function") mq.addEventListener("change", fn);
+            else mq.addListener(fn);
+        };
+
+        const remove = (mq: MediaQueryList, fn: () => void) => {
+            if (typeof mq.removeEventListener === "function") mq.removeEventListener("change", fn);
+            else mq.removeListener(fn);
+        };
+
+        add(coarseMq, update);
+        add(narrowMq, update);
+
+        return () => {
+            remove(coarseMq, update);
+            remove(narrowMq, update);
+        };
+    }, []);
+
+    const useBottomPrompt = isCoarsePointer || isNarrowScreen;
+
     useEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
         el.scrollTop = el.scrollHeight;
-    }, [terminal, awaitingInput, inputLine]);
+    }, [terminal, awaitingInput, inputLine, useBottomPrompt]);
 
+    // Desktop only: auto-focus when entering waiting mode.
+    // Mobile/touch: let the user tap the prompt.
     useEffect(() => {
-        if (!awaitingInput || disabled || busy) return;
+        if (!awaitingInput || disabled || busy || useBottomPrompt) return;
+
         const id = window.setTimeout(() => {
-            inputRef.current?.focus();
+            const el = inputRef.current;
+            if (!el) return;
             const len = (inputLine ?? "").length;
-            inputRef.current?.setSelectionRange(len, len);
+            el.focus();
+            try {
+                el.setSelectionRange(len, len);
+            } catch {}
+            setCaret(len);
         }, 0);
+
         return () => window.clearTimeout(id);
-    }, [awaitingInput, disabled, busy, inputRef, inputLine]);
+    }, [awaitingInput, disabled, busy, useBottomPrompt, inputRef]);
 
     useEffect(() => {
         setCaret((c) => clamp(c, 0, (inputLine ?? "").length));
@@ -94,7 +140,7 @@ export default function TerminalPane(props: {
             setHistPos(null);
             setHistDraft("");
         }
-    }, [awaitingInput, inputLine]);
+    }, [awaitingInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const terminalHasError = !!lastResult && lastResult.ok === false && !awaitingInput;
 
@@ -104,21 +150,27 @@ export default function TerminalPane(props: {
         return p.endsWith(" ") ? p : p + " ";
     }, [inputPrompt]);
 
-    const syncCaretFromTextarea = () => {
+    const syncCaretFromNative = () => {
         const el = inputRef.current;
         if (!el) return;
         setCaret(el.selectionStart ?? 0);
     };
 
-    const placeCaretAtEnd = (value: string) => {
+    const placeCaret = (pos: number) => {
+        const el = inputRef.current;
+        if (!el) return;
+
         requestAnimationFrame(() => {
-            const el = inputRef.current;
-            if (!el) return;
-            const len = value.length;
             el.focus();
-            el.setSelectionRange(len, len);
-            setCaret(len);
+            try {
+                el.setSelectionRange(pos, pos);
+            } catch {}
+            setCaret(pos);
         });
+    };
+
+    const placeCaretAtEnd = (value: string) => {
+        placeCaret(value.length);
     };
 
     const recallHistory = (nextPos: number | null) => {
@@ -135,13 +187,13 @@ export default function TerminalPane(props: {
         placeCaretAtEnd(line);
     };
 
-    const insertAtNativeSelection = (text: string) => {
+    const insertAtSelection = (text: string) => {
         const el = inputRef.current;
         if (!el) return;
 
+        const value = inputLine ?? "";
         const start = el.selectionStart ?? 0;
         const end = el.selectionEnd ?? start;
-        const value = inputLine ?? "";
         const next = value.slice(0, start) + text + value.slice(end);
 
         setInputLine(next);
@@ -149,9 +201,20 @@ export default function TerminalPane(props: {
         requestAnimationFrame(() => {
             el.focus();
             const pos = start + text.length;
-            el.setSelectionRange(pos, pos);
+            try {
+                el.setSelectionRange(pos, pos);
+            } catch {}
             setCaret(pos);
         });
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const raw = e.target.value ?? "";
+        const next = raw.replace(/\r?\n/g, "");
+        setInputLine(next);
+
+        const sel = e.target.selectionStart ?? next.length;
+        setCaret(clamp(sel, 0, next.length));
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -160,8 +223,7 @@ export default function TerminalPane(props: {
         if (e.ctrlKey && !e.metaKey) {
             if (e.key.toLowerCase() === "a") {
                 e.preventDefault();
-                inputRef.current?.setSelectionRange(0, 0);
-                setCaret(0);
+                placeCaret(0);
                 return;
             }
             if (e.key.toLowerCase() === "e") {
@@ -203,48 +265,67 @@ export default function TerminalPane(props: {
             return;
         }
 
+        if (e.key === "Tab") {
+            e.preventDefault();
+            insertAtSelection("  ");
+            return;
+        }
+
         if (e.key === "Escape") {
             e.preventDefault();
             setInputLine("");
-            placeCaretAtEnd("");
             setHistPos(null);
             setHistDraft("");
+            placeCaret(0);
             return;
         }
 
-        if (e.key === "Tab") {
-            e.preventDefault();
-            insertAtNativeSelection("  ");
-            return;
-        }
-
-        requestAnimationFrame(syncCaretFromTextarea);
+        requestAnimationFrame(syncCaretFromNative);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const next = e.target.value.replace(/\r?\n/g, "");
-        setInputLine(next);
-        setCaret(e.target.selectionStart ?? next.length);
+    const handleKeyUp = () => {
+        syncCaretFromNative();
+    };
+
+    const handleSelect = () => {
+        syncCaretFromNative();
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         if (!awaitingInput || disabled || busy) return;
+
         e.preventDefault();
 
         const text = e.clipboardData.getData("text") ?? "";
         const cleaned = text.replace(/\r?\n/g, " ");
         if (!cleaned) return;
 
-        insertAtNativeSelection(cleaned);
-    };
-
-    const focusNativeInput = () => {
-        if (!awaitingInput || disabled || busy) return;
-        inputRef.current?.focus();
+        insertAtSelection(cleaned);
     };
 
     const inputBefore = cleanTermText(String(inputLine ?? "").slice(0, caret));
     const inputAfter = cleanTermText(String(inputLine ?? "").slice(caret));
+
+    const sharedTextareaProps = {
+        ref: inputRef,
+        value: inputLine,
+        onChange: handleChange,
+        onKeyDown: handleKeyDown,
+        onKeyUp: handleKeyUp,
+        onSelect: handleSelect,
+        onClick: handleSelect,
+        onPaste: handlePaste,
+        rows: 1,
+        wrap: "off" as const,
+        autoComplete: "off",
+        autoCapitalize: "off" as const,
+        autoCorrect: "off" as const,
+        spellCheck: false,
+        inputMode: "text" as const,
+        enterKeyHint: "send" as const,
+        "aria-label": "Terminal input",
+        style: { caretColor: "transparent" as const },
+    };
 
     return (
         <>
@@ -271,7 +352,7 @@ export default function TerminalPane(props: {
 
             <div
                 className={[
-                    "h-full  border-t p-3 flex flex-col",
+                    "h-full rounded-2xl border-t p-3 flex flex-col",
                     "bg-white/80 dark:bg-black/40",
                     terminalHasError ? "border-rose-300/30" : "border-neutral-200 dark:border-white/10",
                 ].join(" ")}
@@ -290,42 +371,16 @@ export default function TerminalPane(props: {
                 <div
                     ref={scrollRef}
                     className={[
-                        "mt-2 flex-1 overflow-auto border-t py-2 relative",
+                        "mt-2 flex-1 overflow-auto border-t py-2",
                         "bg-white/60 dark:bg-black/30",
                         terminalHasError ? "border-rose-300/20" : "border-neutral-200 dark:border-white/10",
                     ].join(" ")}
                 >
-          <textarea
-              ref={inputRef}
-              value={inputLine}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onSelect={syncCaretFromTextarea}
-              onClick={syncCaretFromTextarea}
-              onKeyUp={syncCaretFromTextarea}
-              onPaste={handlePaste}
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              inputMode="text"
-              enterKeyHint="send"
-              aria-label="Terminal input"
-              className="absolute opacity-0 pointer-events-none h-0 w-0"
-          />
-
                     <div
-                        ref={surfaceRef}
-                        tabIndex={0}
-                        role="button"
-                        aria-label="Terminal surface"
-                        onMouseDown={focusNativeInput}
-                        onTouchStart={focusNativeInput}
                         className={[
-                            "outline-none",
                             "font-mono text-xs leading-5",
                             "whitespace-pre-wrap px-2 break-words",
-                            "focus:ring-2 focus:ring-emerald-300/30 focus:rounded-lg",
-                            "mx-1 cursor-text"
+                            "mx-1",
                         ].join(" ")}
                     >
                         {terminal.map((l, i) => {
@@ -338,17 +393,59 @@ export default function TerminalPane(props: {
                             );
                         })}
 
-                        {awaitingInput ? (
-                            <span className={lineCls("in")}>
-                {terminal.length ? "\n" : ""}
-                                {livePrompt}
-                                {inputBefore}
-                                <span className="ui-term-cursor">▋</span>
-                                {inputAfter}
-              </span>
+                        {/* Desktop / non-mobile: inline prompt */}
+                        {awaitingInput && !useBottomPrompt ? (
+                            <div className="relative min-h-[1.25rem]">
+                                <div
+                                    aria-hidden="true"
+                                    className={[
+                                        "pointer-events-none font-mono text-xs leading-5 whitespace-pre-wrap break-words",
+                                        lineCls("in"),
+                                    ].join(" ")}
+                                >
+                                    {livePrompt}
+                                    {inputBefore}
+                                    <span className="ui-term-cursor">▋</span>
+                                    {inputAfter}
+                                </div>
+
+                                <textarea
+                                    {...sharedTextareaProps}
+                                    className="absolute inset-0 h-full w-full resize-none border-0 bg-transparent opacity-[0.01] text-[16px] text-transparent outline-none"
+                                />
+                            </div>
                         ) : null}
                     </div>
                 </div>
+
+                {/* Mobile / touch / narrow: bottom prompt */}
+                {awaitingInput && useBottomPrompt ? (
+                    <div
+                        className={[
+                            "relative mt-2 border-t px-3 py-2",
+                            "bg-white/70 dark:bg-black/25",
+                            "border-neutral-200 dark:border-white/10",
+                        ].join(" ")}
+                    >
+                        <div
+                            aria-hidden="true"
+                            className={[
+                                "pointer-events-none font-mono text-xs leading-5 whitespace-pre-wrap break-words",
+                                lineCls("in"),
+                            ].join(" ")}
+                        >
+                            {livePrompt}
+                            {inputBefore}
+                            <span className="ui-term-cursor">▋</span>
+                            {inputAfter}
+                        </div>
+
+                        <textarea
+                            {...sharedTextareaProps}
+                            className="absolute inset-0 h-full w-full resize-none border-0 bg-transparent opacity-[0.01] text-[16px] text-transparent outline-none"
+                        />
+                    </div>
+                ) : null}
             </div>
         </>
     );

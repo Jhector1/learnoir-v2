@@ -1,11 +1,8 @@
 "use client";
 
 import React from "react";
-
-import type { TerminalDock } from "../types";
-
+import type { TerminalDock, RunnerState } from "../types";
 import Tooltip from "@/components/ui/Tooltip";
-
 import {
     FiMoon,
     FiSun,
@@ -14,10 +11,11 @@ import {
     FiPlay,
     FiLoader,
     FiCode,
+    FiSquare,
 } from "react-icons/fi";
 import { SiPython, SiJavascript, SiC, SiCplusplus } from "react-icons/si";
 import { FaJava } from "react-icons/fa";
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
 
 const LANG_META: Record<
     CodeLanguage,
@@ -34,7 +32,6 @@ function cx(...xs: Array<string | false | null | undefined>) {
     return xs.filter(Boolean).join(" ");
 }
 
-// ✅ icon-only until lg, then icon + text
 function IconText({ icon, text }: { icon: React.ReactNode; text: React.ReactNode }) {
     return (
         <span className="inline-flex items-center">
@@ -51,6 +48,8 @@ export default function HeaderBar(props: {
     title: string;
     disabled: boolean;
     busy: boolean;
+    runState: RunnerState;
+    onCancel: () => void;
 
     editorTheme: "vs" | "vs-dark";
     onToggleTheme: () => void;
@@ -74,7 +73,7 @@ export default function HeaderBar(props: {
     const {
         title,
         disabled,
-        busy,
+        runState,
 
         editorTheme,
         onToggleTheme,
@@ -94,6 +93,7 @@ export default function HeaderBar(props: {
 
         allowRun,
         onRun,
+        onCancel,
     } = props;
 
     const themeIsDark = editorTheme === "vs-dark";
@@ -102,7 +102,6 @@ export default function HeaderBar(props: {
     const langMeta = LANG_META[lang] ?? { label: String(lang), Icon: FiCode };
     const LangIcon = langMeta.Icon;
 
-    // ✅ consistent button tokens
     const btnBase =
         "inline-flex items-center justify-center rounded-xl border text-xs font-extrabold transition select-none";
     const btnPad = "p-2 @lg:px-3 @lg:py-1.5";
@@ -110,14 +109,38 @@ export default function HeaderBar(props: {
         "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 " +
         "dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80 dark:hover:bg-white/[0.10]";
     const btnDisabled = "disabled:opacity-50 disabled:cursor-not-allowed";
-
     const btnActive =
-        "border-emerald-300/30 bg-emerald-300/10 text-neutral-900 " +
-        "dark:text-white/90";
-
+        "border-emerald-300/30 bg-emerald-300/10 text-neutral-900 dark:text-white/90";
     const btnRun =
-        "border-sky-300/30 bg-sky-300/10 text-neutral-900 hover:bg-sky-300/15 " +
-        "dark:text-white/90";
+        "border-sky-300/30 bg-sky-300/10 text-neutral-900 hover:bg-sky-300/15 dark:text-white/90";
+    const btnStop =
+        "border-rose-300/30 bg-rose-300/10 text-neutral-900 hover:bg-rose-300/15 dark:text-white/90";
+
+    const isStarting = runState === "starting";
+    const isRunning = runState === "running";
+    const isAwaitingInput = runState === "awaiting_input";
+    const isCanceling = runState === "canceling";
+    const isIdle = runState === "idle";
+
+    const showSpinner = isStarting || isCanceling;
+    const showStop = isRunning || isAwaitingInput;
+    const sessionActive = !isIdle;
+
+    const runLabel = isStarting
+        ? "Preparing…"
+        : isCanceling
+            ? "Canceling…"
+            : showStop
+                ? "Stop"
+                : "Run";
+
+    const runTip = isStarting
+        ? "Preparing…"
+        : isCanceling
+            ? "Canceling…"
+            : showStop
+                ? "Stop"
+                : "Run";
 
     return (
         <div className="flex items-center justify-between gap-3">
@@ -126,7 +149,6 @@ export default function HeaderBar(props: {
             </div>
 
             <div className="flex items-center gap-2">
-                {/* Theme */}
                 {showEditorThemeToggle ? (
                     <Tooltip tip={themeIsDark ? "Editor theme: Dark" : "Editor theme: Light"}>
                         <button
@@ -150,13 +172,12 @@ export default function HeaderBar(props: {
                     </Tooltip>
                 ) : null}
 
-                {/* Dock */}
                 {showDockToggle ? (
                     <Tooltip tip={`Terminal dock: ${dockLabel}`}>
                         <button
                             type="button"
                             onClick={onToggleDock}
-                            disabled={disabled}
+                            disabled={disabled || sessionActive}
                             className={cx(btnBase, btnPad, btnIdle, btnDisabled)}
                             aria-label={`Terminal dock: ${dockLabel}`}
                         >
@@ -165,10 +186,8 @@ export default function HeaderBar(props: {
                     </Tooltip>
                 ) : null}
 
-                {/* Language */}
                 {showPicker ? (
                     <div className="flex items-center gap-2">
-                        {/* hide "Language" label until lg to keep compact */}
                         <div className="hidden lg:block text-xs font-extrabold text-neutral-600 dark:text-white/60">
                             Language
                         </div>
@@ -182,7 +201,7 @@ export default function HeaderBar(props: {
                                 <Tooltip key={l} tip={meta.label}>
                                     <button
                                         type="button"
-                                        disabled={disabled}
+                                        disabled={disabled || sessionActive}
                                         onClick={() => onSwitchLang(l)}
                                         className={cx(btnBase, btnPad, active ? btnActive : btnIdle, btnDisabled)}
                                         aria-label={meta.label}
@@ -201,12 +220,11 @@ export default function HeaderBar(props: {
                     </Tooltip>
                 )}
 
-                {/* Reset */}
                 {allowReset ? (
                     <Tooltip tip="Reset">
                         <button
                             type="button"
-                            disabled={disabled}
+                            disabled={disabled || sessionActive}
                             onClick={onReset}
                             className={cx(btnBase, btnPad, btnIdle, btnDisabled)}
                             aria-label="Reset"
@@ -216,25 +234,31 @@ export default function HeaderBar(props: {
                     </Tooltip>
                 ) : null}
 
-                {/* Run */}
                 {allowRun ? (
-                    <Tooltip tip={busy ? "Running…" : "Run"}>
+                    <Tooltip tip={runTip}>
                         <button
                             type="button"
-                            disabled={busy || disabled}
-                            onClick={onRun}
-                            className={cx(btnBase, btnPad, busy || disabled ? btnIdle : btnRun, btnDisabled)}
-                            aria-label={busy ? "Running…" : "Run"}
+                            disabled={disabled || showSpinner}
+                            onClick={showStop ? onCancel : onRun}
+                            className={cx(
+                                btnBase,
+                                btnPad,
+                                showStop || showSpinner ? btnStop : btnRun,
+                                btnDisabled,
+                            )}
+                            aria-label={runLabel}
                         >
                             <IconText
                                 icon={
-                                    busy ? (
+                                    showSpinner ? (
                                         <FiLoader className="text-[14px] animate-spin" />
+                                    ) : showStop ? (
+                                        <FiSquare className="text-[14px]" />
                                     ) : (
                                         <FiPlay className="text-[14px]" />
                                     )
                                 }
-                                text={busy ? "Running…" : "Run"}
+                                text={runLabel}
                             />
                         </button>
                     </Tooltip>

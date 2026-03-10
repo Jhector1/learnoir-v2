@@ -25,6 +25,7 @@ export default function CodeToolPane(props: {
 
     return (
         <div ref={ref} className="h-full min-h-0 w-full flex flex-col overflow-hidden">
+
             <CodeRunner
                 frame="plain"
                 title="Run code"

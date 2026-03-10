@@ -1,23 +1,22 @@
-// src/components/code/runner/CodeRunner.tsx
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import {useTheme} from "next-themes";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
-// import {codeLanguage} From "@/lib/practice/types";
 
-import {DEFAULT_CODE, DEFAULT_LANGS} from "./constants";
-import {isControlled, type CodeRunnerProps, type TerminalDock} from "./types";
+import { DEFAULT_CODE, DEFAULT_LANGS } from "./constants";
+import { isControlled, type CodeRunnerProps, type TerminalDock } from "./types";
 import HeaderBar from "./components/HeaderBar";
 import EditorPane from "./components/EditorPane";
 import TerminalPane from "./components/TerminalPane";
-import {useSplitSizing} from "./hooks/useSplitSizing";
-import {useTerminalRunner} from "./hooks/useTerminalRunner";
-import {CodeLanguage} from "@/lib/practice/types";
+import { useSplitSizing } from "./hooks/useSplitSizing";
+import { useTerminalRunner } from "./hooks/useTerminalRunner";
+import { CodeLanguage } from "@/lib/practice/types";
+import {runViaApi} from "@/lib/code/runClient";
 
-export default function CodeRunner(props: CodeRunnerProps) {
+function CodeRunnerContent(props: CodeRunnerProps) {
     const {
-        frame = "card", // "card" | "plain" (safe even if your type doesn’t include it)
+        frame = "card",
         title = "Try it",
         height = 320,
         hintMarkdown,
@@ -46,8 +45,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
     const controlled = isControlled(props);
 
-    // ---------- theme aware Monaco ----------
-    const {resolvedTheme} = useTheme();
+    const { resolvedTheme } = useTheme();
     const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
 
     useEffect(() => {
@@ -56,7 +54,6 @@ export default function CodeRunner(props: CodeRunnerProps) {
         }
     }, [resolvedTheme, showEditorThemeToggle]);
 
-    // ---------- languages ----------
     const allowedLangs = useMemo(() => {
         const base = allowedLanguages?.length ? allowedLanguages : DEFAULT_LANGS;
         if (fixedLanguage) return [fixedLanguage];
@@ -69,11 +66,17 @@ export default function CodeRunner(props: CodeRunnerProps) {
         allowedLangs[0] ??
         "python";
 
-    // ---------- state ----------
     const [uLang, setULang] = useState<CodeLanguage>(initialLang);
-    const [uCode, setUCode] = useState<string>((props as any).initialCode ?? DEFAULT_CODE[initialLang]);
+    const [uCode, setUCode] = useState<string>(
+        (props as any).initialCode ?? DEFAULT_CODE[initialLang],
+    );
 
-    const lang: CodeLanguage = fixedLanguage ? fixedLanguage : controlled ? (props as any).language : uLang;
+    const lang: CodeLanguage = fixedLanguage
+        ? fixedLanguage
+        : controlled
+            ? (props as any).language
+            : uLang;
+
     const code: string = controlled ? (props as any).code : uCode;
 
     const setLang = (l: CodeLanguage) => {
@@ -81,10 +84,15 @@ export default function CodeRunner(props: CodeRunnerProps) {
         if (!allowedLangs.includes(l)) return;
         controlled ? (props as any).onChangeLanguage(l) : setULang(l);
     };
-    const setCode = (c: string) => (controlled ? (props as any).onChangeCode(c) : setUCode(c));
 
-    // ---------- dock ----------
-    const [uDock, setUDock] = useState<TerminalDock>((props as any).initialTerminalDock ?? "bottom");
+    const setCode = (c: string) => {
+        controlled ? (props as any).onChangeCode(c) : setUCode(c);
+    };
+
+    const [uDock, setUDock] = useState<TerminalDock>(
+        (props as any).initialTerminalDock ?? "bottom",
+    );
+
     const dock: TerminalDock = fixedTerminalDock ?? (props as any).terminalDock ?? uDock;
 
     const setDock = (d: TerminalDock) => {
@@ -94,24 +102,24 @@ export default function CodeRunner(props: CodeRunnerProps) {
         else setUDock(d);
     };
 
-    // ---------- Monaco layout ----------
     const monacoEditorRef = useRef<any>(null);
+
     const requestLayout = () => {
         const ed = monacoEditorRef.current;
         if (!ed) return;
         requestAnimationFrame(() => {
             try {
                 ed.layout?.();
-            } catch {
-            }
+            } catch {}
         });
     };
 
-    // ---------- split sizing ----------
     const mainRef = useRef<HTMLDivElement | null>(null);
 
+    const numericHeight = typeof height === "number" ? height : 320;
+
     const split = useSplitSizing({
-        height, // ✅ fixed region height
+        height: numericHeight,
         showEditor,
         showTerminal,
         dock,
@@ -120,20 +128,31 @@ export default function CodeRunner(props: CodeRunnerProps) {
         mainRef,
         requestLayout,
     });
+    const defaultOnRun = React.useCallback(
+        (args: any) =>
+            runViaApi(
+                {
+                    language: args.language,
+                    code: args.code,
+                    stdin: args.stdin,
+                },
+                args.signal,
+            ),
+        [],
+    );
 
-    // ---------- terminal runner ----------
     const term = useTerminalRunner({
         lang,
         code,
         disabled,
         allowRun,
         resetTerminalOnRun,
-        onRun,
+        onRun: onRun ?? defaultOnRun,
     });
 
     useEffect(() => {
         requestLayout();
-    }, [dock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]);
 
     const onSwitchLang = (next: CodeLanguage) => {
         if (fixedLanguage) return;
@@ -148,8 +167,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
     const showDockToggleUI =
         showTerminalDockToggle && !fixedTerminalDock && showHeaderBar && showEditor && showTerminal;
 
-    const outerCls =
-        frame === "plain" ? "w-full" : "ui-card w-full p-4";
+    const outerCls = frame === "plain" ? "w-full" : "ui-card w-full p-4";
 
     return (
         <div className={outerCls}>
@@ -159,6 +177,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                         title={title}
                         disabled={disabled}
                         busy={term.busy}
+                        runState={term.runState}
+                        onCancel={term.cancelRun}
                         editorTheme={editorTheme}
                         onToggleTheme={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
                         showEditorThemeToggle={showEditorThemeToggleUI}
@@ -182,27 +202,24 @@ export default function CodeRunner(props: CodeRunnerProps) {
 
             {showHint && hintMarkdown ? (
                 <div className={frame === "plain" ? "mt-3" : "ui-soft mt-3 p-3"}>
-                    <MathMarkdown className="ui-math" content={hintMarkdown}/>
+                    <MathMarkdown className="ui-math" content={hintMarkdown} />
                 </div>
             ) : null}
 
             {showEditor || showTerminal ? (
                 <div
                     ref={mainRef}
-                    // ✅ FIX: the split region height is fixed, so dragging doesn’t change total height
-                    style={{height}}
+                    style={typeof height === "number" ? { height } : undefined}
                     className={[
-                        "relative z-0",              // ✅ add
-
+                        "relative z-0",
                         "mt-3 overflow-hidden rounded-2xl border",
                         "border-neutral-200 bg-neutral-50/60",
                         "dark:border-white/10 dark:bg-black/20",
                         "min-h-0",
-                        "overscroll-contain", // ✅ add
-
+                        "overscroll-contain",
+                        height === "auto" ? "h-auto" : "",
                     ].join(" ")}
                 >
-                    {/* Editor only */}
                     {showEditor && !showTerminal ? (
                         <div className="h-full bg-white/70 dark:bg-black/10">
                             <EditorPane
@@ -210,8 +227,8 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                 code={code}
                                 onChange={setCode}
                                 theme={editorTheme}
-                                height={height}
-                                disabled={disabled}
+                                height={numericHeight}
+                                disabled={disabled || term.busy}
                                 onMount={(ed) => {
                                     monacoEditorRef.current = ed;
                                     requestLayout();
@@ -220,7 +237,6 @@ export default function CodeRunner(props: CodeRunnerProps) {
                         </div>
                     ) : null}
 
-                    {/* Terminal only */}
                     {!showEditor && showTerminal ? (
                         <div className="h-full p-3">
                             <TerminalPane
@@ -235,25 +251,22 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                 disabled={disabled}
                                 lastResult={term.lastResult}
                                 onSubmitInput={term.submitInput}
-                                typedLines={term.typedLines}   // ✅ add
-
+                                typedLines={term.typedLines}
                             />
                         </div>
                     ) : null}
 
-                    {/* Editor + Terminal */}
                     {showEditor && showTerminal ? (
                         dock === "bottom" ? (
                             <div className="flex h-full flex-col min-h-0">
-                                <div
-                                    className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                                <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
                                         code={code}
                                         onChange={setCode}
                                         theme={editorTheme}
                                         height={split.bottomEditorH}
-                                        disabled={disabled}
+                                        disabled={disabled || term.busy}
                                         onMount={(ed) => {
                                             monacoEditorRef.current = ed;
                                             requestLayout();
@@ -262,12 +275,17 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                 </div>
 
                                 <div
-                                    onMouseDown={split.onMouseDownSplit}
-                                    className="h-2 cursor-row-resize bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
-                                    title="Drag to resize terminal"
+                                    onMouseDown={term.busy ? undefined : split.onMouseDownSplit}
+                                    className={[
+                                        "h-2 bg-neutral-200/60 dark:bg-white/5",
+                                        term.busy
+                                            ? "cursor-not-allowed opacity-60"
+                                            : "cursor-row-resize hover:bg-neutral-200 dark:hover:bg-white/10",
+                                    ].join(" ")}
+                                    title={term.busy ? "Cannot resize while running" : "Drag to resize terminal"}
                                 />
 
-                                <div className="min-h-0 p-3" style={{height: split.bottomTermH}}>
+                                <div className="min-h-0 p-3" style={{ height: split.bottomTermH }}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}
@@ -280,22 +298,20 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                         disabled={disabled}
                                         lastResult={term.lastResult}
                                         onSubmitInput={term.submitInput}
-                                        typedLines={term.typedLines}   // ✅ add
-
+                                        typedLines={term.typedLines}
                                     />
                                 </div>
                             </div>
                         ) : (
                             <div className="flex h-full min-h-0">
-                                <div
-                                    className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                                <div className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
                                         code={code}
                                         onChange={setCode}
                                         theme={editorTheme}
                                         height={split.rightTotalH}
-                                        disabled={disabled}
+                                        disabled={disabled || term.busy}
                                         onMount={(ed) => {
                                             monacoEditorRef.current = ed;
                                             requestLayout();
@@ -304,12 +320,17 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                 </div>
 
                                 <div
-                                    onMouseDown={split.onMouseDownSplit}
-                                    className="w-2 cursor-col-resize bg-neutral-200/60 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10"
-                                    title="Drag to resize terminal"
+                                    onMouseDown={term.busy ? undefined : split.onMouseDownSplit}
+                                    className={[
+                                        "w-2 bg-neutral-200/60 dark:bg-white/5",
+                                        term.busy
+                                            ? "cursor-not-allowed opacity-60"
+                                            : "cursor-col-resize hover:bg-neutral-200 dark:hover:bg-white/10",
+                                    ].join(" ")}
+                                    title={term.busy ? "Cannot resize while running" : "Drag to resize terminal"}
                                 />
 
-                                <div className="min-w-0 p-3" style={{width: split.termW, height: split.rightTotalH}}>
+                                <div className="min-w-0 p-3" style={{ width: split.termW, height: split.rightTotalH }}>
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}
@@ -322,8 +343,7 @@ export default function CodeRunner(props: CodeRunnerProps) {
                                         disabled={disabled}
                                         lastResult={term.lastResult}
                                         onSubmitInput={term.submitInput}
-                                        typedLines={term.typedLines}   // ✅ add
-
+                                        typedLines={term.typedLines}
                                     />
                                 </div>
                             </div>
@@ -332,5 +352,11 @@ export default function CodeRunner(props: CodeRunnerProps) {
                 </div>
             ) : null}
         </div>
+    );
+}
+
+export default function CodeRunner(props: CodeRunnerProps) {
+    return (
+            <CodeRunnerContent {...props} />
     );
 }

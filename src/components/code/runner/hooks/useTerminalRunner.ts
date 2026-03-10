@@ -1,15 +1,12 @@
-// src/components/code/runner/hooks/useTerminalRunner.ts
 "use client";
 
 import * as React from "react";
-import type { RunResult } from "@/lib/code/runCode";
-import type { TermLine, OnRun } from "../types";
+import type { RunPollResult, RunResult, RunSubmitResult } from "@/lib/code/runCode";
+import type { TermLine, OnRun, RunnerState } from "../types";
 import { cleanTermText, toLines } from "../utils/text";
 import { inferInputPlan } from "../utils/input";
 import { expandPrompts, prettyPrompt, splitStdoutByPrompts } from "../utils/prompts";
-import {CodeLanguage} from "@/lib/practice/types";
-
-// ---- helpers ----
+import { CodeLanguage } from "@/lib/practice/types";
 
 function needsMoreInput(lang: CodeLanguage, r: RunResult) {
     const blob = cleanTermText(
@@ -27,7 +24,16 @@ function needsMoreInput(lang: CodeLanguage, r: RunResult) {
     return false;
 }
 
-// Remove lines that are ONLY spaces/tabs (artifacts)
+function isCanceledResult(r: RunResult | null | undefined) {
+    return r?.status === "Canceled";
+}
+
+function errorMessage(err: unknown) {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "string") return err;
+    return "Run failed.";
+}
+
 function toOutTermLines(seg: string): TermLine[] {
     const lines = toLines(cleanTermText(seg ?? ""));
     return lines
@@ -35,11 +41,10 @@ function toOutTermLines(seg: string): TermLine[] {
         .map((t) => ({ type: "out" as const, text: t }));
 }
 
-// ---- safe-ish pre-output extraction for C/C++ (so "Hello" shows before inputs) ----
-
 function unescapeCStringContent(x: string) {
     const s = String(x ?? "");
     let out = "";
+
     for (let i = 0; i < s.length; ) {
         const ch = s[i];
         if (ch !== "\\") {
@@ -47,12 +52,14 @@ function unescapeCStringContent(x: string) {
             i++;
             continue;
         }
+
         const nxt = s[i + 1];
         if (nxt == null) {
             out += "\\";
             i++;
             continue;
         }
+
         switch (nxt) {
             case "\\":
                 out += "\\";
@@ -80,6 +87,7 @@ function unescapeCStringContent(x: string) {
                 break;
         }
     }
+
     return out;
 }
 
@@ -98,7 +106,6 @@ function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: stri
             })();
 
     const pre = src.slice(0, firstInputIdx);
-
     const rawStrings: string[] = [];
 
     if (lang === "c") {
@@ -109,13 +116,14 @@ function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: stri
         for (const m of pre.matchAll(re)) rawStrings.push(unescapeCStringContent(m[1] ?? ""));
     }
 
-    // Filter out strings that are actually prompts (avoid duplicates)
     const promptSet = new Set(prompts.map((p) => String(p ?? "").trimEnd()));
     const filtered = rawStrings.filter((s) => {
         const t = String(s ?? "").trimEnd();
         if (!t) return false;
         if (promptSet.has(t)) return false;
-        for (const p of promptSet) if (p && t.startsWith(p)) return false;
+        for (const p of promptSet) {
+            if (p && t.startsWith(p)) return false;
+        }
         return true;
     });
 
@@ -124,7 +132,26 @@ function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: stri
     return lines;
 }
 
-// ---- main hook ----
+function sleep(ms: number, signal: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+        const cleanup = () => {
+            signal.removeEventListener("abort", onAbort);
+        };
+
+        const id = window.setTimeout(() => {
+            cleanup();
+            resolve();
+        }, ms);
+
+        const onAbort = () => {
+            window.clearTimeout(id);
+            cleanup();
+            reject(new DOMException("Aborted", "AbortError"));
+        };
+
+        signal.addEventListener("abort", onAbort);
+    });
+}
 
 export function useTerminalRunner(args: {
     lang: CodeLanguage;
@@ -143,20 +170,30 @@ export function useTerminalRunner(args: {
     const [inputPrompt, setInputPrompt] = React.useState("");
     const [inputLine, setInputLine] = React.useState("");
 
-    // focusable terminal surface
     const inputRef = React.useRef<HTMLTextAreaElement | null>(null);
+
     const [busy, setBusy] = React.useState(false);
     const [lastResult, setLastResult] = React.useState<RunResult | null>(null);
+    const [runState, setRunState] = React.useState<RunnerState>("idle");
 
     const runLockRef = React.useRef(false);
     const runIdRef = React.useRef(0);
     const activeRunIdRef = React.useRef<number | null>(null);
+    const activeTokenRef = React.useRef<string | null>(null);
 
     const [typedLines, setTypedLines] = React.useState<string[]>([]);
     const hasStartedExecRef = React.useRef(false);
-
-    // store stdout from python/java probe-run
     const probeStdoutRef = React.useRef<string>("");
+
+    const abortRef = React.useRef<AbortController | null>(null);
+    const mountedRef = React.useRef(true);
+
+    React.useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+            abortRef.current?.abort();
+        };
+    }, []);
 
     const inputPlan = React.useMemo(() => inferInputPlan(lang, code), [lang, code]);
 
@@ -164,55 +201,223 @@ export function useTerminalRunner(args: {
         const tagged = lines.map((l) => ({ ...l, runId }));
         setTerminal((prev) => [...prev.filter((l) => l.runId !== runId), ...tagged]);
     }, []);
+    const appendImmediateInputLine = React.useCallback(
+        (runId: number, typed: string, prompt?: string) => {
+            const value = String(typed ?? "");
+            const p = String(prompt ?? "").trim();
+            const text = p ? `${p} ${value}` : value;
 
-    const resetTerminal = React.useCallback(() => {
-        setTerminal([]);
+            setTerminal((prev) => [...prev, { type: "in", text, runId }]);
+        },
+        [],
+    );
+    const appendRunLine = React.useCallback((runId: number, line: TermLine) => {
+        setTerminal((prev) => [...prev, { ...line, runId }]);
+    }, []);
+    const appendProcessingLine = React.useCallback((runId: number) => {
+        setTerminal((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.runId === runId && last?.type === "sys" && last?.text === "Processing...") {
+                return prev;
+            }
+            return [...prev, { type: "sys", text: "Processing...", runId }];
+        });
+    }, []);
+    const appendSysLine = React.useCallback((text: string, runId?: number) => {
+        const resolvedRunId = runId ?? activeRunIdRef.current ?? runIdRef.current;
+        setTerminal((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.runId === resolvedRunId && last?.type === "sys" && last?.text === text) {
+                return prev;
+            }
+            return [...prev, { type: "sys", text, runId: resolvedRunId }];
+        });
+    }, []);
+
+    const appendErrLine = React.useCallback(
+        (text: string, runId?: number) => {
+            const resolvedRunId = runId ?? activeRunIdRef.current ?? runIdRef.current;
+            appendRunLine(resolvedRunId, { type: "err", text });
+        },
+        [appendRunLine],
+    );
+
+    const clearInputUi = React.useCallback(() => {
         setAwaitingInput(false);
         setInputPrompt("");
         setInputLine("");
+    }, []);
+
+    const resetTerminal = React.useCallback(() => {
+        abortRef.current?.abort();
+        activeTokenRef.current = null;
+
+        setTerminal([]);
+        clearInputUi();
         setLastResult(null);
         setStdinBuffer("");
         setTypedLines([]);
+        setRunState("idle");
+
         hasStartedExecRef.current = false;
         activeRunIdRef.current = null;
         probeStdoutRef.current = "";
-    }, []);
+    }, [clearInputUi]);
+
+    const postSubmission = React.useCallback(
+        async (stdinToUse: string, signal: AbortSignal): Promise<RunSubmitResult> => {
+            const res = await fetch("/api/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
+                signal,
+            });
+
+            const text = await res.text();
+
+            let parsed: any;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                return {
+                    ok: false,
+                    error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
+                };
+            }
+
+            if (!parsed || parsed.ok !== true || typeof parsed.token !== "string" || !parsed.token) {
+                return {
+                    ok: false,
+                    error:
+                        parsed?.error ??
+                        `Invalid /api/run response. Expected { ok: true, token }, got: ${text.slice(0, 300)}`,
+                };
+            }
+
+            return parsed as RunSubmitResult;
+        },
+        [lang, code],
+    );
+
+    const getSubmission = React.useCallback(
+        async (token: string, signal: AbortSignal): Promise<RunPollResult> => {
+            const res = await fetch(`/api/run/${encodeURIComponent(token)}`, {
+                method: "GET",
+                signal,
+            });
+
+            const text = await res.text();
+            try {
+                return JSON.parse(text) as RunPollResult;
+            } catch {
+                return {
+                    ok: false,
+                    done: true,
+                    status: "Error",
+                    error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
+                };
+            }
+        },
+        [],
+    );
 
     const runOnce = React.useCallback(
         async (stdinToUse: string) => {
             if (runLockRef.current) return null;
+
+            const ctrl = new AbortController();
+            abortRef.current = ctrl;
+
             runLockRef.current = true;
-            setBusy(true);
-            setLastResult(null);
+            if (mountedRef.current) {
+                setBusy(true);
+                setLastResult(null);
+                setRunState((prev) => (prev === "canceling" ? "canceling" : "starting"));
+            }
 
             try {
                 if (onRun) {
-                    const data = await onRun({ language: lang, code, stdin: stdinToUse });
-                    setLastResult(data);
+                    if (mountedRef.current) {
+                        setRunState((prev) => (prev === "canceling" ? "canceling" : "running"));
+                    }
+
+                    const data = await onRun({
+                        language: lang,
+                        code,
+                        stdin: stdinToUse,
+                        signal: ctrl.signal,
+                    });
+
+                    if (mountedRef.current) setLastResult(data);
                     return data;
                 }
 
-                const res = await fetch("/api/run", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
-                });
-
-                const text = await res.text();
-                let data: RunResult;
-                try {
-                    data = JSON.parse(text);
-                } catch {
-                    data = { ok: false, error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}` };
+                const submit = await postSubmission(stdinToUse, ctrl.signal);
+                if (!submit.ok) {
+                    const fail: RunResult = {
+                        ok: false,
+                        status: "Error",
+                        error: submit.error,
+                    };
+                    if (mountedRef.current) {
+                        setLastResult(fail);
+                        setRunState("idle");
+                    }
+                    return fail;
                 }
-                setLastResult(data);
+
+                activeTokenRef.current = submit.token;
+
+                if (mountedRef.current) {
+                    setRunState((prev) => (prev === "canceling" ? "canceling" : "running"));
+                }
+
+                const maxPolls = 120;
+
+                for (let i = 0; i < maxPolls; i++) {
+                    const polled = await getSubmission(submit.token, ctrl.signal);
+                    if (polled.done) {
+                        if (mountedRef.current) setLastResult(polled);
+                        return polled;
+                    }
+                    await sleep(700, ctrl.signal);
+                }
+
+                const timeoutResult: RunResult = {
+                    ok: false,
+                    status: "Timeout",
+                    error: "Execution timed out while waiting for Judge0.",
+                };
+
+                if (mountedRef.current) {
+                    setLastResult(timeoutResult);
+                }
+
+                return timeoutResult;
+            } catch (e: any) {
+                const data: RunResult =
+                    e?.name === "AbortError"
+                        ? {
+                            ok: false,
+                            status: "Canceled",
+                            error: "Run canceled by user.",
+                        }
+                        : {
+                            ok: false,
+                            status: "Error",
+                            error: errorMessage(e),
+                        };
+
+                if (mountedRef.current) setLastResult(data);
                 return data;
             } finally {
+                activeTokenRef.current = null;
+                if (abortRef.current === ctrl) abortRef.current = null;
                 runLockRef.current = false;
-                setBusy(false);
+                if (mountedRef.current) setBusy(false);
             }
         },
-        [onRun, lang, code],
+        [onRun, lang, code, postSubmission, getSubmission],
     );
 
     const rebuildInteractiveTranscript = React.useCallback(
@@ -223,42 +428,41 @@ export function useTerminalRunner(args: {
             showWaiting: boolean,
             probePrefix?: string,
         ) => {
-            const hasRealPrompts = !!(inputPlan.prompts?.length);
+            const hasRealPrompts = !!inputPlan.prompts?.length;
             const syntheticPrompt = !hasRealPrompts;
             const promptsRaw = hasRealPrompts ? inputPlan.prompts : ["Input:"];
 
             const stdoutText = cleanTermText(r.stdout ?? "");
-
             const prefix =
                 syntheticPrompt && probePrefix && stdoutText.startsWith(probePrefix) ? probePrefix : "";
-
             const rest = prefix ? stdoutText.slice(prefix.length) : stdoutText;
 
             const rebuilt: TermLine[] = [];
 
-            // ---- synthetic input() (no prompt markers in stdout) ----
             if (syntheticPrompt) {
-                let prefixLines = toOutTermLines(prefix);
-
-                // merge first input onto prompt line if no newline
+                const prefixLines = toOutTermLines(prefix);
                 let startIdx = 0;
+
                 if (prefix && !prefix.endsWith("\n") && lines.length > 0 && prefixLines.length > 0) {
                     const last = prefixLines[prefixLines.length - 1];
                     const joiner = last.text.endsWith(" ") || last.text === "" ? "" : " ";
+
                     prefixLines[prefixLines.length - 1] = {
                         ...last,
                         text: last.text + joiner + String(lines[0] ?? ""),
                     };
+
                     startIdx = 1;
                 }
 
                 rebuilt.push(...prefixLines);
+
                 for (let i = startIdx; i < lines.length; i++) {
                     rebuilt.push({ type: "in", text: String(lines[i] ?? "") });
                 }
+
                 rebuilt.push(...toOutTermLines(rest));
             } else {
-                // ---- input("Enter...") prompt splitting ----
                 const splitCount = showWaiting ? lines.length + 1 : lines.length;
                 const promptsForSplit = expandPrompts(promptsRaw, Math.max(splitCount, 1), "Input:");
                 const segs = splitStdoutByPrompts(stdoutText, promptsForSplit);
@@ -266,7 +470,10 @@ export function useTerminalRunner(args: {
                 rebuilt.push(...toOutTermLines(segs[0] ?? ""));
 
                 for (let i = 0; i < lines.length; i++) {
-                    const pDisp = prettyPrompt(promptsForSplit[i] || promptsRaw[i] || promptsRaw[0] || "Input:");
+                    const pDisp = prettyPrompt(
+                        promptsForSplit[i] || promptsRaw[i] || promptsRaw[0] || "Input:",
+                    );
+
                     rebuilt.push({ type: "in", text: `${pDisp} ${lines[i] ?? ""}` });
 
                     let seg = segs[i + 1] ?? "";
@@ -275,99 +482,154 @@ export function useTerminalRunner(args: {
                 }
             }
 
-            // Collect errors
             const extraErrs: TermLine[] = [];
             if (r.compile_output) extraErrs.push({ type: "err", text: cleanTermText(r.compile_output) });
             if (r.stderr) extraErrs.push({ type: "err", text: cleanTermText(r.stderr) });
             if (r.message) extraErrs.push({ type: "err", text: cleanTermText(r.message) });
-            if (r.error) extraErrs.push({ type: "err", text: cleanTermText(r.error) });
+            if (r.error && !isCanceledResult(r)) extraErrs.push({ type: "err", text: cleanTermText(r.error) });
 
             if (showWaiting) {
-                // ✅ IMPORTANT: suppress probe-run EOF/NoSuchElement tracebacks
                 setAwaitingInput(true);
                 const nextRaw = promptsRaw[lines.length] || promptsRaw[0] || "Input:";
                 setInputPrompt(syntheticPrompt ? "" : prettyPrompt(nextRaw));
+                setRunState("awaiting_input");
                 replaceRunLines(runId, rebuilt);
-                setTimeout(() => inputRef.current?.focus(), 0);
                 return;
             }
 
             replaceRunLines(runId, [...rebuilt, ...extraErrs]);
             setAwaitingInput(false);
             setInputPrompt("");
+            setRunState("idle");
         },
-        [inputPlan.prompts, lang, replaceRunLines],
+        [inputPlan.prompts, replaceRunLines],
     );
+
+    const cancelRun = React.useCallback(() => {
+        if (runState !== "running" && runState !== "awaiting_input") return;
+
+        const runId = activeRunIdRef.current ?? runIdRef.current;
+
+        appendSysLine("Run canceled.", runId);
+        clearInputUi();
+        setLastResult({
+            ok: false,
+            status: "Canceled",
+            error: "Run canceled by user.",
+        });
+
+        // If there's no active request, return to idle immediately.
+        if (!busy || !abortRef.current) {
+            activeTokenRef.current = null;
+            activeRunIdRef.current = null;
+            setRunState("idle");
+            setBusy(false);
+            return;
+        }
+
+        // Active request exists: show spinner until abort settles.
+        setRunState("canceling");
+        abortRef.current.abort();
+    }, [runState, busy, appendSysLine, clearInputUi]);
 
     const startRun = React.useCallback(async () => {
         if (disabled || runLockRef.current || busy || !allowRun) return;
 
-        if (resetTerminalOnRun) resetTerminal();
-        else {
-            setAwaitingInput(false);
-            setInputPrompt("");
-            setInputLine("");
-            setLastResult(null);
-            setStdinBuffer("");
+        const runId = runIdRef.current + 1;
+
+        try {
+            setRunState("starting");
+
+            if (resetTerminalOnRun) {
+                resetTerminal();
+                setRunState("starting");
+            } else {
+                clearInputUi();
+                setLastResult(null);
+                setStdinBuffer("");
+                setTypedLines([]);
+                hasStartedExecRef.current = false;
+                probeStdoutRef.current = "";
+            }
+
+            runIdRef.current = runId;
+            activeRunIdRef.current = runId;
+
+            const expectsInput = inputPlan.expected > 0;
+            const probeSafe = lang === "python" || lang === "java";
+
+            // show immediate feedback as soon as Run is clicked
+            appendProcessingLine(runId);
+
+            if (!expectsInput) {
+                replaceRunLines(runId, [{ type: "sys", text: "Processing...", runId }]);
+
+                const r = await runOnce("");
+                if (!r) return;
+                if (isCanceledResult(r)) {
+                    clearInputUi();
+                    setRunState("idle");
+                    return;
+                }
+
+                rebuildInteractiveTranscript(runId, [], r, false);
+                return;
+            }
+
+            if (probeSafe) {
+                replaceRunLines(runId, [{ type: "sys", text: "Processing...", runId }]);
+                hasStartedExecRef.current = true;
+
+                const r = await runOnce("");
+                if (!r) return;
+                if (isCanceledResult(r)) {
+                    clearInputUi();
+                    setRunState("idle");
+                    return;
+                }
+
+                probeStdoutRef.current = cleanTermText(r.stdout ?? "");
+                const more = needsMoreInput(lang, r);
+                rebuildInteractiveTranscript(runId, [], r, more, probeStdoutRef.current);
+                return;
+            }
+
+            const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
+            const firstPrompt = prettyPrompt(inputPlan.prompts[0] || "Input:");
+
+            setAwaitingInput(true);
+            setInputPrompt(firstPrompt);
             setTypedLines([]);
+            setStdinBuffer("");
             hasStartedExecRef.current = false;
-            probeStdoutRef.current = "";
+            setRunState("awaiting_input");
+
+            replaceRunLines(runId, [
+                ...preOut,
+                { type: "sys", text: "Processing...", runId },
+            ]);
+        } catch (e) {
+            const msg = errorMessage(e);
+            clearInputUi();
+            setLastResult({ ok: false, status: "Error", error: msg });
+            setRunState("idle");
+            appendErrLine(msg, runId);
         }
-
-        const runId = ++runIdRef.current;
-        activeRunIdRef.current = runId;
-
-        const expectsInput = inputPlan.expected > 0;
-        const probeSafe = lang === "python" || lang === "java";
-
-        // no input expected
-        if (!expectsInput) {
-            replaceRunLines(runId, []);
-            const r = await runOnce("");
-            if (!r) return;
-            rebuildInteractiveTranscript(runId, [], r, false);
-            return;
-        }
-
-        // ---- Python/Java probe run ----
-        if (probeSafe) {
-            replaceRunLines(runId, []);
-            hasStartedExecRef.current = true;
-
-            const r = await runOnce("");
-            if (!r) return;
-
-            probeStdoutRef.current = cleanTermText(r.stdout ?? "");
-
-            // ✅ only wait if the probe error is the "needs input" kind
-            const more = needsMoreInput(lang, r);
-            rebuildInteractiveTranscript(runId, [], r, more, probeStdoutRef.current);
-            return;
-        }
-
-        // ---- C/C++: static pre-output then collect ----
-        const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
-        const firstPrompt = prettyPrompt(inputPlan.prompts[0] || "Input:");
-        setAwaitingInput(true);
-        setInputPrompt(firstPrompt);
-        setTypedLines([]);
-        setStdinBuffer("");
-        hasStartedExecRef.current = false;
-
-        replaceRunLines(runId, [...preOut]);
-        setTimeout(() => inputRef.current?.focus(), 0);
     }, [
         disabled,
         busy,
         allowRun,
         resetTerminalOnRun,
         resetTerminal,
+        clearInputUi,
         lang,
         code,
         inputPlan,
         runOnce,
         replaceRunLines,
         rebuildInteractiveTranscript,
+        appendErrLine,
+        appendProcessingLine,
     ]);
 
     const submitInput = React.useCallback(async () => {
@@ -376,44 +638,71 @@ export function useTerminalRunner(args: {
         const runId = activeRunIdRef.current;
         if (!runId) return;
 
-        const typed = String(inputLine ?? "");
-        const next = [...typedLines, typed];
+        try {
+            const typed = String(inputLine ?? "");
+            const next = [...typedLines, typed];
 
-        setTypedLines(next);
-        setInputLine("");
-        setStdinBuffer(next.join("\n") + "\n");
+            setTypedLines(next);
+            setInputLine("");
+            setStdinBuffer(next.join("\n") + "\n");
 
-        const expectsInput = inputPlan.expected > 0;
-        const probeSafe = lang === "python" || lang === "java";
+            const expectsInput = inputPlan.expected > 0;
+            const probeSafe = lang === "python" || lang === "java";
 
-        // C/C++ collecting phase
-        if (expectsInput && !probeSafe && next.length < inputPlan.expected) {
-            const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
-            const nextPrompt = prettyPrompt(inputPlan.prompts[next.length] || inputPlan.prompts[0] || "Input:");
+            const hasRealPrompts = !!inputPlan.prompts?.length;
+            const promptForThisInput = hasRealPrompts
+                ? prettyPrompt(
+                    inputPlan.prompts[Math.max(0, next.length - 1)] ||
+                    inputPlan.prompts[0] ||
+                    "Input:",
+                )
+                : "";
 
-            setAwaitingInput(true);
-            setInputPrompt(nextPrompt);
+            appendImmediateInputLine(runId, typed, promptForThisInput);
+            appendProcessingLine(runId);
 
-            replaceRunLines(runId, [
-                ...preOut,
-                ...next.map((val, i) => ({
-                    type: "in" as const,
-                    text: `${prettyPrompt(inputPlan.prompts[i] || "Input:")} ${val}`,
-                })),
-            ]);
+            if (expectsInput && !probeSafe && next.length < inputPlan.expected) {
+                const preOut = extractPreOutputForCCpp(lang, code, inputPlan.prompts);
+                const nextPrompt = prettyPrompt(
+                    inputPlan.prompts[next.length] || inputPlan.prompts[0] || "Input:",
+                );
 
-            setTimeout(() => inputRef.current?.focus(), 0);
-            return;
+                setAwaitingInput(true);
+                setInputPrompt(nextPrompt);
+                setRunState("awaiting_input");
+
+                replaceRunLines(runId, [
+                    ...preOut,
+                    ...next.map((val, i) => ({
+                        type: "in" as const,
+                        text: `${prettyPrompt(inputPlan.prompts[i] || "Input:")} ${val}`,
+                    })),
+                ]);
+
+                return;
+            }
+
+            const stdin = next.join("\n") + "\n";
+            setRunState("starting");
+
+            const r = await runOnce(stdin);
+            if (!r) return;
+            if (isCanceledResult(r)) {
+                clearInputUi();
+                setRunState("idle");
+                return;
+            }
+
+            const more = (probeSafe && needsMoreInput(lang, r)) || false;
+            const probePrefix = probeSafe ? probeStdoutRef.current : "";
+            rebuildInteractiveTranscript(runId, next, r, more, probePrefix);
+        } catch (e) {
+            const msg = errorMessage(e);
+            clearInputUi();
+            setLastResult({ ok: false, status: "Error", error: msg });
+            setRunState("idle");
+            appendErrLine(msg, runId);
         }
-
-        const stdin = next.join("\n") + "\n";
-        const r = await runOnce(stdin);
-        if (!r) return;
-
-        const more = (probeSafe && needsMoreInput(lang, r)) || false;
-        const probePrefix = probeSafe ? probeStdoutRef.current : "";
-
-        rebuildInteractiveTranscript(runId, next, r, more, probePrefix);
     }, [
         disabled,
         busy,
@@ -425,6 +714,10 @@ export function useTerminalRunner(args: {
         runOnce,
         replaceRunLines,
         rebuildInteractiveTranscript,
+        appendErrLine,
+        appendImmediateInputLine,
+        appendProcessingLine,
+        clearInputUi,
     ]);
 
     return {
@@ -436,6 +729,9 @@ export function useTerminalRunner(args: {
         setInputLine,
         inputRef,
         busy,
+        runState,
+        canCancel: runState === "running" || runState === "awaiting_input",
+        cancelRun,
         lastResult,
         resetTerminal,
         startRun,

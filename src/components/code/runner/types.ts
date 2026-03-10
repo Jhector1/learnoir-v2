@@ -1,5 +1,6 @@
+// src/components/code/runner/types.ts
 import type { RunResult } from "@/lib/code/runCode";
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
 
 export type TerminalDock = "bottom" | "right";
 
@@ -13,6 +14,7 @@ export type OnRun = (args: {
     language: CodeLanguage;
     code: string;
     stdin: string;
+    signal?: AbortSignal;
 }) => Promise<RunResult>;
 
 export type ControlledProps = {
@@ -33,8 +35,14 @@ export type UncontrolledProps = {
     initialTerminalDock?: TerminalDock;
     initialTerminalSize?: number;
 };
-export type CodeRunnerFrame = "card" | "plain";
 
+export type CodeRunnerFrame = "card" | "plain";
+export type RunnerState =
+    | "idle"
+    | "starting"
+    | "running"
+    | "awaiting_input"
+    | "canceling";
 export type CommonProps = {
     title?: string;
     height?: number | "auto";

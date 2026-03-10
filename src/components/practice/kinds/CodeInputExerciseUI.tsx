@@ -7,6 +7,7 @@ import type {  RunResult } from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
 import {useTaggedT} from "@/i18n/tagged";
+import CodeRunnerBoundary from "@/components/code/runner/CodeRunnerBoundary";
 
 type CodeInputExercise = Extract<Exercise, { kind: "code_input" }>;
 
@@ -211,6 +212,7 @@ export default function CodeInputExerciseUI({
                     </div>
 
                     <div className="mt-2">
+
                         <CodeRunner
                             frame="plain"
                             title={undefined as any}

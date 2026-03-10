@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef } from "react";
-import type {  RunResult } from "@/lib/code/runCode";
+import type {RunPollResult, RunResult} from "@/lib/code/runCode";
 import CodeRunner from "@/components/code/CodeRunner";
 
 import { useIdeWorkspace } from "./useIdeWorkspace";
@@ -12,6 +12,7 @@ import ExplorerTree from "./ExplorerTree";
 import TabsBar from "./TabsBar";
 import DeleteModal from "./DeleteModal";
 import {CodeLanguage} from "@/lib/practice/types";
+import { runViaApi } from "@/lib/code/runClient";
 
 type FullIDEProps = {
     title?: string;
@@ -79,30 +80,26 @@ export default function FullIDE(props: FullIDEProps) {
 
     const { activeFile, entryFile, tabFiles, rootSrc } = derived;
 
+
     const onRunProject = async (args: {
         language: CodeLanguage;
         code: string;
         stdin: string;
+        signal?: AbortSignal;
     }): Promise<RunResult> => {
         const files = exportProjectFiles(nodes);
         const entryId = entryFileId || activeFileId;
         const entry = pathOf(nodes, entryId);
 
-        const res = await fetch("/api/run", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ language, entry, files, stdin: args.stdin }),
-        });
-
-        const text = await res.text();
-        try {
-            return JSON.parse(text) as RunResult;
-        } catch {
-            return {
-                ok: false,
-                error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
-            };
-        }
+        return runViaApi(
+            {
+                language,
+                entry,
+                files,
+                stdin: args.stdin,
+            },
+            args.signal,
+        );
     };
 
     const languages = useMemo(

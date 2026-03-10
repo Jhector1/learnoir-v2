@@ -1,5 +1,7 @@
 {
   "LocaleSwitcher": {
+    "changing": "Changing...",
+    "changingTo": "Changing to {locale}...",
     "ariaLabel": "Language switcher",
     "switchTo": "Switch to {locale}",
     "confirm": {

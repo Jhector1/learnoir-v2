@@ -14,30 +14,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       issuer: process.env.KEYCLOAK_ISSUER!,
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
-      authorization: { params: { scope: "openid profile email" } },
+      authorization: {
+        params: { scope: "openid profile email" },
+      },
     }),
 
-    // ✅ Google OAuth (NextAuth/Auth.js provider id = "google")
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // authorization: { params: { prompt: "select_account" } }, // optional
     }),
   ],
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allow safe relative redirects only
+      if (url.startsWith("/") && !url.startsWith("//")) {
+        return `${baseUrl}${url}`;
+      }
+
+      // Allow same-origin absolute URLs only
+      try {
+        const parsed = new URL(url);
+        if (parsed.origin === baseUrl) return url;
+      } catch {
+        // Ignore parse errors and fall back safely
+      }
+
+      // Fallback to a safe internal page
+      return `${baseUrl}/en`;
+    },
+
     async jwt({ token, user, account }) {
       if (user?.id) token.uid = user.id;
 
-      // ✅ Save Keycloak id_token so we can call Keycloak end-session correctly
+      // Store Keycloak id_token for proper RP-initiated logout if needed
       if (account?.provider === "keycloak" && account?.id_token) {
         (token as any).kc_id_token = account.id_token;
       }
-
-      // (Optional) If you ever need Google id_token later:
-      // if (account?.provider === "google" && account?.id_token) {
-      //   (token as any).google_id_token = account.id_token;
-      // }
 
       return token;
     },
@@ -46,6 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && (token as any).uid) {
         (session.user as any).id = (token as any).uid as string;
       }
+
       return session;
     },
   },

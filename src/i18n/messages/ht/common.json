@@ -22,9 +22,8 @@
     "menu": "Meni",
     "close": "Fèmen",
     "tip": "Konsèy: itilize Pratik pou swiv tantativ ou yo, repons ou jwenn kòrèk, ak kestyon ou rate yo.",
-    "toggleMenu": "Louvri/fèmen meni an"
-
-
+    "toggleMenu": "Louvri/fèmen meni an",
+    "soundHint": "Limen oswa etenn son entèfas la"
   },
   "UserMenu": {
     "ariaLabel": "Meni itilizatè",

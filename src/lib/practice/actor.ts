@@ -1,32 +1,29 @@
-// src/lib/practice/actor.ts
 import "server-only";
+
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 
 export type Actor = { userId: string | null; guestId: string | null };
 
-// Keep name if you already rely on it.
-// Optional hardening: rename to "__Host-guest" (requires Secure + path="/" + no domain).
 const GUEST_COOKIE = "__Host-guest";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 // ---- signing ----
+
 function getGuestSecrets(): string[] {
-  // Rotation support: keep OLD set for a bit after changing SECRET
   const cur = process.env.GUEST_COOKIE_SECRET;
   const old = process.env.GUEST_COOKIE_SECRET_OLD;
 
   const secrets = [cur, old].filter(Boolean) as string[];
 
-  if ( secrets.length === 0) {
-    // Fail hard in prod so you don’t accidentally run unsigned
+  if (secrets.length === 0) {
     throw new Error("Missing GUEST_COOKIE_SECRET.");
   }
 
-  // In dev, allow missing secret (cookie will be treated invalid -> new guest each time)
   return secrets;
 }
 
@@ -44,7 +41,6 @@ function signGuestId(id: string, secret: string) {
 }
 
 function safeEqual(a: string, b: string) {
-  // constant-time compare
   const ab = Buffer.from(a, "utf8");
   const bb = Buffer.from(b, "utf8");
   if (ab.length !== bb.length) return false;
@@ -53,10 +49,6 @@ function safeEqual(a: string, b: string) {
 
 function encodeGuestCookie(id: string) {
   const secrets = getGuestSecrets();
-  if (secrets.length === 0) {
-    // dev fallback: unsigned (not recommended). Better to set the env var.
-    return id;
-  }
   const sig = signGuestId(id, secrets[0]);
   return `${id}.${sig}`;
 }
@@ -65,16 +57,13 @@ function decodeGuestCookie(value: string | undefined | null): string | null {
   if (!value) return null;
 
   const secrets = getGuestSecrets();
-  if (secrets.length === 0) return null;
 
-  // Expect: "<uuid>.<sig>"
   const dot = value.lastIndexOf(".");
   if (dot <= 0) return null;
 
   const id = value.slice(0, dot);
   const sig = value.slice(dot + 1);
 
-  // Basic sanity check for UUID-ish values (optional but helpful)
   if (id.length < 10 || sig.length < 20) return null;
 
   for (const secret of secrets) {
@@ -85,11 +74,38 @@ function decodeGuestCookie(value: string | undefined | null): string | null {
   return null;
 }
 
+// ---- resolve authenticated user to INTERNAL Prisma User.id ----
+
+async function resolveDbUserIdFromSession(): Promise<string | null> {
+  const session = await auth();
+  const rawId = (session?.user as any)?.id ?? null;
+  const email = session?.user?.email ?? null;
+
+  // Best case: session.user.id is already Prisma User.id
+  if (rawId) {
+    const byId = await prisma.user.findUnique({
+      where: { id: rawId },
+      select: { id: true },
+    });
+    if (byId) return byId.id;
+  }
+
+  // Fallback: resolve by email if present
+  if (email) {
+    const byEmail = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (byEmail) return byEmail.id;
+  }
+
+  return null;
+}
+
 // ---- actor ----
 
 export async function getActor(): Promise<Actor> {
-  const session = await auth();
-  const userId = (session?.user as any)?.id ?? null;
+  const userId = await resolveDbUserIdFromSession();
 
   const jar = await cookies();
   const raw = jar.get(GUEST_COOKIE)?.value ?? null;
@@ -99,7 +115,7 @@ export async function getActor(): Promise<Actor> {
 }
 
 /**
- * ✅ Returns:
+ * Returns:
  * - { actor } if user is logged in OR guestId already exists
  * - { actor, setGuestId } if we created a new guest id
  */
@@ -111,9 +127,6 @@ export function ensureGuestId(actor: Actor): { actor: Actor; setGuestId?: string
   return { actor: { ...actor, guestId: newId }, setGuestId: newId };
 }
 
-/**
- * ✅ Accepts null safely (common when values come from DB/state)
- */
 export function attachGuestCookie(res: NextResponse, setGuestId?: string | null) {
   if (setGuestId) {
     res.cookies.set(GUEST_COOKIE, encodeGuestCookie(setGuestId), {
@@ -127,7 +140,6 @@ export function attachGuestCookie(res: NextResponse, setGuestId?: string | null)
   return res;
 }
 
-import { createHash } from "node:crypto";
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
 export function actorKeyOf(actor: Actor): string {

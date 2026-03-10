@@ -1,4 +1,3 @@
-// src/app/api/subjects/[subjectSlug]/enroll/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
@@ -27,20 +26,39 @@ export async function POST(
         where: { slug },
         select: { id: true, slug: true },
     });
-    if (!subject) return json({ message: "Subject not found" }, 404);
+
+    if (!subject) {
+        return json({ message: "Subject not found" }, 404);
+    }
 
     const actor0 = await getActor();
-    const ensured = ensureGuestId(actor0); // ✅ pass Actor object
+    const ensured = ensureGuestId(actor0);
     const actor = ensured.actor;
     const setGuestId = ensured.setGuestId;
 
     const actorKey = actorKeyOf(actor);
 
+    // defensive check: only write FK if user actually exists
+    let safeUserId: string | null = null;
+
+    if (actor.userId) {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: actor.userId },
+            select: { id: true },
+        });
+        safeUserId = dbUser?.id ?? null;
+    }
+
     await prisma.subjectEnrollment.upsert({
-        where: { actorKey_subjectId: { actorKey, subjectId: subject.id } },
+        where: {
+            actorKey_subjectId: {
+                actorKey,
+                subjectId: subject.id,
+            },
+        },
         create: {
             actorKey,
-            userId: actor.userId ?? null,
+            userId: safeUserId,
             subjectId: subject.id,
             source: "self",
             lastSeenAt: new Date(),
@@ -50,11 +68,12 @@ export async function POST(
             lastSeenAt: new Date(),
             status: "enrolled",
             archivedAt: null,
+            ...(safeUserId ? { userId: safeUserId } : {}),
         },
     });
 
-    // Optional: compute access (if you’re using SubjectAccessGrant gating)
     const now = new Date();
+
     const hasAccess = await prisma.subjectAccessGrant.findFirst({
         where: {
             actorKey,

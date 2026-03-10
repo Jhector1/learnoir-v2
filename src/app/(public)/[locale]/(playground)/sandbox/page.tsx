@@ -1,15 +1,15 @@
-
 import SandboxChooserClient from "./SandboxChooserClient";
 
-export default function SandboxPage({ params }: { params: { locale: string } }) {
+export default async function SandboxPage({
+                                              params,
+                                          }: {
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale } = await params;
+
     return (
         <div className="ui-container py-10">
-
-            <SandboxChooserClient locale={params.locale} />
+            <SandboxChooserClient locale={locale} />
         </div>
     );
 }
-
-
-
-

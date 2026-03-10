@@ -18,5 +18,7 @@ export const ROUTES = {
     pricing: "/billing",
     contact: "/contact",
     privacy: "/privacy",
+    authenticate: "/authenticate",
     terms: "/terms",
+    sandbox:"/sandbox"
 };

@@ -30,8 +30,8 @@
     "fontSizeHint": "Adjust text scale",
     "fontSmall": "A-",
     "fontNormal": "A",
-    "fontLarge": "A+"
-
+    "fontLarge": "A+",
+    "soundHint": "Turn interface sounds on or off"
   },
   "UserMenu": {
     "ariaLabel": "User menu",

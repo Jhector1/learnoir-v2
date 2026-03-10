@@ -1,4 +1,3 @@
-// src/components/HeaderSlick.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -33,13 +32,12 @@ async function hardLogout(locale: string) {
   window.location.href = `/api/auth/keycloak-logout?postLogoutRedirect=${encodeURIComponent(`/${locale}`)}`;
 }
 
-
 const FONT_SIZE_STORAGE_KEY = "APP_FONT_SIZE_PX";
 const FONT_SIZE_DEFAULT = 16;
 const FONT_SIZE_OPTIONS = [16, 20, 24] as const;
+const START_SESSION_HREF = "/sandbox";
 
 function clampFontPx(x: number) {
-  // keep it sane (and consistent with options)
   if (x <= 16) return 16;
   if (x <= 20) return 20;
   return 24;
@@ -64,7 +62,11 @@ function FontSizePicker(props: {
   ];
 
   return (
-      <div role="radiogroup" aria-label="Font size" className="inline-flex rounded-xl border border-neutral-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+      <div
+          role="radiogroup"
+          aria-label="Font size"
+          className="grid w-full max-w-full grid-cols-3 gap-1 rounded-xl border border-neutral-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/5 sm:w-auto"
+      >
         {items.map((it) => {
           const active = it.px === value;
           return (
@@ -75,8 +77,8 @@ function FontSizePicker(props: {
                   aria-checked={active}
                   onClick={() => onChange(it.px)}
                   className={cn(
-                      "rounded-lg px-2.5 py-1 text-xs font-black tracking-tight transition",
-                      "focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:focus:ring-white/20",
+                      "min-w-0 rounded-lg px-2 py-2 text-[11px] font-black tracking-tight transition sm:px-2.5 sm:py-1 sm:text-xs",
+                      "truncate focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:focus:ring-white/20",
                       active
                           ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
                           : "text-neutral-700 hover:bg-neutral-100 dark:text-white/70 dark:hover:bg-white/10"
@@ -94,11 +96,10 @@ function SettingsMenu() {
   const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Font size state (base rem size)
   const [fontPx, setFontPx] = useState<number>(FONT_SIZE_DEFAULT);
 
-  // Load saved font size once
   useEffect(() => {
     try {
       const raw = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
@@ -111,14 +112,11 @@ function SettingsMenu() {
     }
   }, []);
 
-  // Persist + apply whenever it changes
   useEffect(() => {
     applyBaseFontSize(fontPx);
     try {
       localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(fontPx));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [fontPx]);
 
   useEffect(() => {
@@ -155,63 +153,94 @@ function SettingsMenu() {
         </button>
 
         {open ? (
-            <div role="menu" className={cn("ui-menu-panel", "overflow-visible")}>
-              <div className="border-b border-neutral-200 px-4 py-3 dark:border-white/10">
-                <div className="text-sm font-black tracking-tight text-neutral-900 dark:text-white">
-                  {t("settings")}
+            <>
+              <div
+                  className="fixed inset-0 z-[69] bg-black/20 backdrop-blur-[1px] md:hidden"
+                  onClick={() => setOpen(false)}
+                  aria-hidden="true"
+              />
+
+              <div
+                  ref={panelRef}
+                  role="menu"
+                  className={cn(
+                      "fixed left-3 right-3 top-[4.5rem] z-[70]",
+                      "max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-3xl border border-neutral-200 bg-white shadow-2xl",
+                      "dark:border-white/10 dark:bg-neutral-950",
+                      "md:absolute md:right-0 md:left-auto md:top-full md:mt-2",
+                      "md:w-[min(26rem,calc(100vw-2rem))] md:max-w-[calc(100vw-2rem)]"
+                  )}
+              >
+                <div className="border-b border-neutral-200 px-4 py-3 dark:border-white/10">
+                  <div className="text-sm font-black tracking-tight text-neutral-900 dark:text-white">
+                    {t("settings")}
+                  </div>
+                  <div className="mt-0.5 text-xs text-neutral-600 dark:text-white/60">
+                    {t("settingsSubtitle")}
+                  </div>
                 </div>
-                <div className="mt-0.5 text-xs text-neutral-600 dark:text-white/60">
-                  {t("settingsSubtitle")}
+
+                <div className="grid gap-3 p-3">
+                  <div className="ui-menu-section min-w-0">
+                    <div className="ui-menu-label">{t("theme")}</div>
+                    <div className="mt-2 flex min-w-0 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 text-xs text-neutral-600 dark:text-white/60">
+                        {t("themeHint")}
+                      </div>
+                      <div className="shrink-0">
+                        <ThemeToggle compact />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ui-menu-section min-w-0">
+                    <div className="ui-menu-label">{t("fontSize")}</div>
+                    <div className="mt-2 flex min-w-0 flex-col items-start gap-3">
+                      <div className="min-w-0 text-xs text-neutral-600 dark:text-white/60">
+                        {t("fontSizeHint")}
+                      </div>
+                      <FontSizePicker
+                          value={fontPx}
+                          onChange={(px) => setFontPx(clampFontPx(px))}
+                          labels={{
+                            small: t("fontSmall"),
+                            normal: t("fontNormal"),
+                            large: t("fontLarge"),
+                          }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="ui-menu-section min-w-0">
+                    <div className="ui-menu-label">{t("language")}</div>
+                    <div className="mt-2 min-w-0">
+                      <LocaleSwitcher compact className="w-full min-w-0" />
+                    </div>
+                  </div>
+
+                  <div className="ui-menu-section min-w-0">
+                    <div className="ui-menu-label">{t("sound")}</div>
+                    <div className="mt-2 flex min-w-0 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0 text-xs text-neutral-600 dark:text-white/60">
+                        {t("soundHint")}
+                      </div>
+                      <div className="shrink-0">
+                        <SoundToggle />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="button" onClick={() => setOpen(false)} className="ui-menu-closebtn">
+                    {t("close")}
+                  </button>
                 </div>
               </div>
-
-              <div className="grid gap-3 p-3 overflow-visible">
-                <div className={cn("ui-menu-section", "overflow-visible")}>
-                  <div className="ui-menu-label">{t("theme")}</div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="text-xs text-neutral-600 dark:text-white/60">{t("themeHint")}</div>
-                    <ThemeToggle />
-                  </div>
-                </div>
-
-                {/* ✅ NEW: Font size */}
-                <div className={cn("ui-menu-section", "overflow-visible")}>
-                  <div className="ui-menu-label">{t("fontSize")}</div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="text-xs text-neutral-600 dark:text-white/60">{t("fontSizeHint")}</div>
-                    <FontSizePicker
-                        value={fontPx}
-                        onChange={(px) => setFontPx(clampFontPx(px))}
-                        labels={{
-                          small: t("fontSmall"),
-                          normal: t("fontNormal"),
-                          large: t("fontLarge"),
-                        }}
-                    />
-                  </div>
-                </div>
-
-                <div className={cn("ui-menu-section", "overflow-visible")}>
-                  <div className="ui-menu-label">{t("language")}</div>
-                  <div className="mt-2 pt-1 overflow-visible">
-                    <LocaleSwitcher />
-                  </div>
-                </div>
-
-                <div className={cn("ui-menu-section", "overflow-visible")}>
-                  <div className="ui-menu-label">{t("sound")}</div>
-                  <SoundToggle />
-                </div>
-
-                <button type="button" onClick={() => setOpen(false)} className="ui-menu-closebtn">
-                  {t("close")}
-                </button>
-              </div>
-            </div>
+            </>
         ) : null}
       </div>
   );
 }
+
 export default function HeaderSlick({
                                       brand = "Learnoir",
                                       badge = "BETA",
@@ -225,11 +254,9 @@ export default function HeaderSlick({
   brand?: string;
   badge?: string;
   isBillingStatus?: boolean;
-
   isNav?: boolean;
   isUser?: boolean;
   isSetting?: boolean;
-
   slot?: React.ReactNode;
   SlotComponent?: React.ComponentType<HeaderSlotCtx>;
 }) {
@@ -290,11 +317,11 @@ export default function HeaderSlick({
     const update = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const wrap = navWrapRef.current;
-        const labelEl = labelRefs.current[activeIndex];
-        if (!wrap || !labelEl) return;
+        const wrapNow = navWrapRef.current;
+        const labelNow = labelRefs.current[activeIndex];
+        if (!wrapNow || !labelNow) return;
 
-        const pill = labelEl.parentElement as HTMLElement | null;
+        const pill = labelNow.parentElement as HTMLElement | null;
         if (!pill) return;
 
         const left = pill.offsetLeft;
@@ -325,7 +352,7 @@ export default function HeaderSlick({
     };
   }, [activeIndex, locale, pathname, NAV.length, isNav]);
 
-  const headerShell = cn("ui-header-shell", elevated && "ui-header-shell--elevated");
+  const headerShell = cn("ui-header-shell overflow-visible", elevated && "ui-header-shell--elevated");
 
   const mobileItem = (isActive: boolean) =>
       cn("ui-mobileitem", isActive ? "ui-mobileitem--active" : "ui-mobileitem--idle");
@@ -344,14 +371,12 @@ export default function HeaderSlick({
   }, [callbackUrl]);
 
   return (
-      <header className="sticky top-0 z-50">
+      <header className="sticky top-0 z-50 overflow-visible">
         <div className={headerShell}>
-          <div className="mx-auto px-4 md:px-6">
-            {/* MAIN ROW */}
-            <div className="flex h-16 items-center gap-3">
-              {/* LEFT: brand + billing badge */}
-              <div className="flex min-w-0 items-center gap-3">
-                <Link href="/" className="group flex min-w-0 items-center gap-2">
+          <div className="mx-auto overflow-visible px-4 md:px-6">
+            <div className="flex h-16 items-center gap-2 overflow-visible sm:gap-3 lg:gap-4">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <Link href="/" className="group flex min-w-0 items-center gap-2 sm:gap-3">
                   <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
                     <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(120%_120%_at_30%_20%,rgba(122,162,255,0.18)_0%,rgba(255,107,214,0.08)_35%,transparent_70%)] opacity-80" />
                     <span className="relative text-sm font-black tracking-tight text-neutral-900 dark:text-white">L</span>
@@ -365,22 +390,27 @@ export default function HeaderSlick({
                     >
                       {brand}
                     </span>
-                      <span className="shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-2 py-[2px] text-[10px] font-extrabold text-neutral-700 dark:border-white/10 dark:bg-white/10 dark:text-white/70">
+
+                      <span className="hidden shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-2 py-[2px] text-[10px] font-extrabold text-neutral-700 dark:border-white/10 dark:bg-white/10 dark:text-white/70 sm:inline-flex">
                       {badge}
                     </span>
                     </div>
-                    <div className="truncate text-[11px] font-semibold text-neutral-500 dark:text-white/55">
+
+                    <div className="hidden truncate text-[11px] font-semibold text-neutral-500 dark:text-white/55 sm:block">
                       {t("tagline")}
                     </div>
                   </div>
                 </Link>
 
-                {headlineBadge && isBillingStatus ? <Badge tone={headlineBadge.tone}>{headlineBadge.text}</Badge> : null}
+                {headlineBadge && isBillingStatus ? (
+                    <div className="hidden md:block">
+                      <Badge tone={headlineBadge.tone}>{headlineBadge.text}</Badge>
+                    </div>
+                ) : null}
               </div>
 
-              {/* ✅ DESKTOP SLOT (CENTER) */}
               {slotNode ? (
-                  <div className="hidden md:flex flex-1 min-w-0 justify-center">
+                  <div className="hidden xl:flex min-w-0 flex-1 justify-center">
                     <div
                         className={cn(
                             "max-w-full min-w-0 px-2",
@@ -392,11 +422,10 @@ export default function HeaderSlick({
                     </div>
                   </div>
               ) : (
-                  <div className="hidden md:block flex-1" />
+                  <div className="hidden xl:block flex-1" />
               )}
 
-              {/* DESKTOP NAV */}
-              <nav className="hidden items-center gap-2 md:flex">
+              <nav className="hidden items-center gap-2 lg:flex">
                 {isNav && (
                     <div className="ui-navcard">
                       <div className="ui-navglow" />
@@ -432,7 +461,7 @@ export default function HeaderSlick({
                 )}
 
                 {isNav && (
-                    <Link href="/sandbox" className="ui-cta">
+                    <Link href={START_SESSION_HREF} className="hidden xl:inline-flex ui-cta">
                       {t("startSession")}
                     </Link>
                 )}
@@ -456,8 +485,7 @@ export default function HeaderSlick({
                     ))}
               </nav>
 
-              {/* MOBILE: settings + menu */}
-              <div className="flex items-center gap-2 md:hidden ml-auto">
+              <div className="ml-auto flex items-center gap-2 lg:hidden">
                 {isSetting && <SettingsMenu />}
                 {(isNav || isUser) && (
                     <button
@@ -472,14 +500,12 @@ export default function HeaderSlick({
               </div>
             </div>
 
-            {/* ✅ MOBILE SLOT ROW (under header, NOT inside brand row) */}
             {slotNode ? (
-                <div className="md:hidden pb-2 -mt-1">
-                  <div className="rounded-2xl border border-neutral-200/70 bg-white/60 backdrop-blur px-2 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="xl:hidden -mt-1 pb-2">
+                  <div className="rounded-2xl border border-neutral-200/70 bg-white/60 px-2 py-2 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
                     <div
                         className={cn(
-                            "flex items-center gap-2",
-                            "overflow-x-auto",
+                            "flex items-center gap-2 overflow-x-auto",
                             "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         )}
                     >
@@ -489,11 +515,10 @@ export default function HeaderSlick({
                 </div>
             ) : null}
 
-            {/* MOBILE PANEL */}
             {(isNav || isUser) && (
                 <div
                     className={cn(
-                        "md:hidden overflow-hidden transition-[max-height,opacity] duration-300",
+                        "overflow-hidden transition-[max-height,opacity] duration-300 lg:hidden",
                         open ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
                     )}
                 >
@@ -510,7 +535,7 @@ export default function HeaderSlick({
                           })}
 
                       {isNav && (
-                          <Link href="/practice" className={cn("ui-cta", "px-3 py-3 text-sm")}>
+                          <Link href={START_SESSION_HREF} className={cn("ui-cta", "px-3 py-3 text-sm")}>
                             {t("startSession")}
                           </Link>
                       )}

@@ -1,5 +1,7 @@
 {
   "LocaleSwitcher": {
+    "changing": "Ap chanje...",
+    "changingTo": "Ap chanje pou {locale}...",
     "ariaLabel": "Chanjè lang",
     "switchTo": "Chanje pou {locale}",
     "confirm": {

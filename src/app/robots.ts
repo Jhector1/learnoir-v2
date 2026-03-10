@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import {ROUTES} from "@/utils";
+import { ROUTES } from "@/utils";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://zoeskoul.com";
 
@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
                     ROUTES.contact,
                     ROUTES.privacy,
                     ROUTES.terms,
+                    ROUTES.sandbox,
                 ],
                 disallow: [
                     "/api/",

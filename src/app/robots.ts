@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { ROUTES } from "@/utils";
-
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://zoeskoul.com";
+import { SITE_URL } from "@/lib/seo/site";
 
 export default function robots(): MetadataRoute.Robots {
     return {
@@ -14,8 +13,7 @@ export default function robots(): MetadataRoute.Robots {
                     ROUTES.pricing,
                     ROUTES.contact,
                     ROUTES.privacy,
-                    ROUTES.terms,
-                    ROUTES.sandbox,
+                    ROUTES.terms
                 ],
                 disallow: [
                     "/api/",
@@ -24,11 +22,11 @@ export default function robots(): MetadataRoute.Robots {
                     "/assignments",
                     ROUTES.signIn,
                     ROUTES.review,
-                    ROUTES.authenticate,
-                ],
-            },
+                    ROUTES.authenticate
+                ]
+            }
         ],
         sitemap: `${SITE_URL}/sitemap.xml`,
-        host: SITE_URL,
+        host: SITE_URL
     };
 }

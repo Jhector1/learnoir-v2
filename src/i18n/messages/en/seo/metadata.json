@@ -1,0 +1,105 @@
+{
+"seo":{"site": {
+    "name": "{appName}",
+    "shortName": "{appName}",
+    "defaultOgAlt": "{appName} learning platform"
+  },
+  "shared": {
+    "keywords": [
+      "{appName}",
+      "Learnoir",
+      "programming",
+      "python",
+      "linear algebra",
+      "math",
+      "AI",
+      "cybersecurity",
+      "languages",
+      "interactive learning",
+      "online learning",
+      "coding practice"
+    ]
+  },
+  "routes": {
+    "home": {
+      "title": "{appName} — Learn programming, math, AI, languages, and more",
+      "description": "{appName} is a multilingual learning platform for programming, math, AI, cybersecurity, and language practice with interactive lessons, practice modules, and guided learning paths.",
+      "ogTitle": "{appName} — Learn programming, math, AI, languages, and more",
+      "ogDescription": "Multilingual learning platform with interactive lessons, guided practice, and structured learning paths.",
+      "twitterTitle": "{appName} — Learn programming, math, AI, languages, and more",
+      "twitterDescription": "Interactive lessons, guided practice, and multilingual learning paths."
+    },
+    "billing": {
+      "title": "Pricing — {appName}",
+      "description": "Explore {appName} plans for learners and unlock guided learning paths, practice modules, and multilingual educational content.",
+      "ogTitle": "{appName} Pricing",
+      "ogDescription": "Compare {appName} plans and unlock guided learning paths and practice modules.",
+      "twitterTitle": "Pricing — {appName}",
+      "twitterDescription": "Explore {appName} plans for learners."
+    },
+    "sandbox": {
+      "title": "Sandbox — {appName}",
+      "description": "Explore public {appName} demos and experiments.",
+      "ogTitle": "Sandbox — {appName}",
+      "ogDescription": "Public demos and experiments from {appName}.",
+      "twitterTitle": "Sandbox — {appName}",
+      "twitterDescription": "Explore public demos and experiments."
+    },
+    "contact": {
+      "title": "Contact — {appName}",
+      "description": "Contact {appName} for support, partnerships, and questions about the learning platform.",
+      "ogTitle": "Contact {appName}",
+      "ogDescription": "Get in touch with {appName}.",
+      "twitterTitle": "Contact — {appName}",
+      "twitterDescription": "Reach out to {appName}."
+    },
+    "privacy": {
+      "title": "Privacy Policy — {appName}",
+      "description": "Read the {appName} privacy policy and learn how user data is handled across the platform.",
+      "ogTitle": "Privacy Policy — {appName}",
+      "ogDescription": "Learn how {appName} handles user data.",
+      "twitterTitle": "Privacy Policy — {appName}",
+      "twitterDescription": "Learn how {appName} handles user data."
+    },
+    "terms": {
+      "title": "Terms of Service — {appName}",
+      "description": "Read the {appName} terms of service for using the platform, content, and learning features.",
+      "ogTitle": "Terms of Service — {appName}",
+      "ogDescription": "Read the terms for using {appName}.",
+      "twitterTitle": "Terms of Service — {appName}",
+      "twitterDescription": "Read the terms for using {appName}."
+    }
+  },
+  "subjects": {
+    "python": {
+      "title": "Learn Python — {appName}",
+      "description": "Start learning Python with interactive lessons, guided practice, and structured beginner-friendly modules.",
+      "ogTitle": "Learn Python — {appName}",
+      "ogDescription": "Interactive Python learning with lessons and guided practice."
+    },
+    "linear-algebra": {
+      "title": "Learn Linear Algebra — {appName}",
+      "description": "Build strong foundations in vectors, matrices, transformations, and problem solving with guided lessons and practice.",
+      "ogTitle": "Learn Linear Algebra — {appName}",
+      "ogDescription": "Guided linear algebra lessons with structured practice."
+    },
+    "cybersecurity": {
+      "title": "Learn Cybersecurity — {appName}",
+      "description": "Explore cybersecurity foundations with structured lessons, guided practice, and practical learning paths.",
+      "ogTitle": "Learn Cybersecurity — {appName}",
+      "ogDescription": "Cybersecurity foundations with structured practice."
+    },
+    "haitian-creole": {
+      "title": "Learn Haitian Creole — {appName}",
+      "description": "Practice Haitian Creole with guided lessons, vocabulary, listening, and structured language learning paths.",
+      "ogTitle": "Learn Haitian Creole — {appName}",
+      "ogDescription": "Structured Haitian Creole learning with guided practice."
+    },
+    "ai-chatgpt-kickstart": {
+      "title": "Learn AI and ChatGPT — {appName}",
+      "description": "Build practical AI literacy with guided lessons on ChatGPT, prompting, safe use, and real-world workflows.",
+      "ogTitle": "Learn AI and ChatGPT — {appName}",
+      "ogDescription": "Practical AI learning with guided lessons and safe workflows."
+    }
+  }}
+}

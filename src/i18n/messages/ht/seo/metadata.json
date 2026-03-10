@@ -1,0 +1,105 @@
+{
+  "site": {
+    "name": "{appName}",
+    "shortName": "{appName}",
+    "defaultOgAlt": "Platfòm aprantisaj {appName}"
+  },
+  "shared": {
+    "keywords": [
+      "{appName}",
+      "Learnoir",
+      "pwogramasyon",
+      "python",
+      "aljèb lineyè",
+      "matematik",
+      "IA",
+      "sekirite enfòmatik",
+      "lang",
+      "aprantisaj entèaktif",
+      "aprantisaj sou entènèt",
+      "egzèsis kodaj"
+    ]
+  },
+  "routes": {
+    "home": {
+      "title": "{appName} — Aprann pwogramasyon, matematik, IA, lang ak plis toujou",
+      "description": "{appName} se yon platfòm aprantisaj miltilang pou pwogramasyon, matematik, IA, sekirite enfòmatik ak lang, ak leson entèaktif, modil pratik ak chemen aprantisaj gide.",
+      "ogTitle": "{appName} — Aprann pwogramasyon, matematik, IA, lang ak plis toujou",
+      "ogDescription": "Platfòm aprantisaj miltilang ak leson entèaktif, pratik gide ak chemen aprantisaj estriktire.",
+      "twitterTitle": "{appName} — Aprann pwogramasyon, matematik, IA, lang ak plis toujou",
+      "twitterDescription": "Leson entèaktif, pratik gide ak chemen aprantisaj miltilang."
+    },
+    "billing": {
+      "title": "Pri yo — {appName}",
+      "description": "Gade plan {appName} yo pou elèv yo epi ouvri chemen aprantisaj gide, modil pratik ak kontni edikatif miltilang.",
+      "ogTitle": "Pri {appName}",
+      "ogDescription": "Konpare plan {appName} yo epi ouvri chemen aprantisaj gide ak modil pratik.",
+      "twitterTitle": "Pri yo — {appName}",
+      "twitterDescription": "Gade plan {appName} yo pou elèv yo."
+    },
+    "sandbox": {
+      "title": "Sandbox — {appName}",
+      "description": "Eksplore demonstrasyon piblik ak eksperyans {appName} yo.",
+      "ogTitle": "Sandbox — {appName}",
+      "ogDescription": "Demonstrasyon piblik ak eksperyans {appName} yo.",
+      "twitterTitle": "Sandbox — {appName}",
+      "twitterDescription": "Eksplore demonstrasyon piblik ak eksperyans yo."
+    },
+    "contact": {
+      "title": "Kontak — {appName}",
+      "description": "Kontakte {appName} pou sipò, patenarya ak kestyon sou platfòm aprantisaj la.",
+      "ogTitle": "Kontakte {appName}",
+      "ogDescription": "Antre an kontak ak {appName}.",
+      "twitterTitle": "Kontak — {appName}",
+      "twitterDescription": "Antre an kontak ak {appName}."
+    },
+    "privacy": {
+      "title": "Règleman sou vi prive — {appName}",
+      "description": "Li règleman sou vi prive {appName} la epi konprann kijan done itilizatè yo jere sou platfòm nan.",
+      "ogTitle": "Règleman sou vi prive — {appName}",
+      "ogDescription": "Konprann kijan {appName} jere done itilizatè yo.",
+      "twitterTitle": "Règleman sou vi prive — {appName}",
+      "twitterDescription": "Konprann kijan {appName} jere done itilizatè yo."
+    },
+    "terms": {
+      "title": "Kondisyon itilizasyon — {appName}",
+      "description": "Li kondisyon itilizasyon {appName} yo pou platfòm nan, kontni an ak fonksyon aprantisaj yo.",
+      "ogTitle": "Kondisyon itilizasyon — {appName}",
+      "ogDescription": "Li kondisyon itilizasyon {appName} yo.",
+      "twitterTitle": "Kondisyon itilizasyon — {appName}",
+      "twitterDescription": "Li kondisyon itilizasyon {appName} yo."
+    }
+  },
+  "subjects": {
+    "python": {
+      "title": "Aprann Python — {appName}",
+      "description": "Kòmanse aprann Python ak leson entèaktif, pratik gide ak modil estriktire pou debutan.",
+      "ogTitle": "Aprann Python — {appName}",
+      "ogDescription": "Aprantisaj Python ak leson entèaktif ak pratik gide."
+    },
+    "linear-algebra": {
+      "title": "Aprann Aljèb Lineyè — {appName}",
+      "description": "Bati bon baz nan vektè, matris, transfòmasyon ak rezolisyon pwoblèm ak leson gide ak pratik.",
+      "ogTitle": "Aprann Aljèb Lineyè — {appName}",
+      "ogDescription": "Leson aljèb lineyè ak pratik estriktire."
+    },
+    "cybersecurity": {
+      "title": "Aprann Sekirite Enfòmatik — {appName}",
+      "description": "Dekouvri baz sekirite enfòmatik ak leson estriktire, pratik gide ak chemen aprantisaj pratik.",
+      "ogTitle": "Aprann Sekirite Enfòmatik — {appName}",
+      "ogDescription": "Baz sekirite enfòmatik ak pratik estriktire."
+    },
+    "haitian-creole": {
+      "title": "Aprann Kreyòl Ayisyen — {appName}",
+      "description": "Pratike Kreyòl Ayisyen ak leson gide, vokabilè, koute ak chemen aprantisaj estriktire.",
+      "ogTitle": "Aprann Kreyòl Ayisyen — {appName}",
+      "ogDescription": "Aprantisaj Kreyòl Ayisyen ak pratik gide."
+    },
+    "ai-chatgpt-kickstart": {
+      "title": "Aprann IA ak ChatGPT — {appName}",
+      "description": "Bati konpetans pratik nan IA ak leson gide sou ChatGPT, prompting, itilizasyon an sekirite ak workflow reyèl.",
+      "ogTitle": "Aprann IA ak ChatGPT — {appName}",
+      "ogDescription": "Aprantisaj pratik sou IA ak leson gide ak workflow an sekirite."
+    }
+  }
+}

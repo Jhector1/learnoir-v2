@@ -6,6 +6,9 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/utils";
+import {AppLocale} from "@/lib/seo/types";
+import {getRouteSeo, getSharedSeo} from "@/lib/seo/getSeo";
+import {buildMetadata} from "@/lib/seo/buildMetadata";
 
 function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -314,25 +317,48 @@ function HeroPhotoMosaic({
 
 /* ---------------------------------- metadata ---------------------------------- */
 
-export async function generateMetadata({
-                                         params,
-                                       }: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "Home" });
-  const appName = process.env.APP_NAME ?? "Learnoir";
+// export async function generateMetadata({
+//                                          params,
+//                                        }: {
+//   params: Promise<{ locale: string }>;
+// }): Promise<Metadata> {
+//   const { locale } = await params;
+//   const t = await getTranslations({ locale, namespace: "Home" });
+//   const appName = process.env.APP_NAME ?? "Learnoir";
+//
+//   const title = t("meta.title", { appName });
+//   const description = t("meta.description");
+//
+//   return {
+//     title,
+//     description,
+//     applicationName: process.env.APP_NAME,
+//     openGraph: { title, description, type: "website" },
+//     twitter: { card: "summary_large_image", title, description },
+//   };
+// }
 
-  const title = t("meta.title", { appName });
-  const description = t("meta.description");
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const l = locale as AppLocale;
 
-  return {
-    title,
-    description,
-    applicationName: process.env.APP_NAME,
-    openGraph: { title, description, type: "website" },
-    twitter: { card: "summary_large_image", title, description },
-  };
+    const seo = await getRouteSeo(l, "home");
+    const shared = await getSharedSeo(l);
+
+    return buildMetadata({
+        locale: l,
+        path: "/",
+        title: seo.title,
+        description: seo.description,
+        keywords: shared.keywords,
+        ogTitle: seo.ogTitle,
+        ogDescription: seo.ogDescription,
+        twitterTitle: seo.twitterTitle,
+        twitterDescription: seo.twitterDescription,
+        imageAlt: shared.defaultOgAlt
+    });
 }
 
 export default async function HomePage({

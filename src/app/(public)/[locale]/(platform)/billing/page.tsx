@@ -1,6 +1,10 @@
 // src/app/(public)/[locale]/billing/page.tsx
 import React from "react";
 import BillingPageClient from "./BillingPageClient";
+import {Metadata} from "next";
+import {buildMetadata} from "@/lib/seo/buildMetadata";
+import {getRouteSeo, getSharedSeo} from "@/lib/seo/getSeo";
+import {AppLocale} from "@/lib/seo/types";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -16,6 +20,31 @@ function safeInternalPath(path?: string) {
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return "/";
     return raw.startsWith("/") ? raw : `/${raw}`;
 }
+
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const l = locale as AppLocale;
+
+    const seo = await getRouteSeo(l, "billing");
+    const shared = await getSharedSeo(l);
+
+    return buildMetadata({
+        locale: l,
+        path: "/billing",
+        title: seo.title,
+        description: seo.description,
+        keywords: shared.keywords,
+        ogTitle: seo.ogTitle,
+        ogDescription: seo.ogDescription,
+        twitterTitle: seo.twitterTitle,
+        twitterDescription: seo.twitterDescription,
+        imageAlt: shared.defaultOgAlt
+    });
+}
+
+
 
 export default async function BillingPage({
                                               searchParams,

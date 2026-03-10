@@ -77,6 +77,7 @@ async function loadBundles(locale: string) {
 
         safeJsonImport(import(`./messages/${locale}/quizblock.json`)),
         safeJsonImport(import(`./messages/${locale}/reviewNav.json`)),
+        safeJsonImport(import(`./messages/${locale}/seo/metadata.json`)),
 
         safeJsonImport(import(`./messages/${locale}/python1Modules.json`)),
         safeJsonImport(import(`./messages/${locale}/moduleSidebar.json`)),

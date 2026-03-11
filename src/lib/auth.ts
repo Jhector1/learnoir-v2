@@ -17,47 +17,59 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorization: {
         params: { scope: "openid profile email" },
       },
+
+      // Enable ONLY if you trust Keycloak email verification
+      allowDangerousEmailAccountLinking: true,
     }),
 
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // fix typo: remove the trailing "r"
+      clientId: process.env.ZOESKOUL_GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.ZOESKOUL_GOOGLE_CLIENT_SECRET!,
+
+      // Auth.js built-in automatic linking by email
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
 
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Allow safe relative redirects only
       if (url.startsWith("/") && !url.startsWith("//")) {
         return `${baseUrl}${url}`;
       }
 
-      // Allow same-origin absolute URLs only
       try {
         const parsed = new URL(url);
         if (parsed.origin === baseUrl) return url;
       } catch {
-        // Ignore parse errors and fall back safely
+        // ignore
       }
 
-      // Fallback to a safe internal page
       return `${baseUrl}/en`;
     },
 
     async jwt({ token, user, account }) {
       if (user?.id) token.uid = user.id;
 
-      // Store Keycloak id_token for proper RP-initiated logout if needed
+      if (account?.provider) {
+        token.provider = account.provider;
+      }
+
+      // Keep Keycloak id_token for RP-initiated logout
       if (account?.provider === "keycloak" && account?.id_token) {
-        (token as any).kc_id_token = account.id_token;
+        token.kc_id_token = account.id_token;
       }
 
       return token;
     },
 
     async session({ session, token }) {
-      if (session.user && (token as any).uid) {
-        (session.user as any).id = (token as any).uid as string;
+      if (session.user && token.uid) {
+        (session.user as any).id = token.uid as string;
+      }
+
+      if (session.user && token.provider) {
+        (session.user as any).provider = token.provider as string;
       }
 
       return session;

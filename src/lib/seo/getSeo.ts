@@ -46,7 +46,7 @@ export async function getSubjectSeo(
 ): Promise<SeoSubjectEntry> {
     const t = await getTranslations({
         locale,
-        namespace: `subjects.${key}`
+        namespace: `seo.subjects.${key}`
     });
 
     return {

@@ -6,7 +6,16 @@ export type SeoRouteKey =
     | "sandbox"
     | "contact"
     | "privacy"
-    | "terms";
+    | "terms"
+    | "cookies"
+    | "refund"
+    |"legal-index"
+    | "acceptable-use"
+    | "community"
+    | "dmca"
+    | "ai-policy"
+    | "academic-integrity"
+    | "data-rights"
 
 export type SeoSubjectKey =
     | "python"

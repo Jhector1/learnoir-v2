@@ -35,17 +35,35 @@ async function hardLogout(locale: string) {
 const FONT_SIZE_STORAGE_KEY = "APP_FONT_SIZE_PX";
 const FONT_SIZE_DEFAULT = 16;
 const FONT_SIZE_OPTIONS = [16, 20, 24] as const;
-const START_SESSION_HREF = "/sandbox";
 
 function clampFontPx(x: number) {
   if (x <= 16) return 16;
   if (x <= 20) return 20;
   return 24;
 }
+const START_SESSION_HREF="/sandbox"
+function readStoredFontSize() {
+  if (typeof window === "undefined") return FONT_SIZE_DEFAULT;
+
+  try {
+    const raw = window.localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) ? clampFontPx(parsed) : FONT_SIZE_DEFAULT;
+  } catch {
+    return FONT_SIZE_DEFAULT;
+  }
+}
 
 function applyBaseFontSize(px: number) {
   if (typeof document === "undefined") return;
-  document.documentElement.style.setProperty("--app-font-size", `${px}px`);
+
+  const next = clampFontPx(px);
+
+  // for CSS that uses the custom variable
+  document.documentElement.style.setProperty("--app-font-size", `${next}px`);
+
+  // for rem-based sizing across the whole app
+  document.documentElement.style.fontSize = `${next}px`;
 }
 
 function FontSizePicker(props: {
@@ -98,26 +116,27 @@ function SettingsMenu() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const [fontPx, setFontPx] = useState<number>(FONT_SIZE_DEFAULT);
+  const [fontPx, setFontPx] = useState<number>(() => readStoredFontSize());
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
-      const parsed = raw ? Number(raw) : NaN;
-      const next = Number.isFinite(parsed) ? clampFontPx(parsed) : FONT_SIZE_DEFAULT;
-      setFontPx(next);
-      applyBaseFontSize(next);
-    } catch {
-      applyBaseFontSize(FONT_SIZE_DEFAULT);
-    }
-  }, []);
-
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     applyBaseFontSize(fontPx);
+  }, [fontPx]);
+
+  useEffect(() => {
     try {
       localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(fontPx));
     } catch {}
   }, [fontPx]);
+
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key !== FONT_SIZE_STORAGE_KEY) return;
+      setFontPx(readStoredFontSize());
+    }
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -133,6 +152,7 @@ function SettingsMenu() {
 
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
@@ -240,7 +260,6 @@ function SettingsMenu() {
       </div>
   );
 }
-
 export default function HeaderSlick({
                                       brand = "Learnoir",
                                       badge = "BETA",

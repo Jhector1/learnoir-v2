@@ -1,4 +1,6 @@
 import HeaderSlick from "@/components/HeaderSlick";
+import FooterSlick from "@/components/layout/FooterSlick";
+import React from "react";
 
 export default async function PlatformLayout({
   children,
@@ -12,6 +14,7 @@ export default async function PlatformLayout({
       <div >
         <HeaderSlick brand={process.env.APP_NAME} badge="MVP" />
         {children}
+          <FooterSlick />
       </div>
     // </html>
   );

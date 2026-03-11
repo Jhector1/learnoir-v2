@@ -1,3 +1,22 @@
+// export const runtime = "nodejs";
+// export const dynamic = "force-dynamic";
+// import HomePageAvatarOnboarding from "@/app/(public)/[locale]/(learningZone)/HomeClient";
+//
+// export default async function HomePage() {
+//
+//     return (
+//        <HomePageAvatarOnboarding/>
+//     );
+// }
+
+
+
+
+
+
+
+
+
 // src/app/[locale]/page.tsx
 import React from "react";
 import type { Metadata } from "next";

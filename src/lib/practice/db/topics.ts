@@ -1,3 +1,3 @@
-export async function resolveTopicFromDb(_slug: string) {
+export async function resolveTopicFromScope(_slug: string) {
   return null;
 }

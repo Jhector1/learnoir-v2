@@ -393,8 +393,8 @@ export default function HeaderSlick({
       <header className="sticky top-0 z-50 overflow-visible">
         <div className={headerShell}>
           <div className="mx-auto overflow-visible px-4 md:px-6">
-            <div className="flex h-16 items-center gap-2 overflow-visible sm:gap-3 lg:gap-4">
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex h-16 min-w-0 items-center gap-2 overflow-visible sm:gap-3 lg:gap-4">
+              <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
                 <Link href="/" className="group flex min-w-0 items-center gap-2 sm:gap-3">
                   <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
                     <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(120%_120%_at_30%_20%,rgba(122,162,255,0.18)_0%,rgba(255,107,214,0.08)_35%,transparent_70%)] opacity-80" />
@@ -403,16 +403,16 @@ export default function HeaderSlick({
 
                   <div className="min-w-0 leading-tight">
                     <div className="flex min-w-0 items-center gap-2">
-                    <span
-                        className="min-w-0 truncate text-sm font-black tracking-tight text-neutral-900 dark:text-white/90"
-                        title={brand}
-                    >
-                      {brand}
-                    </span>
+          <span
+              className="min-w-0 truncate text-sm font-black tracking-tight text-neutral-900 dark:text-white/90"
+              title={brand}
+          >
+            {brand}
+          </span>
 
                       <span className="hidden shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-2 py-[2px] text-[10px] font-extrabold text-neutral-700 dark:border-white/10 dark:bg-white/10 dark:text-white/70 sm:inline-flex">
-                      {badge}
-                    </span>
+            {badge}
+          </span>
                     </div>
 
                     <div className="hidden truncate text-[11px] font-semibold text-neutral-500 dark:text-white/55 sm:block">
@@ -429,7 +429,7 @@ export default function HeaderSlick({
               </div>
 
               {slotNode ? (
-                  <div className="hidden xl:flex min-w-0 flex-1 justify-center">
+                  <div className="hidden min-w-0 flex-1 justify-center xl:flex">
                     <div
                         className={cn(
                             "max-w-full min-w-0 px-2",
@@ -441,10 +441,10 @@ export default function HeaderSlick({
                     </div>
                   </div>
               ) : (
-                  <div className="hidden xl:block flex-1" />
+                  <div className="hidden flex-1 xl:block" />
               )}
 
-              <nav className="hidden items-center gap-2 lg:flex">
+              <nav className="ml-auto hidden shrink-0 items-center gap-2 lg:flex">
                 {isNav && (
                     <div className="ui-navcard">
                       <div className="ui-navglow" />
@@ -464,14 +464,14 @@ export default function HeaderSlick({
                                   href={n.href}
                                   className={cn("ui-navlink", isActive ? "ui-navlink--active" : "ui-navlink--inactive")}
                               >
-                          <span
-                              ref={(el) => {
-                                labelRefs.current[i] = el;
-                              }}
-                              className="inline-block"
-                          >
-                            {n.label}
-                          </span>
+                <span
+                    ref={(el) => {
+                      labelRefs.current[i] = el;
+                    }}
+                    className="inline-block"
+                >
+                  {n.label}
+                </span>
                               </Link>
                           );
                         })}
@@ -504,7 +504,7 @@ export default function HeaderSlick({
                     ))}
               </nav>
 
-              <div className="ml-auto flex items-center gap-2 lg:hidden">
+              <div className="ml-auto flex shrink-0 items-center gap-2 lg:hidden">
                 {isSetting && <SettingsMenu />}
                 {(isNav || isUser) && (
                     <button
@@ -518,7 +518,6 @@ export default function HeaderSlick({
                 )}
               </div>
             </div>
-
             {slotNode ? (
                 <div className="xl:hidden -mt-1 pb-2">
                   <div className="rounded-2xl border border-neutral-200/70 bg-white/60 px-2 py-2 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">

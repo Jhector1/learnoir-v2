@@ -1,104 +1,67 @@
-// src/app/api/practice/route.ts
+import { NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
-import {actorKeyOf, attachGuestCookie} from "@/lib/practice/actor";
-
-import { GetParamsSchema } from "@/lib/practice/api/practiceGet/schemas";
-import { withGuestCookie } from "@/lib/practice/api/practiceGet/response";
-import { getActorWithGuest } from "@/lib/practice/api/practiceGet/actor";
-import { handlePracticeGet } from "@/lib/practice/api/practiceGet/handler";
-
-import { getLocaleFromCookie } from "@/serverUtils";
+import { actorKeyOf, attachGuestCookie } from "@/lib/practice/actor";
 import { rateLimit } from "@/lib/security/ratelimit";
-import {resolvePracticeAccess} from "@/lib/practice/access/resolvePracticeAccess";
-import {NextResponse} from "next/server";
+import { getLocaleFromCookie } from "@/serverUtils";
+import { resolvePracticeAccess } from "@/lib/practice/access/resolvePracticeAccess";
+
+import { GetParamsSchema } from "@/lib/practice/api/get/schemas";
+import { getActorWithGuest } from "@/lib/practice/api/get/services/actor.service";
+import { buildPracticeGetContext } from "@/lib/practice/api/get/context";
+import { handlePracticeGet } from "@/lib/practice/api/get/handler";
+import {
+    bodyJsonWithGuestCookie,
+    getClientIp,
+    hardenApiResponse,
+    safeSameOriginUrl,
+} from "@/lib/practice/api/shared/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* --------------------------------- helpers -------------------------------- */
-
-function hardenResponse(res: Response) {
-    // Prevent caching of gated/personalized content
-    res.headers.set("Cache-Control", "no-store, max-age=0");
-    res.headers.set("Pragma", "no-cache");
-
-    // Basic hardening
-    res.headers.set("X-Content-Type-Options", "nosniff");
-    res.headers.set("Referrer-Policy", "same-origin");
-    res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-
-    // API responses don’t need to load anything
-    res.headers.set("Content-Security-Policy", "default-src 'none'");
-
-    return res;
-}
-
-function getClientIp(req: Request) {
-    const real = req.headers.get("x-real-ip");
-    if (real) return real.trim() || "unknown";
-
-    const xff = req.headers.get("x-forwarded-for");
-    if (xff) return xff.split(",")[0]?.trim() || "unknown";
-
-    return "unknown";
-}
-function safeSameOriginReturnUrl(req: Request, input: string | null | undefined) {
-    if (!input) return null;
-
-    // Always allow relative paths
-    if (input.startsWith("/")) return input;
-
-    // Prefer a configured canonical origin if you have multiple domains
-    // e.g. APP_ORIGIN=https://learnoir.com
-    const allowedOrigin = process.env.APP_ORIGIN ?? new URL(req.url).origin;
-
-    try {
-        const u = new URL(input);
-        if (u.origin !== allowedOrigin) return null;
-        return u.pathname + u.search + u.hash;
-    } catch {
-        return null;
-    }
-}
-
-
-/* ---------------------------------- route --------------------------------- */
-
 export async function GET(req: Request) {
     const requestId = crypto.randomUUID();
 
-    // 1) Validate query params first
     const url = new URL(req.url);
     const rawParams = Object.fromEntries(url.searchParams.entries());
     const parsed = GetParamsSchema.safeParse(rawParams);
 
     if (!parsed.success) {
         const { setGuestId } = await getActorWithGuest();
-        const res = withGuestCookie(
-            { message: "Invalid query params", issues: parsed.error.issues, requestId },
+
+        const res = bodyJsonWithGuestCookie(
+            {
+                message: "Invalid query params",
+                issues: parsed.error.issues,
+                requestId,
+            },
             400,
             setGuestId,
         );
+
         res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res);
+        return res;
     }
 
     const params = parsed.data;
 
-    // 2) Actor + guest cookie handling
-    // Important: if this request is session-bound, DO NOT silently mint a new guest.
     const { actor, setGuestId } = await getActorWithGuest({
         createIfMissing: !Boolean(params.sessionId),
     });
 
-    // 3) Production-safe abuse limiting
     const ip = getClientIp(req);
     const rlKey = `practice:${actorKeyOf(actor)}:${ip}`;
 
     try {
         const rl = await rateLimit(rlKey);
+
         if (!rl.ok) {
-            const res = withGuestCookie({ message: "Too many requests", requestId }, 429, setGuestId);
+            const res = bodyJsonWithGuestCookie(
+                { message: "Too many requests", requestId },
+                429,
+                setGuestId,
+            );
 
             const retryAfterSeconds = Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000));
             res.headers.set("Retry-After", String(retryAfterSeconds));
@@ -107,65 +70,66 @@ export async function GET(req: Request) {
             res.headers.set("X-RateLimit-Reset", String(rl.resetMs));
             res.headers.set("X-Request-Id", requestId);
 
-            return hardenResponse(res);
+            return res;
         }
     } catch (e) {
         console.error("[/api/practice] ratelimit error", { requestId, e });
-        const res = withGuestCookie({ message: "Service unavailable", requestId }, 503, setGuestId);
+
+        const res = bodyJsonWithGuestCookie(
+            { message: "Service unavailable", requestId },
+            503,
+            setGuestId,
+        );
+
         res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res);
+        return res;
     }
 
-    // 4) Locale
     const locale = await getLocaleFromCookie();
 
-    // 5) Prevent open redirects
-    const safeReturnUrl = safeSameOriginReturnUrl(req, params.returnUrl ?? null);
-    const safeReturnTo = safeSameOriginReturnUrl(req, params.returnTo ?? null);
+    const safeReturnUrl = safeSameOriginUrl(req, params.returnUrl ?? null);
+    const safeReturnTo = safeSameOriginUrl(req, params.returnTo ?? null);
 
-    const preloadedSession =
-        params.sessionId
-            ? await prisma.practiceSession.findUnique({
-                where: { id: params.sessionId },
-                select: {
-                    id: true,
-                    mode: true,
-                },
-            })
-            : null;
+    const ctx = await buildPracticeGetContext({
+        prisma,
+        actor,
+        params,
+        locale,
+        safeReturnUrl,
+        safeReturnTo,
+    });
 
-    // 6) Access gate
     const access = await resolvePracticeAccess({
         prisma,
         actor,
         locale,
         req,
         params: {
-            subject: params.subject ?? null,
-            module: params.module ?? null,
-            sessionId: params.sessionId ?? null,
-            returnUrl: safeReturnUrl,
-            returnTo: safeReturnTo,
+            subject: ctx.params.subject ?? null,
+            module: ctx.params.module ?? null,
+            sessionId: ctx.params.sessionId ?? null,
+            returnUrl: ctx.params.returnUrl ?? null,
+            returnTo: ctx.params.returnTo ?? null,
         },
-        session: preloadedSession,
+        session: ctx.session,
     });
 
     if (!access.ok) {
         const res = attachGuestCookie(access.res as NextResponse, setGuestId);
         res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res as Response);
+        return hardenApiResponse(res as Response);
     }
 
     try {
-        const out = await handlePracticeGet({ prisma, actor, params, locale });
+        const out = await handlePracticeGet(ctx);
 
         const res =
             out.kind === "res"
                 ? attachGuestCookie(out.res, setGuestId)
-                : withGuestCookie(out.body, out.status, setGuestId);
+                : bodyJsonWithGuestCookie(out.body, out.status, setGuestId);
 
         res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res);
+        return hardenApiResponse(res as Response);
     } catch (err: any) {
         console.error("[/api/practice] ERROR", { requestId, err });
 
@@ -182,8 +146,8 @@ export async function GET(req: Request) {
                     requestId,
                 };
 
-        const res = withGuestCookie(body, 500, setGuestId);
+        const res = bodyJsonWithGuestCookie(body, 500, setGuestId);
         res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res);
+        return res;
     }
 }

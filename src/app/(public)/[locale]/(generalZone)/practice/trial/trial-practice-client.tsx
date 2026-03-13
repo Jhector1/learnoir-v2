@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import PracticeShell from "@/components/practice/PracticeShell";
 import { usePracticeController } from "@/features/practice/client/usePracticeController";
-import {buildTrialReturnUrl, startTrialSession} from "@/lib/onboarding/client";
+import { buildTrialHref, startTrialSession } from "@/lib/onboarding/client";
 
 type TrialPracticeClientProps = {
     locale: string;
@@ -15,7 +15,14 @@ type TrialPracticeClientProps = {
     level: string | null;
 };
 
-type GateState = "checking" | "recovering" | "ready" | "error";
+type GateState = "booting" | "checking" | "recovering" | "ready" | "error";
+
+type PreflightResult = {
+    res: Response;
+    data: any;
+};
+
+const TRIAL_LAST_SESSION_KEY = "zoeskoul.trial.lastSessionId";
 
 function clearStalePracticePointers() {
     if (typeof window === "undefined") return;
@@ -28,38 +35,6 @@ function clearStalePracticePointers() {
             window.localStorage.removeItem(key);
         }
     }
-}
-
-function buildTrialHref(args: {
-    locale: string;
-    sessionId: string;
-    subject?: string | null;
-    level?: string | null;
-}) {
-    const qs = new URLSearchParams();
-
-    const returnTo = buildTrialReturnUrl({locale: args.locale, subject: args.subject});
-
-    qs.set("sessionId", args.sessionId);
-    qs.set("returnTo", returnTo);
-
-    if (args.subject) qs.set("subject", args.subject);
-    if (args.level) qs.set("level", args.level);
-
-    return `/${encodeURIComponent(args.locale)}/practice/trial?${qs.toString()}`;
-}
-
-function TrialShellInner({ sessionId }: { sessionId: string }) {
-    const t = useTranslations("Practice");
-
-    const { shellProps } = usePracticeController({
-        sessionId,
-        subjectSlug: undefined,
-        moduleSlug: undefined,
-        isTrial: true,
-    });
-
-    return <PracticeShell {...shellProps} t={t} />;
 }
 
 function getRecoveryStorageKey(subject: string | null, level: string | null) {
@@ -83,7 +58,26 @@ function clearRecoveryCount(subject: string | null, level: string | null) {
     window.sessionStorage.removeItem(getRecoveryStorageKey(subject, level));
 }
 
-async function preflightTrialSession(sessionId: string) {
+function getStoredTrialSessionId() {
+    if (typeof window === "undefined") return null;
+    const raw = window.sessionStorage.getItem(TRIAL_LAST_SESSION_KEY);
+    const value = String(raw ?? "").trim();
+    return value || null;
+}
+
+function setStoredTrialSessionId(sessionId: string | null | undefined) {
+    if (typeof window === "undefined") return;
+    const value = String(sessionId ?? "").trim();
+
+    if (!value) {
+        window.sessionStorage.removeItem(TRIAL_LAST_SESSION_KEY);
+        return;
+    }
+
+    window.sessionStorage.setItem(TRIAL_LAST_SESSION_KEY, value);
+}
+
+async function preflightTrialSession(sessionId: string): Promise<PreflightResult> {
     const qs = new URLSearchParams({
         sessionId,
         statusOnly: "true",
@@ -105,12 +99,10 @@ async function wait(ms: number) {
 }
 
 async function verifyRecoveredSession(sessionId: string) {
-    // Retry a few times in case the fresh guest cookie needs a moment
-    // to become visible to the following request in the browser.
     for (let i = 0; i < 5; i++) {
-        const { data } = await preflightTrialSession(sessionId);
+        const { res, data } = await preflightTrialSession(sessionId);
 
-        if (data?.code !== "SESSION_RECOVERY_REQUIRED") {
+        if (res.ok && data?.code !== "SESSION_RECOVERY_REQUIRED") {
             return true;
         }
 
@@ -118,6 +110,93 @@ async function verifyRecoveredSession(sessionId: string) {
     }
 
     return false;
+}
+
+function TrialShellInner({ sessionId }: { sessionId: string }) {
+    const t = useTranslations("Practice");
+
+    const { shellProps } = usePracticeController({
+        sessionId,
+        subjectSlug: undefined,
+        moduleSlug: undefined,
+        isTrial: true,
+    });
+
+    return <PracticeShell {...shellProps} t={t} />;
+}
+
+function TrialStateCard({
+                            title,
+                            description,
+                            note,
+                            primaryAction,
+                            secondaryAction,
+                        }: {
+    title: string;
+    description: string;
+    note?: string;
+    primaryAction?: {
+        label: string;
+        onClick: () => void | Promise<void>;
+        disabled?: boolean;
+        variant?: "primary" | "ghost";
+    };
+    secondaryAction?: {
+        label: string;
+        onClick: () => void | Promise<void>;
+        disabled?: boolean;
+        variant?: "primary" | "ghost";
+    };
+}) {
+    return (
+        <div className="ui-container py-10">
+            <div className="ui-card p-6">
+                <h1 className="text-lg font-bold">{title}</h1>
+
+                <p className="mt-2 text-sm text-neutral-600 dark:text-white/70">
+                    {description}
+                </p>
+
+                {note ? (
+                    <p className="mt-2 text-xs text-neutral-500 dark:text-white/50">{note}</p>
+                ) : null}
+
+                {primaryAction || secondaryAction ? (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                        {primaryAction ? (
+                            <button
+                                type="button"
+                                onClick={() => void primaryAction.onClick()}
+                                disabled={primaryAction.disabled}
+                                className={
+                                    primaryAction.variant === "ghost"
+                                        ? "ui-btn ui-btn-ghost"
+                                        : "ui-btn ui-btn-primary"
+                                }
+                            >
+                                {primaryAction.label}
+                            </button>
+                        ) : null}
+
+                        {secondaryAction ? (
+                            <button
+                                type="button"
+                                onClick={() => void secondaryAction.onClick()}
+                                disabled={secondaryAction.disabled}
+                                className={
+                                    secondaryAction.variant === "primary"
+                                        ? "ui-btn ui-btn-primary"
+                                        : "ui-btn ui-btn-ghost"
+                                }
+                            >
+                                {secondaryAction.label}
+                            </button>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    );
 }
 
 export default function TrialPracticeClient({
@@ -128,32 +207,90 @@ export default function TrialPracticeClient({
                                             }: TrialPracticeClientProps) {
     const router = useRouter();
 
-    const [gateState, setGateState] = useState<GateState>(
-        sessionId ? "checking" : "error",
-    );
-    const [gateErr, setGateErr] = useState<string | null>(
-        sessionId ? null : "We could not find your trial session.",
-    );
+    const [storageReady, setStorageReady] = useState(false);
+    const [storedSessionId, setStoredSessionIdState] = useState<string | null>(null);
+
+    const [gateState, setGateState] = useState<GateState>("booting");
+    const [gateErr, setGateErr] = useState<string | null>(null);
+
+    useEffect(() => {
+        const stored = getStoredTrialSessionId();
+        setStoredSessionIdState(stored);
+        setStorageReady(true);
+    }, []);
+
+    useEffect(() => {
+        if (!sessionId) return;
+        setStoredTrialSessionId(sessionId);
+        setStoredSessionIdState(sessionId);
+    }, [sessionId]);
+
+    const effectiveSessionId = sessionId ?? storedSessionId ?? null;
 
     const missingRecoveryInputs = useMemo(
         () => !subject || !level,
         [subject, level],
     );
 
+    const goHome = useCallback(() => {
+        router.replace(`/${encodeURIComponent(locale)}`);
+    }, [router, locale]);
+
+    const startFreshTrial = useCallback(async () => {
+        if (!subject || !level) {
+            goHome();
+            return;
+        }
+
+        try {
+            setGateState("recovering");
+            setGateErr(null);
+
+            clearStalePracticePointers();
+            clearRecoveryCount(subject, level);
+
+            const out = await startTrialSession({
+                subject,
+                level,
+                locale,
+            });
+
+            setStoredTrialSessionId(out.sessionId);
+            setStoredSessionIdState(out.sessionId);
+
+            router.replace(
+                buildTrialHref({
+                    locale,
+                    sessionId: out.sessionId,
+                    subject,
+                    level,
+                    status: out.status,
+                    completed: out.completed,
+                }),
+            );
+        } catch (err) {
+            console.error("[trial restart]", err);
+            setGateState("error");
+            setGateErr("We couldn’t start a new trial right now. Please try again.");
+        }
+    }, [subject, level, locale, router, goHome]);
+
     useEffect(() => {
         let cancelled = false;
 
         async function run() {
-            if (!sessionId) {
+            if (!storageReady) return;
+
+            if (!effectiveSessionId) {
                 setGateState("error");
-                setGateErr("We could not find your trial session.");
+                setGateErr("We couldn’t find an active trial session for this page.");
                 return;
             }
 
             setGateState("checking");
             setGateErr(null);
 
-            const { data } = await preflightTrialSession(sessionId);
+            const { res, data } = await preflightTrialSession(effectiveSessionId);
 
             if (cancelled) return;
 
@@ -161,19 +298,18 @@ export default function TrialPracticeClient({
                 if (missingRecoveryInputs) {
                     setGateState("error");
                     setGateErr(
-                        "Your previous guest trial expired after cookies were cleared. Start a new trial from the home page.",
+                        "Your previous guest trial is no longer available. Please return home and start a new trial.",
                     );
                     return;
                 }
 
                 const attempts = getRecoveryCount(subject, level);
 
-                // hard stop to prevent infinite flashing loops
                 if (attempts >= 1) {
                     clearStalePracticePointers();
                     setGateState("error");
                     setGateErr(
-                        "We could not restore your previous guest trial automatically. Please go back home and start a new trial.",
+                        "We could not restore your previous guest trial automatically. Start a new trial to continue.",
                     );
                     return;
                 }
@@ -191,6 +327,9 @@ export default function TrialPracticeClient({
 
                 if (cancelled) return;
 
+                setStoredTrialSessionId(out.sessionId);
+                setStoredSessionIdState(out.sessionId);
+
                 const ok = await verifyRecoveredSession(out.sessionId);
 
                 if (cancelled) return;
@@ -198,7 +337,7 @@ export default function TrialPracticeClient({
                 if (!ok) {
                     setGateState("error");
                     setGateErr(
-                        "We started a fresh trial, but your browser session is still not ready. Please return home and try again.",
+                        "We started a fresh trial, but your browser session is still not ready. Please start a new trial again.",
                     );
                     return;
                 }
@@ -211,7 +350,22 @@ export default function TrialPracticeClient({
                         sessionId: out.sessionId,
                         subject,
                         level,
+                        status: out.status,
+                        completed: out.completed,
                     }),
+                );
+                return;
+            }
+
+            if (!res.ok) {
+                clearRecoveryCount(subject, level);
+
+                setGateState("error");
+                setGateErr(
+                    data?.message ??
+                    (res.status === 404
+                        ? "That trial session is no longer available. Start a new trial to continue."
+                        : "We could not open your trial session."),
                 );
                 return;
             }
@@ -230,62 +384,80 @@ export default function TrialPracticeClient({
         return () => {
             cancelled = true;
         };
-    }, [sessionId, subject, level, locale, router, missingRecoveryInputs]);
+    }, [storageReady, effectiveSessionId, subject, level, locale, router, missingRecoveryInputs]);
 
-    if (!sessionId) {
+    if (!storageReady || gateState === "booting") {
         return (
-            <div className="ui-container py-10">
-                <div className="ui-card p-6">
-                    <h1 className="text-lg font-bold">Missing trial session</h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-                        We could not find your trial session.
-                    </p>
-                </div>
-            </div>
+            <TrialStateCard
+                title="Preparing your trial"
+                description="Please wait a moment while we restore your guest session."
+            />
+        );
+    }
+
+    if (!effectiveSessionId) {
+        return (
+            <TrialStateCard
+                title="Missing trial session"
+                description={
+                    subject && level
+                        ? "We couldn’t find an active trial session for this page. Start a new trial to continue."
+                        : "We couldn’t find an active trial session for this page. Please return home and start a new trial."
+                }
+                note="Guest trials are tied to this browser and guest cookie."
+                primaryAction={
+                    subject && level
+                        ? {
+                            label: "Start new trial",
+                            onClick: startFreshTrial,
+                        }
+                        : undefined
+                }
+                secondaryAction={{
+                    label: "Go to home",
+                    onClick: goHome,
+                    variant: subject && level ? "ghost" : "primary",
+                }}
+            />
         );
     }
 
     if (gateState === "checking" || gateState === "recovering") {
         return (
-            <div className="ui-container py-10">
-                <div className="ui-card p-6">
-                    <h1 className="text-lg font-bold">
-                        {gateState === "recovering"
-                            ? "Restoring your trial"
-                            : "Preparing your trial"}
-                    </h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-                        {gateState === "recovering"
-                            ? "Your previous guest session is no longer valid, so we’re starting a fresh trial for you."
-                            : "Please wait a moment while we check your session."}
-                    </p>
-                </div>
-            </div>
+            <TrialStateCard
+                title={gateState === "recovering" ? "Restoring your trial" : "Preparing your trial"}
+                description={
+                    gateState === "recovering"
+                        ? "Your previous guest session is no longer valid, so we’re starting a fresh trial for you."
+                        : "Please wait a moment while we check your session."
+                }
+                note="Guest trials are tied to this browser and guest cookie."
+            />
         );
     }
 
     if (gateState === "error") {
         return (
-            <div className="ui-container py-10">
-                <div className="ui-card p-6">
-                    <h1 className="text-lg font-bold">Trial unavailable</h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-white/70">
-                        {gateErr ?? "We could not open your trial session."}
-                    </p>
-
-                    <div className="mt-4">
-                        <button
-                            type="button"
-                            onClick={() => router.replace(`/${encodeURIComponent(locale)}`)}
-                            className="ui-btn ui-btn-primary"
-                        >
-                            Go to home
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <TrialStateCard
+                title="Trial unavailable"
+                description={gateErr ?? "We could not open your trial session."}
+                note="Guest trials are tied to this browser and guest cookie."
+                primaryAction={
+                    subject && level
+                        ? {
+                            label: "Start new trial",
+                            onClick: startFreshTrial,
+                        }
+                        : undefined
+                }
+                secondaryAction={{
+                    label: "Go to home",
+                    onClick: goHome,
+                    variant: subject && level ? "ghost" : "primary",
+                }}
+            />
         );
     }
 
-    return <TrialShellInner sessionId={sessionId} />;
+    return <TrialShellInner sessionId={effectiveSessionId} />;
 }

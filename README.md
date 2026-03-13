@@ -173,7 +173,7 @@ export async function listSubjectsFromDb() {
 EOF
 
 cat > src/lib/practice/db/topics.ts << "EOF"
-export async function resolveTopicFromDb(_slug: string) {
+export async function resolveTopicFromScope(_slug: string) {
   return null;
 }
 EOF

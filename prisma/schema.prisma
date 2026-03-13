@@ -247,6 +247,8 @@ model PracticeQuestionInstance {
   @@index([sessionId])
   @@index([topicId, difficulty])
   @@index([purpose]) // ✅ optional but useful
+  @@index([sessionId, answeredAt])
+
 }
 
 model PracticeAttempt {
@@ -273,6 +275,10 @@ model PracticeAttempt {
   @@index([instanceId])
   @@index([userId])
   @@index([guestId])
+  @@index([instanceId, revealUsed, userId, createdAt])
+  @@index([instanceId, revealUsed, guestId, createdAt])
+  @@index([sessionId, revealUsed, createdAt])
+
 }
 
 enum AssignmentStatus {

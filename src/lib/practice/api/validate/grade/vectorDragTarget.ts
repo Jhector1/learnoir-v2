@@ -1,12 +1,11 @@
 // src/lib/practice/validate/grade/vectorDragTarget.ts
 import type { GradeResult } from ".";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
 import { closeEnough } from "../utils/math";
 import { vecToLatex } from "../utils/latex";
 
 export function gradeVectorDragTarget(args: {
-  instance: LoadedInstance;
+  instance: LoadedValidateInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;

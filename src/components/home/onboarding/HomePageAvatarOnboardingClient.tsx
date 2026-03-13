@@ -24,7 +24,7 @@ import { Button } from "@/components/home/ui/button";
 import { CardContent } from "@/components/home/ui/card";
 import { Progress } from "@/components/home/ui/progress";
 import { cn } from "@/lib/cn";
-import { saveOnboarding, sleep, startTrialSession } from "@/lib/onboarding/client";
+import {buildTrialHref, saveOnboarding, sleep, startTrialSession} from "@/lib/onboarding/client";
 import { persistLocale } from "@/lib/locale/persistLocale";
 import HeaderSlick from "@/components/HeaderSlick";
 import FooterSlick from "@/components/layout/FooterSlick";
@@ -1325,6 +1325,7 @@ export default function HomePageAvatarOnboardingClient({
         },
         [locale, t],
     );
+    const TRIAL_LAST_SESSION_KEY = "zoeskoul.trial.lastSessionId";
 
     const beginTrial = async (opts?: { subject?: string | null; level?: string | null }) => {
         const subject = opts?.subject ?? trialSubjectSlug;
@@ -1354,11 +1355,18 @@ export default function HomePageAvatarOnboardingClient({
                 locale: nextLocale,
             });
 
+            if (typeof window !== "undefined") {
+                window.sessionStorage.setItem(TRIAL_LAST_SESSION_KEY, out.sessionId);
+            }
             const href =
-                `/${encodeURIComponent(nextLocale)}/practice/trial` +
-                `?sessionId=${encodeURIComponent(out.sessionId)}` +
-                `&subject=${encodeURIComponent(subject)}` +
-                `&level=${encodeURIComponent(level)}`;
+                buildTrialHref({
+                    locale: nextLocale,
+                    sessionId: out.sessionId,
+                    subject,
+                    level,
+                    status: out.status,
+                    completed: out.completed,
+                });
 
             await redirectToTrial({ href, delayMs: 1200 });
             return;
@@ -1412,22 +1420,27 @@ export default function HomePageAvatarOnboardingClient({
                 redirectingRef.current = false;
                 setTrialBusy(true);
 
+                const subject = finishTrialSubject;
+                const level = data.level || "beginner";
+
                 const out = await startTrialSession({
-                    subject: finishTrialSubject,
-                    level: data.level || "beginner",
+                    subject,
+                    level,
                     locale: nextLocale,
                 });
 
-                const href =
-                    `/${encodeURIComponent(nextLocale)}/practice/trial` +
-                    `?sessionId=${encodeURIComponent(out.sessionId)}` +
-                    `&subject=${encodeURIComponent(finishTrialSubject)}` +
-                    `&level=${encodeURIComponent(data.level || "beginner")}`;
+                const href = buildTrialHref({
+                    locale: nextLocale,
+                    sessionId: out.sessionId,
+                    subject,
+                    level,
+                    status: out.status,
+                    completed: out.completed,
+                });
 
                 await redirectToTrial({ href, delayMs: 1200 });
                 return;
             }
-
             setCompleted(true);
             setShowOnboarding(false);
             setBubbleCollapsed(true);

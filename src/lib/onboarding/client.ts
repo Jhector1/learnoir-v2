@@ -26,12 +26,24 @@ export async function claimGuestOnboarding() {
 
 
 
+export type StartTrialSessionResponse = {
+    ok: true;
+    resumed: boolean;
+    completed: boolean;
+    status: "active" | "completed";
+    sessionId: string;
+    requestId: string;
+};
 
 export async function startTrialSession(input: {
     subject: string;
     level: string;
     locale?: string;
 }) {
+    // IMPORTANT:
+    // Use the path that matches your actual route file.
+    // If your route is src/app/api/practice/trial/route.ts, use "/api/practice/trial".
+    // If your route is src/app/api/practice/trial/start/route.ts, keep "/api/practice/trial/start".
     const res = await fetch("/api/practice/trial/start", {
         method: "POST",
         headers: {
@@ -42,17 +54,15 @@ export async function startTrialSession(input: {
         body: JSON.stringify(input),
     });
 
+    const data = await res.json().catch(() => null);
+
     if (!res.ok) {
-        throw new Error("Failed to start trial session.");
+        throw new Error(data?.message ?? "Failed to start trial session.");
     }
 
-    return res.json() as Promise<{
-        ok: true;
-        resumed?: boolean;
-        sessionId: string;
-        requestId: string;
-    }>;
+    return data as StartTrialSessionResponse;
 }
+
 export function buildTrialReturnUrl(args: {
     locale: string;
     subject?: string | null;
@@ -65,4 +75,32 @@ export function buildTrialReturnUrl(args: {
 }
 export function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+export function buildTrialHref(args: {
+    locale: string;
+    sessionId: string;
+    subject?: string | null;
+    level?: string | null;
+    status?: "active" | "completed";
+    completed?: boolean;
+}) {
+    const qs = new URLSearchParams();
+
+    const returnTo = buildTrialReturnUrl({
+        locale: args.locale,
+        subject: args.subject,
+    });
+
+    qs.set("sessionId", args.sessionId);
+    qs.set("returnTo", returnTo);
+
+    if (args.subject) qs.set("subject", args.subject);
+    if (args.level) qs.set("level", args.level);
+    if (args.status) qs.set("status", args.status);
+
+    if (typeof args.completed === "boolean") {
+        qs.set("completed", args.completed ? "1" : "0");
+    }
+
+    return `/${encodeURIComponent(args.locale)}/practice/trial?${qs.toString()}`;
 }

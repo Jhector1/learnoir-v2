@@ -1,8 +1,8 @@
 // src/lib/practice/api/validate/grade/codeInput.ts
 import { runCode } from "@/lib/code/runCode";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
-import { CodeExpectedSchema } from "../schemas";
+// import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
+import {CodeExpectedSchema, SubmitAnswer} from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";
 
 type GradeResult = {
   ok: boolean;
@@ -40,7 +40,7 @@ function pickRunError(run: any) {
 }
 
 export async function gradeCodeInput(args: {
-  instance: LoadedInstance;
+  instance: LoadedValidateInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;

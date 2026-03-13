@@ -1,8 +1,9 @@
 // src/lib/practice/api/validate/grade/dragReorder.ts
 import type { GradeResult } from ".";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+// import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
 import { z } from "zod";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";
+import {SubmitAnswer} from "@/lib/practice/types";
 
 // expectedCanon must store string IDs in exact correct order
 const DragReorderExpectedSchema = z.object({
@@ -42,7 +43,7 @@ function toIdList(v: any): string[] {
 }
 
 export function gradeDragReorder(args: {
-  instance: LoadedInstance;
+  instance: LoadedValidateInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;

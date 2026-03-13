@@ -1,6 +1,5 @@
 import type { GradeResult } from ".";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
 
 function normSentence(s: string) {
     // whitespace + punctuation spacing normalization (matches your joinNice behavior)
@@ -24,7 +23,7 @@ function pickExpected(expectedCanon: any): string | null {
 }
 
 export function gradeSentenceBuild(args: {
-    instance: LoadedInstance; // instance.kind is "word_bank_arrange" | "listen_build"
+    instance: LoadedValidateInstance; // instance.kind is "word_bank_arrange" | "listen_build"
     expectedCanon: any;
     answer: SubmitAnswer | null;
     isReveal: boolean;

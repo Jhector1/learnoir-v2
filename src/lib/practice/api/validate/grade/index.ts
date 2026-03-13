@@ -1,6 +1,5 @@
 // src/lib/practice/api/validate/grade/index.ts
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
 
 import { gradeNumeric } from "./numeric";
 import { gradeSingleChoice } from "./singleChoice";
@@ -22,7 +21,7 @@ export type GradeResult = {
 };
 
 export async function gradeInstance(args: {
-  instance: LoadedInstance;
+  instance: LoadedValidateInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;

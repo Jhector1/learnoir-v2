@@ -1,6 +1,7 @@
 import type { GradeResult } from ".";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+// import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";
+import {SubmitAnswer} from "@/lib/practice/types";
 
 function normChoice(s: string) {
     return String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -17,7 +18,7 @@ function pickExpected(expectedCanon: any): string | null {
 }
 
 export function gradeFillBlankChoice(args: {
-    instance: LoadedInstance; // kind "fill_blank_choice"
+    instance: LoadedValidateInstance; // kind "fill_blank_choice"
     expectedCanon: any;
     answer: SubmitAnswer | null;
     isReveal: boolean;

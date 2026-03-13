@@ -1,6 +1,5 @@
 import type { GradeResult } from ".";
-import type { LoadedInstance } from "../load";
-import type { SubmitAnswer } from "../schemas";
+import {LoadedValidateInstance} from "@/lib/practice/api/validate/repositories/instance.repo";import type { SubmitAnswer } from "../schemas";
 
 function norm(s: string) {
   return String(s ?? "")
@@ -10,7 +9,7 @@ function norm(s: string) {
 }
 
 export function gradeVoiceInput(args: {
-  instance: LoadedInstance;
+  instance: LoadedValidateInstance;
   expectedCanon: any;
   answer: SubmitAnswer | null;
   isReveal: boolean;

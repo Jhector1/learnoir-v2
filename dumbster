@@ -36,3 +36,24 @@ npx dotenv -e .env.development.local -- npx tsx scripts/resetBilling.ts tutoring
 
 
 
+
+## Error Type
+Console Error
+
+## Error Message
+Cannot update a component (`V`) while rendering a different component (`HomePageAvatarOnboardingClient`). To locate the bad setState() call inside `HomePageAvatarOnboardingClient`, follow the stack trace as described in https://react.dev/link/setstate-in-render
+
+Next.js version: 16.1.1 (Turbopack)
+
+
+
+
+
+
+
+
+
+
+
+
+

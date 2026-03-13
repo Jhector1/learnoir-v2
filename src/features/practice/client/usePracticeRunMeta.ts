@@ -1,7 +1,7 @@
 // src/features/practice/client/usePracticeRunMeta.ts
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Difficulty, TopicSlug } from "@/lib/practice/types";
 import { difficultyOptions } from "@/components/vectorpad/types";
@@ -19,32 +19,71 @@ export type RunMetaBase = {
 };
 
 export type RunMeta =
-  | (RunMetaBase & {
-      mode: "assignment";
-      lockDifficulty: Difficulty;
-      lockTopic: "all" | TopicSlug;
-    })
-  | (RunMetaBase & {
-      mode: "session";
-      lockDifficulty: Difficulty;
-      lockTopic: "all" | TopicSlug;
-    })
-  | (RunMetaBase & {
-      mode: "practice";
-      lockDifficulty: null;
-      lockTopic: null;
-    });
+    | (RunMetaBase & {
+  mode: "assignment";
+  lockDifficulty: Difficulty;
+  lockTopic: "all" | TopicSlug;
+})
+    | (RunMetaBase & {
+  mode: "session";
+  lockDifficulty: Difficulty;
+  lockTopic: "all" | TopicSlug;
+})
+    | (RunMetaBase & {
+  mode: "practice";
+  lockDifficulty: null;
+  lockTopic: null;
+});
 
-export function usePracticeRunMeta(args: { subjectSlug: string; moduleSlug: string }) {
-  const { subjectSlug, moduleSlug } = args;
+type UsePracticeRunMetaArgs = {
+  subjectSlug?: string;
+  moduleSlug?: string;
+};
 
+type TopicOption = {
+  id: TopicValue;
+  label: string;
+};
+
+type DifficultyOption = (typeof difficultyOptions)[number];
+
+type UsePracticeRunMetaResult = {
+  sp: ReturnType<typeof useSearchParams>;
+  run: RunMeta | null;
+  setRun: Dispatch<SetStateAction<RunMeta | null>>;
+
+  returnUrlFromQuery: string | null;
+
+  isAssignmentRun: boolean;
+  isSessionRun: boolean;
+  isLockedRun: boolean;
+  topicLocked: boolean;
+  difficultyLocked: boolean;
+
+  allowReveal: boolean;
+  maxAttempts: number;
+  showDebug: boolean;
+
+  effectiveRunModeOptions: Array<{ id: string; label: string }>;
+  effectiveSessionSizeOptions: Array<{ id: number; label: string }>;
+  effectiveTopicOptions: TopicOption[];
+  effectiveDifficultyOptions: DifficultyOption[];
+};
+
+export function usePracticeRunMeta({
+                                     subjectSlug,
+                                     moduleSlug,
+                                   }: UsePracticeRunMetaArgs): UsePracticeRunMetaResult {
   const sp = useSearchParams();
+
   const returnUrlFromQuery = useMemo(
-    () => readReturnUrlFromSearchParams(new URLSearchParams(sp.toString())),
-    [sp],
+      () => readReturnUrlFromSearchParams(new URLSearchParams(sp.toString())),
+      [sp],
   );
 
   const [run, setRun] = useState<RunMeta | null>(null);
+
+  const hasModuleContext = Boolean(subjectSlug && moduleSlug);
 
   const isAssignmentRun = run?.mode === "assignment";
   const isSessionRun = run?.mode === "session";
@@ -53,30 +92,49 @@ export function usePracticeRunMeta(args: { subjectSlug: string; moduleSlug: stri
   const topicLocked = isLockedRun || run?.lockTopic != null;
   const difficultyLocked = isLockedRun || run?.lockDifficulty != null;
 
-  const topicOptionsFixed = useTopicOptions(subjectSlug, moduleSlug);
+  // Always call hooks. Pass safe fallbacks if slugs are missing.
+  const topicOptionsFixed = useTopicOptions(subjectSlug ?? "", moduleSlug ?? "");
 
-  const effectiveTopicOptions = useMemo(() => {
+  const effectiveTopicOptions = useMemo<TopicOption[]>(() => {
+    if (!hasModuleContext) return [];
+
     if (run?.mode === "assignment" || run?.mode === "session") {
       if (run.lockTopic === "all") {
-        return [{ id: "all" as const, label: "All topics (locked)" }];
+        return [{ id: "all", label: "All topics (locked)" }];
       }
-      const only = topicOptionsFixed.find((x) => String(x.id) === String(run.lockTopic));
-      return only ? [only] : [{ id: run.lockTopic, label: String(run.lockTopic) } as any];
-    }
-    return topicOptionsFixed;
-  }, [run, topicOptionsFixed]);
 
-  const effectiveDifficultyOptions = useMemo(() => {
+      const only = topicOptionsFixed.find(
+          (x) => String(x.id) === String(run.lockTopic),
+      );
+
+      return only
+          ? [{ id: only.id as TopicValue, label: only.label }]
+          : [{ id: run.lockTopic, label: String(run.lockTopic) }];
+    }
+
+    return topicOptionsFixed.map((x) => ({
+      id: x.id as TopicValue,
+      label: x.label,
+    }));
+  }, [hasModuleContext, run, topicOptionsFixed]);
+
+  const effectiveDifficultyOptions = useMemo<DifficultyOption[]>(() => {
+    if (!hasModuleContext) return [];
+
     if (run?.mode === "assignment" || run?.mode === "session") {
-      return [{ id: run.lockDifficulty, label: `${run.lockDifficulty} (locked)` }];
+      return [
+        {
+          id: run.lockDifficulty,
+          label: `${run.lockDifficulty} (locked)`,
+        },
+      ] as DifficultyOption[];
     }
-    return difficultyOptions;
-  }, [run]);
 
-  // reveal default safety (if a sessionId is in URL but run not loaded yet)
+    return difficultyOptions;
+  }, [hasModuleContext, run]);
+
   const hasSessionInUrl = Boolean(sp.get("sessionId"));
   const allowReveal = run ? run.allowReveal : hasSessionInUrl ? false : true;
-
   const maxAttempts = run ? run.maxAttempts : 5;
   const showDebug = run ? run.showDebug : false;
 
@@ -97,6 +155,8 @@ export function usePracticeRunMeta(args: { subjectSlug: string; moduleSlug: stri
     maxAttempts,
     showDebug,
 
+    effectiveRunModeOptions: [],
+    effectiveSessionSizeOptions: [],
     effectiveTopicOptions,
     effectiveDifficultyOptions,
   };

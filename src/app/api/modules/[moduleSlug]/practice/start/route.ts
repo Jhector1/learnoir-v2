@@ -1,16 +1,16 @@
-// src/app/api/modules/[moduleSlug]/practice/start/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getActor, ensureGuestId, attachGuestCookie } from "@/lib/practice/actor";
+import { startOrResumePracticeSession } from "@/lib/practice/sessionStart";
 
 export const runtime = "nodejs";
 
 export async function POST(
-    _req: Request,
+    req: Request,
     { params }: { params: Promise<{ moduleSlug: string }> }
 ) {
   const { moduleSlug } = await params;
-  const body = await _req.json().catch(() => ({} as any));
+  const body = await req.json().catch(() => ({} as any));
 
   const raw = typeof body?.returnUrl === "string" ? body.returnUrl : null;
   const returnUrl = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
@@ -20,17 +20,6 @@ export async function POST(
   const actor = ensured.actor;
   const setGuestId = ensured.setGuestId ?? null;
 
-  const ownerWhere =
-      actor.userId ? { userId: actor.userId } :
-          actor.guestId ? { guestId: actor.guestId } :
-              null;
-
-  if (!ownerWhere) {
-    const res = NextResponse.json({ message: "Missing actor." }, { status: 400 });
-    return attachGuestCookie(res, setGuestId);
-  }
-
-  // ✅ FORCE quiz for this start route
   const preferPurpose = "quiz" as const;
 
   const mod = await prisma.practiceModule.findUnique({
@@ -59,7 +48,6 @@ export async function POST(
   }
 
   const presetId = mod.practicePresetId ?? null;
-
   const sectionIds = mod.sections.map((s) => s.id);
   const homeSection = mod.sections[0] ?? null;
 
@@ -83,59 +71,41 @@ export async function POST(
     questionCount: 15,
     allowReveal: false,
     showDebug: false,
-    preferPurpose, // ✅ return to client too (handy for debugging)
+    preferPurpose,
   };
 
-  const existing = await prisma.practiceSession.findFirst({
-    where: {
+  const resumeData: any = {};
+  if (returnUrl) resumeData.returnUrl = returnUrl;
+  if (presetId) resumeData.presetId = presetId;
+  resumeData.preferPurpose = preferPurpose;
+
+  const { session, resumed } = await startOrResumePracticeSession({
+    prisma,
+    actor,
+    findWhere: {
       status: "active",
       assignmentId: null,
       sectionId: { in: sectionIds },
-      ...ownerWhere,
     },
-    orderBy: { startedAt: "desc" },
-    select: { id: true, preferPurpose: true }, // ✅
-  });
-
-  if (existing) {
-    const data: any = {};
-
-    if (returnUrl) data.returnUrl = returnUrl;
-    if (presetId) data.presetId = presetId;
-
-    // ✅ ensure quiz on resume too
-    if (existing.preferPurpose !== preferPurpose) data.preferPurpose = preferPurpose;
-
-    if (Object.keys(data).length) {
-      await prisma.practiceSession.update({
-        where: { id: existing.id },
-        data,
-      });
-    }
-
-    const res = NextResponse.json({ sessionId: existing.id, resumed: true, ...payload });
-    return attachGuestCookie(res, setGuestId);
-  }
-
-  const created = await prisma.practiceSession.create({
-    data: {
+    resumeData,
+    createData: {
       status: "active",
       assignmentId: null,
       sectionId: homeSection.id,
-
       difficulty: "hard",
       targetCount: 15,
-
-      userId: actor.userId ?? null,
-      guestId: actor.userId ? null : actor.guestId ?? null,
       returnUrl: returnUrl ? String(returnUrl) : null,
       presetId,
-
-      preferPurpose, // ✅ FORCE quiz
+      preferPurpose,
     },
     select: { id: true },
   });
 
-  const res = NextResponse.json({ sessionId: created.id, resumed: false, ...payload });
+  const res = NextResponse.json({
+    sessionId: (session as any).id,
+    resumed,
+    ...payload,
+  });
+
   return attachGuestCookie(res, setGuestId);
 }

@@ -7,9 +7,10 @@ import { withGuestCookie } from "@/lib/practice/api/practiceGet/response";
 import { getActorWithGuest } from "@/lib/practice/api/practiceGet/actor";
 import { handlePracticeGet } from "@/lib/practice/api/practiceGet/handler";
 
-import { gatePracticeModuleAccess } from "@/lib/billing/gatePracticeModuleAccess";
 import { getLocaleFromCookie } from "@/serverUtils";
 import { rateLimit } from "@/lib/security/ratelimit";
+import {resolvePracticeAccess} from "@/lib/practice/access/resolvePracticeAccess";
+import {NextResponse} from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,45 +67,13 @@ function safeSameOriginReturnUrl(req: Request, input: string | null | undefined)
 export async function GET(req: Request) {
     const requestId = crypto.randomUUID();
 
-    // 1) Actor + guest cookie handling
-    const { actor, setGuestId } = await getActorWithGuest();
-
-    // 2) Production-safe abuse limiting (shared store)
-    // Key by actor + IP to reduce NAT collateral without being purely per-IP
-    const ip = getClientIp(req);
-    const rlKey = `practice:${actorKeyOf(actor)}:${ip}`;
-
-    try {
-        const rl = await rateLimit(rlKey);
-        if (!rl.ok) {
-            const res = withGuestCookie({ message: "Too many requests", requestId }, 429, setGuestId);
-
-            // Retry-After expects seconds
-            const retryAfterSeconds = Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000));
-            res.headers.set("Retry-After", String(retryAfterSeconds));
-
-            // Useful debugging headers
-            res.headers.set("X-RateLimit-Limit", String(rl.limit));
-            res.headers.set("X-RateLimit-Remaining", String(rl.remaining));
-            res.headers.set("X-RateLimit-Reset", String(rl.resetMs));
-
-            res.headers.set("X-Request-Id", requestId);
-            return hardenResponse(res);
-        }
-    } catch (e) {
-        // If limiter misconfigured in prod, fail closed (don’t silently remove protection)
-        console.error("[/api/practice] ratelimit error", { requestId, e });
-        const res = withGuestCookie({ message: "Service unavailable", requestId }, 503, setGuestId);
-        res.headers.set("X-Request-Id", requestId);
-        return hardenResponse(res);
-    }
-
-    // 3) Validate query params
+    // 1) Validate query params first
     const url = new URL(req.url);
     const rawParams = Object.fromEntries(url.searchParams.entries());
     const parsed = GetParamsSchema.safeParse(rawParams);
 
     if (!parsed.success) {
+        const { setGuestId } = await getActorWithGuest();
         const res = withGuestCookie(
             { message: "Invalid query params", issues: parsed.error.issues, requestId },
             400,
@@ -116,35 +85,79 @@ export async function GET(req: Request) {
 
     const params = parsed.data;
 
-    // 4) Locale
-    const locale = await getLocaleFromCookie();
-
-    // 5) Prevent open redirects via returnUrl/returnTo
-    const safeReturnUrl = safeSameOriginReturnUrl(req, params.returnUrl ?? null);
-    const safeReturnTo = safeSameOriginReturnUrl(req, params.returnTo ?? null);
-
-    // 6) Access gate (billing/entitlement)
-    const gate = await gatePracticeModuleAccess({
-        prisma,
-        actor,
-        locale,
-        subject: params.subject ?? null,
-        module: params.module ?? null,
-        sessionId: params.sessionId ?? null,
-        returnUrl: safeReturnUrl,
-        returnTo: safeReturnTo,
-        bypass: false,
+    // 2) Actor + guest cookie handling
+    // Important: if this request is session-bound, DO NOT silently mint a new guest.
+    const { actor, setGuestId } = await getActorWithGuest({
+        createIfMissing: !Boolean(params.sessionId),
     });
 
-    if (!gate.ok) {
-        const res = attachGuestCookie(gate.res, setGuestId);
+    // 3) Production-safe abuse limiting
+    const ip = getClientIp(req);
+    const rlKey = `practice:${actorKeyOf(actor)}:${ip}`;
+
+    try {
+        const rl = await rateLimit(rlKey);
+        if (!rl.ok) {
+            const res = withGuestCookie({ message: "Too many requests", requestId }, 429, setGuestId);
+
+            const retryAfterSeconds = Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000));
+            res.headers.set("Retry-After", String(retryAfterSeconds));
+            res.headers.set("X-RateLimit-Limit", String(rl.limit));
+            res.headers.set("X-RateLimit-Remaining", String(rl.remaining));
+            res.headers.set("X-RateLimit-Reset", String(rl.resetMs));
+            res.headers.set("X-Request-Id", requestId);
+
+            return hardenResponse(res);
+        }
+    } catch (e) {
+        console.error("[/api/practice] ratelimit error", { requestId, e });
+        const res = withGuestCookie({ message: "Service unavailable", requestId }, 503, setGuestId);
         res.headers.set("X-Request-Id", requestId);
         return hardenResponse(res);
     }
 
-    // 7) Handler (defense-in-depth: handler must still scope DB reads/writes by actor)
+    // 4) Locale
+    const locale = await getLocaleFromCookie();
+
+    // 5) Prevent open redirects
+    const safeReturnUrl = safeSameOriginReturnUrl(req, params.returnUrl ?? null);
+    const safeReturnTo = safeSameOriginReturnUrl(req, params.returnTo ?? null);
+
+    const preloadedSession =
+        params.sessionId
+            ? await prisma.practiceSession.findUnique({
+                where: { id: params.sessionId },
+                select: {
+                    id: true,
+                    mode: true,
+                },
+            })
+            : null;
+
+    // 6) Access gate
+    const access = await resolvePracticeAccess({
+        prisma,
+        actor,
+        locale,
+        req,
+        params: {
+            subject: params.subject ?? null,
+            module: params.module ?? null,
+            sessionId: params.sessionId ?? null,
+            returnUrl: safeReturnUrl,
+            returnTo: safeReturnTo,
+        },
+        session: preloadedSession,
+    });
+
+    if (!access.ok) {
+        const res = attachGuestCookie(access.res as NextResponse, setGuestId);
+        res.headers.set("X-Request-Id", requestId);
+        return hardenResponse(res as Response);
+    }
+
     try {
-        const out = await handlePracticeGet({ prisma, actor, params,locale });
+        const out = await handlePracticeGet({ prisma, actor, params, locale });
 
         const res =
             out.kind === "res"
@@ -156,7 +169,6 @@ export async function GET(req: Request) {
     } catch (err: any) {
         console.error("[/api/practice] ERROR", { requestId, err });
 
-        // Don’t leak internals in prod
         const body =
             process.env.NODE_ENV === "development"
                 ? {

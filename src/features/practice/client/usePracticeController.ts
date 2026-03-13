@@ -26,10 +26,17 @@ type PendingChange =
   | null;
 
 export function usePracticeController(args: {
-  subjectSlug: string;
-  moduleSlug: string;
+  subjectSlug?: string;
+  moduleSlug?: string;
+  sessionId?: string;
+  isTrial?: boolean;
 }) {
-  const { subjectSlug, moduleSlug } = args;
+  const {
+    subjectSlug,
+    moduleSlug,
+    sessionId: initialSessionId,
+    isTrial = false,
+  } = args;
 
   const t = useTranslations("Practice");
 
@@ -61,8 +68,9 @@ export function usePracticeController(args: {
   const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
   const [section, setSection] = useState<string | null>(null);
 
-  const [sessionId, setSessionId] = useState<string | null>(null);
-
+  const [sessionId, setSessionId] = useState<string | null>(
+      initialSessionId ?? null,
+  );
   const [phase, setPhase] = useState<Phase>("practice");
   const [showMissed, setShowMissed] = useState(true);
 
@@ -273,7 +281,9 @@ export function usePracticeController(args: {
 
       // ✅ remove the stale "last session" pointer
       try {
-        localStorage.removeItem(lastSessionKey(subjectSlug, moduleSlug));
+        if (subjectSlug && moduleSlug) {
+          localStorage.removeItem(lastSessionKey(subjectSlug, moduleSlug));
+        }
       } catch {}
 
       // ✅ also remove stale topic from the URL so refresh can’t re-inject it
@@ -394,31 +404,47 @@ export function usePracticeController(args: {
     () => ({
       returnUrl: completionReturnUrl,
       reviewStack: engine.reviewStack,
+      isOnboardingTrial: isTrial, // ✅ add here
+
       // ...existing props...
       excuseAndNext: (reason?: string | null) => engine.excuseAndNext?.(reason),
       skipLoadError: () => engine.skipLoadError?.(),
 
       onReturn: () => {
-        if (!completionReturnUrl) return;
-
-        const raw = String(completionReturnUrl).trim();
-
-        // ✅ block external/protocol-relative
-        if (!raw || raw.startsWith("//") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) return;
-
-        // ✅ ensure it’s an internal absolute path
-        const path = raw.startsWith("/") ? raw : `/${raw}`;
-
-        // ✅ add locale if missing
         const parts = pathname.split("/").filter(Boolean);
-        const locale = parts[0]; // since pathname is /en/... /fr/... /ht/...
-        const hasLocalePrefix = path.startsWith(`/${locale}/`) || path === `/${locale}`;
+        const locale = parts[0] || "en";
 
-        const safe = hasLocalePrefix ? path : `/${locale}${path}`;
+        const raw = String(completionReturnUrl ?? "").trim();
 
-        router.replace(safe, { scroll: false });
+        // use session-provided returnUrl first
+        if (raw && !raw.startsWith("//") && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) {
+          const path = raw.startsWith("/") ? raw : `/${raw}`;
+          const hasLocalePrefix =
+              path.startsWith(`/${locale}/`) || path === `/${locale}`;
+
+          const safe = hasLocalePrefix ? path : `/${locale}${path}`;
+          router.replace(safe, { scroll: false });
+          return;
+        }
+
+        // fallback: if this is onboarding trial and we know the subject, go to auth
+        if (isTrial && subjectSlug) {
+          const returnTo = `/${locale}/subjects/${encodeURIComponent(subjectSlug)}/modules`;
+          const qs = new URLSearchParams({
+            from: "trial",
+            subject: subjectSlug,
+            returnTo,
+          });
+
+          router.replace(`/${locale}/authenticate?${qs.toString()}`, {
+            scroll: false,
+          });
+          return;
+        }
+
+        // final safe fallback
+        router.replace(`/${locale}/subjects`, { scroll: false });
       },
-
       t,
 
       isAssignmentRun,
@@ -529,6 +555,7 @@ export function usePracticeController(args: {
       zHeldRef,
       engine.excuseAndNext,
       engine.skipLoadError,
+      isTrial, // ✅ add
 
       stack,
       idx,

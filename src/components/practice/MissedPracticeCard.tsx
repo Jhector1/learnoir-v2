@@ -1,4 +1,3 @@
-// src/components/practice/PracticeReviewList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -45,18 +44,16 @@ function statusFor(q: QItem): { key: "revealed" | "correct" | "incorrect" | "unc
 }
 
 function pillClass(tone: Tone) {
-  if (tone === "good") return "ui-pill ui-pill--good";
-  if (tone === "danger") return "ui-pill ui-pill--danger";
-  if (tone === "info") return "ui-pill ui-pill--info";
-  return "ui-pill ui-pill--neutral";
-}
-
-function cardToneClass(tone: Tone) {
-  // Uses your token utilities (semantic borders + soft tints)
-  if (tone === "good") return "ui-border-accent ui-bg-accent-soft";
-  if (tone === "danger") return "ui-border-danger ui-bg-danger-soft";
-  if (tone === "info") return "ui-border-info ui-bg-info-soft";
-  return "ui-border ui-surface";
+  if (tone === "good") {
+    return "border-emerald-500/20 bg-emerald-500/[0.10] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/[0.12] dark:text-emerald-300";
+  }
+  if (tone === "danger") {
+    return "border-rose-500/20 bg-rose-500/[0.10] text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/[0.12] dark:text-rose-300";
+  }
+  if (tone === "info") {
+    return "border-sky-500/20 bg-sky-500/[0.10] text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/[0.12] dark:text-sky-300";
+  }
+  return "border-black/5 bg-black/[0.04] text-neutral-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60";
 }
 
 function extractExpected(result: any) {
@@ -75,11 +72,10 @@ function ReadOnlyPracticeCard({
   isLockedRun: boolean;
 }) {
   const t = useTranslations("PracticeReviewList");
-  const { t: tSafe } = useTaggedT(); // safe translate (no throw)
+  const { t: tSafe } = useTaggedT();
 
   const exerciseRaw = q.exercise as Exercise | undefined;
 
-  // ✅ resolve @:... tags inside the exercise object, same style as ExerciseRenderer
   const exercise = useMemo(() => {
     if (!exerciseRaw) return null;
     return resolveDeepTagged(exerciseRaw, (key) => tSafe(key, {}, "")) as Exercise;
@@ -142,41 +138,40 @@ function ReadOnlyPracticeCard({
       st.key === "revealed"
           ? t("status.revealed", { fallback: "Revealed" } as any)
           : st.key === "correct"
-              ? t("status.correct", { fallback: "✓ Correct" } as any)
+              ? t("status.correct", { fallback: "Correct" } as any)
               : st.key === "incorrect"
-                  ? t("status.incorrect", { fallback: "✕ Not correct" } as any)
+                  ? t("status.incorrect", { fallback: "Not correct" } as any)
                   : t("status.unchecked", { fallback: "Not checked" } as any);
 
   return (
-      <div className={`rounded-2xl border p-3 ${cardToneClass(st.tone)}`}>
+      <article className="overflow-hidden rounded-2xl border border-black/5 bg-white p-3 shadow-[0_8px_24px_-20px_rgba(0,0,0,0.18)] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[11px] font-black ui-text-muted">
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-neutral-500 dark:text-white/45">
               {t("questionLabel", { n: index + 1, fallback: `Question ${index + 1}` } as any)}
               {typeof (exercise as any).topic !== "undefined" ? (
-                  <>
-                    {" "}
-                    • {String((exercise as any).topic).toUpperCase()}
-                  </>
+                  <> • {String((exercise as any).topic).toUpperCase()}</>
               ) : null}
               <> • {String(exercise.kind).replaceAll("_", " ")}</>
             </div>
 
             {exercise.title ? (
-                <div className="mt-1 text-xs font-black ui-text">{String(exercise.title)}</div>
+                <div className="mt-1 line-clamp-2 text-sm font-black text-neutral-900 dark:text-white sm:text-[15px]">
+                  {String(exercise.title)}
+                </div>
             ) : null}
           </div>
 
-          <div className={pillClass(st.tone)}>{statusLabel}</div>
+          <div
+              className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${pillClass(st.tone)}`}
+          >
+            {statusLabel}
+          </div>
         </div>
 
         {/*{exercise.prompt ? (*/}
         {/*    <MathMarkdown*/}
-        {/*        className="*/}
-        {/*    mt-2 text-sm ui-text*/}
-        {/*    [&_.katex-display]:overflow-x-auto*/}
-        {/*    [&_.katex-display]:py-2*/}
-        {/*  "*/}
+        {/*        className="mt-3 text-sm text-neutral-700 dark:text-white/75 [&_.katex-display]:overflow-x-auto [&_.katex-display]:py-2"*/}
         {/*        content={normalizeMath(String(exercise.prompt))}*/}
         {/*    />*/}
         {/*) : null}*/}
@@ -231,60 +226,67 @@ function ReadOnlyPracticeCard({
               />
           )}
 
-          {showHiddenNote ? (
-              <div className="mt-3 text-[11px] font-extrabold ui-text-muted">
-                {t("hiddenCorrect", { fallback: "Correct answer is hidden for this run." } as any)}
-              </div>
-          ) : null}
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold ui-text-muted">
-            <div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+            <div className="rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-neutral-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60">
               {t("attemptsLabel", { fallback: "Attempts:" } as any)}{" "}
-              <span className="ui-text">
+              <span className="font-black text-neutral-900 dark:text-white">
               {(q as any).attempts ?? 0}/{isLockedRun ? maxAttempts : "∞"}
             </span>
             </div>
 
-            <div className="ui-text">
-              {ok === true ? (
-                  <span className="ui-text-accent">{t("mini.correct", { fallback: "✓ Correct" } as any)}</span>
-              ) : (q as any).result ? (
-                  <span className="ui-text-danger">{t("mini.incorrect", { fallback: "✕ Not correct" } as any)}</span>
-              ) : (
-                  <span className="ui-text-muted">{t("mini.unchecked", { fallback: "Not checked yet" } as any)}</span>
-              )}
-            </div>
+            {ok === true ? (
+                <div className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.10] px-2.5 py-1 font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/[0.12] dark:text-emerald-300">
+                  ✓ Correct
+                </div>
+            ) : (q as any).result ? (
+                <div className="rounded-full border border-rose-500/20 bg-rose-500/[0.10] px-2.5 py-1 font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/[0.12] dark:text-rose-300">
+                  ✕ Not correct
+                </div>
+            ) : (
+                <div className="rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-neutral-500 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/50">
+                  {t("mini.unchecked", { fallback: "Not checked yet" } as any)}
+                </div>
+            )}
           </div>
 
+          {showHiddenNote ? (
+              <div className="mt-3 rounded-xl border border-black/5 bg-black/[0.03] px-3 py-2 text-[11px] font-semibold text-neutral-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60">
+                {t("hiddenCorrect", { fallback: "Correct answer is hidden for this run." } as any)}
+              </div>
+          ) : null}
+
           {expected || explanation ? (
-              <details className="mt-3 rounded-xl border ui-border ui-surface-2 p-3">
-                <summary className="cursor-pointer text-xs font-extrabold ui-text">
+              <details className="mt-3 rounded-xl border border-black/5 bg-black/[0.02] p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                <summary className="cursor-pointer list-none text-xs font-extrabold text-neutral-900 dark:text-white">
                   {t("details.summary", { fallback: "Show expected / explanation" } as any)}
                 </summary>
 
                 {expected ? (
-                    <div className="mt-2">
-                      <div className="text-[11px] font-black ui-text-muted">
+                    <div className="mt-3">
+                      <div className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-neutral-500 dark:text-white/45">
                         {t("details.expected", { fallback: "Expected" } as any)}
                       </div>
-                      <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] ui-text">
+                      <pre className="mt-1 whitespace-pre-wrap break-words rounded-lg bg-white px-3 py-2 text-[11px] text-neutral-700 dark:bg-black/20 dark:text-white/75">
                   {typeof expected === "string" ? expected : JSON.stringify(expected, null, 2)}
                 </pre>
                     </div>
                 ) : null}
 
                 {explanation ? (
-                    <div className="mt-3 border-t ui-border pt-3">
-                      <div className="text-[11px] font-black ui-text-muted">
+                    <div className="mt-3 border-t border-black/5 pt-3 dark:border-white/10">
+                      <div className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-neutral-500 dark:text-white/45">
                         {t("details.explanation", { fallback: "Explanation" } as any)}
                       </div>
-                      <MathMarkdown className="mt-1 text-xs ui-text" content={normalizeMath(String(explanation))} />
+                      <MathMarkdown
+                          className="mt-1 text-xs text-neutral-700 dark:text-white/75"
+                          content={normalizeMath(String(explanation))}
+                      />
                     </div>
                 ) : null}
               </details>
           ) : null}
         </div>
-      </div>
+      </article>
   );
 }
 
@@ -308,19 +310,28 @@ export default function PracticeReviewList({
 
   if (!list.length) {
     return (
-        <div className="p-4 text-xs font-extrabold ui-text-muted">
-          {showOnlyIncorrect
-              ? t("empty.incorrect", { fallback: "No incorrect questions." } as any)
-              : t("empty.all", { fallback: "No questions yet." } as any)}
+        <div className="p-6 text-center">
+          <div className="mx-auto max-w-md rounded-2xl border border-dashed border-black/10 bg-black/[0.02] px-4 py-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="text-sm font-black text-neutral-900 dark:text-white">
+              {showOnlyIncorrect
+                  ? t("empty.incorrect", { fallback: "No incorrect questions." } as any)
+                  : t("empty.all", { fallback: "No questions yet." } as any)}
+            </div>
+            <div className="mt-1 text-xs text-neutral-500 dark:text-white/50">
+              {showOnlyIncorrect
+                  ? "Everything shown here is currently correct."
+                  : "Your reviewed questions will appear here."}
+            </div>
+          </div>
         </div>
     );
   }
 
   return (
-      <div className="grid gap-3 p-4">
+      <div className="grid gap-3 p-3 sm:gap-4 sm:p-4">
         {list.map((q, i) => (
             <ReadOnlyPracticeCard
-                key={(q as any).key ?? (q as any).instanceId ?? i}
+                key={(q as any).key ?? (q as any).instanceId ?? `${i}-${showOnlyIncorrect ? "missed" : "all"}`}
                 q={q}
                 index={i}
                 maxAttempts={maxAttempts}

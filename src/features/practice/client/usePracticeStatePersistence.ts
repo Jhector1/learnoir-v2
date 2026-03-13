@@ -19,8 +19,8 @@ export type Phase = "practice" | "summary";
 export type TopicValue = TopicSlug | "all";
 
 export function usePracticeStatePersistence(args: {
-  subjectSlug: string;
-  moduleSlug: string;
+  subjectSlug?: string;
+  moduleSlug?: string;
 
   section: string | null;
   topic: TopicValue;
@@ -114,7 +114,52 @@ export function usePracticeStatePersistence(args: {
     const difficultyParam = sp.get("difficulty");
     const topicParam = sp.get("topic");
 
-    // resolve sessionId from URL OR "lastSession" pointer
+    const nextSection = sectionParam ?? null;
+
+    const nextDifficulty: Difficulty | "all" =
+        difficultyParam === "easy" ||
+        difficultyParam === "medium" ||
+        difficultyParam === "hard" ||
+        difficultyParam === "all"
+            ? difficultyParam
+            : "all";
+
+    const nextTopic = normalizeTopicValue(topicParam);
+
+    const questionCountParam = sp.get("questionCount");
+    const qcParsed = questionCountParam ? parseInt(questionCountParam, 10) : NaN;
+    const sizeFromParam = Number.isFinite(qcParsed) && qcParsed > 0 ? qcParsed : null;
+    const initialSize = sizeFromParam ?? SESSION_DEFAULT;
+
+    // No module context yet: initialize safe defaults and stop here.
+    if (!subjectSlug || !moduleSlug) {
+      resolvedSessionIdRef.current = null;
+
+      setSection(nextSection);
+      setTopic(nextTopic as TopicValue);
+      setDifficulty(nextDifficulty);
+      setSessionId(null);
+      setRun(null);
+
+      setSessionSize(initialSize);
+
+      setCompleted(false);
+      setPhase("practice");
+      setAutoSummarized(false);
+      setShowMissed(true);
+
+      setStack([]);
+      setIdx(0);
+
+      setLoadErr(null);
+
+      firstFiltersEffectRef.current = true;
+      skipUrlSyncRef.current = true;
+      setHydrated(true);
+      return;
+    }
+
+    // resolve sessionId from URL OR "last session" pointer
     let sidParam = sp.get("sessionId");
     if (!sidParam) {
       try {
@@ -125,23 +170,6 @@ export function usePracticeStatePersistence(args: {
     resolvedSessionIdRef.current = sidParam ?? null;
     if (sidParam) setSessionId(sidParam);
 
-    const questionCountParam = sp.get("questionCount");
-    const qcParsed = questionCountParam ? parseInt(questionCountParam, 10) : NaN;
-    const sizeFromParam = Number.isFinite(qcParsed) && qcParsed > 0 ? qcParsed : null;
-
-    const nextSection = sectionParam ?? null;
-
-    const nextDifficulty: Difficulty | "all" =
-      difficultyParam === "easy" ||
-      difficultyParam === "medium" ||
-      difficultyParam === "hard" ||
-      difficultyParam === "all"
-        ? (difficultyParam as any)
-        : "all";
-
-    const nextTopic = normalizeTopicValue(topicParam);
-
-    const initialSize = sizeFromParam ?? SESSION_DEFAULT;
     setSessionSize(initialSize);
 
     // load from sessionStorage (session key > canonical > legacy)
@@ -164,8 +192,8 @@ export function usePracticeStatePersistence(args: {
       const saved = loaded.payload;
 
       setSection(saved.section ?? nextSection);
-      setTopic((saved.topic ?? nextTopic) as any);
-      setDifficulty((saved.difficulty ?? nextDifficulty) as any);
+      setTopic((saved.topic ?? nextTopic) as TopicValue);
+      setDifficulty((saved.difficulty ?? nextDifficulty) as Difficulty | "all");
 
       if (saved.run?.mode) setRun(saved.run);
       setSessionId(saved.sessionId ?? sidParam ?? null);
@@ -175,26 +203,23 @@ export function usePracticeStatePersistence(args: {
       setStack(cleaned);
 
       setIdx(
-        typeof saved.idx === "number"
-          ? Math.max(0, Math.min(saved.idx, Math.max(0, cleaned.length - 1)))
-          : 0,
+          typeof saved.idx === "number"
+              ? Math.max(0, Math.min(saved.idx, Math.max(0, cleaned.length - 1)))
+              : 0,
       );
 
       const restoredSize =
-        typeof saved.sessionSize === "number" && saved.sessionSize > 0
-          ? saved.sessionSize
-          : initialSize;
+          typeof saved.sessionSize === "number" && saved.sessionSize > 0
+              ? saved.sessionSize
+              : initialSize;
       setSessionSize(restoredSize);
 
-      // ✅ FIX 1: completion should NOT depend on stack being non-empty
-      // ✅ FIX 2: don't use (bool ?? bool) patterns; include autoSummarized properly
       const savedCompleted = Boolean(
-        saved.completed ?? saved.autoSummarized ?? (saved.phase === "summary"),
+          saved.completed ?? saved.autoSummarized ?? (saved.phase === "summary"),
       );
 
       setCompleted(savedCompleted);
 
-      // ✅ If completed, always land on summary
       if (savedCompleted) {
         setAutoSummarized(true);
         setPhase("summary");
@@ -222,8 +247,8 @@ export function usePracticeStatePersistence(args: {
 
     // fallback
     setSection(nextSection);
-    setTopic(nextTopic as any);
-    setDifficulty(nextDifficulty as any);
+    setTopic(nextTopic as TopicValue);
+    setDifficulty(nextDifficulty);
 
     setCompleted(false);
     setPhase("practice");
@@ -238,13 +263,33 @@ export function usePracticeStatePersistence(args: {
     firstFiltersEffectRef.current = true;
     skipUrlSyncRef.current = true;
     setHydrated(true);
-  }, [hydrated, subjectSlug, moduleSlug]);
+  }, [
+    hydrated,
+    subjectSlug,
+    moduleSlug,
+    setSection,
+    setTopic,
+    setDifficulty,
+    setSessionId,
+    setRun,
+    setPhase,
+    setAutoSummarized,
+    setCompleted,
+    setShowMissed,
+    setStack,
+    setIdx,
+    setSessionSize,
+    setLoadErr,
+    firstFiltersEffectRef,
+    skipUrlSyncRef,
+  ]);
 
   // -----------------------------
   // PERSIST
   // -----------------------------
   useEffect(() => {
     if (!hydrated) return;
+    if (!subjectSlug || !moduleSlug) return;
 
     const payload = {
       v: STORAGE_VERSION,
@@ -268,16 +313,16 @@ export function usePracticeStatePersistence(args: {
 
     try {
       sessionStorage.setItem(
-        storageKeyForState({
-          subjectSlug,
-          moduleSlug,
-          section,
-          topic: String(topic),
-          difficulty: String(difficulty),
-          n: sessionSize,
-          sessionId,
-        }),
-        JSON.stringify(payload),
+          storageKeyForState({
+            subjectSlug,
+            moduleSlug,
+            section,
+            topic: String(topic),
+            difficulty: String(difficulty),
+            n: sessionSize,
+            sessionId,
+          }),
+          JSON.stringify(payload),
       );
     } catch {}
   }, [
@@ -301,7 +346,9 @@ export function usePracticeStatePersistence(args: {
   // remember "last session" pointer
   useEffect(() => {
     if (!hydrated) return;
+    if (!subjectSlug || !moduleSlug) return;
     if (!sessionId) return;
+
     try {
       localStorage.setItem(lastSessionKey(subjectSlug, moduleSlug), sessionId);
     } catch {}

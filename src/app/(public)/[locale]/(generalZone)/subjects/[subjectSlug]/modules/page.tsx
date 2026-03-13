@@ -1,4 +1,4 @@
-// src/app/(public)/[locale]/(learn)/subjects/[subjectSlug]/modules/page.tsx
+// /subjects/[subjectSlug]/modules/page.tsx
 import "server-only";
 
 import { prisma } from "@/lib/prisma";

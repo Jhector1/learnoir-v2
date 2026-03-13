@@ -9,10 +9,30 @@ import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 
 export type Actor = { userId: string | null; guestId: string | null };
 
-const GUEST_COOKIE = "__Host-guest";
+const SECURE_GUEST_COOKIE = "__Host-guest";
+const DEV_GUEST_COOKIE = "guest";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
-// ---- signing ----
+/* -------------------------------------------------------------------------- */
+/* cookie mode                                                                */
+/* -------------------------------------------------------------------------- */
+
+function shouldUseSecureGuestCookie() {
+  return process.env.NODE_ENV === "production";
+}
+
+function getGuestCookieName() {
+  return shouldUseSecureGuestCookie() ? SECURE_GUEST_COOKIE : DEV_GUEST_COOKIE;
+}
+
+function getReadableGuestCookieNames() {
+  // Read both so env switches do not strand old sessions unexpectedly.
+  return [SECURE_GUEST_COOKIE, DEV_GUEST_COOKIE];
+}
+
+/* -------------------------------------------------------------------------- */
+/* signing                                                                    */
+/* -------------------------------------------------------------------------- */
 
 function getGuestSecrets(): string[] {
   const cur = process.env.GUEST_COOKIE_SECRET;
@@ -74,7 +94,9 @@ function decodeGuestCookie(value: string | undefined | null): string | null {
   return null;
 }
 
-// ---- resolve authenticated user to INTERNAL Prisma User.id ----
+/* -------------------------------------------------------------------------- */
+/* resolve authenticated user to INTERNAL Prisma User.id                      */
+/* -------------------------------------------------------------------------- */
 
 async function resolveDbUserIdFromSession(): Promise<string | null> {
   const session = await auth();
@@ -102,14 +124,21 @@ async function resolveDbUserIdFromSession(): Promise<string | null> {
   return null;
 }
 
-// ---- actor ----
+/* -------------------------------------------------------------------------- */
+/* actor                                                                      */
+/* -------------------------------------------------------------------------- */
 
 export async function getActor(): Promise<Actor> {
   const userId = await resolveDbUserIdFromSession();
-
   const jar = await cookies();
-  const raw = jar.get(GUEST_COOKIE)?.value ?? null;
-  const guestId = decodeGuestCookie(raw);
+
+  let guestId: string | null = null;
+
+  for (const cookieName of getReadableGuestCookieNames()) {
+    const raw = jar.get(cookieName)?.value ?? null;
+    guestId = decodeGuestCookie(raw);
+    if (guestId) break;
+  }
 
   return { userId, guestId };
 }
@@ -119,7 +148,9 @@ export async function getActor(): Promise<Actor> {
  * - { actor } if user is logged in OR guestId already exists
  * - { actor, setGuestId } if we created a new guest id
  */
-export function ensureGuestId(actor: Actor): { actor: Actor; setGuestId?: string } {
+export function ensureGuestId(
+    actor: Actor,
+): { actor: Actor; setGuestId?: string } {
   if (actor.userId) return { actor };
   if (actor.guestId) return { actor };
 
@@ -127,18 +158,26 @@ export function ensureGuestId(actor: Actor): { actor: Actor; setGuestId?: string
   return { actor: { ...actor, guestId: newId }, setGuestId: newId };
 }
 
-export function attachGuestCookie(res: NextResponse, setGuestId?: string | null) {
+export function attachGuestCookie(
+    res: NextResponse,
+    setGuestId?: string | null,
+) {
   if (setGuestId) {
-    res.cookies.set(GUEST_COOKIE, encodeGuestCookie(setGuestId), {
+    res.cookies.set(getGuestCookieName(), encodeGuestCookie(setGuestId), {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldUseSecureGuestCookie(),
       path: "/",
       maxAge: ONE_YEAR,
     });
   }
+
   return res;
 }
+
+/* -------------------------------------------------------------------------- */
+/* hashing / rate-limit actor keys                                            */
+/* -------------------------------------------------------------------------- */
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 

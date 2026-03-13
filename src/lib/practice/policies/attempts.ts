@@ -1,5 +1,5 @@
 // src/lib/practice/policies/attempts.ts
-export type RunMode = "assignment" | "session" | "practice";
+export type RunMode = "assignment" | "session" | "practice" | "onboarding_trial";
 
 /**
  * Parse attempts from:

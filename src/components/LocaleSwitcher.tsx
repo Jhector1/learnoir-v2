@@ -7,13 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/cn";
 import ConfirmResetModal from "./practice/ConfirmResetModal";
+import {persistLocale} from "@/lib/locale/persistLocale";
 
-function persistLocale(nextLocale: string) {
-  try {
-    localStorage.setItem("learnoir:locale", nextLocale);
-  } catch {}
-  document.cookie = `NEXT_LOCALE=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
-}
+
 
 function Spinner({ className }: { className?: string }) {
   return (

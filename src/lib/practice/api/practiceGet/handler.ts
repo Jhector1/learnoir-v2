@@ -35,6 +35,7 @@ function statusOf(err: any, fallback = 500) {
 }
 import { computeMaxAttemptsCore, type RunMode } from "@/lib/practice/policies/attempts";
 import {loadPracticeTopicI18n} from "@/i18n/loadPracticeTopicI18n";
+import {isOnboardingTrialSession} from "@/lib/onboarding/trialPolicy";
 
 function buildRunMeta(args: {
     session: any | null;
@@ -43,11 +44,14 @@ function buildRunMeta(args: {
 }) {
     const { session, diff, allowRevealEffective } = args;
 
+    const isTrial = isOnboardingTrialSession(session);
     const mode: RunMode = session?.assignmentId
         ? "assignment"
-        : session?.id
-            ? "session"
-            : "practice";
+        : isTrial
+            ? "onboarding_trial"
+            : session?.id
+                ? "session"
+                : "practice";
 
     const maxAttempts = computeMaxAttemptsCore({
         mode,
@@ -358,7 +362,46 @@ export async function handlePracticeGet(args: {
         try {
             assertSessionOwnership(session, actor);
         } catch (e: any) {
-            return { kind: "json", status: statusOf(e, 400), body: { message: e.message } };
+            const code = String(e?.code ?? "");
+
+            const recoverableTrialMismatch =
+                session.mode === "onboarding_trial" &&
+                code === "SESSION_OWNER_GUEST_MISMATCH";
+
+            if (recoverableTrialMismatch) {
+                return {
+                    kind: "json",
+                    status: 409,
+                    body: {
+                        message: "Session recovery required.",
+                        code: "SESSION_RECOVERY_REQUIRED",
+                        recoverable: true,
+                        reason: code,
+                        sessionId: session.id,
+                    },
+                };
+            }
+
+            return {
+                kind: "json",
+                status: statusOf(e, 400),
+                body:
+                    process.env.NODE_ENV === "development"
+                        ? {
+                            message: e.message,
+                            code,
+                            debug: {
+                                actor,
+                                session: {
+                                    id: session?.id,
+                                    mode: session?.mode,
+                                    userId: session?.userId,
+                                    guestId: session?.guestId,
+                                },
+                            },
+                        }
+                        : { message: e.message, code },
+            };
         }
 
         const gate = await enforceAssignmentEntitlement(session);
@@ -375,7 +418,7 @@ export async function handlePracticeGet(args: {
             });
             (session as any).returnUrl = ru;
         }
-    }
+    }    const isTrial = session?.mode === "onboarding_trial";
 
     // ✅ decide purpose early
     const decision = computePurposeDecision({
@@ -402,7 +445,25 @@ export async function handlePracticeGet(args: {
             (session as any).preferPurpose = purposeMode;
         }
     }
+    if (isTrial) {
+        // no assignments in trial mode
+        if (session?.assignmentId) {
+            return {
+                kind: "json",
+                status: 400,
+                body: { message: "Trial sessions cannot be assignment-backed." },
+            };
+        }
 
+        // force quiz-only in trial
+        if (purposeMode !== "quiz" && purposeMode !== "mixed") {
+            return {
+                kind: "json",
+                status: 403,
+                body: { message: "Trial sessions only allow quiz questions." },
+            };
+        }
+    }
     // STATUS ONLY (unchanged logic except include purpose info)
     if (statusOnly === "true") {
         if (!session) {
@@ -633,8 +694,11 @@ export async function handlePracticeGet(args: {
     const { reqSalt } = resolveRequestSalt(salt);
 
     // ✅ generator purpose: mixed => null (no filter)
+    // const preferPurposeForGenerator: "quiz" | "project" | null =
+    //     purposeMode === "mixed" ? null : purposeMode;
+
     const preferPurposeForGenerator: "quiz" | "project" | null =
-        purposeMode === "mixed" ? null : purposeMode;
+        isTrial ? "quiz" : purposeMode === "mixed" ? null : purposeMode;
 
     const moduleIdFromSession = session?.section?.moduleId ?? null;
     const assignmentIdFromSession = session?.assignmentId ?? null;
@@ -806,8 +870,11 @@ export async function handlePracticeGet(args: {
         topicSlug: topicSlug as TopicSlug,
         difficulty: diff,
         topicIdHint,
-        purpose: purposeMode === "mixed" ? chosenPurpose : (purposeMode as any),
-    });
+        purpose: isTrial
+            ? "quiz"
+            : purposeMode === "mixed"
+                ? chosenPurpose
+                : (purposeMode as any),    });
 
     const key = signKey({
         instanceId: instance.id,

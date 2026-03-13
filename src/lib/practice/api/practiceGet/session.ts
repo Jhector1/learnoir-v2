@@ -18,7 +18,8 @@ export async function loadSession(prisma: PrismaClient, sessionId?: string) {
       status: true,
       userId: true,
       guestId: true,
-
+      mode: true,
+      meta: true,
       // ✅ FIX: include preferPurpose so handler.ts can read it
       preferPurpose: true,
 
@@ -95,8 +96,8 @@ export function assertSessionActive(session: any) {
 }
 
 export function assertSessionOwnership(
-  session: any,
-  actor: { userId?: string | null; guestId?: string | null },
+    session: any,
+    actor: { userId?: string | null; guestId?: string | null },
 ) {
   if (!session) return;
 
@@ -104,6 +105,7 @@ export function assertSessionOwnership(
     if (!actor.userId || actor.userId !== session.userId) {
       const err = new Error("Forbidden.");
       (err as any).status = 403;
+      (err as any).code = "SESSION_OWNER_USER_MISMATCH";
       throw err;
     }
     return;
@@ -113,6 +115,7 @@ export function assertSessionOwnership(
     if (!actor.guestId || actor.guestId !== session.guestId) {
       const err = new Error("Forbidden.");
       (err as any).status = 403;
+      (err as any).code = "SESSION_OWNER_GUEST_MISMATCH";
       throw err;
     }
     return;
@@ -120,6 +123,7 @@ export function assertSessionOwnership(
 
   const err = new Error("Session has no owner.");
   (err as any).status = 500;
+  (err as any).code = "SESSION_HAS_NO_OWNER";
   throw err;
 }
 

@@ -24,6 +24,7 @@ export type PracticeShellProps = {
 
   returnUrl?: string | null;
   onReturn?: () => void;
+  isOnboardingTrial?: boolean; // ✅ NEW
 
   allowReveal: boolean;
   showDebug: boolean;

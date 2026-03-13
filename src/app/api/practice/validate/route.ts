@@ -18,11 +18,12 @@ import {
 } from "@/lib/practice/api/validate/policies";
 import { gradeInstance } from "@/lib/practice/api/validate/grade";
 import { persistAttemptAndFinalize } from "@/lib/practice/api/validate/persist";
-import { gatePracticeModuleAccess } from "@/lib/billing/gatePracticeModuleAccess";
 import { getLocaleFromCookie } from "@/serverUtils";
 
 // ✅ add (shared redis/kv limiter)
 import { rateLimit } from "@/lib/security/ratelimit";
+import {resolvePracticeAccess} from "@/lib/practice/access/resolvePracticeAccess";
+import {isOnboardingTrialSession} from "@/lib/onboarding/trialPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -157,26 +158,41 @@ export async function POST(req: Request) {
   const sess = instance.session ?? null;
   const locale = await getLocaleFromCookie();
 
-  const gate = await gatePracticeModuleAccess({
+  const access = await resolvePracticeAccess({
     prisma,
     actor,
     locale,
-    sessionId: sess?.id ?? null,
-    // ✅ sanitize any stored returnUrl before using it
-    returnUrl: safeSameOriginUrl(req, sess?.returnUrl ?? null),
-    back: null,
-    bypass: false,
+    req,
+    params: {
+      subject: null,
+      module: null,
+      sessionId: sess?.id ?? null,
+      returnUrl: safeSameOriginUrl(req, sess?.returnUrl ?? null),
+      returnTo: null,
+    },
+    session: sess
+        ? {
+          id: sess.id,
+          mode: sess.mode ?? "standard",
+          // meta: (sess as any).meta ?? null,
+        }
+        : null,
   });
 
-  if (!gate.ok) {
-    const r = attachGuestCookie(gate.res as NextResponse, setGuestId);
+  if (!access.ok) {
+    const r = attachGuestCookie(access.res as NextResponse, setGuestId);
     r.headers.set("X-Request-Id", requestId);
     return harden(r);
   }
 
   const isAssignment = Boolean(sess?.assignmentId);
   const hasSession = Boolean(sess?.id);
-
+  if (isOnboardingTrialSession(sess) && isAssignment) {
+    return attachGuestCookie(
+        json(requestId, "Invalid trial session state.", 400),
+        setGuestId,
+    );
+  }
   // --- 4.1) Answer kind must match instance kind
   if (!isReveal && answer && answer.kind !== instance.kind) {
     return attachGuestCookie(
@@ -204,7 +220,28 @@ export async function POST(req: Request) {
       (sess?.userId && sess.userId !== (actor.userId ?? null)) ||
       (sess?.guestId && sess.guestId !== (actor.guestId ?? null))
   ) {
-    return attachGuestCookie(json(requestId, "Forbidden.", 403), setGuestId);
+    return attachGuestCookie(
+        json(
+            requestId,
+            "Forbidden.",
+            403,
+            process.env.NODE_ENV === "development"
+                ? {
+                  code: "SESSION_OWNER_MISMATCH",
+                  debug: {
+                    actor,
+                    session: {
+                      id: sess?.id,
+                      mode: sess?.mode ?? null,
+                      userId: sess?.userId ?? null,
+                      guestId: sess?.guestId ?? null,
+                    },
+                  },
+                }
+                : undefined,
+        ),
+        setGuestId,
+    );
   }
 
   // --- 6) Reveal policy
@@ -219,8 +256,14 @@ export async function POST(req: Request) {
   }
 
   // --- 7) Attempts policy
-  const mode: RunMode = isAssignment ? "assignment" : hasSession ? "session" : "practice";
-  const maxAttempts = computeMaxAttempts({
+  const mode: RunMode =
+      isAssignment
+          ? "assignment"
+          : isOnboardingTrialSession(sess)
+              ? "onboarding_trial"
+              : hasSession
+                  ? "session"
+                  : "practice";  const maxAttempts = computeMaxAttempts({
     mode,
     assignmentMaxAttempts: sess?.assignment?.maxAttempts ?? null,
   });
@@ -265,7 +308,8 @@ export async function POST(req: Request) {
 
   // --- 10) Persist + finalize
   const nextNonRevealAttempts = isReveal ? priorNonRevealAttempts : priorNonRevealAttempts + 1;
-  const finalizeOnExhaust = mode === "assignment" || mode === "session";
+  const finalizeOnExhaust =
+      mode === "assignment" || mode === "session" || mode === "onboarding_trial";
   const exhausted = maxAttempts != null && nextNonRevealAttempts >= maxAttempts;
   const finalized = isReveal ? false : Boolean(graded.ok) || (finalizeOnExhaust && exhausted);
 

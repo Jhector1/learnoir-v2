@@ -15,7 +15,7 @@ export function buildBillingHref(args: {
     p.set("reason", args.reason ?? "module");
     if (args.subject) p.set("subject", args.subject);
     if (args.module) p.set("module", args.module);
-    return `/${encodeURIComponent(args.locale)}/billing?${p.toString()}`;
+    return `/billing?${p.toString()}`;
 }
 
 export function safeInternalPath(path?: string | null, fallback = "/") {

@@ -1,139 +1,249 @@
-// src/app/api/review/progress/route.ts
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { attachGuestCookie, actorKeyOf, ensureGuestId, getActor } from "@/lib/practice/actor";
+import {
+    attachGuestCookie,
+    actorKeyOf,
+    ensureGuestId,
+    getActor,
+} from "@/lib/practice/actor";
+import {
+    bodyJsonResponse,
+    bodyJsonWithGuestCookie,
+    enforceSameOriginPost,
+    readJsonSafe,
+} from "@/lib/practice/api/shared/http";
+import { resolveReviewAccess } from "@/lib/review/api/access/resolveReviewAccess";
+// import { ReviewProgressWriteSchema } from "@/lib/review/api/progress/schema";
+import { pickLocale } from "@/lib/review/api/shared/schemas";
+import { hasReviewModule } from "@/lib/subjects/registry";
+import { getLocaleFromCookie } from "@/serverUtils";
 import type { ReviewProgressState } from "@/lib/subjects/progressTypes";
+import {ReviewProgressWriteSchema} from "@/lib/review/api/progress/schemas";
 
-function jsonOk(data: any) {
-  return NextResponse.json(data, { status: 200 });
+async function gateReviewModule(args: {
+    req: Request;
+    subjectSlug: string;
+    moduleRef: string;
+}) {
+    const actor0 = await getActor();
+    const { actor, setGuestId } = ensureGuestId(actor0);
+    const locale = await getLocaleFromCookie();
+
+    const gate = await resolveReviewAccess({
+        prisma,
+        actor,
+        locale,
+        req: args.req,
+        subjectSlug: args.subjectSlug,
+        moduleRef: args.moduleRef,
+    });
+
+    return { actor, setGuestId, gate };
 }
 
-function jsonErr(message: string, status = 400, detail?: any) {
-  return NextResponse.json({ message, detail }, { status });
-}
-
-// Matches the quizKey format we recommended earlier:
-// "review-quiz|subject=...|module=...|section=...|..."
-function quizKeyPrefixForModule(subjectSlug: string, moduleId: string) {
-  // NOTE: keep this consistent with buildQuizKey() used by /api/review/quiz
-  return `review-quiz|subject=${subjectSlug}|module=${moduleId}`;
+function reviewRegistryMissingResponse(
+    subjectSlug: string,
+    moduleSlug: string,
+    setGuestId?: string | null,
+) {
+    return bodyJsonWithGuestCookie(
+        {
+            message: "Module not found in review registry for this subject.",
+            detail: { subjectSlug, moduleSlug },
+        },
+        404,
+        setGuestId,
+    );
 }
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
-  const moduleId = (searchParams.get("moduleId") ?? "").trim();
-  const locale = (searchParams.get("locale") ?? "en").trim();
+    const { searchParams } = new URL(req.url);
+    const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
+    const moduleRef = (searchParams.get("moduleId") ?? "").trim();
+    const locale = pickLocale(searchParams.get("locale"), "en");
 
-  if (!subjectSlug || !moduleId) return jsonErr("Missing subjectSlug/moduleId.", 400);
+    if (!subjectSlug || !moduleRef) {
+        return bodyJsonResponse({ message: "Missing subjectSlug/moduleId." }, 400);
+    }
 
-  const actor0 = await getActor();
-  const { actor, setGuestId } = ensureGuestId(actor0);
-  const actorKey = actorKeyOf(actor);
-
-  const row = await prisma.reviewProgress.findUnique({
-    where: {
-      actorKey_subjectSlug_moduleId_locale: {
-        actorKey,
+    const { actor, setGuestId, gate } = await gateReviewModule({
+        req,
         subjectSlug,
-        moduleId,
-        locale,
-      },
-    },
-  });
+        moduleRef,
+    });
 
-  const res = jsonOk({ progress: (row?.state ?? null) as ReviewProgressState | null });
-  return attachGuestCookie(res, setGuestId);
+    if (!gate.ok) {
+        return attachGuestCookie(gate.res as any, setGuestId);
+    }
+
+    if (!hasReviewModule(gate.scope.subjectSlug, gate.scope.moduleSlug)) {
+        return reviewRegistryMissingResponse(
+            gate.scope.subjectSlug,
+            gate.scope.moduleSlug,
+            setGuestId,
+        );
+    }
+
+    const actorKey = actorKeyOf(actor);
+
+    const row = await prisma.reviewProgress.findUnique({
+        where: {
+            actorKey_subjectSlug_moduleId_locale: {
+                actorKey,
+                subjectSlug: gate.scope.subjectSlug,
+                moduleId: gate.scope.moduleSlug,
+                locale,
+            },
+        },
+    });
+
+    return bodyJsonWithGuestCookie(
+        {
+            progress: (row?.state ?? null) as ReviewProgressState | null,
+        },
+        200,
+        setGuestId,
+    );
 }
-
 
 export async function POST(req: Request) {
-  return PUT(req);
+    return PUT(req);
 }
-
 
 export async function PUT(req: Request) {
-  let body: any;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonErr("Invalid JSON body.", 400);
-  }
+    if (!enforceSameOriginPost(req)) {
+        return bodyJsonResponse({ message: "Forbidden." }, 403);
+    }
 
-  const subjectSlug = String(body?.subjectSlug ?? "").trim();
-  const moduleId = String(body?.moduleId ?? "").trim();
-  const locale = String(body?.locale ?? "en").trim();
-  const state = (body?.state ?? null) as ReviewProgressState | null;
+    const body = await readJsonSafe(req);
+    if (!body) {
+        return bodyJsonResponse({ message: "Invalid JSON body." }, 400);
+    }
 
-  if (!subjectSlug || !moduleId) return jsonErr("Missing subjectSlug/moduleId.", 400);
-  if (!state || typeof state !== "object") return jsonErr("Missing/invalid state.", 400);
+    const parsed = ReviewProgressWriteSchema.safeParse(body);
+    if (!parsed.success) {
+        return bodyJsonResponse(
+            {
+                message: "Invalid body.",
+                issues: parsed.error.issues,
+            },
+            400,
+        );
+    }
 
-  const actor0 = await getActor();
-  const { actor, setGuestId } = ensureGuestId(actor0);
-  const actorKey = actorKeyOf(actor);
+    const subjectSlug = parsed.data.subjectSlug;
+    const moduleRef = parsed.data.moduleRef;
+    const locale = pickLocale(parsed.data.locale, "en");
+    const state = parsed.data.state;
 
-  const saved = await prisma.reviewProgress.upsert({
-    where: {
-      actorKey_subjectSlug_moduleId_locale: {
-        actorKey,
+    const { actor, setGuestId, gate } = await gateReviewModule({
+        req,
         subjectSlug,
-        moduleId,
-        locale,
-      },
-    },
-    create: {
-      actorKey,
-      subjectSlug,
-      moduleId,
-      locale,
-      state,
-    },
-    update: {
-      state,
-    },
-    select: { id: true, updatedAt: true },
-  });
+        moduleRef,
+    });
 
-  const res = jsonOk({ ok: true, saved });
-  return attachGuestCookie(res, setGuestId);
+    if (!gate.ok) {
+        return attachGuestCookie(gate.res as any, setGuestId);
+    }
+
+    if (!hasReviewModule(gate.scope.subjectSlug, gate.scope.moduleSlug)) {
+        return reviewRegistryMissingResponse(
+            gate.scope.subjectSlug,
+            gate.scope.moduleSlug,
+            setGuestId,
+        );
+    }
+
+    const actorKey = actorKeyOf(actor);
+
+    const saved = await prisma.reviewProgress.upsert({
+        where: {
+            actorKey_subjectSlug_moduleId_locale: {
+                actorKey,
+                subjectSlug: gate.scope.subjectSlug,
+                moduleId: gate.scope.moduleSlug,
+                locale,
+            },
+        },
+        create: {
+            actorKey,
+            subjectSlug: gate.scope.subjectSlug,
+            moduleId: gate.scope.moduleSlug,
+            locale,
+            state,
+        },
+        update: {
+            state,
+        },
+        select: {
+            id: true,
+            updatedAt: true,
+        },
+    });
+
+    return bodyJsonWithGuestCookie(
+        {
+            ok: true,
+            saved,
+        },
+        200,
+        setGuestId,
+    );
 }
 
-/**
- * Reset module progress AND wipe frozen quiz instances for this module,
- * so the next render produces a new random quiz ONLY after reset.
- *
- * Call:
- *   DELETE /api/review/progress?subjectSlug=python&moduleId=python-0&locale=en
- */
 export async function DELETE(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
-  const moduleId = (searchParams.get("moduleId") ?? "").trim();
-  const locale = (searchParams.get("locale") ?? "en").trim();
+    if (!enforceSameOriginPost(req)) {
+        return bodyJsonResponse({ message: "Forbidden." }, 403);
+    }
 
-  if (!subjectSlug || !moduleId) return jsonErr("Missing subjectSlug/moduleId.", 400);
+    const { searchParams } = new URL(req.url);
+    const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
+    const moduleRef = (searchParams.get("moduleId") ?? "").trim();
+    const locale = pickLocale(searchParams.get("locale"), "en");
 
-  const actor0 = await getActor();
-  const { actor, setGuestId } = ensureGuestId(actor0);
-  const actorKey = actorKeyOf(actor);
+    if (!subjectSlug || !moduleRef) {
+        return bodyJsonResponse({ message: "Missing subjectSlug/moduleId." }, 400);
+    }
 
-  // 1) delete progress row (idempotent)
-  await prisma.reviewProgress.deleteMany({
-    where: { actorKey, subjectSlug, moduleId, locale },
-  });
+    const { actor, setGuestId, gate } = await gateReviewModule({
+        req,
+        subjectSlug,
+        moduleRef,
+    });
 
-  // 2) delete frozen quiz instances for this module (so next load re-generates)
-  // If your quizKey includes more fields (section/topic/etc), startsWith handles it.
-  const prefix = quizKeyPrefixForModule(subjectSlug, moduleId);
+    if (!gate.ok) {
+        return attachGuestCookie(gate.res as any, setGuestId);
+    }
 
-  // Adjust model name if yours differs
-  await prisma.reviewQuizInstance.deleteMany({
-    where: {
-      actorKey,
-      quizKey: { startsWith: prefix },
-    },
-  });
+    if (!hasReviewModule(gate.scope.subjectSlug, gate.scope.moduleSlug)) {
+        return reviewRegistryMissingResponse(
+            gate.scope.subjectSlug,
+            gate.scope.moduleSlug,
+            setGuestId,
+        );
+    }
 
-  const res = jsonOk({ ok: true });
-  return attachGuestCookie(res, setGuestId);
+    const actorKey = actorKeyOf(actor);
+
+    await prisma.$transaction([
+        prisma.reviewProgress.deleteMany({
+            where: {
+                actorKey,
+                subjectSlug: gate.scope.subjectSlug,
+                moduleId: gate.scope.moduleSlug,
+                locale,
+            },
+        }),
+        prisma.reviewQuizInstance.deleteMany({
+            where: {
+                actorKey,
+                AND: [
+                    { quizKey: { startsWith: "review-quiz|" } },
+                    { quizKey: { contains: `|subject=${gate.scope.subjectSlug}|` } },
+                    { quizKey: { contains: `|module=${gate.scope.moduleSlug}|` } },
+                ],
+            },
+        }),
+    ]);
+
+    return bodyJsonWithGuestCookie({ ok: true }, 200, setGuestId);
 }

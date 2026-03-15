@@ -20,6 +20,9 @@ function serializeAssignment(a: any) {
 
 export async function GET(req: Request, ctx: Ctx) {
   await requireAdmin(req);
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const { id } = await ctx.params;
 
   const assignment = await prisma.assignment.findUnique({
@@ -57,6 +60,9 @@ export async function GET(req: Request, ctx: Ctx) {
 
 export async function PATCH(req: Request, ctx: Ctx) {
   await requireAdmin(req);
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const { id } = await ctx.params;
 
   const body = await req.json().catch(() => null);
@@ -147,6 +153,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
 export async function DELETE(req: Request, ctx: Ctx) {
   await requireAdmin(req);
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   const { id } = await ctx.params;
 
   const count = await prisma.practiceSession.count({ where: { assignmentId: id } });

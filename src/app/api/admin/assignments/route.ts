@@ -5,6 +5,9 @@ import { AssignmentCreateSchema } from "@/lib/validators/assignment"; // or what
 
 export async function POST(req: Request) {
   await requireAdmin(req);
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = AssignmentCreateSchema.safeParse(body);

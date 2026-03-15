@@ -10,6 +10,8 @@
   },
   "aria": {
     "noPrev": "Aucun module précédent",
-    "lockedCertificate": "Termine le module pour débloquer le certificat"
+    "lockedCertificate": "Termine le module pour débloquer le certificat",
+    "lockedNext": "Déverrouiller le module suivant"
+
   }
 }}

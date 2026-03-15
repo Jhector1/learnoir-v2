@@ -9,10 +9,13 @@ import ReviewModuleNavBarSkeleton from "@/components/review/ReviewModuleNavBarSk
 import type { ReviewModule } from "@/lib/subjects/types";
 import { getReviewModule } from "@/lib/subjects/registry";
 import ReviewModuleView from "@/components/review/module/ReviewModuleView";
+import { ROUTES } from "@/utils";
+import { buildBillingHref } from "@/lib/billing/moduleAccess";
 
 type NavInfo = {
     prevModuleId: string | null;
     nextModuleId: string | null;
+    nextLocked?: boolean;
     index: number;
     total: number;
 };
@@ -54,7 +57,6 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
         setModuleComplete(false);
     }, [subjectSlug, moduleId, locale]);
 
-    // ✅ measure footer height (skeleton + real)
     const footerRef = useRef<HTMLDivElement | null>(null);
     const [footerH, setFooterH] = useState(0);
 
@@ -74,6 +76,31 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
         ro.observe(el);
         return () => ro.disconnect();
     }, [navLoading]);
+
+    const currentModuleHref =
+        subjectSlug && moduleId
+            ? `${ROUTES.moduleIntro(
+                encodeURIComponent(subjectSlug),
+                encodeURIComponent(moduleId),
+            )}`
+            : `/${encodeURIComponent(locale)}`;
+
+    const nextModuleHref =
+        nav?.nextModuleId && subjectSlug
+            ? `/${ROUTES.moduleIntro(
+                encodeURIComponent(subjectSlug),
+                encodeURIComponent(nav.nextModuleId),
+            )}`
+            : currentModuleHref;
+
+    const billingHref = buildBillingHref({
+        locale,
+        next: nextModuleHref,
+        back: currentModuleHref,
+        reason: "module",
+        subject: subjectSlug || undefined,
+        module: nav?.nextModuleId ?? undefined,
+    });
 
     if (!mod) {
         return (
@@ -99,6 +126,7 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
                     onModuleCompleteChange={setModuleComplete}
                     footerInsetPx={footerH}
                 />
+                {/*{nav?.prevModuleId}*/}
             </div>
 
             {navLoading ? (
@@ -110,6 +138,8 @@ export default function ReviewModulePageClient({ canUnlockAll }: { canUnlockAll:
                     subjectSlug={subjectSlug}
                     prevModuleId={nav?.prevModuleId ?? null}
                     nextModuleId={nav?.nextModuleId ?? null}
+                    nextLocked={Boolean(nav?.nextLocked)}
+                    nextBillingHref={billingHref}
                     canGoNext={canUnlockAll ? true : moduleComplete}
                     isLastModule={isLastModule}
                     canGetCertificate={canGetCertificate}

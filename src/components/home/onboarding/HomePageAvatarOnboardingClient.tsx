@@ -24,7 +24,7 @@ import { Button } from "@/components/home/ui/button";
 import { CardContent } from "@/components/home/ui/card";
 import { Progress } from "@/components/home/ui/progress";
 import { cn } from "@/lib/cn";
-import {buildTrialHref, saveOnboarding, sleep, startTrialSession} from "@/lib/onboarding/client";
+import { buildTrialHref, saveOnboarding, sleep, startTrialSession } from "@/lib/onboarding/client";
 import { persistLocale } from "@/lib/locale/persistLocale";
 import HeaderSlick from "@/components/HeaderSlick";
 import FooterSlick from "@/components/layout/FooterSlick";
@@ -42,9 +42,10 @@ type Choice = {
 type PreferredLanguage = "english" | "french" | "haitian-creole" | "";
 type ThemePreference = "light" | "dark" | "";
 type TrialIntent = "now" | "later" | "";
-type Level="beginner" | "intermediate" | "advanced" | "";
-type StudyTime="1-2-hours" | "3-5-hours" | "6-plus-hours" | "";
-type DiscoverySource="other" | "search" | "friend" | "social" | "school-work" | "";
+type Level = "beginner" | "intermediate" | "advanced" | "";
+type StudyTime = "1-2-hours" | "3-5-hours" | "6-plus-hours" | "";
+type DiscoverySource = "other" | "search" | "friend" | "social" | "school-work" | "";
+
 type OnboardingData = {
     preferredLanguage: PreferredLanguage;
     learningInterests: string[];
@@ -186,12 +187,14 @@ const TAGGED_TRIAL_CHOICES: Choice[] = [
         hint: "@:steps.choices.trialLaterHint",
     },
 ];
+
 type HighlightCard = {
     key: string;
     icon: LucideIcon;
     title: string;
     text: string;
 };
+
 const TAGGED_HIGHLIGHT_CARDS = [
     {
         key: "language",
@@ -212,6 +215,7 @@ const TAGGED_HIGHLIGHT_CARDS = [
         text: "@:highlights.cards.pace.text",
     },
 ] as const satisfies readonly HighlightCard[];
+
 function Surface({
                      children,
                      className,
@@ -854,7 +858,16 @@ function OnboardingPanel({
 
             return { ...step, choices: discoveryChoices };
         });
-    }, [localizedStepMeta, isAuthenticated, subjectOptions, t, resolve, themeChoices, trialChoices, discoveryChoices]);
+    }, [
+        localizedStepMeta,
+        isAuthenticated,
+        subjectOptions,
+        t,
+        resolve,
+        themeChoices,
+        trialChoices,
+        discoveryChoices,
+    ]);
 
     const step = dynamicStepConfig[stepIndex];
     const total = dynamicStepConfig.length;
@@ -1089,7 +1102,9 @@ function PersonalizedHighlights({ data }: { data: OnboardingData }) {
             })}
         </div>
     );
-}function SubjectGrid({
+}
+
+function SubjectGrid({
                          data,
                          subjects,
                          locale,
@@ -1192,9 +1207,9 @@ export default function HomePageAvatarOnboardingClient({
         locale: string;
         label: string;
     }>(null);
+    const [skipped, setSkipped] = useState(false);
 
     const redirectingRef = useRef(false);
-    const heroRef = useRef<HTMLElement | null>(null);
 
     async function redirectToTrial(args: {
         href: string;
@@ -1225,10 +1240,14 @@ export default function HomePageAvatarOnboardingClient({
             typeof window !== "undefined" &&
             window.localStorage.getItem(DISMISSED_KEY) === "1";
 
-        setShowOnboarding(!stored.completed && !dismissed);
-        setBubbleCollapsed(Boolean(stored.completed || dismissed));
+        const shouldAutoOpen =
+            !isAuthenticated && !stored.completed && !dismissed;
+
+        setSkipped(dismissed);
+        setShowOnboarding(shouldAutoOpen);
+        setBubbleCollapsed(Boolean(stored.completed || dismissed || isAuthenticated));
         setHydrated(true);
-    }, []);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!hydrated) return;
@@ -1325,6 +1344,7 @@ export default function HomePageAvatarOnboardingClient({
         },
         [locale, t],
     );
+
     const TRIAL_LAST_SESSION_KEY = "zoeskoul.trial.lastSessionId";
 
     const beginTrial = async (opts?: { subject?: string | null; level?: string | null }) => {
@@ -1358,6 +1378,7 @@ export default function HomePageAvatarOnboardingClient({
             if (typeof window !== "undefined") {
                 window.sessionStorage.setItem(TRIAL_LAST_SESSION_KEY, out.sessionId);
             }
+
             const href =
                 buildTrialHref({
                     locale: nextLocale,
@@ -1389,6 +1410,7 @@ export default function HomePageAvatarOnboardingClient({
             null;
 
         setTrialErr(null);
+        setSkipped(false);
 
         if (data.preferredLanguage) {
             persistLocale(nextLocale);
@@ -1408,6 +1430,7 @@ export default function HomePageAvatarOnboardingClient({
                 setCompleted(true);
                 setShowOnboarding(false);
                 setBubbleCollapsed(true);
+                setResumeStepIndex(0);
                 return;
             }
 
@@ -1441,10 +1464,12 @@ export default function HomePageAvatarOnboardingClient({
                 await redirectToTrial({ href, delayMs: 1200 });
                 return;
             }
+
             setCompleted(true);
             setShowOnboarding(false);
             setBubbleCollapsed(true);
             setResumeStepIndex(0);
+
         } catch (err) {
             console.error("Failed to finish onboarding", err);
             setCompleted(true);
@@ -1462,6 +1487,7 @@ export default function HomePageAvatarOnboardingClient({
         setShowOnboarding(false);
         setBubbleCollapsed(true);
         setResumeStepIndex(0);
+        setSkipped(true);
 
         if (typeof window !== "undefined") {
             window.localStorage.setItem(DISMISSED_KEY, "1");
@@ -1488,31 +1514,11 @@ export default function HomePageAvatarOnboardingClient({
         setShowOnboarding(true);
         setBubbleCollapsed(false);
         setPendingLocaleSwitch(null);
+        setSkipped(false);
 
         if (typeof window !== "undefined") {
             window.localStorage.removeItem(DISMISSED_KEY);
         }
-    };
-
-    const resetPreferences = () => {
-        setOnboardingData(DEFAULT_DATA);
-        setCompleted(false);
-        setShowOnboarding(true);
-        setBubbleCollapsed(false);
-        setTrialErr(null);
-        setTrialSubjectSlug(null);
-        setResumeStepIndex(0);
-        setPendingLocaleSwitch(null);
-
-        if (typeof window !== "undefined") {
-            window.localStorage.removeItem(STORAGE_KEY);
-            window.localStorage.removeItem(DISMISSED_KEY);
-        }
-
-        heroRef.current?.scrollIntoView({
-            behavior: reduceMotion ? "auto" : "smooth",
-            block: "start",
-        });
     };
 
     useEffect(() => {
@@ -1520,8 +1526,17 @@ export default function HomePageAvatarOnboardingClient({
         if (completed) saveStoredOnboarding(true, onboardingData, 0);
     }, [hydrated, completed, onboardingData]);
 
-    const firstVisitGate = hydrated && showOnboarding && !completed;
+    const showOnboardingGate = hydrated && showOnboarding;
 
+// show header/footer whenever the onboarding gate is not open
+    const showChrome = hydrated && !showOnboarding;
+
+// allow reopen/edit later after complete or skip
+    const showFloatingAssistant =
+        hydrated &&
+        !isAuthenticated &&
+        !showOnboarding &&
+        (completed || skipped);
     const activeOverlay = pendingLocaleSwitch
         ? {
             mode: "locale" as const,
@@ -1548,7 +1563,7 @@ export default function HomePageAvatarOnboardingClient({
 
     return (
         <>
-            {hydrated && completed ? (
+            {showChrome ? (
                 <HeaderSlick brand={APP_NAME} badge={t("common.mvp")} />
             ) : null}
 
@@ -1568,10 +1583,10 @@ export default function HomePageAvatarOnboardingClient({
                     aria-hidden
                 />
 
-                <section ref={heroRef} className="relative overflow-hidden">
+                <section className="relative overflow-hidden">
                     <div className="ui-container relative py-6 sm:py-8 lg:py-10">
                         <AnimatePresence mode="wait">
-                            {firstVisitGate ? (
+                            {showOnboardingGate ? (
                                 <motion.div
                                     key="gate-only"
                                     initial={{ opacity: 0, y: 10 }}
@@ -1694,6 +1709,13 @@ export default function HomePageAvatarOnboardingClient({
                                                                 <ArrowRight className="size-4" />
                                                             </Button>
                                                         )
+                                                    ) : isAuthenticated ? (
+                                                        <Button size="lg" className="gap-2 sm:w-auto" asChild>
+                                                            <Link href={`/${encodeURIComponent(locale)}/subjects`}>
+                                                                {t("hero.continueLearning")}
+                                                                <ArrowRight className="size-4" />
+                                                            </Link>
+                                                        </Button>
                                                     ) : (
                                                         <Button
                                                             size="lg"
@@ -1708,9 +1730,8 @@ export default function HomePageAvatarOnboardingClient({
                                                     <Button size="lg" variant="outline" className="sm:w-auto" asChild>
                                                         <Link
                                                             href={
-                                                                completed && onboardingData.learningInterests[0]
-                                                                    ? `/${encodeURIComponent(locale)}/subjects/${onboardingData.learningInterests[0]}`
-                                                                    : `/${encodeURIComponent(locale)}/subjects`
+
+                                                                    `/${encodeURIComponent(locale)}/subjects`
                                                             }
                                                         >
                                                             {t("hero.exploreSubjects")}
@@ -1720,10 +1741,12 @@ export default function HomePageAvatarOnboardingClient({
                                                     <Button
                                                         size="lg"
                                                         variant="outline"
-                                                        onClick={completed ? resetPreferences : reopenAssistant}
+                                                        onClick={reopenAssistant}
                                                         className="sm:w-auto dark:bg-white/[0.05] dark:hover:bg-white/[0.08]"
                                                     >
-                                                        {completed ? t("hero.editPreferences") : t("hero.editAnswers")}
+                                                        {completed || skipped || isAuthenticated
+                                                            ? t("hero.editPreferences")
+                                                            : t("hero.editAnswers")}
                                                     </Button>
                                                 </motion.div>
 
@@ -1813,6 +1836,12 @@ export default function HomePageAvatarOnboardingClient({
                                                                                 </Button>
                                                                             </div>
                                                                         )
+                                                                    ) : isAuthenticated ? (
+                                                                        <Button size="sm" asChild className="w-full">
+                                                                            <Link href={`/${encodeURIComponent(locale)}/subjects`}>
+                                                                                {t("hero.continueLearning")}
+                                                                            </Link>
+                                                                        </Button>
                                                                     ) : (
                                                                         <Button
                                                                             variant="ghost"
@@ -1876,7 +1905,7 @@ export default function HomePageAvatarOnboardingClient({
                     </div>
                 </section>
 
-                {hydrated && completed ? (
+                {showFloatingAssistant ? (
                     <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
                         <motion.button
                             initial={{ opacity: 0, y: 8 }}
@@ -1915,7 +1944,7 @@ export default function HomePageAvatarOnboardingClient({
                 statusLabel={activeOverlay?.statusLabel}
             />
 
-            {hydrated && completed ? <FooterSlick /> : null}
+            {showChrome ? <FooterSlick /> : null}
         </>
     );
 }

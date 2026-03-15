@@ -10,6 +10,8 @@
   },
   "aria": {
     "noPrev": "Pa gen modil anvan",
-    "lockedCertificate": "Fini modil la pou ouvri sètifika a"
+    "lockedCertificate": "Fini modil la pou ouvri sètifika a",
+    "lockedNext": "Debloke pwochen modil la"
+
   }
 }

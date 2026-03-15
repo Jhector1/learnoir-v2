@@ -11,7 +11,8 @@
     },
     "aria": {
       "noPrev": "No previous module",
-      "lockedCertificate": "Complete the module to unlock the certificate"
+      "lockedCertificate": "Complete the module to unlock the certificate",
+      "lockedNext": "Unlock next module"
     }
   }
 }

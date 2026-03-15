@@ -58,15 +58,16 @@ export type ReviewTopicShape = ReviewModule["topics"][number];
   import type { PracticeKind } from "@prisma/client";
 
 export type ReviewQuizSpec = {
-  subject: string;              // "python"
-  module?: string;              // "python-0"
-  section?: string;             // "python-0-foundations"
-  topic?: string;               // "py0.io_vars" | "all" | "" (treated as all)
-  difficulty?: "easy" | "medium" | "hard";
-  n?: number;                   // number of questions
-  allowReveal?: boolean;
-  preferKind?: PracticeKind | null;
-  maxAttempts?: number;         // per practice question (default 1)
+    subject: string;
+    module?: string;
+    moduleSlug?: string;
+    section?: string;
+    topic?: string;
+    difficulty?: "easy" | "medium" | "hard";
+    n?: number;
+    allowReveal?: boolean;
+    preferKind?: PracticeKind | null;
+    maxAttempts?: number;
 };
 
 export type ReviewQuestion =
@@ -164,19 +165,15 @@ export type ReviewProjectStep = {
 
 export type ReviewProjectSpec = {
     mode: "project";
-
     subject: string;
     module?: string;
+    moduleSlug?: string;
     section?: string;
-
-    // ✅ project-level defaults (optional)
     topic?: string;
     difficulty?: Difficulty;
     preferKind?: PracticeKind | null;
-
     allowReveal?: boolean;
     maxAttempts?: number;
-
     steps: ReviewProjectStep[];
 };
 export type PurposeMode = "quiz" | "project" | "mixed";

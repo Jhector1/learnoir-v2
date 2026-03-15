@@ -1,41 +1,77 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // adjust if needed
+import { prisma } from "@/lib/prisma";
+import {
+    attachGuestCookie,
+    ensureGuestId,
+    getActor,
+} from "@/lib/practice/actor";
+import {
+    bodyJsonResponse,
+    bodyJsonWithGuestCookie,
+} from "@/lib/practice/api/shared/http";
+import { getLocaleFromCookie } from "@/serverUtils";
+import { resolveReviewAccess } from "@/lib/review/api/access/resolveReviewAccess";
+import {resolveReviewModuleForSubject} from "@/lib/review/api/shared/modules";
+// import { resolveReviewModuleForSubject } from "@/lib/review/api/modules";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
-  const moduleId = (searchParams.get("moduleId") ?? "").trim(); // this is your [moduleid]
+    const { searchParams } = new URL(req.url);
+    const subjectSlug = (searchParams.get("subjectSlug") ?? "").trim();
+    const moduleRef = (searchParams.get("moduleId") ?? "").trim();
 
-  if (!subjectSlug || !moduleId) {
-    return NextResponse.json({ nextModuleId: null }, { status: 400 });
-  }
+    if (!subjectSlug || !moduleRef) {
+        return bodyJsonResponse(
+            {
+                nextModuleId: null,
+                message: "Missing subjectSlug/moduleId.",
+            },
+            400,
+        );
+    }
 
-  const current = await prisma.practiceModule.findFirst({
-    where: {
-      subject: { slug: subjectSlug },
-      OR: [{ id: moduleId }, { slug: moduleId }],
-    },
-    select: { order: true },
-  });
+    const actor0 = await getActor();
+    const { actor, setGuestId } = ensureGuestId(actor0);
+    const locale = await getLocaleFromCookie();
 
-  if (!current) {
-    return NextResponse.json({ nextModuleId: null }, { status: 404 });
-  }
+    const gate = await resolveReviewAccess({
+        prisma,
+        actor,
+        locale,
+        req,
+        subjectSlug,
+        moduleRef,
+    });
 
-  const next = await prisma.practiceModule.findFirst({
-    where: {
-      subject: { slug: subjectSlug },
-      order: { gt: current.order },
-    },
-    orderBy: { order: "asc" },
-    select: { id: true, slug: true },
-  });
+    if (!gate.ok) {
+        return attachGuestCookie(gate.res as any, setGuestId);
+    }
 
-  return NextResponse.json({
-    // ✅ return slug if your route uses slug in [moduleid]
-    nextModuleId: next?.slug ?? null,
+    const resolved = await resolveReviewModuleForSubject(prisma, {
+        subjectSlug: gate.scope.subjectSlug,
+        moduleSlug: gate.scope.moduleSlug,
+    });
 
-    // If your route actually uses DB id instead, switch to:
-    // nextModuleId: next?.id ?? null,
-  });
+    if (!resolved.ok) {
+        return bodyJsonWithGuestCookie(
+            {
+                nextModuleId: null,
+                message: resolved.message,
+                detail: resolved.detail,
+            },
+            resolved.statusCode,
+            setGuestId,
+        );
+    }
+
+    const next =
+        resolved.index < resolved.modules.length - 1
+            ? resolved.modules[resolved.index + 1]
+            : null;
+
+    return bodyJsonWithGuestCookie(
+        {
+            nextModuleId: next?.slug ?? null,
+        },
+        200,
+        setGuestId,
+    );
 }

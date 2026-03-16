@@ -12,7 +12,7 @@ export const PY_MODULE0 = defineModule({
         description: "Workspace + programming basics: IPO model, syntax, and comments.",
         weekStart: 0,
         weekEnd: 2,
-        accessOverride: "paid",
+        accessOverride: "free",
         entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD0}`,
         meta: {
             estimatedMinutes: 40,

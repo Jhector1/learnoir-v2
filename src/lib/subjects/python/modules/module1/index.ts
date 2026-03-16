@@ -14,7 +14,7 @@ export const PY_MODULE1 = defineModule({
         description: "Variables/types, operators/expressions, strings, and mini-program patterns.",
         weekStart: 3,
         weekEnd: 5,
-        accessOverride: "paid",
+        accessOverride: "free",
         // entitlementKey: `module:${PY_SUBJECT_SLUG}:${PY_MOD1}`,
         meta: {
             estimatedMinutes: 90,

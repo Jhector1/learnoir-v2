@@ -80,6 +80,8 @@ async function loadBundles(locale: string) {
         safeJsonImport(import(`./messages/${locale}/seo/metadata.json`)),
         safeJsonImport(import(`./messages/${locale}/ui/footer.json`)),
         safeJsonImport(import(`./messages/${locale}/ui/legal.json`)),
+        safeJsonImport(import(`./messages/${locale}/ui/contact.json`)),
+
         safeJsonImport(import(`./messages/${locale}/ui/homeOnboarding.json`)),
 
 

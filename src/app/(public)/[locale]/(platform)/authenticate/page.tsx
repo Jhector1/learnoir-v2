@@ -4,6 +4,7 @@ import React, {useMemo, useState} from "react";
 import {signIn} from "next-auth/react";
 import {useSearchParams} from "next/navigation";
 import {useLocale, useTranslations} from "next-intl";
+import Link from "next/link";
 
 function safeCallbackUrl(raw: string | null | undefined, fallback: string) {
     const v = String(raw ?? "").trim();
@@ -168,9 +169,9 @@ export default function AuthenticatePage() {
                             <div
                                 className="mt-6 border-t border-neutral-200 pt-4 text-[11px] leading-relaxed text-neutral-500 dark:border-white/10 dark:text-white/40">
                                 {t("legal.prefix")}{" "}
-                                <span className="text-neutral-800 dark:text-white/70">{t("legal.terms")}</span>{" "}
+                                <Link href={"/legal/terms"} className="text-neutral-800 dark:text-white/70">{t("legal.terms")}</Link>{" "}
                                 {t("legal.and")}{" "}
-                                <span className="text-neutral-800 dark:text-white/70">{t("legal.privacy")}</span>.
+                                <Link href={'/legal/privacy'} className="text-neutral-800 dark:text-white/70">{t("legal.privacy")}</Link>.
                             </div>
                         </div>
                     </div>

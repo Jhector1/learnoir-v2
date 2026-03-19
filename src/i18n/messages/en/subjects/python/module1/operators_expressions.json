@@ -67,65 +67,65 @@
         "a": "tax = subtotal * taxPct // 100",
         "b": "tax = subtotal + taxPct // 100",
         "c": "tax = subtotal // taxPct * 100"
-      },
-      "m1_ops_precedence_parts_mc": {
-        "title": "Parts of operator precedence",
-        "prompt": "Select all true statements about `a + b * c`.",
-        "hint": "Think about which part is computed first.",
-        "options": {
-          "a": "`b * c` is evaluated first.",
-          "b": "`a + b` is always evaluated first.",
-          "c": "The result is `a + (b * c)`.",
-          "d": "Multiplication and addition always mean the same thing."
-        }
-      },
-      "m1_ops_evenodd_truths_mc": {
-        "title": "Even and odd with modulo",
-        "prompt": "Select all true statements.",
-        "hint": "Check what happens when dividing by 2.",
-        "options": {
-          "a": "If `n % 2 == 0`, then `n` is even.",
-          "b": "If `n % 2 == 0`, then `n` is odd.",
-          "c": "Modulo means string concatenation.",
-          "d": "If `n % 2 != 0`, then `n` is odd."
-        }
-      },
-      "m1_ops_checkout_outputs_mc": {
-        "title": "Exact checkout output",
-        "prompt": "Select all lines that match the required output exactly.",
-        "hint": "The labels and capitalization must match exactly.",
-        "options": {
-          "a": "print(f\"Tax = {tax}\")",
-          "b": "print(f\"Total = {total}\")",
-          "c": "print(f\"tax = {tax}\")",
-          "d": "print(f\"Total: {total}\")"
-        }
-      },
-      "m1_ops_precedence_sc": {
-        "title": "Operator precedence",
-        "prompt": "Read THREE integers (a, b, c).\n\nCompute and print:\na + b * c\n\nPrint ONLY the number (one line).",
-        "hint": "Multiplication happens before addition: a + (b * c).",
-        "starterCode": "a = int(input())\nb = int(input())\nc = int(input())\n# TODO: print a + b * c\n"
-      },
-      "m1_ops_mod_evenodd_sc": {
-        "title": "Modulo even/odd",
-        "prompt": "Read ONE integer n.\n\nIf n is even, print:\neven\n\nOtherwise print:\nodd",
-        "hint": "If n % 2 == 0, it's even.",
-        "starterCode": "n = int(input())\n# TODO: print \"even\" or \"odd\"\n",
-        "runtime": {
-          "evenText": "even",
-          "oddText": "odd"
-        }
-      },
-      "m1_ops_checkout_code": {
-        "title": "Checkout (subtotal + tax)",
-        "prompt": "Read TWO integers:\n1) subtotal\n2) tax percent\n\nCompute:\n- tax = subtotal * taxPct // 100\n- total = subtotal + tax\n\nPrint EXACTLY two lines:\nTax = <tax>\nTotal = <total>",
-        "hint": "tax = subtotal * taxPct // 100",
-        "starterCode": "subtotal = int(input())\ntaxPct = int(input())\n# TODO\n",
-        "runtime": {
-          "taxLineTemplate": "Tax = {tax}",
-          "totalLineTemplate": "Total = {total}"
-        }
+      }
+    },
+    "m1_ops_precedence_parts_mc": {
+      "title": "Parts of operator precedence",
+      "prompt": "Select all true statements about `a + b * c`.",
+      "hint": "Think about which part is computed first.",
+      "options": {
+        "a": "`b * c` is evaluated first.",
+        "b": "`a + b` is always evaluated first.",
+        "c": "The result is `a + (b * c)`.",
+        "d": "Multiplication and addition always mean the same thing."
+      }
+    },
+    "m1_ops_evenodd_truths_mc": {
+      "title": "Even and odd with modulo",
+      "prompt": "Select all true statements.",
+      "hint": "Check what happens when dividing by 2.",
+      "options": {
+        "a": "If `n % 2 == 0`, then `n` is even.",
+        "b": "If `n % 2 == 0`, then `n` is odd.",
+        "c": "Modulo means string concatenation.",
+        "d": "If `n % 2 != 0`, then `n` is odd."
+      }
+    },
+    "m1_ops_checkout_outputs_mc": {
+      "title": "Exact checkout output",
+      "prompt": "Select all lines that match the required output exactly.",
+      "hint": "The labels and capitalization must match exactly.",
+      "options": {
+        "a": "print(f\"Tax = {tax}\")",
+        "b": "print(f\"Total = {total}\")",
+        "c": "print(f\"tax = {tax}\")",
+        "d": "print(f\"Total: {total}\")"
+      }
+    },
+    "m1_ops_precedence_sc": {
+      "title": "Operator precedence",
+      "prompt": "Read THREE integers (a, b, c).\n\nCompute and print:\na + b * c\n\nPrint ONLY the number (one line).",
+      "hint": "Multiplication happens before addition: a + (b * c).",
+      "starterCode": "a = int(input())\nb = int(input())\nc = int(input())\n# TODO: print a + b * c\n"
+    },
+    "m1_ops_mod_evenodd_sc": {
+      "title": "Modulo even/odd",
+      "prompt": "Read ONE integer n.\n\nIf n is even, print:\neven\n\nOtherwise print:\nodd",
+      "hint": "If n % 2 == 0, it's even.",
+      "starterCode": "n = int(input())\n# TODO: print \"even\" or \"odd\"\n",
+      "runtime": {
+        "evenText": "even",
+        "oddText": "odd"
+      }
+    },
+    "m1_ops_checkout_code": {
+      "title": "Checkout (subtotal + tax)",
+      "prompt": "Read TWO integers:\n1) subtotal\n2) tax percent\n\nCompute:\n- tax = subtotal * taxPct // 100\n- total = subtotal + tax\n\nPrint EXACTLY two lines:\nTax = <tax>\nTotal = <total>",
+      "hint": "tax = subtotal * taxPct // 100",
+      "starterCode": "subtotal = int(input())\ntaxPct = int(input())\n# TODO\n",
+      "runtime": {
+        "taxLineTemplate": "Tax = {tax}",
+        "totalLineTemplate": "Total = {total}"
       }
     }
   }

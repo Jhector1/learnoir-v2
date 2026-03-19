@@ -85,8 +85,13 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         "python";
 
     const [uLang, setULang] = useState<CodeLanguage>(initialLang);
+
+    // Keep default snippet only for true initial undefined/null state.
+    // Empty string "" is valid and must stay empty.
     const [uCode, setUCode] = useState<string>(
-        (props as any).initialCode ?? DEFAULT_CODE[initialLang],
+        typeof (props as any).initialCode === "string"
+            ? (props as any).initialCode
+            : DEFAULT_CODE[initialLang]
     );
 
     const lang: CodeLanguage = fixedLanguage
@@ -95,7 +100,8 @@ function CodeRunnerContent(props: CodeRunnerProps) {
             ? (props as any).language
             : uLang;
 
-    const code: string = controlled ? (props as any).code : uCode;
+    // Preserve empty string in controlled mode too.
+    const code: string = controlled ? ((props as any).code ?? "") : uCode;
 
     const setLang = (l: CodeLanguage) => {
         if (fixedLanguage) return;
@@ -114,7 +120,6 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     const requestedDock: TerminalDock =
         fixedTerminalDock ?? (props as any).terminalDock ?? uDock;
 
-    // ✅ Force bottom dock on smaller phones
     const effectiveDock: TerminalDock = isNarrowScreen ? "bottom" : requestedDock;
 
     const setDock = (d: TerminalDock) => {
@@ -189,15 +194,20 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     const onSwitchLang = (next: CodeLanguage) => {
         if (fixedLanguage) return;
         if (!allowedLangs.includes(next)) return;
+
         setLang(next);
-        setCode((code?.trim()?.length ? code : DEFAULT_CODE[next]) ?? DEFAULT_CODE[next]);
+
+        // Important:
+        // Keep whatever is currently in the editor, including "".
+        // Do NOT restore hello world when user intentionally cleared the editor.
+        setCode(typeof code === "string" ? code : DEFAULT_CODE[next]);
+
         term.resetTerminal();
     };
 
     const showPickerUI = showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
     const showEditorThemeToggleUI = showEditorThemeToggle && showHeaderBar;
 
-    // ✅ Hide dock toggle on phone because dock is forced to bottom
     const showDockToggleUI =
         !isNarrowScreen &&
         showTerminalDockToggle &&
@@ -236,6 +246,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         onSwitchLang={onSwitchLang}
                         allowReset={allowReset}
                         onReset={() => {
+                            // Reset is the ONLY place that should intentionally restore default starter code.
                             setCode(DEFAULT_CODE[lang]);
                             term.resetTerminal();
                         }}
@@ -319,7 +330,6 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                     />
                                 </div>
 
-                                {/* ✅ Hide drag handle on narrow screens */}
                                 {!isNarrowScreen ? (
                                     <div
                                         onMouseDown={term.runState !== "idle" ? undefined : split.onMouseDownSplit}
@@ -386,7 +396,10 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                     }
                                 />
 
-                                <div className="min-w-0 p-2 sm:p-3" style={{ width: split.termW, height: split.rightTotalH }}>
+                                <div
+                                    className="min-w-0 p-2 sm:p-3"
+                                    style={{ width: split.termW, height: split.rightTotalH }}
+                                >
                                     <TerminalPane
                                         terminal={term.terminal}
                                         stdinBuffer={term.stdinBuffer}

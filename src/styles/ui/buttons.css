@@ -84,4 +84,26 @@
     opacity: 0.55;
   }
 
+
+
+  .ui-btn-premium {
+    border: 1px solid rgb(245 158 11 / 0.28);
+    background-color: rgb(251 191 36 / 0.18);
+    color: rgb(146 64 14 / 1);
+  }
+
+  .ui-btn-premium:hover {
+    background-color: rgb(251 191 36 / 0.26);
+  }
+
+  .dark .ui-btn-premium {
+    border-color: rgb(252 211 77 / 0.18);
+    background-color: rgb(251 191 36 / 0.14);
+    color: rgb(254 243 199 / 1);
+  }
+
+  .dark .ui-btn-premium:hover {
+    background-color: rgb(251 191 36 / 0.2);
+  }
+
 }

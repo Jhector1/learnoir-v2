@@ -1249,11 +1249,11 @@ export default function HomePageAvatarOnboardingClient({
         setHydrated(true);
     }, [isAuthenticated]);
 
-    useEffect(() => {
-        if (!hydrated) return;
-        if (!onboardingData.themePreference) return;
-        applyThemeChoice(onboardingData.themePreference);
-    }, [hydrated, onboardingData.themePreference, applyThemeChoice]);
+    // useEffect(() => {
+    //     if (!hydrated) return;
+    //     if (!onboardingData.themePreference) return;
+    //     applyThemeChoice(onboardingData.themePreference);
+    // }, [hydrated, onboardingData.themePreference, applyThemeChoice]);
 
     useEffect(() => {
         const interests = onboardingData.learningInterests ?? [];

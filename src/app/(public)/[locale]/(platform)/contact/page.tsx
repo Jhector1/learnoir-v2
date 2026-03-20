@@ -12,16 +12,19 @@ import {
 } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
-import { getServerI18n } from "@/i18n/server"; // adjust path if needed
+import { getServerI18n } from "@/i18n/server";
+import {AppLocale} from "@/lib/seo/types";
+import {getRouteSeo, getSharedSeo} from "@/lib/seo/getSeo";
+import {buildMetadata} from "@/lib/seo/buildMetadata"; // adjust path if needed
 
 const CONTACT_LINKS = {
     generalEmail: "hello@zoeskoul.com",
     supportEmail: "support@zoeskoul.com",
     partnershipEmail: "partners@zoeskoul.com",
     whatsappNumber: "1234567890", // digits only
-    demoUrl: "https://calendly.com/zoeskoul/demo",
+    demoUrl: "https://calendly.com/sygmalink/30min",
     helpCenterUrl: "/help",
-    pricingUrl: "/pricing",
+    pricingUrl: "/billing",
 } as const;
 
 const FALLBACK = {
@@ -173,13 +176,27 @@ function ContactCard({
     );
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-    const { tMaybe } = await getServerI18n("contact.meta");
+export async function generateMetadata(
+    { params }: { params: Promise<{ locale: string }> }
+): Promise<Metadata> {
+    const { locale } = await params;
+    const l = locale as AppLocale;
 
-    return {
-        title: tMaybe("title", FALLBACK.metaTitle),
-        description: tMaybe("description", FALLBACK.metaDescription),
-    };
+    const seo = await getRouteSeo(l, "contact");
+    const shared = await getSharedSeo(l);
+
+    return buildMetadata({
+        locale: l,
+        path: "/contact",
+        title: seo.title,
+        description: seo.description,
+        keywords: shared.keywords,
+        ogTitle: seo.ogTitle,
+        ogDescription: seo.ogDescription,
+        twitterTitle: seo.twitterTitle,
+        twitterDescription: seo.twitterDescription,
+        imageAlt: shared.defaultOgAlt
+    });
 }
 
 export default async function ContactPage() {

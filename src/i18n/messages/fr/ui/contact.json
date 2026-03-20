@@ -1,4 +1,4 @@
-{
+{  "contact": {
   "meta": {
     "title": "Contacter ZoeSkoul",
     "description": "Contactez ZoeSkoul pour l’assistance, les démonstrations, les partenariats et les questions générales."
@@ -64,5 +64,5 @@
       "Pour les réunions et démonstrations : Réserver une démo",
       "Pour les collaborations ou opportunités commerciales : Partenariats"
     ]
-  }
-}
+  }}
+},

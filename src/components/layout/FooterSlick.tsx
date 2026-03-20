@@ -78,11 +78,11 @@ export default function FooterSlick({
         {
             title: t("sections.subjects"),
             links: [
-                { href: "/subjects/python", label: t("links.python") },
-                { href: "/subjects/linear-algebra", label: t("links.linearAlgebra") },
-                { href: "/subjects/ai-chatgpt-kickstart", label: t("links.aiChatgpt") },
-                { href: "/subjects/cybersecurity", label: t("links.cybersecurity") },
-                { href: "/subjects/haitian-creole", label: t("links.haitianCreole") },
+                { href: ROUTES.subjectModules("python"), label: t("links.python") },
+                { href: ROUTES.subjectModules("linear-algebra"), label: t("links.linearAlgebra") },
+                { href: ROUTES.subjectModules("ai-literacy"), label: t("links.aiChatgpt") },
+                { href: ROUTES.subjectModules("cyber-security"), label: t("links.cybersecurity") },
+                { href: ROUTES.subjectModules("haitian-creole"), label: t("links.haitianCreole") },
             ],
         },
         {

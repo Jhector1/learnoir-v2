@@ -326,9 +326,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                                     <Link
                                         href={backHref}
                                         className={cn(
-                                            "inline-flex shrink-0 items-center justify-center rounded-2xl px-4 py-2 text-sm font-extrabold",
-                                            "bg-white/80 ring-1 ring-black/5 transition hover:bg-white",
-                                            "dark:bg-white/[0.06] dark:ring-white/10 dark:hover:bg-white/[0.09]",
+                                            "ui-btn ui-btn-pill-strong ui-btn-secondary"
                                         )}
                                     >
                                         {t("actions.back")}
@@ -390,9 +388,7 @@ export default function ModuleIntroClient({ locale, subject, module, stats }: Pr
                                     <Link
                                         href={learnHref}
                                         className={cn(
-                                            "inline-flex min-h-12 items-center justify-center rounded-2xl px-5 py-3 text-sm font-extrabold",
-                                            "bg-neutral-900 text-white shadow-sm transition hover:shadow-md active:scale-[0.99]",
-                                            "dark:bg-white/10 dark:text-white/90 dark:hover:bg-white/12",
+                                            "ui-btn ui-btn-primary",
                                         )}
                                     >
                                         {ctaLabel}

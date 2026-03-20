@@ -15,6 +15,7 @@ import PlanCard from "@/components/billing/PlanCard";
 import { useBillingStatus } from "@/components/billing/hooks/useBillingStatus";
 import { useBillingActions } from "@/components/billing/hooks/useBillingActions";
 import InfoRow from "@/components/billing/InfoRow";
+import BillingPageSkeleton from "@/components/billing/BillingPageSkeleton";
 
 type PaywallInfo = {
     reason?: string | null; // "module" | "assignment" | ...
@@ -61,7 +62,9 @@ export default function BillingPageClient({
                 : t("paywall.titleGeneric");
 
     const trialDays = status?.trialDays ?? 7;
-
+    if (loading) {
+        return <BillingPageSkeleton showPaywall={Boolean(paywall?.reason)} />;
+    }
     return (
         <BillingShell>
             <div className="relative mx-auto max-w-5xl grid gap-4">

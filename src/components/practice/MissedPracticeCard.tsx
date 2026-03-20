@@ -76,10 +76,12 @@ function ReadOnlyPracticeCard({
 
   const exerciseRaw = q.exercise as Exercise | undefined;
 
+  const { raw } = useTaggedT();
+
   const exercise = useMemo(() => {
     if (!exerciseRaw) return null;
-    return resolveDeepTagged(exerciseRaw, (key) => tSafe(key, {}, "")) as Exercise;
-  }, [exerciseRaw, tSafe]);
+    return resolveDeepTagged(exerciseRaw, (key) => String(raw(key, ""))) as Exercise;
+  }, [exerciseRaw, raw]);
 
   const padRef = useRef<{ current: VectorPadState }>({ current: defaultVectorPadState() });
 

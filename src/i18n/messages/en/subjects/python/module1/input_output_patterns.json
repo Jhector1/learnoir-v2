@@ -60,7 +60,7 @@
     },
     "m1_io_c_to_f": {
       "title": "Celsius → Fahrenheit",
-      "prompt": "Read ONE integer C.\n\nCompute:\nF = C * 9/5 + 32\n\nPrint ONLY F.",
+      "prompt": "Read ONE integer C.\n\nCompute:\nF = C * 9/5 + 32\n\nPrint ONLY F as an integer.",
       "hint": "f = int(c * 9 / 5 + 32)",
       "starterCode": "c = int(input())\n# TODO\n"
     },

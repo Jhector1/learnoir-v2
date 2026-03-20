@@ -43,7 +43,7 @@
     },
     "hero": {
       "kicker": "Apprentissage personnalisé",
-      "title": "{appName} organise votre accueil autour des matières que vous voulez vraiment maîtriser.",
+      "title": "{appName} organise votre accueil autour des matières que vous voulez maîtriser.",
       "descriptionFresh": "{appName} commence par une courte configuration guidée, puis recommande les bonnes matières, les meilleurs points d’entrée et des questions d’essai selon votre langue, votre niveau et votre rythme hebdomadaire.",
       "chooseSubject": "Choisissez une matière à essayer",
       "continueLearning": "Continuer à apprendre",

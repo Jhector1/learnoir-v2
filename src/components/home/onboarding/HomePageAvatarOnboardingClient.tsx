@@ -1128,7 +1128,7 @@ function SubjectGrid({
                 return (
                     <Link
                         key={subject.slug}
-                        href={`/${encodeURIComponent(locale)}/subjects/${subject.slug}`}
+                        href={`/${encodeURIComponent(locale)}/subjects/${subject.slug}/modules`}
                         className="group block"
                     >
                         <motion.div whileHover={reduceMotion ? undefined : { y: -3 }}>

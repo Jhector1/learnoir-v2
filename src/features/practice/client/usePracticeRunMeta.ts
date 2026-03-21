@@ -1,39 +1,18 @@
-// src/features/practice/client/usePracticeRunMeta.ts
 "use client";
 
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Difficulty, TopicSlug } from "@/lib/practice/types";
+
+import type { PracticeRunMetaApi } from "@/lib/practice/apiTypes";
+import type { Difficulty } from "@/lib/practice/types";
+import type { TopicValue } from "@/lib/practice/uiTypes";
+
 import { difficultyOptions } from "@/components/vectorpad/types";
 import { useTopicOptions } from "./topicOptions";
 import { readReturnUrlFromSearchParams } from "./storage";
 
-export type TopicValue = TopicSlug | "all";
-
-export type RunMetaBase = {
-  allowReveal: boolean;
-  showDebug: boolean;
-  maxAttempts: number;
-  targetCount: number;
-  returnUrl?: string | null;
-};
-
-export type RunMeta =
-    | (RunMetaBase & {
-  mode: "assignment";
-  lockDifficulty: Difficulty;
-  lockTopic: "all" | TopicSlug;
-})
-    | (RunMetaBase & {
-  mode: "session";
-  lockDifficulty: Difficulty;
-  lockTopic: "all" | TopicSlug;
-})
-    | (RunMetaBase & {
-  mode: "practice";
-  lockDifficulty: null;
-  lockTopic: null;
-});
+export type RunMeta = PracticeRunMetaApi;
+export type { TopicValue };
 
 type UsePracticeRunMetaArgs = {
   subjectSlug?: string;
@@ -92,7 +71,6 @@ export function usePracticeRunMeta({
   const topicLocked = isLockedRun || run?.lockTopic != null;
   const difficultyLocked = isLockedRun || run?.lockDifficulty != null;
 
-  // Always call hooks. Pass safe fallbacks if slugs are missing.
   const topicOptionsFixed = useTopicOptions(subjectSlug ?? "", moduleSlug ?? "");
 
   const effectiveTopicOptions = useMemo<TopicOption[]>(() => {
@@ -109,7 +87,7 @@ export function usePracticeRunMeta({
 
       return only
           ? [{ id: only.id as TopicValue, label: only.label }]
-          : [{ id: run.lockTopic, label: String(run.lockTopic) }];
+          : [{ id: run.lockTopic as TopicValue, label: String(run.lockTopic) }];
     }
 
     return topicOptionsFixed.map((x) => ({

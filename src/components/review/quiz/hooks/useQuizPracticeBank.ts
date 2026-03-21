@@ -1,131 +1,26 @@
-// src/components/review/quiz/hooks/useQuizPracticeBank.ts
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import type { ReviewQuestion, ReviewQuizSpec } from "@/lib/subjects/types";
-
-import type { Exercise } from "@/lib/practice/types";
-import type { QItem } from "@/components/practice/practiceType";
 import type { VectorPadState } from "@/components/vectorpad/types";
-
 import { defaultVectorPadState } from "@/components/vectorpad/defaultState";
+import type { SavedQuizState } from "@/lib/review/progressTypes";
+import type { QItem } from "@/lib/practice/uiTypes";
+import type { PracticeItemState } from "@/lib/practice/runtime";
 import {
-  fetchPracticeExercise,
-  submitPracticeAnswer,
-  type PracticeGetResponse,
-} from "@/lib/practice/clientApi";
-import {
-  buildSubmitAnswerFromItem,
-  cloneVec,
-  initItemFromExercise,
-} from "@/lib/practice/uiHelpers";
-import type { SavedQuizState } from "@/lib/subjects/progressTypes";
+  coerceMaxAttempts,
+  extractCodeLike,
+  fetchResolvedPracticeItem,
+  revealPracticeItem,
+  submitPracticeItem,
+} from "@/lib/practice/runtime";
+import { cloneVec } from "@/lib/practice/uiHelpers";
 import { emitSfx } from "@/lib/sfx/bus";
-import {useTaggedT} from "@/i18n/tagged";
-import {resolveDeepTagged} from "@/i18n/resolveDeepTagged";
+import { useTaggedT } from "@/i18n/tagged";
+import { resolveDeepTagged } from "@/i18n/resolveDeepTagged";
 
-/** null => unlimited (server truth) */
-function coerceMaxAttempts(v: any): number | null {
-  if (v == null) return null;
-  if (v === Number.POSITIVE_INFINITY || v === Infinity) return null;
-
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return null;
-
-  return Math.max(1, Math.floor(n));
-}
-
-export type PracticeState = {
-  loading: boolean;
-  error: string | null;
-  busy: boolean;
-  exercise: Exercise | null;
-  item: QItem | null;
-  attempts: number;
-  maxAttempts: number | null; // ✅ null = unlimited
-  ok: boolean | null;
-};
-
-/**
- * Extract the code-like fields from either:
- * - a saved patch (practiceItemPatch[qid]) OR
- * - a live item (practice[qid].item)
- */
-function extractCodeLike(p: any) {
-  const code =
-      typeof p?.code === "string"
-          ? p.code
-          : typeof p?.source === "string"
-              ? p.source
-              : null;
-
-  const stdin =
-      typeof p?.codeStdin === "string"
-          ? p.codeStdin
-          : typeof p?.stdin === "string"
-              ? p.stdin
-              : null;
-
-  const language =
-      typeof p?.codeLang === "string"
-          ? p.codeLang
-          : typeof p?.language === "string"
-              ? p.language
-              : null;
-
-  return { code, stdin, language };
-}
-
-/**
- * If ex is "empty" given the current item/pad.
- * Used to disable submit / validation in UI.
- */
-export function isEmptyPracticeAnswer(
-    ex: Exercise,
-    item: QItem,
-    pad?: VectorPadState | null,
-) {
-  if (ex.kind === "vector_drag_dot") {
-    const a = pad?.a ?? (item as any).dragA;
-    return !a || ![a.x, a.y, a.z].some((v) => Number.isFinite(v));
-  }
-
-  if (ex.kind === "vector_drag_target") {
-    const a = pad?.a ?? (item as any).dragA;
-    const b = pad?.b ?? (item as any).dragB;
-    const hasA = a && [a.x, a.y, a.z].some((v) => Number.isFinite(v));
-    const hasB = b && [b.x, b.y, b.z].some((v) => Number.isFinite(v));
-    return !(hasA && hasB);
-  }
-
-  if (ex.kind === "drag_reorder") {
-    const tokens = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
-    const order = Array.isArray((item as any).reorder)
-        ? (item as any).reorder
-        : Array.isArray((item as any).reorderIds)
-            ? (item as any).reorderIds
-            : [];
-    return !(tokens.length > 0 && order.length === tokens.length);
-  }
-
-  if (ex.kind === "code_input") {
-    const code = (item as any).code ?? (item as any).source;
-    return !(code && String(code).trim().length > 0);
-  }
-
-  if (ex.kind === "text_input") {
-    const v = (item as any).text;
-    return !(v && String(v).trim().length > 0);
-  }
-
-  if (ex.kind === "voice_input") {
-    const t = (item as any).voiceTranscript;
-    return !(t && String(t).trim().length > 0);
-  }
-
-  const built = buildSubmitAnswerFromItem(item);
-  return !built;
-}
+export { isEmptyPracticeAnswer } from "@/lib/practice/runtime";
+export type PracticeState = PracticeItemState;
 
 export function useQuizPracticeBank(args: {
   questions: ReviewQuestion[];
@@ -147,14 +42,17 @@ export function useQuizPracticeBank(args: {
   } = args;
 
   const specMaxAttempts = (spec as any).maxAttempts;
+
   const tt = useTaggedT();
   const rawKeyRef = useRef<(key: string) => string>((key) => key);
   const resolveTextRef = useRef<(value: string) => string>((value) => value);
 
   rawKeyRef.current = (key: string) => tt.raw(key, key);
   resolveTextRef.current = (value: string) => tt.resolve(value, value);
+
   const [practice, setPractice] = useState<Record<string, PracticeState>>({});
   const practiceRef = useRef(practice);
+
   useEffect(() => {
     practiceRef.current = practice;
   }, [practice]);
@@ -170,13 +68,11 @@ export function useQuizPracticeBank(args: {
     return padRefs.current[id];
   }
 
-  // reset bank when quiz changes
   useEffect(() => {
     setPractice({});
     padRefs.current = {};
   }, [resetKey]);
 
-  // fetch practice exercises
   useEffect(() => {
     if (!questions.length) return;
 
@@ -185,8 +81,7 @@ export function useQuizPracticeBank(args: {
     async function ensurePracticeQuestion(q: ReviewQuestion) {
       if (q.kind !== "practice") return;
 
-      // ✅ hard guard: if already loaded/in-flight, do not refetch
-      const existing = (practiceRef.current as any)?.[q.id] as PracticeState | undefined;
+      const existing = practiceRef.current?.[q.id];
       if (existing && (existing.loading || existing.exercise || existing.item)) {
         return;
       }
@@ -195,8 +90,6 @@ export function useQuizPracticeBank(args: {
         if (prev[q.id]) return prev;
 
         const initMeta = initialState?.practiceMeta?.[q.id];
-
-        // ✅ Never default to 1. Prefer "unknown/unlimited" until server tells us.
         const fallbackMax =
             unlimitedAttempts
                 ? null
@@ -210,127 +103,105 @@ export function useQuizPracticeBank(args: {
             busy: false,
             exercise: null,
             item: null,
-
-            // ✅ seed from initialState so summary/unlock doesn't "drop"
             attempts: initMeta?.attempts ?? 0,
             ok: initMeta?.ok ?? null,
-
-            maxAttempts: fallbackMax, // null => unlimited
+            maxAttempts: fallbackMax,
           },
         };
       });
 
       try {
-        const res: PracticeGetResponse = await fetchPracticeExercise({
-          subject: (q as any).fetch.subject,
-          module: (q as any).fetch.module,
-          section: (q as any).fetch.section,
-          topic: (q as any).fetch.topic ? String((q as any).fetch.topic) : "",
-          difficulty: (q as any).fetch.difficulty,
-          allowReveal: (q as any).fetch.allowReveal ? true : undefined,
-          preferKind: (q as any).fetch.preferKind ?? undefined,
-          salt: (q as any).fetch.salt ?? undefined,
+        const loaded = await fetchResolvedPracticeItem({
+          request: {
+            subject: (q as any).fetch.subject,
+            module: (q as any).fetch.module,
+            section: (q as any).fetch.section,
+            topic: (q as any).fetch.topic ? String((q as any).fetch.topic) : "",
+            difficulty: (q as any).fetch.difficulty,
+            allowReveal: (q as any).fetch.allowReveal ? true : undefined,
+            preferKind: (q as any).fetch.preferKind ?? undefined,
+            salt: (q as any).fetch.salt ?? undefined,
+            preferPurpose: "mixed",
+            purposePolicy: "fallback",
+            exerciseKey: (q as any).fetch.exerciseKey ?? undefined,
+            seedPolicy: (q as any).fetch.seedPolicy ?? undefined,
+          },
+          resolvers: {
+            raw: (k) => rawKeyRef.current(k),
+            resolveText: (value) => resolveTextRef.current(value),
+          },
+          savedPatch: initialState?.practiceItemPatch?.[q.id] ?? null,
+          transformItem: (baseItem, resolvedEx) => {
+            const mode = (spec as any).mode ?? "quiz";
+            const carryFromPrev =
+                mode === "project" && Boolean((q as any).carryFromPrev);
 
-          preferPurpose: "mixed",
-          purposePolicy: "fallback",
+            if (!carryFromPrev || (resolvedEx as any).kind !== "code_input") {
+              return baseItem;
+            }
 
-          exerciseKey: (q as any).fetch.exerciseKey ?? undefined,
-          seedPolicy: (q as any).fetch.seedPolicy ?? undefined,
-        } as any);
+            const idx = questions.findIndex((qq) => qq.id === q.id);
+            const prevQ = idx > 0 ? questions[idx - 1] : null;
 
-        const ex = (res as any)?.exercise;
-        const key = (res as any)?.key;
-
-        if (!ex || typeof (ex as any)?.kind !== "string" || typeof key !== "string") {
-          throw new Error("Malformed response from /api/practice (missing exercise/key).");
-        }
-
-        const serverRunMax = coerceMaxAttempts((res as any)?.run?.maxAttempts);
-
-// ✅ resolve fetched exercise before creating the item
-        const resolvedEx = resolveDeepTagged(
-            ex as Exercise,
-            (k) => rawKeyRef.current(k),
-        ) as Exercise;
-
-// Base item from exercise
-        let item: any = initItemFromExercise(resolvedEx, key, {
-          resolveText: (value) => resolveTextRef.current(value),
-        });
-        // ----------------------------
-        // ✅ Carry code from previous step (project mode)
-        // ----------------------------
-        const mode = (spec as any).mode ?? "quiz";
-        const carryFromPrev =
-            mode === "project" && Boolean((q as any).carryFromPrev);
-
-        if (carryFromPrev && (ex as any).kind === "code_input") {
-          const idx = questions.findIndex((qq) => qq.id === q.id);
-          const prevQ = idx > 0 ? questions[idx - 1] : null;
-
-          // if current already has saved code, don't override
-          const rawCurrentPatch = initialState?.practiceItemPatch?.[q.id];
-          const currentPatch = rawCurrentPatch
-              ? resolveDeepTagged(rawCurrentPatch, (k) => rawKeyRef.current(k))
-              : null;
-          const current = extractCodeLike(currentPatch);
-
-          let prevSource: any = null;
-          if (prevQ) {
-            const livePrevItem = (practiceRef.current as any)?.[prevQ.id]?.item;
-            const rawPrevSource =
-                livePrevItem ?? initialState?.practiceItemPatch?.[prevQ.id] ?? null;
-
-            prevSource = rawPrevSource
-                ? resolveDeepTagged(rawPrevSource, (k) => rawKeyRef.current(k))
+            const rawCurrentPatch = initialState?.practiceItemPatch?.[q.id];
+            const currentPatch = rawCurrentPatch
+                ? resolveDeepTagged(rawCurrentPatch, (k) => rawKeyRef.current(k))
                 : null;
-          }
 
-          const prev = extractCodeLike(prevSource);
+            const current = extractCodeLike(currentPatch);
 
-          // Only carry if user hasn't saved code for current step yet
-          if (!current.code && prev.code) {
-            item = {
-              ...item,
-              code: prev.code,
-              codeStdin: prev.stdin ?? item.codeStdin ?? "",
-              codeLang: (prev.language as any) ?? item.codeLang,
-              stdin: prev.stdin ?? (item as any).stdin ?? "",
-            };
-          }
-        }
+            let prevSource: any = null;
+            if (prevQ) {
+              const livePrevItem = practiceRef.current?.[prevQ.id]?.item;
+              const rawPrevSource =
+                  livePrevItem ?? initialState?.practiceItemPatch?.[prevQ.id] ?? null;
+
+              prevSource = rawPrevSource
+                  ? resolveDeepTagged(rawPrevSource, (k) => rawKeyRef.current(k))
+                  : null;
+            }
+
+            const prev = extractCodeLike(prevSource);
+
+            if (!current.code && prev.code) {
+              return {
+                ...baseItem,
+                code: prev.code,
+                codeStdin: prev.stdin ?? (baseItem as any).codeStdin ?? "",
+                codeLang: (prev.language as any) ?? (baseItem as any).codeLang,
+                stdin: prev.stdin ?? (baseItem as any).stdin ?? "",
+              };
+            }
+
+            return baseItem;
+          },
+        });
 
         if (cancelled) return;
 
-        // Apply saved patch LAST so user-saved state always wins
-        const rawPatch = initialState?.practiceItemPatch?.[q.id];
-        const resolvedPatch = rawPatch
-            ? (resolveDeepTagged(rawPatch, (k) => rawKeyRef.current(k)) as Partial<QItem>)
-            : null;
-
-        const patchedItem = resolvedPatch ? { ...item, ...resolvedPatch } : item;
         setPractice((prev) => {
           const base = prev[q.id];
+
           return {
             ...prev,
             [q.id]: {
               ...base,
               loading: false,
               error: null,
-              exercise: resolvedEx,
-              item: patchedItem,
-
-              // keep seeded attempts/ok; do not overwrite with nulls
-              attempts: initialState?.practiceMeta?.[q.id]?.attempts ?? base?.attempts ?? 0,
+              exercise: loaded.exercise,
+              item: loaded.item,
+              attempts:
+                  initialState?.practiceMeta?.[q.id]?.attempts ??
+                  base?.attempts ??
+                  0,
               ok: initialState?.practiceMeta?.[q.id]?.ok ?? base?.ok ?? null,
-
-              // ✅ prefer server run meta when available; otherwise keep existing fallback
-              maxAttempts: serverRunMax ?? base?.maxAttempts ?? null,
+              maxAttempts: loaded.maxAttempts ?? base?.maxAttempts ?? null,
             },
           };
         });
       } catch (e: any) {
         if (cancelled) return;
+
         setPractice((prev) => ({
           ...prev,
           [q.id]: {
@@ -343,7 +214,9 @@ export function useQuizPracticeBank(args: {
       }
     }
 
-    for (const q of questions) void ensurePracticeQuestion(q);
+    for (const q of questions) {
+      void ensurePracticeQuestion(q);
+    }
 
     return () => {
       cancelled = true;
@@ -353,11 +226,11 @@ export function useQuizPracticeBank(args: {
     unlimitedAttempts,
     specMaxAttempts,
     resetKey,
-    (spec as any).mode,
+    initialState,
+    spec,
   ]);
 
   const updatePracticeItem = useCallback((qid: string, patch: Partial<QItem>) => {
-    // ✅ sync pad when patch includes vectors
     const pr = padRefs.current[qid];
     if (pr?.current) {
       if ((patch as any).dragA) pr.current.a = cloneVec((patch as any).dragA) as any;
@@ -370,7 +243,6 @@ export function useQuizPracticeBank(args: {
 
       const nextItem = { ...ps.item, ...patch };
 
-      // ✅ if the UI reset check status, also reset meta ok
       const isReset =
           ("submitted" in patch && (patch as any).submitted === false) ||
           ("result" in patch && (patch as any).result == null);
@@ -393,9 +265,10 @@ export function useQuizPracticeBank(args: {
         const ps = practice[q.id];
         if (!ps || ps.loading || ps.busy || !ps.item || !ps.exercise) return;
 
-        // ✅ optional client-side cap (server is still authority)
         const attemptsCapped =
-            !unlimitedAttempts && ps.maxAttempts != null && ps.attempts >= ps.maxAttempts;
+            !unlimitedAttempts &&
+            ps.maxAttempts != null &&
+            ps.attempts >= ps.maxAttempts;
 
         if (attemptsCapped) return;
         if (ps.ok === true) return;
@@ -406,39 +279,18 @@ export function useQuizPracticeBank(args: {
         }));
 
         try {
-          const ex = ps.exercise;
-          let answer: any = undefined;
+          const submitted = await submitPracticeItem({
+            item: ps.item,
+            exercise: ps.exercise,
+            padRef: getPadRef(q.id),
+            maxAttempts: ps.maxAttempts,
+            isLockedRun: !unlimitedAttempts && ps.maxAttempts != null,
+          });
 
-          if (ex.kind === "vector_drag_dot") {
-            const pr = getPadRef(q.id);
-            const a = pr.current?.a ?? (ps.item as any).dragA;
-            answer = { kind: "vector_drag_dot", a: cloneVec(a) };
-            updatePracticeItem(q.id, { dragA: cloneVec(a) } as any);
-          } else if (ex.kind === "vector_drag_target") {
-            const pr = getPadRef(q.id);
-            const a = pr.current?.a ?? (ps.item as any).dragA;
-            const b = pr.current?.b ?? (ps.item as any).dragB;
-            answer = { kind: "vector_drag_target", a: cloneVec(a), b: cloneVec(b) };
-            updatePracticeItem(q.id, { dragA: cloneVec(a), dragB: cloneVec(b) } as any);
-          } else {
-            answer = buildSubmitAnswerFromItem(ps.item);
-          }
-
-          if (!answer) throw new Error("Incomplete answer.");
-
-          const data = await submitPracticeAnswer({
-            key: (ps.item as any).key,
-            answer,
-          } as any);
-
-          const ok = Boolean((data as any)?.ok);
-          emitSfx(ok ? "answer:correct" : "answer:wrong");
-
-          // ✅ if server sends attempts.max (may be null), adopt it
-          const serverMax = coerceMaxAttempts((data as any)?.attempts?.max);
+          emitSfx(submitted.ok ? "answer:correct" : "answer:wrong");
 
           setPractice((prev) => {
-            const nextAttempts = (prev[q.id]?.attempts ?? 0) + 1;
+            const nextAttempts = submitted.used;
 
             return {
               ...prev,
@@ -446,11 +298,12 @@ export function useQuizPracticeBank(args: {
                 ...prev[q.id],
                 busy: false,
                 attempts: nextAttempts,
-                ok,
-                maxAttempts: serverMax ?? prev[q.id].maxAttempts ?? null,
+                ok: submitted.ok,
+                maxAttempts: submitted.serverMaxAttempts ?? prev[q.id].maxAttempts ?? null,
                 item: {
                   ...prev[q.id].item!,
-                  result: data as any,
+                  ...(submitted.statePatch ?? {}),
+                  result: submitted.data as any,
                   submitted: true,
                   attempts: nextAttempts,
                 } as any,
@@ -468,7 +321,7 @@ export function useQuizPracticeBank(args: {
           }));
         }
       },
-      [practice, unlimitedAttempts, isCompleted, locked, updatePracticeItem],
+      [practice, unlimitedAttempts, isCompleted, locked],
   );
 
   const revealPractice = useCallback(
@@ -484,28 +337,19 @@ export function useQuizPracticeBank(args: {
         }));
 
         try {
-          const data = await submitPracticeAnswer({
-            key: (ps.item as any).key,
-            reveal: true,
-          } as any);
+          const revealed = await revealPracticeItem(ps.item);
 
-          const solA =
-              (data as any)?.revealAnswer?.solutionA ??
-              (data as any)?.reveal?.solutionA ??
-              (data as any)?.expected?.solutionA;
-
-          const bExp =
-              (data as any)?.revealAnswer?.b ??
-              (data as any)?.reveal?.b ??
-              (data as any)?.expected?.b;
-
-          if (solA) updatePracticeItem(q.id, { dragA: cloneVec(solA) } as any);
-          if (bExp) updatePracticeItem(q.id, { dragB: cloneVec(bExp) } as any);
+          if (revealed.dragA) {
+            updatePracticeItem(q.id, { dragA: revealed.dragA } as any);
+          }
+          if (revealed.dragB) {
+            updatePracticeItem(q.id, { dragB: revealed.dragB } as any);
+          }
 
           const pr = getPadRef(q.id);
           if (pr.current) {
-            if (solA) pr.current.a = cloneVec(solA) as any;
-            if (bExp) pr.current.b = cloneVec(bExp) as any;
+            if (revealed.dragA) pr.current.a = cloneVec(revealed.dragA) as any;
+            if (revealed.dragB) pr.current.b = cloneVec(revealed.dragB) as any;
           }
 
           setPractice((prev) => ({
@@ -517,7 +361,7 @@ export function useQuizPracticeBank(args: {
               ok: false,
               item: {
                 ...prev[q.id].item!,
-                result: data as any,
+                result: revealed.data as any,
                 revealed: true,
                 submitted: true,
               } as any,

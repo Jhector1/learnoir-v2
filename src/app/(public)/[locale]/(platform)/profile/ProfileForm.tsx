@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import {ROUTES} from "@/utils";
 
 type Me = {
     id: string;
@@ -296,7 +297,7 @@ export default function ProfileForm({ initialUser }: { initialUser: Me }) {
             </Link>
 
             {/* Optional polish link */}
-            <Link href="/account" className="ui-card p-5 hover:shadow-md transition">
+            <Link href={ROUTES.achievements} className="ui-card p-5 hover:shadow-md transition">
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-sm font-black text-neutral-900 dark:text-white">Account</div>

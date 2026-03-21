@@ -20,5 +20,6 @@ export const ROUTES = {
     privacy: "/privacy",
     authenticate: "/authenticate",
     terms: "/terms",
-    sandbox:"/sandbox"
+    sandbox:"/sandbox",
+    achievements:"/achievements"
 };

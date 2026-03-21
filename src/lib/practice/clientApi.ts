@@ -1,44 +1,35 @@
-// src/lib/practice/clientApi.ts
-import {PracticePurpose} from "@prisma/client";
-import {PurposeMode, PurposePolicy} from "@/lib/subjects/types";
+import { PurposeMode, PurposePolicy } from "@/lib/subjects/types";
+import type {
+  PracticeGetResponse,
+  PracticeStatusResponse,
+  PracticeValidateClientResponse,
+} from "@/lib/practice/apiTypes";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export type PracticeGetResponse = any;
+export type {
+  PracticeGetResponse,
+  PracticeStatusResponse,
+  PracticeValidateClientResponse,
+};
 
 async function readJsonSafe(res: Response) {
   const text = await res.text();
-  if (!text) throw new Error(`Empty response body (status ${res.status})`);
+
+  if (!text) {
+    throw new Error(`Empty response body (status ${res.status})`);
+  }
+
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(`Non-JSON response (status ${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(
+        `Non-JSON response (status ${res.status}): ${text.slice(0, 200)}`,
+    );
   }
 }
 
-type SeedPolicy = "actor" | "global";
+export type SeedPolicy = "actor" | "global";
 
-
-function buildPracticeUrl(args: {
+export type PracticeGetRequest = {
   subject?: string;
   module?: string;
   topic?: string;
@@ -48,7 +39,6 @@ function buildPracticeUrl(args: {
   sessionId?: string;
   preferKind?: string;
 
-  // ✅ NEW
   preferPurpose?: PurposeMode;
   purposePolicy?: PurposePolicy;
 
@@ -59,10 +49,12 @@ function buildPracticeUrl(args: {
   statusOnly?: boolean;
   includeMissed?: boolean;
   includeHistory?: boolean;
-}) {
+};
+
+function buildPracticeUrl(args: PracticeGetRequest) {
   const sp = new URLSearchParams();
 
-  const set = (k: string, v: any) => {
+  const set = (k: string, v: unknown) => {
     if (v === undefined || v === null) return;
     const s = String(v).trim();
     if (!s) return;
@@ -82,7 +74,6 @@ function buildPracticeUrl(args: {
   set("sessionId", args.sessionId);
   set("preferKind", args.preferKind);
 
-  // ✅ NEW
   set("preferPurpose", args.preferPurpose);
   set("purposePolicy", args.purposePolicy);
 
@@ -90,37 +81,25 @@ function buildPracticeUrl(args: {
   set("exerciseKey", args.exerciseKey);
   set("seedPolicy", args.seedPolicy);
 
-  if (args.statusOnly !== undefined) sp.set("statusOnly", args.statusOnly ? "true" : "false");
-  if (args.includeMissed !== undefined) sp.set("includeMissed", args.includeMissed ? "true" : "false");
-  if (args.includeHistory !== undefined) sp.set("includeHistory", args.includeHistory ? "true" : "false");
+  if (args.statusOnly !== undefined) {
+    sp.set("statusOnly", args.statusOnly ? "true" : "false");
+  }
+
+  if (args.includeMissed !== undefined) {
+    sp.set("includeMissed", args.includeMissed ? "true" : "false");
+  }
+
+  if (args.includeHistory !== undefined) {
+    sp.set("includeHistory", args.includeHistory ? "true" : "false");
+  }
 
   const qs = sp.toString();
   return `/api/practice${qs ? `?${qs}` : ""}`;
 }
 
-export async function fetchPracticeExercise(args: {
-  subject?: string;
-  module?: string;
-  topic?: string;
-  difficulty?: string;
-  section?: string;
-  allowReveal?: boolean;
-  sessionId?: string;
-  signal?: AbortSignal;
-  preferKind?: string;
-
-  // ✅ NEW
-  preferPurpose?: PurposeMode;
-  purposePolicy?: PurposePolicy;
-
-  salt?: string;
-  exerciseKey?: string;
-  seedPolicy?: SeedPolicy;
-
-  statusOnly?: boolean;
-  includeMissed?: boolean;
-  includeHistory?: boolean;
-}) {
+export async function fetchPracticeExercise(
+    args: PracticeGetRequest & { signal?: AbortSignal },
+): Promise<PracticeGetResponse> {
   const url = buildPracticeUrl(args);
 
   const res = await fetch(url, {
@@ -129,17 +108,32 @@ export async function fetchPracticeExercise(args: {
     signal: args.signal,
   });
 
-  const data = await readJsonSafe(res);
-  if (!res.ok) throw new Error(data?.explanation ?? data?.message ?? `Failed (${res.status})`);
-  return data as PracticeGetResponse;
+  const data = (await readJsonSafe(res)) as PracticeGetResponse & {
+    explanation?: string | null;
+    message?: string | null;
+  };
+
+  if (!res.ok) {
+    throw new Error(
+        data?.explanation ??
+        data?.message ??
+        `Failed (${res.status})`,
+    );
+  }
+
+  return data;
 }
 
-export async function submitPracticeAnswer(args: {
+export type PracticeSubmitRequest = {
   key: string;
   answer?: any;
   reveal?: boolean;
   signal?: AbortSignal;
-}) {
+};
+
+export async function submitPracticeAnswer(
+    args: PracticeSubmitRequest,
+): Promise<PracticeValidateClientResponse> {
   const res = await fetch(`/api/practice/validate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -152,7 +146,18 @@ export async function submitPracticeAnswer(args: {
     }),
   });
 
-  const data = await readJsonSafe(res);
-  if (!res.ok) throw new Error(data?.explanation ?? data?.message ?? `Failed (${res.status})`);
+  const data = (await readJsonSafe(res)) as PracticeValidateClientResponse & {
+    explanation?: string | null;
+    message?: string | null;
+  };
+
+  if (!res.ok) {
+    throw new Error(
+        data?.explanation ??
+        data?.message ??
+        `Failed (${res.status})`,
+    );
+  }
+
   return data;
 }

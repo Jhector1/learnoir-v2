@@ -1,8 +1,9 @@
-// src/components/review/module/hooks/useToolCodeRunnerState.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodeLanguage } from "@/lib/practice/types";
+import { useDebouncedCommit } from "@/lib/client/persistence/useDebouncedCommit";
+import { useFlushOnPageExit } from "@/lib/client/persistence/useFlushOnPageExit";
 
 type BoundTarget = { id: string; onPatch: (patch: any) => void };
 type ToolSnap = { lang: CodeLanguage; code: string; stdin: string };
@@ -53,23 +54,70 @@ export function useToolCodeRunnerState(args: {
 
     const isBound = useCallback((id: string) => boundRef.current?.id === id, []);
 
-    const timerRef = useRef<number | null>(null);
-
-    const clearPendingSave = useCallback(() => {
-        if (timerRef.current) window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-    }, []);
-
-    const unbindCodeInput = useCallback(() => {
-        clearPendingSave();
+    const clearBoundState = useCallback(() => {
         boundRef.current = null;
         boundDirtyRef.current = false;
         setBoundId(null);
-    }, [clearPendingSave]);
+    }, []);
+
+    const saved = useMemo(() => {
+        return (progress as any)?.topics?.[viewTid]?.toolState?.[toolKey] ?? null;
+    }, [progress, viewTid, toolKey]);
+
+    const initialLang = (saved?.lang as CodeLanguage) ?? defaultLang;
+    const initialCode = typeof saved?.code === "string" ? saved.code : defaultCode;
+    const initialStdin = typeof saved?.stdin === "string" ? saved.stdin : defaultStdin;
+
+    const [toolLang, setToolLang0] = useState<CodeLanguage>(initialLang);
+    const [toolCode, setToolCode0] = useState<string>(initialCode);
+    const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
+
+    const toolSnap = useMemo<ToolSnap>(
+        () => ({
+            lang: toolLang,
+            code: toolCode,
+            stdin: toolStdin,
+        }),
+        [toolLang, toolCode, toolStdin],
+    );
+
+    const commitToolToProgress = useCallback(
+        async (latest: ToolSnap) => {
+            setProgress((p: any) => {
+                const tp0: any = p.topics?.[viewTid] ?? {};
+                const toolState = { ...(tp0.toolState ?? {}) };
+
+                toolState[toolKey] = {
+                    lang: latest.lang,
+                    code: latest.code,
+                    stdin: latest.stdin,
+                };
+
+                return {
+                    ...p,
+                    topics: {
+                        ...(p.topics ?? {}),
+                        [viewTid]: { ...tp0, toolState },
+                    },
+                };
+            });
+        },
+        [setProgress, viewTid, toolKey],
+    );
+
+    const { prime, flush, cancel } = useDebouncedCommit({
+        value: toolSnap,
+        enabled: progressHydrated,
+        delayMs: toolSaveDelayMs,
+        serialize: snapKey,
+        commit: async (latest) => {
+            await commitToolToProgress(latest);
+        },
+    });
 
     useEffect(() => {
-        unbindCodeInput();
-    }, [viewTid, unbindCodeInput]);
+        clearBoundState();
+    }, [viewTid, clearBoundState]);
 
     const lastVersionRef = useRef<string | null>(null);
     useEffect(() => {
@@ -81,41 +129,11 @@ export function useToolCodeRunnerState(args: {
         }
 
         if (lastVersionRef.current !== versionStr) {
-            unbindCodeInput();
+            clearBoundState();
         }
 
         lastVersionRef.current = versionStr;
-    }, [progressHydrated, versionStr, unbindCodeInput]);
-
-    const saved = useMemo(() => {
-        return (progress as any)?.topics?.[viewTid]?.toolState?.[toolKey] ?? null;
-    }, [progress, viewTid, toolKey]);
-
-    const initialLang = (saved?.lang as CodeLanguage) ?? defaultLang;
-
-    // Keep empty string if the user intentionally cleared the editor.
-    // Only fall back when code is truly missing.
-    const initialCode =
-        typeof saved?.code === "string" ? saved.code : defaultCode;
-
-    const initialStdin =
-        typeof saved?.stdin === "string" ? saved.stdin : defaultStdin;
-
-    const [toolLang, setToolLang0] = useState<CodeLanguage>(initialLang);
-    const [toolCode, setToolCode0] = useState<string>(initialCode);
-    const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
-
-    const latestRef = useRef<ToolSnap>({
-        lang: initialLang,
-        code: initialCode,
-        stdin: initialStdin,
-    });
-
-    useEffect(() => {
-        latestRef.current = { lang: toolLang, code: toolCode, stdin: toolStdin };
-    }, [toolLang, toolCode, toolStdin]);
-
-    const lastCommittedSnapRef = useRef<string>("");
+    }, [progressHydrated, versionStr, clearBoundState]);
 
     useEffect(() => {
         if (!progressHydrated) return;
@@ -124,21 +142,18 @@ export function useToolCodeRunnerState(args: {
         const s = (progress as any)?.topics?.[viewTid]?.toolState?.[toolKey] ?? null;
 
         const nextLang = (s?.lang as CodeLanguage) ?? defaultLang;
-
-        // Keep "" as a valid saved value.
-        const nextCode =
-            typeof s?.code === "string" ? s.code : defaultCode;
-
-        const nextStdin =
-            typeof s?.stdin === "string" ? s.stdin : defaultStdin;
+        const nextCode = typeof s?.code === "string" ? s.code : defaultCode;
+        const nextStdin = typeof s?.stdin === "string" ? s.stdin : defaultStdin;
 
         setToolLang0(nextLang);
         setToolCode0(nextCode);
         setToolStdin0(nextStdin);
 
-        const snap: ToolSnap = { lang: nextLang, code: nextCode, stdin: nextStdin };
-        latestRef.current = snap;
-        lastCommittedSnapRef.current = snapKey(snap);
+        prime({
+            lang: nextLang,
+            code: nextCode,
+            stdin: nextStdin,
+        });
     }, [
         viewTid,
         progressHydrated,
@@ -148,6 +163,7 @@ export function useToolCodeRunnerState(args: {
         defaultLang,
         defaultCode,
         defaultStdin,
+        prime,
     ]);
 
     const bindCodeInput = useCallback(
@@ -167,96 +183,40 @@ export function useToolCodeRunnerState(args: {
 
             boundDirtyRef.current = false;
 
-            const nextLang = args2.lang;
-            const nextCode = typeof args2.code === "string" ? args2.code : "";
-            const nextStdin = typeof args2.stdin === "string" ? args2.stdin : "";
-
-            setToolLang0(nextLang);
-            setToolCode0(nextCode);
-            setToolStdin0(nextStdin);
-
-            const snap: ToolSnap = { lang: nextLang, code: nextCode, stdin: nextStdin };
-            latestRef.current = snap;
-        },
-        [],
-    );
-
-    const commitToolNow = useCallback(() => {
-        if (!progressHydrated) return;
-
-        const latest = latestRef.current;
-        const k = snapKey(latest);
-
-        if (k === lastCommittedSnapRef.current) return;
-        lastCommittedSnapRef.current = k;
-
-        setProgress((p: any) => {
-            const tp0: any = p.topics?.[viewTid] ?? {};
-            const toolState = { ...(tp0.toolState ?? {}) };
-
-            toolState[toolKey] = {
-                lang: latest.lang,
-                code: latest.code,
-                stdin: latest.stdin,
+            const nextSnap: ToolSnap = {
+                lang: args2.lang,
+                code: typeof args2.code === "string" ? args2.code : "",
+                stdin: typeof args2.stdin === "string" ? args2.stdin : "",
             };
 
-            return {
-                ...p,
-                topics: {
-                    ...(p.topics ?? {}),
-                    [viewTid]: { ...tp0, toolState },
-                },
-            };
-        });
-    }, [progressHydrated, setProgress, toolKey, viewTid]);
+            setToolLang0(nextSnap.lang);
+            setToolCode0(nextSnap.code);
+            setToolStdin0(nextSnap.stdin);
 
-    const saveDebounced = useCallback(
-        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string) => {
-            if (!progressHydrated) return;
-
-            clearPendingSave();
-
-            timerRef.current = window.setTimeout(() => {
-                latestRef.current = {
-                    lang: nextLang,
-                    code: nextCode,
-                    stdin: typeof nextStdin === "string" ? nextStdin : latestRef.current.stdin,
-                };
-                commitToolNow();
-            }, toolSaveDelayMs);
+            prime(nextSnap);
         },
-        [progressHydrated, clearPendingSave, commitToolNow, toolSaveDelayMs],
+        [prime],
     );
+
+    const unbindCodeInput = useCallback(() => {
+        cancel();
+        clearBoundState();
+    }, [cancel, clearBoundState]);
+
+    useFlushOnPageExit(() => {
+        cancel();
+        void flush();
+    }, progressHydrated);
 
     useEffect(() => {
         return () => {
-            clearPendingSave();
-            commitToolNow();
+            cancel();
+            void flush();
         };
-    }, [clearPendingSave, commitToolNow]);
-
-    useEffect(() => {
-        const onHide = () => {
-            clearPendingSave();
-            commitToolNow();
-        };
-
-        const onVisibilityChange = () => {
-            if (document.visibilityState === "hidden") onHide();
-        };
-
-        window.addEventListener("pagehide", onHide);
-        document.addEventListener("visibilitychange", onVisibilityChange);
-
-        return () => {
-            window.removeEventListener("pagehide", onHide);
-            document.removeEventListener("visibilitychange", onVisibilityChange);
-        };
-    }, [clearPendingSave, commitToolNow]);
+    }, [cancel, flush]);
 
     const setToolLang = useCallback((l: CodeLanguage) => {
         setToolLang0(l);
-        latestRef.current = { ...latestRef.current, lang: l };
 
         const b = boundRef.current;
         if (b) {
@@ -267,7 +227,6 @@ export function useToolCodeRunnerState(args: {
 
     const setToolCode = useCallback((c: string) => {
         setToolCode0(c);
-        latestRef.current = { ...latestRef.current, code: c };
 
         const b = boundRef.current;
         if (b) {
@@ -278,7 +237,6 @@ export function useToolCodeRunnerState(args: {
 
     const setToolStdin = useCallback((s: string) => {
         setToolStdin0(s);
-        latestRef.current = { ...latestRef.current, stdin: s };
 
         const b = boundRef.current;
         if (b) {
@@ -286,6 +244,15 @@ export function useToolCodeRunnerState(args: {
             b.onPatch({ codeStdin: s, submitted: false, result: null });
         }
     }, []);
+
+    const saveDebounced = useCallback(
+        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string) => {
+            setToolLang0(nextLang);
+            setToolCode0(nextCode);
+            setToolStdin0(typeof nextStdin === "string" ? nextStdin : "");
+        },
+        [],
+    );
 
     const rightBodyRef = useRef<HTMLDivElement | null>(null);
     const [rightBodyH, setRightBodyH] = useState(520);
@@ -320,7 +287,7 @@ export function useToolCodeRunnerState(args: {
         setToolStdin,
 
         saveDebounced,
-        commitToolNow,
+        commitToolNow: flush,
 
         bindCodeInput,
         unbindCodeInput,

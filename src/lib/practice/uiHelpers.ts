@@ -1,6 +1,11 @@
-// src/lib/practice/uiHelpers.ts
-import type { CodeLanguage, Exercise, SubmitAnswer, TopicSlug, Vec3 } from "@/lib/practice/types";
-import type { QItem } from "@/components/practice/practiceType";
+import type {
+    CodeLanguage,
+    Exercise,
+    SubmitAnswer,
+    TopicSlug,
+    Vec3,
+} from "@/lib/practice/types";
+import type { QItem } from "@/lib/practice/uiTypes";
 
 export function resizeGrid(prev: string[][], rows: number, cols: number) {
     const r = Math.max(1, Math.floor(rows));
@@ -23,29 +28,18 @@ function getRequiredMatrixShape(ex: any): { rows: number; cols: number } | null 
     return null;
 }
 
-function normDim(n: unknown, fallback: number) {
-    const v = Number(n);
-    if (!Number.isFinite(v)) return fallback;
-    return Math.max(1, Math.floor(v));
-}
-
-/**
- * Optional text resolver for tagged strings like "@:quiz.some_key".
- * Keep this generic so uiHelpers stays non-React.
- */
 export type InitItemOptions = {
     resolveText?: (value: string) => string;
 };
 
-function resolveMaybeTagged(value: unknown, resolveText?: (value: string) => string): string {
+function resolveMaybeTagged(
+    value: unknown,
+    resolveText?: (value: string) => string,
+): string {
     const s = String(value ?? "");
     return resolveText ? resolveText(s) : s;
 }
 
-/**
- * Turn a QItem (UI state) into a SubmitAnswer (API payload).
- * Shared by PracticeClient and QuizBlock.
- */
 export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined {
     const ex = item.exercise;
 
@@ -71,10 +65,11 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
         const tokensRaw = Array.isArray((ex as any).tokens) ? (ex as any).tokens : [];
         const tokenIds = tokensRaw.map((t: any) => String(t?.id ?? t));
 
-        const orderRaw =
-            Array.isArray((item as any).reorder) ? (item as any).reorder :
-                Array.isArray((item as any).reorderIds) ? (item as any).reorderIds :
-                    [];
+        const orderRaw = Array.isArray((item as any).reorder)
+            ? (item as any).reorder
+            : Array.isArray((item as any).reorderIds)
+                ? (item as any).reorderIds
+                : [];
 
         const orderIds = orderRaw.map((x: any) => String(x?.id ?? x));
 
@@ -161,8 +156,13 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
         const code = String((item as any).code ?? (item as any).source ?? "").trimEnd();
         if (!code.trim()) return undefined;
 
-        const language = String((item as any).codeLang ?? (ex as any).language ?? "python") as CodeLanguage;
-        const stdin = String((item as any).codeStdin ?? (item as any).stdin ?? "").trimEnd();
+        const language = String(
+            (item as any).codeLang ?? (ex as any).language ?? "python",
+        ) as CodeLanguage;
+
+        const stdin = String(
+            (item as any).codeStdin ?? (item as any).stdin ?? "",
+        ).trimEnd();
 
         return {
             kind: "code_input",
@@ -175,10 +175,6 @@ export function buildSubmitAnswerFromItem(item: QItem): SubmitAnswer | undefined
     return undefined;
 }
 
-/**
- * Create the initial QItem state for any Exercise.
- * Shared by PracticeClient and QuizBlock.
- */
 export function initItemFromExercise(
     ex: Exercise,
     key: string,
@@ -248,6 +244,8 @@ export function initItemFromExercise(
 
         voiceTranscript: "",
         voiceAudioId: "",
+
+        codeRunOutput: "",
     };
 
     if (ex.kind === "text_input") {
@@ -271,9 +269,6 @@ export function initItemFromExercise(
     return base;
 }
 
-/**
- * Client still trusts DB topic slugs.
- */
 export function normalizeTopicValue(v: string | null | undefined): TopicSlug | "all" {
     const raw = String(v ?? "").trim();
     if (!raw || raw === "all") return "all";

@@ -115,34 +115,6 @@ export function buildCorrectItemFromExpected(q: QItem, expectedPayload: any): QI
   return item;
 }
 
-export function historyRowToQItem(h: SessionHistoryRow): QItem {
-  const ex: Exercise = {
-    topic: String(h.topic ?? "all"),
-    kind: String(h.kind),
-    title: String(h.title ?? ""),
-    prompt: String(h.prompt ?? ""),
-    ...(h.publicPayload ?? {}),
-  } as any;
-
-  const key = `history:${String(h.instanceId)}`;
-  const item = initItemFromExercise(ex, key);
-
-  (item as any).attempts = Number(h.attempts ?? 0);
-  (item as any).revealed = Boolean(h.lastRevealUsed);
-
-  const finalized = Boolean(h.answeredAt) || Number(h.attempts ?? 0) > 0;
-  (item as any).submitted = finalized;
-
-  (item as any).result = {
-    ok: h.lastOk === null ? undefined : Boolean(h.lastOk),
-    finalized,
-    expected: h.expectedAnswerPayload ?? null,
-    explanation: h.explanation ?? null,
-  };
-
-  applyAnswerPayloadToItem(item, h.lastAnswerPayload);
-  return item;
-}
 
 function exerciseSignature(ex: Exercise | null | undefined): string {
   if (!ex) return "";
@@ -163,6 +135,18 @@ function stableAt(q: QItem): number {
 
 /* -------------------------------- hook -------------------------------- */
 
+
+
+import {
+  buildLocalMissed,
+  computePracticeCounts,
+  computePracticePct,
+  historyRowToQItem,
+  revealPracticeItem,
+  submitPracticeItem,
+} from "@/lib/practice/runtime";
+
+
 export function usePracticeEngine(args: {
   subjectSlug: string;
   moduleSlug: string;
@@ -175,14 +159,14 @@ export function usePracticeEngine(args: {
   maxAttempts: number;
   returnUrlFromQuery: string | null;
 
-  preferPurpose?: PurposeMode;
-  purposePolicy?: PurposePolicy;
+  preferPurpose?: string;
+  purposePolicy?: string;
 
   hydrated: boolean;
   resolvedSessionIdRef: MutableRefObject<string | null>;
 
   topic: TopicValue;
-  difficulty: Difficulty | "all";
+  difficulty: any;
   section: string | null;
 
   sessionSize: number;
@@ -268,80 +252,33 @@ export function usePracticeEngine(args: {
 
   const current = stack[idx] ?? null;
   const exercise = current?.exercise ?? null;
+
   const tt = useTaggedT();
   const rawKeyRef = useRef<(key: string) => string>((key) => key);
   const resolveTextRef = useRef<(value: string) => string>((value) => value);
 
   rawKeyRef.current = (key: string) => tt.raw(key, key);
   resolveTextRef.current = (value: string) => tt.resolve(value, value);
-  // ✅ kill old action errors when navigating between questions
+
   useEffect(() => {
     setActionErr(null);
   }, [idx, setActionErr]);
 
-  // ---------------- Missed (local from stack) ----------------
   const localMissed: MissedItem[] = useMemo(() => {
-    const unresolved = new Map<string, { idx: number; q: QItem; ans: SubmitAnswer }>();
-
-    for (let i = 0; i < stack.length; i++) {
-      const q = stack[i];
-      if (!q?.submitted) continue;
-
-      // ✅ excused should NOT show as missed
-      if (isExcusedPracticeItem(q)) continue;
-
-      const ex = q.exercise;
-      if (!ex) continue;
-
-      const sig = exerciseSignature(ex);
-      if (!sig) continue;
-
-      const ok = Boolean(q.result?.ok);
-      if (ok) {
-        unresolved.delete(sig);
-        continue;
-      }
-
-      const ans = buildSubmitAnswerFromItem(q);
-      if (!ans) continue;
-
-      unresolved.set(sig, { idx: i, q, ans });
-    }
-
-    const tmp: Array<{ idx: number; item: MissedItem }> = [];
-    for (const { idx: missIdx, q, ans } of unresolved.values()) {
-      const ex = q.exercise!;
-      tmp.push({
-        idx: missIdx,
-        item: {
-          id: `${q.key}-missed`,
-          at: stableAt(q),
-          topic: String(ex.topic) as TopicSlug,
-          kind: ex.kind,
-          title: ex.title,
-          prompt: ex.prompt,
-          userAnswer: ans,
-          expected: (q.result as any)?.expected,
-          explanation: (q.result as any)?.explanation ?? null,
-        },
-      });
-    }
-
-    tmp.sort((a, b) => a.idx - b.idx);
-    return tmp.map((x) => x.item);
-  }, [stack]);
+    return buildLocalMissed(stack, maxAttempts, isLockedRun);
+  }, [stack, maxAttempts, isLockedRun]);
 
   const missed = useMemo(() => {
-    const serverAns = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
+    const serverAns = Math.max(
+        serverStatus?.totalCount ?? 0,
+        serverStatus?.answeredCount ?? 0,
+    );
     const stackLooksPartial = completed && serverAns > stack.length;
 
-    // ✅ if stack is partial, trust server missed (full run)
     if (stackLooksPartial) return serverMissed;
-
     return localMissed.length ? localMissed : serverMissed;
   }, [localMissed, serverMissed, serverStatus, completed, stack.length]);
 
-  // ---------------- Summary lock ----------------
   useEffect(() => {
     if (!hydrated) return;
     if (!completed) return;
@@ -349,7 +286,6 @@ export function usePracticeEngine(args: {
     if (phase !== "summary") setPhase("summary");
   }, [hydrated, completed, autoSummarized, phase, setAutoSummarized, setPhase]);
 
-  // apply run.targetCount only once
   useEffect(() => {
     if (!hydrated) return;
     if (!run?.targetCount) return;
@@ -368,73 +304,49 @@ export function usePracticeEngine(args: {
     });
   }
 
-  function isFinalized(q: QItem | null, maxAttempts_: number, isLockedRun_: boolean) {
-    if (!q) return false;
-    if (q.submitted) return true;
-    if (q.revealed) return true;
-
-    const r: any = (q as any).result;
-    if (!r) return false;
-
-    if (r.ok === true) return true;
-    if (r.finalized === true) return true;
-
-    const left = r.attempts?.left;
-    if (typeof left === "number") return left <= 0;
-
-    if (isLockedRun_ && typeof q.attempts === "number") {
-      return q.attempts >= maxAttempts_;
-    }
-
-    return false;
-  }
-
-  const localAnswered = useMemo(
-      () => stack.filter((q) => isFinalized(q, maxAttempts, isLockedRun)).length,
-      [stack, maxAttempts, isLockedRun],
-  );
-
-  const localCorrect = useMemo(
-      () =>
-          stack.filter((q) => isFinalized(q, maxAttempts, isLockedRun) && q.result?.ok).length,
-      [stack, maxAttempts, isLockedRun],
-  );
+  const {
+    answeredCount: localAnswered,
+    correctCount: localCorrect,
+    excusedAnswered: localExcusedAnswered,
+  } = useMemo(() => {
+    return computePracticeCounts(stack, maxAttempts, isLockedRun);
+  }, [stack, maxAttempts, isLockedRun]);
 
   const reviewStack = useMemo(() => {
-    const serverAns = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
+    const serverAns = Math.max(
+        serverStatus?.totalCount ?? 0,
+        serverStatus?.answeredCount ?? 0,
+    );
 
-    // ✅ if server has a fuller picture (typical when you resumed a session),
-    // use serverHistoryStack for summary/review UI
     const serverIsMoreComplete =
         Array.isArray(serverHistoryStack) &&
         serverHistoryStack.length > 0 &&
-        (completed || serverAns > stack.length || serverHistoryStack.length > stack.length);
+        (completed ||
+            serverAns > stack.length ||
+            serverHistoryStack.length > stack.length);
 
     if (serverIsMoreComplete) return serverHistoryStack;
-
     return stack;
   }, [stack, serverHistoryStack, serverStatus, completed]);
 
-  const serverAnswered = Math.max(serverStatus?.totalCount ?? 0, serverStatus?.answeredCount ?? 0);
+  const serverAnswered = Math.max(
+      serverStatus?.totalCount ?? 0,
+      serverStatus?.answeredCount ?? 0,
+  );
   const serverCorrect = serverStatus?.correctCount ?? 0;
 
   const answeredCount = Math.max(localAnswered, serverAnswered);
   const correctCount = Math.max(localCorrect, serverCorrect);
 
-  // ✅ ignore excused in pct denom (quiz-like)
-  const localExcusedAnswered = useMemo(() => {
-    return stack.filter(
-        (q) => isFinalized(q, maxAttempts, isLockedRun) && isExcusedPracticeItem(q),
-    ).length;
-  }, [stack, maxAttempts, isLockedRun]);
-
-  const denomForPct = Math.max(0, answeredCount - localExcusedAnswered);
-  const pct = denomForPct > 0 ? Math.round((correctCount / denomForPct) * 100) : 0;
+  const pct = computePracticePct({
+    answeredCount,
+    correctCount,
+    excusedAnswered: localExcusedAnswered,
+  });
 
   async function loadNextExercise(opts?: { forceNew?: boolean }) {
     if (phase === "summary" && !opts?.forceNew) return;
     if (completed && !opts?.forceNew) return;
-
     if (loadLockRef.current) return;
     if (answeredCount >= sessionSize && !opts?.forceNew) return;
 
@@ -452,10 +364,7 @@ export function usePracticeEngine(args: {
       const sid = opts?.forceNew ? null : effectiveSid;
       const useSession = Boolean(sid);
 
-      const pp = preferPurpose ?? "quiz";
-      const pol = purposePolicy ?? "fallback";
-
-      const res: PracticeGetResponse = await fetchPracticeExercise({
+      const response = await fetchPracticeExercise({
         sessionId: useSession ? (sid ?? undefined) : undefined,
         allowReveal: allowReveal ? true : undefined,
         signal: controller.signal,
@@ -466,39 +375,41 @@ export function usePracticeEngine(args: {
         difficulty: useSession ? undefined : difficulty === "all" ? undefined : difficulty,
         section: useSession ? undefined : (section ?? undefined),
 
-        preferPurpose: pp,
-        purposePolicy: pol,
-      } as any);
+        preferPurpose: preferPurpose as any,
+        purposePolicy: purposePolicy as any,
+      });
 
-      const runFromApi = (res as any)?.run;
+      const runFromApi = (response as any)?.run;
       if (runFromApi?.mode) setRun(runFromApi);
 
-      if ((res as any)?.complete) {
-        const sid2 = (res as any)?.sessionId;
+      if ((response as any)?.complete) {
+        const sid2 = (response as any)?.sessionId;
         if (sid2) setSessionId(String(sid2));
 
         try {
           const st = await getSessionStatus(String(sid2 ?? sid), {
             includeMissed: true,
             includeHistory: true,
-            subject:subjectSlug,
-            module:moduleSlug,
+            subject: subjectSlug,
+            module: moduleSlug,
           });
 
           if (st) {
-            if (st?.history?.length) setServerHistoryStack(st.history.map(historyRowToQItem));
+            if (st?.history?.length) {
+              setServerHistoryStack(st.history.map(historyRowToQItem));
+            }
             setServerStatus(st);
             if (st?.missed) setServerMissed(st.missed);
-            if (st?.run?.mode) setRun(st.run);
+            if (st?.run?.mode) setRun(st.run as any);
             setCompletionReturnUrl(st.returnUrl || returnUrlFromQuery);
           } else {
             const serverReturn =
-                (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
+                (response as any)?.returnUrl || (response as any)?.run?.returnUrl || null;
             setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
           }
         } catch {
           const serverReturn =
-              (res as any)?.returnUrl || (res as any)?.run?.returnUrl || null;
+              (response as any)?.returnUrl || (response as any)?.run?.returnUrl || null;
           setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
         }
 
@@ -508,20 +419,21 @@ export function usePracticeEngine(args: {
         return;
       }
 
-      const ex = (res as any)?.exercise;
-      const key = (res as any)?.key;
+      const ex = (response as any)?.exercise;
+      const key = (response as any)?.key;
 
       if (!ex || typeof ex?.kind !== "string" || typeof key !== "string") {
         throw new Error("Malformed response from /api/practice (missing exercise/key).");
       }
 
-      if ((res as any).sessionId) setSessionId(String((res as any).sessionId));
+      if ((response as any)?.sessionId) {
+        setSessionId(String((response as any).sessionId));
+      }
 
-// ✅ resolve all tagged fields before storing in stack/state
       const resolvedEx = resolveDeepTagged(
-          ex as Exercise,
+          ex,
           (k) => rawKeyRef.current(k),
-      ) as Exercise;
+      );
 
       const item = initItemFromExercise(resolvedEx, key, {
         resolveText: (value) => resolveTextRef.current(value),
@@ -541,7 +453,6 @@ export function usePracticeEngine(args: {
     }
   }
 
-  // boot
   useEffect(() => {
     if (!hydrated) return;
     if (bootCompleteRef.current) return;
@@ -553,13 +464,17 @@ export function usePracticeEngine(args: {
 
     (async () => {
       if (effectiveSid) {
-        const st = await getSessionStatus(String(effectiveSid), { includeMissed: true , module:moduleSlug, subject:subjectSlug});
+        const st = await getSessionStatus(String(effectiveSid), {
+          includeMissed: true,
+          subject: subjectSlug,
+          module: moduleSlug,
+        });
         if (!alive) return;
 
         if (st) {
           setServerStatus(st);
           if (st?.missed) setServerMissed(st.missed);
-          if (st?.run?.mode) setRun(st.run);
+          if (st?.run?.mode) setRun(st.run as any);
 
           const tc = st?.targetCount;
           if (typeof tc === "number" && tc > 0) {
@@ -584,10 +499,24 @@ export function usePracticeEngine(args: {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, phase, sessionId, stack.length, returnUrlFromQuery, completed]);
+  }, [
+    hydrated,
+    phase,
+    sessionId,
+    stack.length,
+    returnUrlFromQuery,
+    completed,
+    subjectSlug,
+    moduleSlug,
+    resolvedSessionIdRef,
+    setRun,
+    setSessionSize,
+    setCompleted,
+    setAutoSummarized,
+    setPhase,
+    setCompletionReturnUrl,
+  ]);
 
-  // if land in summary, still fetch missed/history once
   useEffect(() => {
     if (!hydrated) return;
     if (phase !== "summary") return;
@@ -603,19 +532,19 @@ export function usePracticeEngine(args: {
       const st = await getSessionStatus(String(effectiveSid), {
         includeMissed: true,
         includeHistory: true,
-        subject:subjectSlug,
-        module:moduleSlug
+        subject: subjectSlug,
+        module: moduleSlug,
       });
       if (!alive) return;
 
       if (st) {
         setServerStatus(st);
         if (st?.missed) setServerMissed(st.missed);
-        if (st?.run?.mode) setRun(st.run);
+        if (st?.run?.mode) setRun(st.run as any);
         if (st?.complete) setCompletionReturnUrl(st.returnUrl || returnUrlFromQuery);
 
         if (Array.isArray(st.history) && st.history.length) {
-          setServerHistoryStack(st.history.map((h: SessionHistoryRow) => historyRowToQItem(h)));
+          setServerHistoryStack(st.history.map(historyRowToQItem));
         }
       }
     })();
@@ -629,13 +558,14 @@ export function usePracticeEngine(args: {
     sessionId,
     resolvedSessionIdRef,
     serverMissed.length,
-    returnUrlFromQuery,
-    setRun,
     serverHistoryStack.length,
+    returnUrlFromQuery,
+    subjectSlug,
+    moduleSlug,
+    setRun,
     setCompletionReturnUrl,
   ]);
 
-  // stateless completion → locks summary
   useEffect(() => {
     if (!hydrated) return;
     if (completed) return;
@@ -705,57 +635,36 @@ export function usePracticeEngine(args: {
     setActionErr(null);
 
     try {
-      let answer: SubmitAnswer | undefined;
-
-      if (exercise.kind === "vector_drag_dot") {
-        answer = { kind: "vector_drag_dot", a: cloneVec(padRef.current.a) };
-        updateCurrent({ dragA: cloneVec(padRef.current.a) });
-      } else if (exercise.kind === "vector_drag_target") {
-        answer = {
-          kind: "vector_drag_target",
-          a: cloneVec(padRef.current.a),
-          b: cloneVec(padRef.current.b),
-        };
-        updateCurrent({
-          dragA: cloneVec(padRef.current.a),
-          dragB: cloneVec(padRef.current.b),
-        });
-      } else {
-        answer = buildSubmitAnswerFromItem(current);
-      }
-
-      if (!answer) {
-        setActionErr(t("errors.incompleteAnswer"));
-        return;
-      }
-
       setBusy(true);
 
-      const data = await submitPracticeAnswer({ key: current.key, answer } as any);
+      const submitted = await submitPracticeItem({
+        item: current,
+        exercise,
+        padRef,
+        maxAttempts,
+        isLockedRun,
+      });
 
-      const ok = Boolean((data as any)?.ok);
-      emitSfx(ok ? "answer:correct" : "answer:wrong");
-
-      const serverFinalized = Boolean((data as any)?.finalized);
-      const serverUsed = Number((data as any)?.attempts?.used);
-
-      const used = Number.isFinite(serverUsed) ? serverUsed : (current.attempts ?? 0) + 1;
-      const finalized = ok || serverFinalized || (isLockedRun && used >= maxAttempts);
+      emitSfx(submitted.ok ? "answer:correct" : "answer:wrong");
 
       updateCurrent({
-        result: data as any,
-        attempts: used,
-        submitted: finalized,
+        ...(submitted.statePatch ?? {}),
+        result: submitted.data as any,
+        attempts: submitted.used,
+        submitted: submitted.finalized,
         revealed: false,
       });
 
-      if ((data as any)?.sessionComplete) {
+      if ((submitted.data as any)?.sessionComplete) {
         setCompleted(true);
         setAutoSummarized(true);
         setPhase("summary");
 
         const serverReturn =
-            (data as any)?.returnUrl || (data as any)?.run?.returnUrl || null;
+            (submitted.data as any)?.returnUrl ||
+            (submitted.data as any)?.run?.returnUrl ||
+            null;
+
         setCompletionReturnUrl(serverReturn || returnUrlFromQuery);
         return;
       }
@@ -776,22 +685,18 @@ export function usePracticeEngine(args: {
     setActionErr(null);
 
     try {
-      const data = await submitPracticeAnswer({ key: current.key, reveal: true } as any);
-
-      const solA = (data as any)?.reveal?.solutionA;
-      const bExp = (data as any)?.reveal?.b;
-      const finalized = Boolean((data as any)?.finalized);
+      const revealed = await revealPracticeItem(current);
 
       updateCurrent({
-        result: data as any,
+        result: revealed.data as any,
         revealed: true,
-        submitted: finalized,
-        ...(solA ? { dragA: cloneVec(solA) } : {}),
-        ...(bExp ? { dragB: cloneVec(bExp) } : {}),
+        submitted: Boolean((revealed.data as any)?.finalized),
+        ...(revealed.dragA ? { dragA: revealed.dragA } : {}),
+        ...(revealed.dragB ? { dragB: revealed.dragB } : {}),
       });
 
-      if (solA) padRef.current.a = cloneVec(solA) as any;
-      if (bExp) padRef.current.b = cloneVec(bExp) as any;
+      if (revealed.dragA) padRef.current.a = cloneVec(revealed.dragA) as any;
+      if (revealed.dragB) padRef.current.b = cloneVec(revealed.dragB) as any;
     } catch (e: any) {
       setActionErr(e?.message ?? t("errors.failedToSubmit"));
     } finally {
@@ -799,14 +704,13 @@ export function usePracticeEngine(args: {
     }
   }
 
-  // ✅ modular excuse actions (shared pattern)
   const { excuseAndNext, skipLoadError } = usePracticeExcuseActions({
     current,
     idx,
     setStack: (u) => setStack((p) => u(p)),
     goNext,
     loadNextExercise,
-    actionErr: (args as any).actionErr ?? null, // not required; we pass through below
+    actionErr: (args as any).actionErr ?? null,
     setActionErr,
     sessionId,
     resolvedSessionIdRef,
@@ -838,7 +742,6 @@ export function usePracticeEngine(args: {
     submit,
     reveal,
 
-    // ✅ NEW
     excuseAndNext,
     skipLoadError,
   };

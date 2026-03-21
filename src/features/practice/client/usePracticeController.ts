@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import type { Difficulty } from "@/lib/practice/types";
-import type { QItem } from "@/components/practice/practiceType";
+import type { QItem } from "@/lib/practice/uiTypes";
 import PracticeShell from "@/components/practice/PracticeShell";
 
 import { usePracticeRunMeta, type TopicValue } from "./usePracticeRunMeta";

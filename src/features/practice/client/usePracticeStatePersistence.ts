@@ -1,11 +1,11 @@
-// src/features/practice/client/usePracticeStatePersistence.ts
 "use client";
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import type { Difficulty, TopicSlug } from "@/lib/practice/types";
-import type { QItem } from "@/components/practice/practiceType";
+
+import type { Difficulty } from "@/lib/practice/types";
+import type { PracticeRunMetaApi } from "@/lib/practice/apiTypes";
+import type { QItem, TopicValue } from "@/lib/practice/uiTypes";
 import { normalizeTopicValue } from "@/lib/practice/uiHelpers";
-import type { RunMeta } from "./usePracticeRunMeta";
 
 import { SESSION_DEFAULT, STORAGE_VERSION } from "./constants";
 import {
@@ -16,7 +16,8 @@ import {
 } from "./storage";
 
 export type Phase = "practice" | "summary";
-export type TopicValue = TopicSlug | "all";
+export type RunMeta = PracticeRunMetaApi;
+export type { TopicValue };
 
 export function usePracticeStatePersistence(args: {
   subjectSlug?: string;
@@ -99,12 +100,8 @@ export function usePracticeStatePersistence(args: {
 
   const [hydrated, setHydrated] = useState(false);
 
-  // resolved sid for refresh races (URL OR lastSession pointer)
   const resolvedSessionIdRef = useRef<string | null>(null);
 
-  // -----------------------------
-  // HYDRATE (restore)
-  // -----------------------------
   useEffect(() => {
     if (hydrated) return;
 
@@ -128,10 +125,10 @@ export function usePracticeStatePersistence(args: {
 
     const questionCountParam = sp.get("questionCount");
     const qcParsed = questionCountParam ? parseInt(questionCountParam, 10) : NaN;
-    const sizeFromParam = Number.isFinite(qcParsed) && qcParsed > 0 ? qcParsed : null;
+    const sizeFromParam =
+        Number.isFinite(qcParsed) && qcParsed > 0 ? qcParsed : null;
     const initialSize = sizeFromParam ?? SESSION_DEFAULT;
 
-    // No module context yet: initialize safe defaults and stop here.
     if (!subjectSlug || !moduleSlug) {
       resolvedSessionIdRef.current = null;
 
@@ -159,7 +156,6 @@ export function usePracticeStatePersistence(args: {
       return;
     }
 
-    // resolve sessionId from URL OR "last session" pointer
     let sidParam = sp.get("sessionId");
     if (!sidParam) {
       try {
@@ -172,7 +168,6 @@ export function usePracticeStatePersistence(args: {
 
     setSessionSize(initialSize);
 
-    // load from sessionStorage (session key > canonical > legacy)
     let loaded: ReturnType<typeof loadSavedState> = null;
     try {
       loaded = loadSavedState({
@@ -231,7 +226,6 @@ export function usePracticeStatePersistence(args: {
 
       setShowMissed(saved.showMissed ?? true);
 
-      // migrate legacy -> canonical so future reloads work
       try {
         if (!sidParam && loaded.key !== loaded.canonicalKey) {
           sessionStorage.setItem(loaded.canonicalKey, JSON.stringify(saved));
@@ -245,7 +239,6 @@ export function usePracticeStatePersistence(args: {
       return;
     }
 
-    // fallback
     setSection(nextSection);
     setTopic(nextTopic as TopicValue);
     setDifficulty(nextDifficulty);
@@ -284,9 +277,6 @@ export function usePracticeStatePersistence(args: {
     skipUrlSyncRef,
   ]);
 
-  // -----------------------------
-  // PERSIST
-  // -----------------------------
   useEffect(() => {
     if (!hydrated) return;
     if (!subjectSlug || !moduleSlug) return;
@@ -343,7 +333,6 @@ export function usePracticeStatePersistence(args: {
     sessionSize,
   ]);
 
-  // remember "last session" pointer
   useEffect(() => {
     if (!hydrated) return;
     if (!subjectSlug || !moduleSlug) return;

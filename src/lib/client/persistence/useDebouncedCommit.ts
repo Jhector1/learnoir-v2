@@ -66,18 +66,23 @@ export function useDebouncedCommit<T>(args: {
         if (serialized === lastCommittedRef.current) return;
 
         abortRef.current?.abort();
+
         const ctrl = new AbortController();
         abortRef.current = ctrl;
 
-        lastCommittedRef.current = serialized;
-
         try {
             await commit(next, serialized, ctrl.signal);
+            lastCommittedRef.current = serialized;
         } catch (e: any) {
-            if (e?.name !== "AbortError") throw e;
+            if (ctrl.signal.aborted) return;
+            if (e?.name === "AbortError") return;
+            throw e;
+        } finally {
+            if (abortRef.current === ctrl) {
+                abortRef.current = null;
+            }
         }
     }, [enabled, serializeValue, commit]);
-
     useEffect(() => {
         if (!enabled) return;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { RunResult } from "@/lib/code/runCode";
+import type { RunResult } from "@/lib/code/types";
 import type { TermLine } from "../types";
 import { cleanTermText } from "../utils/text";
 
@@ -19,7 +19,7 @@ const lineCls = (t: TermLine["type"]) => {
 function fmtMeta(r: RunResult) {
     const time = r.time ? ` • ${r.time}s` : "";
     const mem = r.memory ? ` • ${Math.round((Number(r.memory) || 0) / 1024)}MB` : "";
-    return `${r.status ?? (r.ok ? "OK" : "Error")}${time}${mem}`;
+    return `${r.status}${time}${mem}`;
 }
 
 function statusLabel(busy: boolean, awaitingInput: boolean) {
@@ -124,7 +124,7 @@ export default function TerminalPane(props: {
         }, 0);
 
         return () => window.clearTimeout(id);
-    }, [awaitingInput, disabled, busy, useBottomPrompt, inputRef]);
+    }, [awaitingInput, disabled, busy, useBottomPrompt, inputRef, inputLine]);
 
     useEffect(() => {
         setCaret((c) => clamp(c, 0, (inputLine ?? "").length));
@@ -320,31 +320,33 @@ export default function TerminalPane(props: {
         spellCheck: false,
         inputMode: "text" as const,
         enterKeyHint: "send" as const,
-        "aria-label": "Terminal input",
+        "aria-label": inputPrompt
+            ? `Terminal input. ${String(inputPrompt).trim()}`
+            : "Terminal input",
         style: { caretColor: "transparent" as const },
     };
 
     return (
         <>
             <style jsx global>{`
-                @keyframes ui-term-blink {
-                    0%,
-                    49% {
-                        opacity: 1;
-                    }
-                    50%,
-                    100% {
-                        opacity: 0;
-                    }
+              @keyframes ui-term-blink {
+                0%,
+                49% {
+                  opacity: 1;
                 }
+                50%,
+                100% {
+                  opacity: 0;
+                }
+              }
 
-                .ui-term-cursor {
-                    display: inline-block;
-                    margin-left: 1px;
-                    opacity: 0.75;
-                    animation: ui-term-blink 1s step-end infinite;
-                    will-change: opacity;
-                }
+              .ui-term-cursor {
+                display: inline-block;
+                margin-left: 1px;
+                opacity: 0.75;
+                animation: ui-term-blink 1s step-end infinite;
+                will-change: opacity;
+              }
             `}</style>
 
             <div
@@ -367,6 +369,9 @@ export default function TerminalPane(props: {
 
                 <div
                     ref={scrollRef}
+                    role="log"
+                    aria-live="polite"
+                    aria-relevant="additions text"
                     className={[
                         "mt-2 flex-1 overflow-auto border-t py-2",
                         "bg-white/60 dark:bg-black/30",

@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import type { RunPollResult, RunResult, RunSubmitResult } from "@/lib/code/runCode";
+import type { RunResult } from "@/lib/code/types";
 import type { TermLine, OnRun, RunnerState } from "../types";
 import { cleanTermText, toLines } from "../utils/text";
 import { inferInputPlan } from "../utils/input";
 import { expandPrompts, prettyPrompt, splitStdoutByPrompts } from "../utils/prompts";
-import { CodeLanguage } from "@/lib/practice/types";
+import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 
 function needsMoreInput(lang: CodeLanguage, r: RunResult) {
     const blob = cleanTermText(
@@ -132,63 +132,58 @@ function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: stri
     return lines;
 }
 
-function sleep(ms: number, signal: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-        const cleanup = () => {
-            signal.removeEventListener("abort", onAbort);
-        };
-
-        const id = window.setTimeout(() => {
-            cleanup();
-            resolve();
-        }, ms);
-
-        const onAbort = () => {
-            window.clearTimeout(id);
-            cleanup();
-            reject(new DOMException("Aborted", "AbortError"));
-        };
-
-        signal.addEventListener("abort", onAbort);
-    });
-}
-
 export function useTerminalRunner(args: {
     lang: CodeLanguage;
     code: string;
+    sqlDialect?: SqlDialect;
+    sqlSchemaSql?: string;
+    sqlSeedSql?: string;
+    sqlSetupSql?: string;
+    sqlDatasetId?: string;
     disabled: boolean;
     allowRun: boolean;
     resetTerminalOnRun: boolean;
-    onRun?: OnRun;
+    onRun: OnRun;
 }) {
-    const { lang, code, disabled, allowRun, resetTerminalOnRun, onRun } = args;
+    const {
+        lang,
+        code,
+        sqlDialect,
+        sqlSchemaSql,
+        sqlSeedSql,
+        sqlSetupSql,
+        sqlDatasetId,
+        disabled,
+        allowRun,
+        resetTerminalOnRun,
+        onRun,
+    } = args;
 
     const [stdinBuffer, setStdinBuffer] = React.useState("");
     const [terminal, setTerminal] = React.useState<TermLine[]>([]);
-
     const [awaitingInput, setAwaitingInput] = React.useState(false);
     const [inputPrompt, setInputPrompt] = React.useState("");
     const [inputLine, setInputLine] = React.useState("");
-
     const inputRef = React.useRef<HTMLTextAreaElement | null>(null);
 
     const [busy, setBusy] = React.useState(false);
     const [lastResult, setLastResult] = React.useState<RunResult | null>(null);
+    const [lastRunLanguage, setLastRunLanguage] = React.useState<CodeLanguage | null>(null);
     const [runState, setRunState] = React.useState<RunnerState>("idle");
 
     const runLockRef = React.useRef(false);
     const runIdRef = React.useRef(0);
     const activeRunIdRef = React.useRef<number | null>(null);
-    const activeTokenRef = React.useRef<string | null>(null);
 
     const [typedLines, setTypedLines] = React.useState<string[]>([]);
-    const hasStartedExecRef = React.useRef(false);
     const probeStdoutRef = React.useRef<string>("");
 
     const abortRef = React.useRef<AbortController | null>(null);
     const mountedRef = React.useRef(true);
 
     React.useEffect(() => {
+        mountedRef.current = true;
+
         return () => {
             mountedRef.current = false;
             abortRef.current?.abort();
@@ -196,24 +191,29 @@ export function useTerminalRunner(args: {
     }, []);
 
     const inputPlan = React.useMemo(() => inferInputPlan(lang, code), [lang, code]);
+    const isSql = lang === "sql";
+    const resolvedSqlDialect = sqlDialect ?? "sqlite";
+    const resolvedSchemaSql = sqlSchemaSql ?? sqlSetupSql ?? "";
 
     const replaceRunLines = React.useCallback((runId: number, lines: TermLine[]) => {
         const tagged = lines.map((l) => ({ ...l, runId }));
         setTerminal((prev) => [...prev.filter((l) => l.runId !== runId), ...tagged]);
     }, []);
+
     const appendImmediateInputLine = React.useCallback(
         (runId: number, typed: string, prompt?: string) => {
             const value = String(typed ?? "");
             const p = String(prompt ?? "").trim();
             const text = p ? `${p} ${value}` : value;
-
             setTerminal((prev) => [...prev, { type: "in", text, runId }]);
         },
         [],
     );
+
     const appendRunLine = React.useCallback((runId: number, line: TermLine) => {
         setTerminal((prev) => [...prev, { ...line, runId }]);
     }, []);
+
     const appendProcessingLine = React.useCallback((runId: number) => {
         setTerminal((prev) => {
             const last = prev[prev.length - 1];
@@ -223,6 +223,7 @@ export function useTerminalRunner(args: {
             return [...prev, { type: "sys", text: "Processing...", runId }];
         });
     }, []);
+
     const appendSysLine = React.useCallback((text: string, runId?: number) => {
         const resolvedRunId = runId ?? activeRunIdRef.current ?? runIdRef.current;
         setTerminal((prev) => {
@@ -250,76 +251,18 @@ export function useTerminalRunner(args: {
 
     const resetTerminal = React.useCallback(() => {
         abortRef.current?.abort();
-        activeTokenRef.current = null;
 
         setTerminal([]);
         clearInputUi();
         setLastResult(null);
+        setLastRunLanguage(null);
         setStdinBuffer("");
         setTypedLines([]);
         setRunState("idle");
 
-        hasStartedExecRef.current = false;
         activeRunIdRef.current = null;
         probeStdoutRef.current = "";
     }, [clearInputUi]);
-
-    const postSubmission = React.useCallback(
-        async (stdinToUse: string, signal: AbortSignal): Promise<RunSubmitResult> => {
-            const res = await fetch("/api/run", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ language: lang, code, stdin: stdinToUse }),
-                signal,
-            });
-
-            const text = await res.text();
-
-            let parsed: any;
-            try {
-                parsed = JSON.parse(text);
-            } catch {
-                return {
-                    ok: false,
-                    error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
-                };
-            }
-
-            if (!parsed || parsed.ok !== true || typeof parsed.token !== "string" || !parsed.token) {
-                return {
-                    ok: false,
-                    error:
-                        parsed?.error ??
-                        `Invalid /api/run response. Expected { ok: true, token }, got: ${text.slice(0, 300)}`,
-                };
-            }
-
-            return parsed as RunSubmitResult;
-        },
-        [lang, code],
-    );
-
-    const getSubmission = React.useCallback(
-        async (token: string, signal: AbortSignal): Promise<RunPollResult> => {
-            const res = await fetch(`/api/run/${encodeURIComponent(token)}`, {
-                method: "GET",
-                signal,
-            });
-
-            const text = await res.text();
-            try {
-                return JSON.parse(text) as RunPollResult;
-            } catch {
-                return {
-                    ok: false,
-                    done: true,
-                    status: "Error",
-                    error: `Non-JSON response (${res.status}): ${text.slice(0, 300)}`,
-                };
-            }
-        },
-        [],
-    );
 
     const runOnce = React.useCallback(
         async (stdinToUse: string) => {
@@ -329,6 +272,7 @@ export function useTerminalRunner(args: {
             abortRef.current = ctrl;
 
             runLockRef.current = true;
+
             if (mountedRef.current) {
                 setBusy(true);
                 setLastResult(null);
@@ -336,64 +280,32 @@ export function useTerminalRunner(args: {
             }
 
             try {
-                if (onRun) {
-                    if (mountedRef.current) {
-                        setRunState((prev) => (prev === "canceling" ? "canceling" : "running"));
-                    }
+                if (mountedRef.current) {
+                    setRunState((prev) => (prev === "canceling" ? "canceling" : "running"));
+                }
 
-                    const data = await onRun({
+                const data = isSql
+                    ? await onRun({
+                        language: "sql",
+                        code,
+                        sqlDialect: resolvedSqlDialect,
+                        sqlSchemaSql: resolvedSchemaSql,
+                        sqlSeedSql,
+                        datasetId: sqlDatasetId,
+                        signal: ctrl.signal,
+                    } as any)
+                    : await onRun({
                         language: lang,
                         code,
                         stdin: stdinToUse,
                         signal: ctrl.signal,
                     });
 
-                    if (mountedRef.current) setLastResult(data);
-                    return data;
-                }
-
-                const submit = await postSubmission(stdinToUse, ctrl.signal);
-                if (!submit.ok) {
-                    const fail: RunResult = {
-                        ok: false,
-                        status: "Error",
-                        error: submit.error,
-                    };
-                    if (mountedRef.current) {
-                        setLastResult(fail);
-                        setRunState("idle");
-                    }
-                    return fail;
-                }
-
-                activeTokenRef.current = submit.token;
-
                 if (mountedRef.current) {
-                    setRunState((prev) => (prev === "canceling" ? "canceling" : "running"));
+                    setLastResult(data);
                 }
 
-                const maxPolls = 120;
-
-                for (let i = 0; i < maxPolls; i++) {
-                    const polled = await getSubmission(submit.token, ctrl.signal);
-                    if (polled.done) {
-                        if (mountedRef.current) setLastResult(polled);
-                        return polled;
-                    }
-                    await sleep(250, ctrl.signal);
-                }
-
-                const timeoutResult: RunResult = {
-                    ok: false,
-                    status: "Timeout",
-                    error: "Execution timed out while waiting for Judge0.",
-                };
-
-                if (mountedRef.current) {
-                    setLastResult(timeoutResult);
-                }
-
-                return timeoutResult;
+                return data;
             } catch (e: any) {
                 const data: RunResult =
                     e?.name === "AbortError"
@@ -408,16 +320,27 @@ export function useTerminalRunner(args: {
                             error: errorMessage(e),
                         };
 
-                if (mountedRef.current) setLastResult(data);
+                if (mountedRef.current) {
+                    setLastResult(data);
+                }
+
                 return data;
             } finally {
-                activeTokenRef.current = null;
                 if (abortRef.current === ctrl) abortRef.current = null;
                 runLockRef.current = false;
                 if (mountedRef.current) setBusy(false);
             }
         },
-        [onRun, lang, code, postSubmission, getSubmission],
+        [
+            onRun,
+            isSql,
+            lang,
+            code,
+            resolvedSqlDialect,
+            resolvedSchemaSql,
+            sqlSeedSql,
+            sqlDatasetId,
+        ],
     );
 
     const rebuildInteractiveTranscript = React.useCallback(
@@ -434,7 +357,9 @@ export function useTerminalRunner(args: {
 
             const stdoutText = cleanTermText(r.stdout ?? "");
             const prefix =
-                syntheticPrompt && probePrefix && stdoutText.startsWith(probePrefix) ? probePrefix : "";
+                syntheticPrompt && probePrefix && stdoutText.startsWith(probePrefix)
+                    ? probePrefix
+                    : "";
             const rest = prefix ? stdoutText.slice(prefix.length) : stdoutText;
 
             const rebuilt: TermLine[] = [];
@@ -486,7 +411,9 @@ export function useTerminalRunner(args: {
             if (r.compile_output) extraErrs.push({ type: "err", text: cleanTermText(r.compile_output) });
             if (r.stderr) extraErrs.push({ type: "err", text: cleanTermText(r.stderr) });
             if (r.message) extraErrs.push({ type: "err", text: cleanTermText(r.message) });
-            if (r.error && !isCanceledResult(r)) extraErrs.push({ type: "err", text: cleanTermText(r.error) });
+            if (r.error && !isCanceledResult(r)) {
+                extraErrs.push({ type: "err", text: cleanTermText(r.error) });
+            }
 
             if (showWaiting) {
                 setAwaitingInput(true);
@@ -510,7 +437,10 @@ export function useTerminalRunner(args: {
 
         const runId = activeRunIdRef.current ?? runIdRef.current;
 
-        appendSysLine("Run canceled.", runId);
+        if (!isSql) {
+            appendSysLine("Run canceled.", runId);
+        }
+
         clearInputUi();
         setLastResult({
             ok: false,
@@ -518,19 +448,16 @@ export function useTerminalRunner(args: {
             error: "Run canceled by user.",
         });
 
-        // If there's no active request, return to idle immediately.
         if (!busy || !abortRef.current) {
-            activeTokenRef.current = null;
             activeRunIdRef.current = null;
             setRunState("idle");
             setBusy(false);
             return;
         }
 
-        // Active request exists: show spinner until abort settles.
         setRunState("canceling");
         abortRef.current.abort();
-    }, [runState, busy, appendSysLine, clearInputUi]);
+    }, [runState, busy, isSql, appendSysLine, clearInputUi]);
 
     const startRun = React.useCallback(async () => {
         if (disabled || runLockRef.current || busy || !allowRun) return;
@@ -548,17 +475,34 @@ export function useTerminalRunner(args: {
                 setLastResult(null);
                 setStdinBuffer("");
                 setTypedLines([]);
-                hasStartedExecRef.current = false;
                 probeStdoutRef.current = "";
             }
+
+            setLastRunLanguage(lang);
 
             runIdRef.current = runId;
             activeRunIdRef.current = runId;
 
+            if (isSql) {
+                setTerminal([]);
+                clearInputUi();
+                const r = await runOnce("");
+                if (!r) return;
+
+                clearInputUi();
+                replaceRunLines(runId, []);
+                if (isCanceledResult(r)) {
+                    setRunState("idle");
+                    return;
+                }
+
+                setRunState("idle");
+                return;
+            }
+
             const expectsInput = inputPlan.expected > 0;
             const probeSafe = lang === "python" || lang === "java";
 
-            // show immediate feedback as soon as Run is clicked
             appendProcessingLine(runId);
 
             if (!expectsInput) {
@@ -578,7 +522,6 @@ export function useTerminalRunner(args: {
 
             if (probeSafe) {
                 replaceRunLines(runId, [{ type: "sys", text: "Processing...", runId }]);
-                hasStartedExecRef.current = true;
 
                 const r = await runOnce("");
                 if (!r) return;
@@ -601,19 +544,15 @@ export function useTerminalRunner(args: {
             setInputPrompt(firstPrompt);
             setTypedLines([]);
             setStdinBuffer("");
-            hasStartedExecRef.current = false;
             setRunState("awaiting_input");
 
-            replaceRunLines(runId, [
-                ...preOut,
-                { type: "sys", text: "Processing...", runId },
-            ]);
+            replaceRunLines(runId, [...preOut, { type: "sys", text: "Processing...", runId }]);
         } catch (e) {
             const msg = errorMessage(e);
             clearInputUi();
             setLastResult({ ok: false, status: "Error", error: msg });
             setRunState("idle");
-            appendErrLine(msg, runId);
+            if (!isSql) appendErrLine(msg, runId);
         }
     }, [
         disabled,
@@ -622,6 +561,7 @@ export function useTerminalRunner(args: {
         resetTerminalOnRun,
         resetTerminal,
         clearInputUi,
+        isSql,
         lang,
         code,
         inputPlan,
@@ -633,7 +573,7 @@ export function useTerminalRunner(args: {
     ]);
 
     const submitInput = React.useCallback(async () => {
-        if (disabled || runLockRef.current || busy) return;
+        if (isSql || disabled || runLockRef.current || busy) return;
 
         const runId = activeRunIdRef.current;
         if (!runId) return;
@@ -671,13 +611,16 @@ export function useTerminalRunner(args: {
                 setInputPrompt(nextPrompt);
                 setRunState("awaiting_input");
 
-                replaceRunLines(runId, [
-                    ...preOut,
-                    ...next.map((val, i) => ({
-                        type: "in" as const,
-                        text: `${prettyPrompt(inputPlan.prompts[i] || "Input:")} ${val}`,
-                    })),
-                ]);
+                replaceRunLines(
+                    runId,
+                    [
+                        ...preOut,
+                        ...next.map((val, i) => ({
+                            type: "in" as const,
+                            text: `${prettyPrompt(inputPlan.prompts[i] || "Input:")} ${val}`,
+                        })),
+                    ],
+                );
 
                 return;
             }
@@ -704,6 +647,7 @@ export function useTerminalRunner(args: {
             appendErrLine(msg, runId);
         }
     }, [
+        isSql,
         disabled,
         busy,
         inputLine,
@@ -733,6 +677,7 @@ export function useTerminalRunner(args: {
         canCancel: runState === "running" || runState === "awaiting_input",
         cancelRun,
         lastResult,
+        lastRunLanguage,
         resetTerminal,
         startRun,
         submitInput,

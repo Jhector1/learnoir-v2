@@ -5,7 +5,6 @@ import type { TerminalDock } from "../types";
 import { clamp } from "../utils/text";
 
 export function useSplitSizing(args: {
-    // Total available height for the editor+terminal region
     height: number;
 
     showEditor: boolean;
@@ -54,7 +53,6 @@ export function useSplitSizing(args: {
 
     const hasSplit = showEditor && showTerminal;
 
-    // Measure real container size (critical inside tools panel)
     const [mainW, setMainW] = React.useState(0);
     const [mainH, setMainH] = React.useState(0);
 
@@ -78,7 +76,6 @@ export function useSplitSizing(args: {
     const totalH = Math.max(0, mainH || height);
     const totalW = Math.max(0, mainW || 0);
 
-    // Manual size state (only used AFTER user drags)
     const [termH, setTermH] = React.useState<number>(() =>
         clamp(initialTerminalSize, hardMinTermH, 720),
     );
@@ -86,10 +83,8 @@ export function useSplitSizing(args: {
         clamp(initialTerminalSize, hardMinTermW, 960),
     );
 
-    // ✅ Auto 50/50 until the user drags
     const userResizedRef = React.useRef(false);
 
-    // --- bounds ---
     const bottomMaxTerm = hasSplit
         ? getBottomMaxTerm({
             totalH,
@@ -112,7 +107,6 @@ export function useSplitSizing(args: {
         })
         : termW;
 
-    // --- effective terminal sizes ---
     const autoHalfH = (totalH - splitPx) / 2;
     const autoHalfW = (totalW - splitPx) / 2;
 
@@ -128,7 +122,6 @@ export function useSplitSizing(args: {
             : clamp(autoHalfW, hardMinTermW, rightMaxTerm)
         : clamp(termW, hardMinTermW, rightMaxTerm);
 
-    // computed allocations (bottom dock)
     const bottomTermH = effectiveTermH;
     const bottomEditorH = hasSplit
         ? Math.max(hardMinEditorH, totalH - splitPx - bottomTermH)
@@ -136,7 +129,60 @@ export function useSplitSizing(args: {
 
     const rightTotalH = totalH;
 
-    // ---------------- drag logic ----------------
+    const resizeBottomTo = React.useCallback((next: number) => {
+        const maxTerm = getBottomMaxTerm({
+            totalH,
+            splitPx,
+            minEditorH,
+            minTermH,
+            hardMinEditorH,
+            hardMinTermH,
+        });
+
+        userResizedRef.current = true;
+        setTermH(clamp(next, hardMinTermH, maxTerm));
+        requestLayout();
+    }, [
+        totalH,
+        splitPx,
+        minEditorH,
+        minTermH,
+        hardMinEditorH,
+        hardMinTermH,
+        requestLayout,
+    ]);
+
+    const resizeRightTo = React.useCallback((next: number) => {
+        const maxTerm = getRightMaxTerm({
+            totalW,
+            splitPx,
+            minEditorW,
+            minTermW,
+            hardMinEditorW,
+            hardMinTermW,
+        });
+
+        userResizedRef.current = true;
+        setTermW(clamp(next, hardMinTermW, maxTerm));
+        requestLayout();
+    }, [
+        totalW,
+        splitPx,
+        minEditorW,
+        minTermW,
+        hardMinEditorW,
+        hardMinTermW,
+        requestLayout,
+    ]);
+
+    const nudgeTerm = React.useCallback((delta: number) => {
+        if (dock === "bottom") {
+            resizeBottomTo(effectiveTermH + delta);
+        } else {
+            resizeRightTo(effectiveTermW + delta);
+        }
+    }, [dock, effectiveTermH, effectiveTermW, resizeBottomTo, resizeRightTo]);
+
     const splitDragRef = React.useRef<{
         startX: number;
         startY: number;
@@ -144,104 +190,142 @@ export function useSplitSizing(args: {
         dock: TerminalDock;
     } | null>(null);
 
-    function onMouseDownSplit(e: React.MouseEvent) {
-        if (disabled) return;
-        e.preventDefault();
+    const onPointerDownSplit = React.useCallback(
+        (e: React.PointerEvent<HTMLDivElement>) => {
+            if (disabled) return;
+            e.preventDefault();
 
-        userResizedRef.current = true; // ✅ lock into manual sizing once user touches it
+            userResizedRef.current = true;
 
-        splitDragRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            startSize: dock === "bottom" ? effectiveTermH : effectiveTermW, // ✅ use effective (auto/locked)
-            dock,
-        };
+            splitDragRef.current = {
+                startX: e.clientX,
+                startY: e.clientY,
+                startSize: dock === "bottom" ? effectiveTermH : effectiveTermW,
+                dock,
+            };
 
-        const prevSelect = document.body.style.userSelect;
-        const prevCursor = document.body.style.cursor;
-        document.body.style.userSelect = "none";
-        document.body.style.cursor = dock === "bottom" ? "row-resize" : "col-resize";
+            const prevSelect = document.body.style.userSelect;
+            const prevCursor = document.body.style.cursor;
 
-        const onMove = (ev: MouseEvent) => {
-            const d = splitDragRef.current;
-            if (!d) return;
+            document.body.style.userSelect = "none";
+            document.body.style.cursor = dock === "bottom" ? "row-resize" : "col-resize";
 
-            if (d.dock === "bottom") {
-                const dy = ev.clientY - d.startY;
+            const onMove = (ev: PointerEvent) => {
+                const d = splitDragRef.current;
+                if (!d) return;
 
-                const maxTerm = getBottomMaxTerm({
-                    totalH,
-                    splitPx,
-                    minEditorH,
-                    minTermH,
-                    hardMinEditorH,
-                    hardMinTermH,
-                });
+                if (d.dock === "bottom") {
+                    const dy = ev.clientY - d.startY;
+                    resizeBottomTo(d.startSize - dy);
+                } else {
+                    const dx = ev.clientX - d.startX;
+                    resizeRightTo(d.startSize - dx);
+                }
+            };
 
-                // ✅ Drag UP => terminal grows. Drag DOWN => terminal shrinks.
-                const next = clamp(d.startSize - dy, hardMinTermH, maxTerm);
-                setTermH(next);
-            } else {
-                const dx = ev.clientX - d.startX;
+            const onUp = () => {
+                splitDragRef.current = null;
+                window.removeEventListener("pointermove", onMove);
+                window.removeEventListener("pointerup", onUp);
+                document.body.style.userSelect = prevSelect;
+                document.body.style.cursor = prevCursor;
+            };
 
-                const maxTerm = getRightMaxTerm({
-                    totalW,
-                    splitPx,
-                    minEditorW,
-                    minTermW,
-                    hardMinEditorW,
-                    hardMinTermW,
-                });
+            window.addEventListener("pointermove", onMove);
+            window.addEventListener("pointerup", onUp);
+        },
+        [disabled, dock, effectiveTermH, effectiveTermW, resizeBottomTo, resizeRightTo],
+    );
 
-                // ✅ Drag LEFT => terminal grows. Drag RIGHT => terminal shrinks.
-                const next = clamp(d.startSize - dx, hardMinTermW, maxTerm);
-                setTermW(next);
+    const onKeyDownSplit = React.useCallback(
+        (e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (disabled || !hasSplit) return;
+
+            const step = dock === "bottom" ? 24 : 32;
+            const bigStep = step * 4;
+
+            switch (e.key) {
+                case "ArrowUp":
+                case "ArrowLeft":
+                    e.preventDefault();
+                    nudgeTerm(bigStep);
+                    return;
+                case "ArrowDown":
+                case "ArrowRight":
+                    e.preventDefault();
+                    nudgeTerm(-bigStep);
+                    return;
+                case "Home":
+                    e.preventDefault();
+                    if (dock === "bottom") resizeBottomTo(hardMinTermH);
+                    else resizeRightTo(hardMinTermW);
+                    return;
+                case "End":
+                    e.preventDefault();
+                    if (dock === "bottom") resizeBottomTo(bottomMaxTerm);
+                    else resizeRightTo(rightMaxTerm);
+                    return;
             }
+        },
+        [
+            disabled,
+            hasSplit,
+            dock,
+            nudgeTerm,
+            resizeBottomTo,
+            resizeRightTo,
+            hardMinTermH,
+            hardMinTermW,
+            bottomMaxTerm,
+            rightMaxTerm,
+        ],
+    );
 
-            requestLayout();
-        };
+    const ariaOrientation: "horizontal" | "vertical" =
+        dock === "bottom" ? "horizontal" : "vertical";
 
-        const onUp = () => {
-            splitDragRef.current = null;
-            window.removeEventListener("mousemove", onMove);
-            window.removeEventListener("mouseup", onUp);
-            document.body.style.userSelect = prevSelect;
-            document.body.style.cursor = prevCursor;
-        };
-
-        window.addEventListener("mousemove", onMove);
-        window.addEventListener("mouseup", onUp);
-    }
-
+    const separatorProps = {
+        role: "separator" as const,
+        tabIndex: disabled || !hasSplit ? -1 : 0,
+        "aria-orientation": ariaOrientation,
+        "aria-label": dock === "bottom" ? "Resize terminal height" : "Resize terminal width",
+        "aria-valuemin": dock === "bottom" ? hardMinTermH : hardMinTermW,
+        "aria-valuemax": Math.round(dock === "bottom" ? bottomMaxTerm : rightMaxTerm),
+        "aria-valuenow": Math.round(dock === "bottom" ? effectiveTermH : effectiveTermW),
+        onKeyDown: onKeyDownSplit,
+        onPointerDown: onPointerDownSplit,
+    } satisfies React.HTMLAttributes<HTMLDivElement> & {
+        role: "separator";
+        "aria-orientation": "horizontal" | "vertical";
+        "aria-valuemin": number;
+        "aria-valuemax": number;
+        "aria-valuenow": number;
+    };
     return {
         splitPx,
 
-        // exposed sizes (these are what CodeRunner should use)
         termH: effectiveTermH,
         termW: effectiveTermW,
 
-        // setters (manual mode)
         setTermH,
         setTermW,
 
-        // totals
         bottomTotalH: totalH,
         rightTotalH,
 
-        // allocations
         bottomTermH,
         bottomEditorH,
 
-        // measured
         mainW,
         mainH,
 
-        // handler
-        onMouseDownSplit,
+        bottomMaxTerm,
+        rightMaxTerm,
+
+        onPointerDownSplit,
+        separatorProps,
     };
 }
-
-// ---------------- helpers ----------------
 
 function getBottomMaxTerm(args: {
     totalH: number;

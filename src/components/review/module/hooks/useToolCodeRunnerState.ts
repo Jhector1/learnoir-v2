@@ -1,15 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CodeLanguage } from "@/lib/practice/types";
+import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 import { useDebouncedCommit } from "@/lib/client/persistence/useDebouncedCommit";
 import { useFlushOnPageExit } from "@/lib/client/persistence/useFlushOnPageExit";
 
 type BoundTarget = { id: string; onPatch: (patch: any) => void };
-type ToolSnap = { lang: CodeLanguage; code: string; stdin: string };
+
+type ToolSnap = {
+    lang: CodeLanguage;
+    code: string;
+    stdin: string;
+    sqlDialect: SqlDialect;
+};
 
 function snapKey(s: ToolSnap) {
-    return `${s.lang}::${s.stdin}::${s.code}`;
+    return `${s.lang}::${s.sqlDialect}::${s.stdin}::${s.code}`;
 }
 
 export function useToolCodeRunnerState(args: {
@@ -22,6 +28,7 @@ export function useToolCodeRunnerState(args: {
     defaultLang?: CodeLanguage;
     defaultCode?: string;
     defaultStdin?: string;
+    defaultSqlDialect?: SqlDialect;
 
     rightCollapsed: boolean;
     rightW: number;
@@ -37,6 +44,7 @@ export function useToolCodeRunnerState(args: {
         defaultLang = "python",
         defaultCode = `print("hello world")`,
         defaultStdin = "",
+        defaultSqlDialect = "postgres",
         rightCollapsed,
         rightW,
         toolSaveDelayMs = 700,
@@ -67,18 +75,21 @@ export function useToolCodeRunnerState(args: {
     const initialLang = (saved?.lang as CodeLanguage) ?? defaultLang;
     const initialCode = typeof saved?.code === "string" ? saved.code : defaultCode;
     const initialStdin = typeof saved?.stdin === "string" ? saved.stdin : defaultStdin;
+    const initialSqlDialect = (saved?.sqlDialect as SqlDialect) ?? defaultSqlDialect;
 
     const [toolLang, setToolLang0] = useState<CodeLanguage>(initialLang);
     const [toolCode, setToolCode0] = useState<string>(initialCode);
     const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
+    const [toolSqlDialect, setToolSqlDialect0] = useState<SqlDialect>(initialSqlDialect);
 
     const toolSnap = useMemo<ToolSnap>(
         () => ({
             lang: toolLang,
             code: toolCode,
             stdin: toolStdin,
+            sqlDialect: toolSqlDialect,
         }),
-        [toolLang, toolCode, toolStdin],
+        [toolLang, toolCode, toolStdin, toolSqlDialect],
     );
 
     const commitToolToProgress = useCallback(
@@ -91,6 +102,7 @@ export function useToolCodeRunnerState(args: {
                     lang: latest.lang,
                     code: latest.code,
                     stdin: latest.stdin,
+                    sqlDialect: latest.sqlDialect,
                 };
 
                 return {
@@ -144,15 +156,18 @@ export function useToolCodeRunnerState(args: {
         const nextLang = (s?.lang as CodeLanguage) ?? defaultLang;
         const nextCode = typeof s?.code === "string" ? s.code : defaultCode;
         const nextStdin = typeof s?.stdin === "string" ? s.stdin : defaultStdin;
+        const nextSqlDialect = (s?.sqlDialect as SqlDialect) ?? defaultSqlDialect;
 
         setToolLang0(nextLang);
         setToolCode0(nextCode);
         setToolStdin0(nextStdin);
+        setToolSqlDialect0(nextSqlDialect);
 
         prime({
             lang: nextLang,
             code: nextCode,
             stdin: nextStdin,
+            sqlDialect: nextSqlDialect,
         });
     }, [
         viewTid,
@@ -163,6 +178,7 @@ export function useToolCodeRunnerState(args: {
         defaultLang,
         defaultCode,
         defaultStdin,
+        defaultSqlDialect,
         prime,
     ]);
 
@@ -172,6 +188,7 @@ export function useToolCodeRunnerState(args: {
             lang: CodeLanguage;
             code: string;
             stdin?: string;
+            sqlDialect?: SqlDialect;
             onPatch: (patch: any) => void;
         }) => {
             const wasSameId = boundRef.current?.id === args2.id;
@@ -187,15 +204,17 @@ export function useToolCodeRunnerState(args: {
                 lang: args2.lang,
                 code: typeof args2.code === "string" ? args2.code : "",
                 stdin: typeof args2.stdin === "string" ? args2.stdin : "",
+                sqlDialect: args2.sqlDialect ?? defaultSqlDialect,
             };
 
             setToolLang0(nextSnap.lang);
             setToolCode0(nextSnap.code);
             setToolStdin0(nextSnap.stdin);
+            setToolSqlDialect0(nextSnap.sqlDialect);
 
             prime(nextSnap);
         },
-        [prime],
+        [prime, defaultSqlDialect],
     );
 
     const unbindCodeInput = useCallback(() => {
@@ -245,13 +264,24 @@ export function useToolCodeRunnerState(args: {
         }
     }, []);
 
+    const setToolSqlDialect = useCallback((d: SqlDialect) => {
+        setToolSqlDialect0(d);
+
+        const b = boundRef.current;
+        if (b) {
+            boundDirtyRef.current = true;
+            b.onPatch({ codeSqlDialect: d, submitted: false, result: null });
+        }
+    }, []);
+
     const saveDebounced = useCallback(
-        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string) => {
+        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string, nextSqlDialect?: SqlDialect) => {
             setToolLang0(nextLang);
             setToolCode0(nextCode);
             setToolStdin0(typeof nextStdin === "string" ? nextStdin : "");
+            setToolSqlDialect0(nextSqlDialect ?? defaultSqlDialect);
         },
-        [],
+        [defaultSqlDialect],
     );
 
     const rightBodyRef = useRef<HTMLDivElement | null>(null);
@@ -275,23 +305,24 @@ export function useToolCodeRunnerState(args: {
     const codeRunnerRegionH = Math.max(280, rightBodyH);
 
     return {
-        rightBodyRef,
-        codeRunnerRegionH,
+        boundId,
+        isBound,
+        bindCodeInput,
+        unbindCodeInput,
 
         toolLang,
         toolCode,
         toolStdin,
+        toolSqlDialect,
 
         setToolLang,
         setToolCode,
         setToolStdin,
+        setToolSqlDialect,
 
         saveDebounced,
-        commitToolNow: flush,
-
-        bindCodeInput,
-        unbindCodeInput,
-        boundId,
-        isBound,
+        rightBodyRef,
+        codeRunnerRegionH,
+        flush,
     };
 }

@@ -4,14 +4,21 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes";
 import MathMarkdown from "@/components/markdown/MathMarkdown";
 
-import { DEFAULT_CODE, DEFAULT_LANGS } from "./constants";
+import {
+    DEFAULT_CODE,
+    DEFAULT_LANGS,
+    DEFAULT_SQL_DIALECT,
+    DEFAULT_SQL_DIALECTS,
+} from "./constants";
 import { isControlled, type CodeRunnerProps, type TerminalDock } from "./types";
 import HeaderBar from "./components/HeaderBar";
 import EditorPane from "./components/EditorPane";
 import TerminalPane from "./components/TerminalPane";
+import SqlResultsPane from "./components/SqlResultsPane";
 import { useSplitSizing } from "./hooks/useSplitSizing";
 import { useTerminalRunner } from "./hooks/useTerminalRunner";
-import { CodeLanguage } from "@/lib/practice/types";
+import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
+import { isSqlRunResult } from "@/lib/code/types";
 import { runViaApi } from "@/lib/code/runClient";
 
 function CodeRunnerContent(props: CodeRunnerProps) {
@@ -20,6 +27,8 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         title = "Try it",
         height = 320,
         hintMarkdown,
+
+        preserveCodeOnLanguageSwitch = true,
 
         showHeaderBar = true,
         showEditor = true,
@@ -30,6 +39,10 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         allowedLanguages,
         showLanguagePicker = true,
 
+        fixedSqlDialect,
+        allowedSqlDialects,
+        showSqlDialectPicker = true,
+
         allowReset = true,
         allowRun = true,
         disabled = false,
@@ -39,8 +52,12 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         showEditorThemeToggle = true,
         showTerminalDockToggle = true,
         fixedTerminalDock,
-
+        sqlSchemaSql,
+        sqlSeedSql,
+        sqlSetupSql,
+        sqlDatasetId,
         onRun,
+        editorModelKey,
     } = props as any;
 
     const controlled = isControlled(props);
@@ -78,6 +95,12 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         return base;
     }, [allowedLanguages, fixedLanguage]);
 
+    const allowedDialects = useMemo(() => {
+        const base = allowedSqlDialects?.length ? allowedSqlDialects : DEFAULT_SQL_DIALECTS;
+        if (fixedSqlDialect) return [fixedSqlDialect];
+        return base;
+    }, [allowedSqlDialects, fixedSqlDialect]);
+
     const initialLang: CodeLanguage =
         fixedLanguage ??
         (controlled ? (props as any).language : (props as any).initialLanguage) ??
@@ -86,13 +109,19 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
     const [uLang, setULang] = useState<CodeLanguage>(initialLang);
 
-    // Keep default snippet only for true initial undefined/null state.
-    // Empty string "" is valid and must stay empty.
     const [uCode, setUCode] = useState<string>(
         typeof (props as any).initialCode === "string"
             ? (props as any).initialCode
-            : DEFAULT_CODE[initialLang]
+            : DEFAULT_CODE[initialLang],
     );
+
+    const initialSqlDialect: SqlDialect =
+        fixedSqlDialect ??
+        (controlled ? (props as any).sqlDialect : (props as any).initialSqlDialect) ??
+        allowedDialects[0] ??
+        DEFAULT_SQL_DIALECT;
+
+    const [uSqlDialect, setUSqlDialect] = useState<SqlDialect>(initialSqlDialect);
 
     const lang: CodeLanguage = fixedLanguage
         ? fixedLanguage
@@ -100,8 +129,13 @@ function CodeRunnerContent(props: CodeRunnerProps) {
             ? (props as any).language
             : uLang;
 
-    // Preserve empty string in controlled mode too.
     const code: string = controlled ? ((props as any).code ?? "") : uCode;
+
+    const sqlDialect: SqlDialect = fixedSqlDialect
+        ? fixedSqlDialect
+        : controlled
+            ? ((props as any).sqlDialect ?? uSqlDialect)
+            : uSqlDialect;
 
     const setLang = (l: CodeLanguage) => {
         if (fixedLanguage) return;
@@ -111,6 +145,15 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
     const setCode = (c: string) => {
         controlled ? (props as any).onChangeCode(c) : setUCode(c);
+    };
+
+    const setSqlDialect = (d: SqlDialect) => {
+        if (fixedSqlDialect) return;
+        if (!allowedDialects.includes(d)) return;
+
+        const cb = (props as any).onChangeSqlDialect as ((d: SqlDialect) => void) | undefined;
+        if (cb) cb(d);
+        else setUSqlDialect(d);
     };
 
     const [uDock, setUDock] = useState<TerminalDock>(
@@ -160,27 +203,41 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         requestLayout,
     });
 
-    const defaultOnRun = useCallback(
-        (args: {
-            language: CodeLanguage;
-            code: string;
-            stdin: string;
-            signal?: AbortSignal;
-        }) =>
-            runViaApi(
+    const defaultOnRun = useCallback((args: any) => {
+        if (args.language === "sql") {
+            return runViaApi(
                 {
-                    language: args.language,
+                    kind: "sql",
+                    language: "sql",
+                    dialect: args.sqlDialect,
                     code: args.code,
-                    stdin: args.stdin,
+                    schemaSql: args.sqlSchemaSql ?? args.setupSql,
+                    seedSql: args.sqlSeedSql,
+                    datasetId: args.datasetId,
                 },
                 args.signal,
-            ),
-        [],
-    );
+            );
+        }
+
+        return runViaApi(
+            {
+                kind: "code",
+                language: args.language,
+                code: args.code,
+                stdin: args.stdin,
+            },
+            args.signal,
+        );
+    }, []);
 
     const term = useTerminalRunner({
         lang,
         code,
+        sqlDialect,
+        sqlSchemaSql,
+        sqlSeedSql,
+        sqlSetupSql,
+        sqlDatasetId,
         disabled,
         allowRun,
         resetTerminalOnRun,
@@ -191,21 +248,36 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         requestLayout();
     }, [effectiveDock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]);
 
-    const onSwitchLang = (next: CodeLanguage) => {
+    const onSwitchLang = React.useCallback((next: CodeLanguage) => {
         if (fixedLanguage) return;
         if (!allowedLangs.includes(next)) return;
+        if (next === lang) return;
 
         setLang(next);
 
-        // Important:
-        // Keep whatever is currently in the editor, including "".
-        // Do NOT restore hello world when user intentionally cleared the editor.
-        setCode(typeof code === "string" ? code : DEFAULT_CODE[next]);
+        if (!preserveCodeOnLanguageSwitch && !controlled) {
+            setCode(DEFAULT_CODE[next]);
+        }
 
         term.resetTerminal();
-    };
+    }, [
+        fixedLanguage,
+        allowedLangs,
+        lang,
+        preserveCodeOnLanguageSwitch,
+        controlled,
+        setLang,
+        setCode,
+        term,
+    ]);
 
     const showPickerUI = showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
+    const showSqlDialectPickerUI =
+        lang === "sql" &&
+        showSqlDialectPicker &&
+        !fixedSqlDialect &&
+        allowedDialects.length > 1;
+
     const showEditorThemeToggleUI = showEditorThemeToggle && showHeaderBar;
 
     const showDockToggleUI =
@@ -217,12 +289,78 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         showTerminal;
 
     const outerCls = frame === "plain" ? "w-full" : "ui-card w-full p-4";
+
     const regionStyle: React.CSSProperties | undefined =
         typeof height === "number"
             ? {
                 height: isNarrowScreen ? `min(${numericHeight}px, 72dvh)` : numericHeight,
             }
             : undefined;
+
+    const sqlResult =
+        lang === "sql" &&
+        term.lastRunLanguage === "sql" &&
+        isSqlRunResult(term.lastResult)
+            ? term.lastResult
+            : null;
+
+    const genericSqlError =
+        lang === "sql" &&
+        term.lastRunLanguage === "sql" &&
+        term.lastResult &&
+        !isSqlRunResult(term.lastResult)
+            ? term.lastResult
+            : null;
+
+    const renderOutputPane = (panelHeight?: number, panelWidth?: number) => {
+        if (lang === "sql") {
+            return (
+                <div
+                    className="min-h-0 p-2 sm:p-3"
+                    style={{
+                        ...(typeof panelHeight === "number" ? { height: panelHeight } : {}),
+                        ...(typeof panelWidth === "number" ? { width: panelWidth } : {}),
+                    }}
+                >
+                    {genericSqlError ? (
+                        <div className="rounded-2xl border border-rose-300/30 bg-rose-50/70 p-4 text-sm text-rose-700 dark:border-rose-300/20 dark:bg-rose-950/20 dark:text-rose-200">
+                            <div className="font-black">SQL run error</div>
+                            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">
+                                {genericSqlError.error ?? genericSqlError.status ?? "SQL run failed."}
+                            </pre>
+                        </div>
+                    ) : (
+                        <SqlResultsPane result={sqlResult} busy={term.busy} />
+                    )}
+                </div>
+            );
+        }
+
+        return (
+            <div
+                className="min-h-0 p-2 sm:p-3"
+                style={{
+                    ...(typeof panelHeight === "number" ? { height: panelHeight } : {}),
+                    ...(typeof panelWidth === "number" ? { width: panelWidth } : {}),
+                }}
+            >
+                <TerminalPane
+                    terminal={term.terminal}
+                    stdinBuffer={term.stdinBuffer}
+                    awaitingInput={term.awaitingInput}
+                    inputPrompt={term.inputPrompt}
+                    inputLine={term.inputLine}
+                    setInputLine={term.setInputLine}
+                    inputRef={term.inputRef}
+                    busy={term.busy}
+                    disabled={disabled}
+                    lastResult={term.lastResult}
+                    onSubmitInput={term.submitInput}
+                    typedLines={term.typedLines}
+                />
+            </div>
+        );
+    };
 
     return (
         <div className={outerCls}>
@@ -244,9 +382,12 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         allowedLangs={allowedLangs}
                         lang={lang}
                         onSwitchLang={onSwitchLang}
+                        showSqlDialectPicker={showSqlDialectPickerUI}
+                        allowedSqlDialects={allowedDialects}
+                        sqlDialect={sqlDialect}
+                        onSwitchSqlDialect={setSqlDialect}
                         allowReset={allowReset}
                         onReset={() => {
-                            // Reset is the ONLY place that should intentionally restore default starter code.
                             setCode(DEFAULT_CODE[lang]);
                             term.resetTerminal();
                         }}
@@ -285,6 +426,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                 theme={editorTheme}
                                 height={numericHeight}
                                 disabled={disabled || term.busy}
+                                modelKey={editorModelKey}
                                 onMount={(ed) => {
                                     monacoEditorRef.current = ed;
                                     requestLayout();
@@ -293,28 +435,11 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         </div>
                     ) : null}
 
-                    {!showEditor && showTerminal ? (
-                        <div className="h-full p-2 sm:p-3">
-                            <TerminalPane
-                                terminal={term.terminal}
-                                stdinBuffer={term.stdinBuffer}
-                                awaitingInput={term.awaitingInput}
-                                inputPrompt={term.inputPrompt}
-                                inputLine={term.inputLine}
-                                setInputLine={term.setInputLine}
-                                inputRef={term.inputRef}
-                                busy={term.busy}
-                                disabled={disabled}
-                                lastResult={term.lastResult}
-                                onSubmitInput={term.submitInput}
-                                typedLines={term.typedLines}
-                            />
-                        </div>
-                    ) : null}
+                    {!showEditor && showTerminal ? renderOutputPane() : null}
 
                     {showEditor && showTerminal ? (
                         effectiveDock === "bottom" ? (
-                            <div className="flex h-full flex-col min-h-0">
+                            <div className="flex h-full min-h-0 flex-col">
                                 <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
                                     <EditorPane
                                         lang={lang}
@@ -323,6 +448,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                         theme={editorTheme}
                                         height={split.bottomEditorH}
                                         disabled={disabled || term.busy}
+                                        modelKey={editorModelKey}
                                         onMount={(ed) => {
                                             monacoEditorRef.current = ed;
                                             requestLayout();
@@ -332,37 +458,25 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
                                 {!isNarrowScreen ? (
                                     <div
-                                        onMouseDown={term.runState !== "idle" ? undefined : split.onMouseDownSplit}
+                                        {...split.separatorProps}
+                                        aria-disabled={term.runState !== "idle"}
+                                        onPointerDown={term.runState !== "idle" ? undefined : split.onPointerDownSplit}
+                                        onKeyDown={term.runState !== "idle" ? undefined : split.separatorProps.onKeyDown}
                                         className={[
-                                            "h-2 bg-neutral-200/60 dark:bg-white/5",
+                                            "h-2 bg-neutral-200/60 outline-none dark:bg-white/5",
                                             term.runState !== "idle"
                                                 ? "cursor-not-allowed opacity-60"
-                                                : "cursor-row-resize hover:bg-neutral-200 dark:hover:bg-white/10",
+                                                : "cursor-row-resize hover:bg-neutral-200 focus:bg-neutral-200 dark:hover:bg-white/10 dark:focus:bg-white/10",
                                         ].join(" ")}
                                         title={
                                             term.runState !== "idle"
                                                 ? "Cannot resize while a run session is active"
-                                                : "Drag to resize terminal"
+                                                : "Drag or use arrow keys to resize terminal"
                                         }
                                     />
                                 ) : null}
 
-                                <div className="min-h-0 p-2 sm:p-3" style={{ height: split.bottomTermH }}>
-                                    <TerminalPane
-                                        terminal={term.terminal}
-                                        stdinBuffer={term.stdinBuffer}
-                                        awaitingInput={term.awaitingInput}
-                                        inputPrompt={term.inputPrompt}
-                                        inputLine={term.inputLine}
-                                        setInputLine={term.setInputLine}
-                                        inputRef={term.inputRef}
-                                        busy={term.busy}
-                                        disabled={disabled}
-                                        lastResult={term.lastResult}
-                                        onSubmitInput={term.submitInput}
-                                        typedLines={term.typedLines}
-                                    />
-                                </div>
+                                {renderOutputPane(split.bottomTermH)}
                             </div>
                         ) : (
                             <div className="flex h-full min-h-0">
@@ -374,6 +488,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                         theme={editorTheme}
                                         height={split.rightTotalH}
                                         disabled={disabled || term.busy}
+                                        modelKey={editorModelKey}
                                         onMount={(ed) => {
                                             monacoEditorRef.current = ed;
                                             requestLayout();
@@ -382,39 +497,24 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                                 </div>
 
                                 <div
-                                    onMouseDown={term.runState !== "idle" ? undefined : split.onMouseDownSplit}
+                                    {...split.separatorProps}
+                                    aria-disabled={term.runState !== "idle"}
+                                    onPointerDown={term.runState !== "idle" ? undefined : split.onPointerDownSplit}
+                                    onKeyDown={term.runState !== "idle" ? undefined : split.separatorProps.onKeyDown}
                                     className={[
-                                        "w-2 bg-neutral-200/60 dark:bg-white/5",
+                                        "w-2 bg-neutral-200/60 outline-none dark:bg-white/5",
                                         term.runState !== "idle"
                                             ? "cursor-not-allowed opacity-60"
-                                            : "cursor-col-resize hover:bg-neutral-200 dark:hover:bg-white/10",
+                                            : "cursor-col-resize hover:bg-neutral-200 focus:bg-neutral-200 dark:hover:bg-white/10 dark:focus:bg-white/10",
                                     ].join(" ")}
                                     title={
                                         term.runState !== "idle"
                                             ? "Cannot resize while a run session is active"
-                                            : "Drag to resize terminal"
+                                            : "Drag or use arrow keys to resize terminal"
                                     }
                                 />
 
-                                <div
-                                    className="min-w-0 p-2 sm:p-3"
-                                    style={{ width: split.termW, height: split.rightTotalH }}
-                                >
-                                    <TerminalPane
-                                        terminal={term.terminal}
-                                        stdinBuffer={term.stdinBuffer}
-                                        awaitingInput={term.awaitingInput}
-                                        inputPrompt={term.inputPrompt}
-                                        inputLine={term.inputLine}
-                                        setInputLine={term.setInputLine}
-                                        inputRef={term.inputRef}
-                                        busy={term.busy}
-                                        disabled={disabled}
-                                        lastResult={term.lastResult}
-                                        onSubmitInput={term.submitInput}
-                                        typedLines={term.typedLines}
-                                    />
-                                </div>
+                                {renderOutputPane(split.rightTotalH, split.termW)}
                             </div>
                         )
                     ) : null}

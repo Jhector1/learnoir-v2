@@ -57,19 +57,28 @@ export function useReviewProgress(args: {
       [subjectSlug, moduleId, locale, progress, activeTopicId],
   );
 
-  const commitProgress = useCallback(
-      async (_payload: typeof payload, body: string, signal: AbortSignal) => {
-        await fetch("/api/review/progress", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body,
-          keepalive: true,
-          cache: "no-store",
-          signal,
-        });
-      },
-      [],
-  );
+    const commitProgress = useCallback(
+        async (_payload: typeof payload, body: string, signal: AbortSignal) => {
+            try {
+                const res = await fetch("/api/review/progress", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body,
+                    cache: "no-store",
+                    signal,
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Progress save failed: ${res.status}`);
+                }
+            } catch (e: any) {
+                if (signal.aborted) return;
+                if (e?.name === "AbortError") return;
+                throw e;
+            }
+        },
+        [],
+    );
 
   const {
     prime,
@@ -84,43 +93,53 @@ export function useReviewProgress(args: {
     commit: commitProgress,
   });
 
-  const putProgressNow = useCallback(
-      async (state: ReviewProgressState) => {
-        if (!subjectSlug || !moduleId) return;
+    const putProgressNow = useCallback(
+        async (state: ReviewProgressState) => {
+            if (!subjectSlug || !moduleId) return;
 
-        const nextPayload = buildReviewProgressPayload({
-          subjectSlug,
-          moduleId,
-          locale,
-          state,
-          activeTopicId: activeTopicIdRef.current,
-        });
+            const nextPayload = buildReviewProgressPayload({
+                subjectSlug,
+                moduleId,
+                locale,
+                state,
+                activeTopicId: activeTopicIdRef.current,
+            });
 
-        const body = stableJson(nextPayload);
+            const body = stableJson(nextPayload);
 
-        if (body === lastCommittedRef.current) return;
-        lastCommittedRef.current = body;
+            if (body === lastCommittedRef.current) return;
 
-        if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
-          try {
-            if (body.length < 60000) {
-              const blob = new Blob([body], { type: "application/json" });
-              const ok = (navigator as any).sendBeacon("/api/review/progress", blob);
-              if (ok) return;
+            if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+                try {
+                    if (body.length < 60000) {
+                        const blob = new Blob([body], { type: "application/json" });
+                        const ok = (navigator as any).sendBeacon("/api/review/progress", blob);
+                        if (ok) {
+                            lastCommittedRef.current = body;
+                            return;
+                        }
+                    }
+                } catch {}
             }
-          } catch {}
-        }
 
-        await fetch("/api/review/progress", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body,
-          keepalive: true,
-          cache: "no-store",
-        }).catch(() => {});
-      },
-      [subjectSlug, moduleId, locale, lastCommittedRef],
-  );
+            try {
+                const res = await fetch("/api/review/progress", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body,
+                    keepalive: true,
+                    cache: "no-store",
+                });
+
+                if (res.ok) {
+                    lastCommittedRef.current = body;
+                }
+            } catch {
+                // ignore here if you want, but do not mark committed
+            }
+        },
+        [subjectSlug, moduleId, locale, lastCommittedRef],
+    );
 
   useEffect(() => {
     if (!subjectSlug || !moduleId) return;

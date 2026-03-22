@@ -15,7 +15,8 @@ import {
 } from "react-icons/fi";
 import { SiPython, SiJavascript, SiC, SiCplusplus } from "react-icons/si";
 import { FaJava } from "react-icons/fa";
-import { CodeLanguage } from "@/lib/practice/types";
+import { TbSql } from "react-icons/tb";
+import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 
 const LANG_META: Record<
     CodeLanguage,
@@ -26,6 +27,14 @@ const LANG_META: Record<
     javascript: { label: "JavaScript", Icon: SiJavascript },
     c: { label: "C", Icon: SiC },
     cpp: { label: "C++", Icon: SiCplusplus },
+    sql: { label: "SQL", Icon: TbSql },
+};
+
+const DIALECT_LABEL: Record<SqlDialect, string> = {
+    postgres: "PostgreSQL",
+    mysql: "MySQL",
+    sqlite: "SQLite",
+    mssql: "SQL Server",
 };
 
 function cx(...xs: Array<string | false | null | undefined>) {
@@ -64,6 +73,11 @@ export default function HeaderBar(props: {
     lang: CodeLanguage;
     onSwitchLang: (l: CodeLanguage) => void;
 
+    showSqlDialectPicker: boolean;
+    allowedSqlDialects: SqlDialect[];
+    sqlDialect: SqlDialect;
+    onSwitchSqlDialect: (d: SqlDialect) => void;
+
     allowReset: boolean;
     onReset: () => void;
 
@@ -87,6 +101,11 @@ export default function HeaderBar(props: {
         allowedLangs,
         lang,
         onSwitchLang,
+
+        showSqlDialectPicker,
+        allowedSqlDialects,
+        sqlDialect,
+        onSwitchSqlDialect,
 
         allowReset,
         onReset,
@@ -116,6 +135,11 @@ export default function HeaderBar(props: {
     const btnStop =
         "border-rose-300/30 bg-rose-300/10 text-neutral-900 hover:bg-rose-300/15 dark:text-white/90";
 
+    const selectCls =
+        "rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold " +
+        "text-neutral-700 outline-none transition hover:bg-neutral-50 " +
+        "dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80 dark:hover:bg-white/[0.10]";
+
     const isStarting = runState === "starting";
     const isRunning = runState === "running";
     const isAwaitingInput = runState === "awaiting_input";
@@ -134,13 +158,7 @@ export default function HeaderBar(props: {
                 ? "Stop"
                 : "Run";
 
-    const runTip = isStarting
-        ? "Preparing…"
-        : isCanceling
-            ? "Canceling…"
-            : showStop
-                ? "Stop"
-                : "Run";
+    const runTip = runLabel;
 
     return (
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
@@ -219,6 +237,35 @@ export default function HeaderBar(props: {
                         </div>
                     </Tooltip>
                 )}
+
+                {lang === "sql" && showSqlDialectPicker ? (
+                    <label className="flex items-center gap-2">
+                        <span className="hidden lg:block text-xs font-extrabold text-neutral-600 dark:text-white/60">
+                            Dialect
+                        </span>
+                        <select
+                            value={sqlDialect}
+                            onChange={(e) => onSwitchSqlDialect(e.target.value as SqlDialect)}
+                            disabled={disabled || sessionActive}
+                            className={cx(selectCls, btnDisabled)}
+                            aria-label="SQL dialect"
+                        >
+                            {allowedSqlDialects.map((d) => (
+                                <option key={d} value={d}>
+                                    {DIALECT_LABEL[d]}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                ) : null}
+
+                {lang === "sql" && !showSqlDialectPicker ? (
+                    <Tooltip tip={`Dialect: ${DIALECT_LABEL[sqlDialect]}`}>
+                        <div className="text-xs font-extrabold text-neutral-500 dark:text-white/60">
+                            {DIALECT_LABEL[sqlDialect]}
+                        </div>
+                    </Tooltip>
+                ) : null}
 
                 {allowReset ? (
                     <Tooltip tip="Reset">

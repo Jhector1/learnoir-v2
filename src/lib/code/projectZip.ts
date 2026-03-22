@@ -1,6 +1,8 @@
 import JSZip from "jszip";
 import type { FileEntry } from "./types";
-import { CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
+
+type ProjectLanguage = Exclude<CodeLanguage, "sql">;
 
 function assertSafeRelPath(p: string) {
     if (!p || p.startsWith("/") || p.includes("..")) {
@@ -19,10 +21,10 @@ function pickJavaMainClass(entryPath: string, files: FileEntry[]): string {
     return pkg ? `${pkg}.${cls}` : cls;
 }
 
-function scriptsFor(lang: CodeLanguage, entry: string, files: FileEntry[]) {
+function scriptsFor(lang: ProjectLanguage, entry: string, files: FileEntry[]) {
     const mainClass = lang === "java" ? pickJavaMainClass(entry, files) : "";
 
-    const run = (() => {
+    const run: string = (() => {
         switch (lang) {
             case "python":
                 return `#!/usr/bin/env bash
@@ -51,7 +53,7 @@ set -euo pipefail
         }
     })();
 
-    const compile = (() => {
+    const compile: string | null = (() => {
         switch (lang) {
             case "java":
                 return `#!/usr/bin/env bash
@@ -83,7 +85,7 @@ g++ -O2 -std=c++17 -I. -o build/app $FILES
     return { compile, run };
 }
 
-export async function zipProject(lang: CodeLanguage, entry: string, files: FileEntry[]) {
+export async function zipProject(lang: ProjectLanguage, entry: string, files: FileEntry[]) {
     assertSafeRelPath(entry);
     const zip = new JSZip();
 
@@ -98,6 +100,7 @@ export async function zipProject(lang: CodeLanguage, entry: string, files: FileE
         zip.file("compile", compile);
         zip.file("compile.sh", compile);
     }
+
     zip.file("run", run);
     zip.file("run.sh", run);
 

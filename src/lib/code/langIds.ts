@@ -1,4 +1,6 @@
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
+
+type Judge0Language = Exclude<CodeLanguage, "sql">;
 
 function envInt(name: string) {
     const v = process.env[name];
@@ -7,7 +9,7 @@ function envInt(name: string) {
     return Number.isFinite(n) ? n : null;
 }
 
-const FALLBACK_LANG_IDS: Record<CodeLanguage, number> = {
+const FALLBACK_LANG_IDS: Record<Judge0Language, number> = {
     python: 71,
     java: 62,
     javascript: 63,
@@ -15,7 +17,7 @@ const FALLBACK_LANG_IDS: Record<CodeLanguage, number> = {
     cpp: 54,
 };
 
-export function getSingleFileLanguageId(lang: CodeLanguage) {
+export function getSingleFileLanguageId(lang: Judge0Language) {
     const py = envInt("JUDGE0_LANG_PYTHON");
     const ja = envInt("JUDGE0_LANG_JAVA");
     const js = envInt("JUDGE0_LANG_JAVASCRIPT");

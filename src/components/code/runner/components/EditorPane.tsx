@@ -1,12 +1,49 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useId } from "react";
 import dynamic from "next/dynamic";
-
 import { monacoLang } from "../utils/monaco";
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+function extForLang(lang: CodeLanguage) {
+    switch (lang) {
+        case "python":
+            return "py";
+        case "java":
+            return "java";
+        case "javascript":
+            return "js";
+        case "c":
+            return "c";
+        case "cpp":
+            return "cpp";
+        case "sql":
+            return "sql";
+        default:
+            return "txt";
+    }
+}
+
+function sanitizePathPart(x: string) {
+    return String(x ?? "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\//, "")
+        .replace(/\.\./g, "")
+        .replace(/[^a-zA-Z0-9._/-]/g, "-")
+        .replace(/\/+/g, "/") || "scratch";
+}
+
+function buildModelPath(args: {
+    modelKey?: string;
+    instanceKey: string;
+    lang: CodeLanguage;
+}) {
+    const base = sanitizePathPart(args.modelKey || args.instanceKey);
+    return `inmemory://zoeskoul-runner/${base}.${extForLang(args.lang)}`;
+}
 
 export default function EditorPane(props: {
     lang: CodeLanguage;
@@ -14,15 +51,34 @@ export default function EditorPane(props: {
     onChange: (v: string) => void;
     theme: "vs" | "vs-dark";
     height: number;
-    disabled: boolean;
-    onMount: (ed: any) => void;
+    disabled?: boolean;
+    onMount?: (ed: any) => void;
+    modelKey?: string;
 }) {
-    const { lang, code, onChange, theme, height, disabled, onMount } = props;
+    const {
+        lang,
+        code,
+        onChange,
+        theme,
+        height,
+        disabled = false,
+        onMount,
+        modelKey,
+    } = props;
 
+    const reactId = useId();
+    const instanceKeyRef = useRef(`editor-${reactId.replace(/[:]/g, "")}`);
     const editorRef = useRef<any>(null);
     const applyingExternalRef = useRef(false);
 
-    // ✅ Keep Monaco UNcontrolled while typing, but still accept external updates.
+    const path = useMemo(() => {
+        return buildModelPath({
+            modelKey,
+            instanceKey: instanceKeyRef.current,
+            lang,
+        });
+    }, [modelKey, lang]);
+
     useEffect(() => {
         const ed = editorRef.current;
         if (!ed) return;
@@ -30,46 +86,55 @@ export default function EditorPane(props: {
         const model = ed.getModel?.();
         if (!model) return;
 
-        const cur = model.getValue?.() ?? "";
-        if (cur === code) return; // already in sync (common case while typing)
+        const current = model.getValue?.() ?? "";
+        const next = String(code ?? "");
+
+        if (current === next) return;
 
         applyingExternalRef.current = true;
 
-        // Preserve cursor/scroll
-        const view = ed.saveViewState?.();
+        const viewState = ed.saveViewState?.();
+        const selection = ed.getSelection?.();
 
-        // Replace full contents without nuking view like setValue often does
         try {
-            const fullRange = model.getFullModelRange();
-            model.pushEditOperations?.(
-                [],
-                [{ range: fullRange, text: String(code ?? "") }],
-                () => null,
-            );
+            ed.pushUndoStop?.();
+            ed.executeEdits?.("external-sync", [
+                {
+                    range: model.getFullModelRange(),
+                    text: next,
+                    forceMoveMarkers: true,
+                },
+            ]);
+            ed.pushUndoStop?.();
         } catch {
-            // fallback (should rarely be needed)
-            model.setValue?.(String(code ?? ""));
+            model.setValue?.(next);
         }
 
-        if (view) ed.restoreViewState?.(view);
-        ed.focus?.();
+        if (viewState) ed.restoreViewState?.(viewState);
+        if (selection) ed.setSelection?.(selection);
 
         applyingExternalRef.current = false;
-    }, [code]);
+    }, [code, path]);
+
+    useEffect(() => {
+        const ed = editorRef.current;
+        if (!ed) return;
+        ed.updateOptions?.({ readOnly: disabled });
+    }, [disabled]);
 
     return (
         <Monaco
             height={height}
+            path={path}
             language={monacoLang(lang)}
-            // ✅ KEY CHANGE: uncontrolled while typing
-            defaultValue={code}
+            defaultValue={String(code ?? "")}
             theme={theme}
+            saveViewState
             onMount={(ed: any) => {
                 editorRef.current = ed;
-                onMount(ed);
+                onMount?.(ed);
             }}
             onChange={(v) => {
-                // Ignore change events caused by our own external sync
                 if (applyingExternalRef.current) return;
                 onChange(v ?? "");
             }}
@@ -81,7 +146,8 @@ export default function EditorPane(props: {
                 automaticLayout: true,
                 readOnly: disabled,
                 scrollbar: { alwaysConsumeMouseWheel: false },
-
+                formatOnPaste: false,
+                formatOnType: false,
             }}
         />
     );

@@ -50,10 +50,10 @@ export async function createJudge0Submission(
 
     return {
         ok: true,
+        mode: "queued",
         token: String(data.token),
     };
 }
-
 export async function getJudge0Submission(url: string): Promise<RunPollResult> {
     const res = await fetch(url, { method: "GET" });
     const text = await res.text();

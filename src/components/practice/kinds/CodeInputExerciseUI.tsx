@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef } from "react";
 import type {CodeLanguage, Exercise} from "@/lib/practice/types";
-import type {  RunResult } from "@/lib/code/runCode";
+import type {  RunResult } from "@/lib/code/types";
 import CodeRunner from "@/components/code/CodeRunner";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
 import {useTaggedT} from "@/i18n/tagged";
@@ -199,9 +199,16 @@ export default function CodeInputExerciseUI({
                 showLanguagePicker={lockLanguage ? false : true}
                 code={code}
                 onChangeCode={(c) => !readOnly && onChangeCode(c)}
-                // stdin={stdin}
-                // onChangeStdin={(s) => !readOnly && onChangeStdin(s)}
-                onRun={onRun}
+                onRun={
+                    onRun
+                        ? async (args) =>
+                            onRun({
+                                language: args.language,
+                                code: args.code,
+                                stdin: args.stdin ?? "",
+                            })
+                        : undefined
+                }
                 fixedTerminalDock="bottom"
             />
 

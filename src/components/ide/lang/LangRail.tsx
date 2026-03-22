@@ -9,6 +9,7 @@ import {
 } from "react-icons/si";
 import { FaJava } from "react-icons/fa6";
 import { CodeLanguage } from "@/lib/practice/types";
+import {TbSql} from "react-icons/tb";
 
 function cn(...cls: Array<string | false | undefined | null>) {
     return cls.filter(Boolean).join(" ");
@@ -27,6 +28,7 @@ export const LANGS: LangItem[] = [
     { id: "javascript", label: "JavaScript", desc: "Web scripting", Icon: SiJavascript },
     { id: "c", label: "C", desc: "Low-level fundamentals", Icon: SiC },
     { id: "cpp", label: "C++", desc: "Performance + STL", Icon: SiCplusplus },
+    { id: "sql", label: "SQL", desc: "Queries + databases", Icon: TbSql },
 ];
 
 export function LangRail(props: {

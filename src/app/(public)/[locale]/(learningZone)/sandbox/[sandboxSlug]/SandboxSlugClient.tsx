@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 type SandboxSlug = "programming" | "sql" | "linear-algebra" | "tools";
 
 function SandboxOnly({ sandboxSlug }: { sandboxSlug: string }) {
-    // Create ONLY the matching component
     const Comp = React.useMemo(() => {
         switch (sandboxSlug as SandboxSlug) {
             case "programming":
@@ -20,10 +19,6 @@ function SandboxOnly({ sandboxSlug }: { sandboxSlug: string }) {
                     ssr: false,
                     loading: () => <div className="ui-soft p-4">Loading Linear Algebra…</div>,
                 });
-
-            // add when you have them
-            // case "sql":
-            //   return dynamic(() => import("@/components/sandbox/SqlSandbox"), { ssr:false });
 
             default:
                 return null;
@@ -41,6 +36,5 @@ export default function SandboxSlugClient({
     locale: string;
     sandboxSlug: string;
 }) {
-    // renders ONLY the slug sandbox (no other sandboxes created/loaded)
     return <SandboxOnly sandboxSlug={sandboxSlug} />;
 }

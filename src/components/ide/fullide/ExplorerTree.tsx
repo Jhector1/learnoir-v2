@@ -22,9 +22,6 @@ import {
     IconTrash,
 } from "./icons";
 
-// --------------------
-// Caret-preserving setter
-// --------------------
 function setInlineValuePreserveCaret(
     setInlineEdit: React.Dispatch<React.SetStateAction<InlineEdit>>,
     el: HTMLInputElement,
@@ -44,9 +41,6 @@ function setInlineValuePreserveCaret(
     });
 }
 
-// --------------------
-// Small stable components (IMPORTANT)
-// --------------------
 function IndentGuides({ depth }: { depth: number }) {
     if (depth <= 0) return null;
     return (
@@ -64,7 +58,6 @@ function InlineNameRow(props: {
     depth: number;
     kind: "file" | "folder";
     initialFocus?: boolean;
-
     value: string;
     setInlineEdit: React.Dispatch<React.SetStateAction<InlineEdit>>;
     commitInlineEdit: () => void;
@@ -88,34 +81,40 @@ function InlineNameRow(props: {
     }, [initialFocus]);
 
     return (
-        <div className="flex h-8 items-center rounded-md border border-neutral-200 bg-white px-2 dark:border-white/10 dark:bg-white/[0.06]">
-            <IndentGuides depth={depth} />
-            <div className="grid h-6 w-6 place-items-center opacity-60" />
-            <div className="grid h-6 w-6 place-items-center text-neutral-700 dark:text-white/80">
-                {kind === "folder" ? (
-                    <IconFolder className="h-4 w-4" />
-                ) : (
-                    <IconFile className="h-4 w-4" />
-                )}
+        <div className="rounded-lg border border-neutral-200 bg-white px-2 py-2 dark:border-white/10 dark:bg-white/[0.06]">
+            <div className="flex min-h-[44px] items-center">
+                <IndentGuides depth={depth} />
+                <div className="grid h-6 w-6 place-items-center opacity-60" />
+                <div className="grid h-6 w-6 place-items-center text-neutral-700 dark:text-white/80">
+                    {kind === "folder" ? (
+                        <IconFolder className="h-4 w-4" />
+                    ) : (
+                        <IconFile className="h-4 w-4" />
+                    )}
+                </div>
+
+                <input
+                    ref={inputRef}
+                    value={value}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                        setInlineValuePreserveCaret(
+                            setInlineEdit,
+                            e.currentTarget,
+                            e.target.value,
+                        )
+                    }
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") commitInlineEdit();
+                        if (e.key === "Escape") cancelInlineEdit();
+                    }}
+                    className="h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/90"
+                />
             </div>
 
-            <input
-                ref={inputRef}
-                value={value}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) =>
-                    setInlineValuePreserveCaret(setInlineEdit, e.currentTarget, e.target.value)
-                }
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") commitInlineEdit();
-                    if (e.key === "Escape") cancelInlineEdit();
-                }}
-                className="h-7 w-full rounded-md border border-neutral-200 bg-white px-2 text-[12px] font-semibold text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/90"
-            />
-
-            <div className="ml-2 flex items-center gap-1">
+            <div className="mt-2 flex flex-col gap-2 sm:ml-[28px] sm:flex-row sm:items-center">
                 <button
                     type="button"
                     onClick={(e) => {
@@ -143,9 +142,6 @@ function InlineNameRow(props: {
     );
 }
 
-// --------------------
-// Recursive Tree component (stable type)
-// --------------------
 function Tree(props: {
     parentId: NodeId | null;
     depth: number;
@@ -154,6 +150,7 @@ function Tree(props: {
     expanded: Set<NodeId>;
     activeFileId: NodeId;
     entryFileId: NodeId;
+    isSql?: boolean;
 
     filterLower: string;
     nodeMatchesFilter: (id: NodeId) => boolean;
@@ -182,6 +179,7 @@ function Tree(props: {
         expanded,
         activeFileId,
         entryFileId,
+        isSql = false,
         filterLower,
         nodeMatchesFilter,
         folderHasMatch,
@@ -227,23 +225,28 @@ function Tree(props: {
                 const isFolder = n.kind === "folder";
                 const isOpen = isFolder && expanded.has(n.id);
                 const isActive = n.kind === "file" && n.id === activeFileId;
-                const isEntry = n.kind === "file" && n.id === entryFileId;
+                const isEntry = !isSql && n.kind === "file" && n.id === entryFileId;
 
                 const hasChildren = isFolder && childrenOf(nodes, n.id).length > 0;
                 const isRenaming = inlineEdit?.mode === "rename" && inlineEdit?.targetId === n.id;
 
                 const disableDelete =
-                    (n.kind === "file" && n.id === entryFileId) ||
-                    (n.kind === "folder" && subtreeIds(nodes, n.id).has(entryFileId));
+                    !isSql &&
+                    ((n.kind === "file" && n.id === entryFileId) ||
+                        (n.kind === "folder" && subtreeIds(nodes, n.id).has(entryFileId)));
 
                 if (isRenaming) {
                     return (
                         <div key={n.id}>
-                            <div className="flex h-8 items-center rounded-md border border-neutral-200 bg-white px-2 dark:border-white/10 dark:bg-white/[0.06]">
+                            <div className="rounded-lg border border-neutral-200 bg-white px-2 py-2 dark:border-white/10 dark:bg-white/[0.06]">
                                 <IndentGuides depth={depth} />
 
                                 <div className="grid h-6 w-6 place-items-center text-neutral-500 dark:text-white/60">
-                                    {isFolder ? (isOpen ? <IconChevronDown className="h-4 w-4" /> : <IconChevronRight className="h-4 w-4" />) : null}
+                                    {isFolder
+                                        ? isOpen
+                                            ? <IconChevronDown className="h-4 w-4" />
+                                            : <IconChevronRight className="h-4 w-4" />
+                                        : null}
                                 </div>
 
                                 <div className="grid h-6 w-6 place-items-center text-neutral-700 dark:text-white/80">
@@ -266,9 +269,7 @@ function Tree(props: {
                                     className="h-7 w-full rounded-md border border-neutral-200 bg-white px-2 text-[12px] font-semibold text-neutral-900 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white/90"
                                 />
 
-                                {/* ✅ add actions for rename */}
-                                <div className="ml-2 flex items-center gap-1">
-                                    <button
+                                <div className="mt-2 flex flex-col gap-2 sm:ml-2 sm:mt-0 sm:flex-row sm:items-center">                                    <button
                                         type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -302,6 +303,7 @@ function Tree(props: {
                                         expanded={expanded}
                                         activeFileId={activeFileId}
                                         entryFileId={entryFileId}
+                                        isSql={isSql}
                                         filterLower={filterLower}
                                         nodeMatchesFilter={nodeMatchesFilter}
                                         folderHasMatch={folderHasMatch}
@@ -323,12 +325,39 @@ function Tree(props: {
                     );
                 }
 
+                const fileActions = isSql
+                    ? [
+                        { label: "Rename", onClick: () => startRename(n.id), icon: <IconPencil className="h-4 w-4" /> },
+                        {
+                            label: "Delete",
+                            onClick: () => requestDelete(n.id),
+                            icon: <IconTrash className="h-4 w-4" />,
+                            danger: true,
+                            disabled: disableDelete,
+                        },
+                    ]
+                    : [
+                        {
+                            label: isEntry ? "Entry file" : "Set as Entry",
+                            onClick: () => setEntry(n.id),
+                            icon: <IconPlay className="h-4 w-4" />,
+                            disabled: isEntry,
+                        },
+                        { label: "Rename", onClick: () => startRename(n.id), icon: <IconPencil className="h-4 w-4" /> },
+                        {
+                            label: "Delete",
+                            onClick: () => requestDelete(n.id),
+                            icon: <IconTrash className="h-4 w-4" />,
+                            danger: true,
+                            disabled: disableDelete,
+                        },
+                    ];
+
                 return (
                     <div key={n.id}>
                         <div
                             className={cn(
-                                "group flex h-8 items-center rounded-md px-2 border border-transparent",
-                                "hover:bg-neutral-50 hover:border-neutral-200",
+                                "group flex min-h-[40px] items-center rounded-md px-2 border border-transparent sm:min-h-[32px]",                                "hover:bg-neutral-50 hover:border-neutral-200",
                                 "dark:hover:bg-white/[0.06] dark:hover:border-white/10",
                                 isActive && "bg-neutral-50 border-neutral-200 dark:bg-white/[0.08] dark:border-white/10",
                             )}
@@ -336,7 +365,6 @@ function Tree(props: {
                         >
                             <IndentGuides depth={depth} />
 
-                            {/* caret */}
                             <button
                                 type="button"
                                 onClick={(e) => {
@@ -355,24 +383,14 @@ function Tree(props: {
                                 title={isFolder ? (isOpen ? "Collapse" : "Expand") : ""}
                             >
                                 {isFolder ? (
-                                    isOpen ? (
-                                        <IconChevronDown className="h-4 w-4" />
-                                    ) : (
-                                        <IconChevronRight className="h-4 w-4" />
-                                    )
+                                    isOpen ? <IconChevronDown className="h-4 w-4" /> : <IconChevronRight className="h-4 w-4" />
                                 ) : null}
                             </button>
 
-                            {/* icon */}
                             <div className="grid h-6 w-6 place-items-center text-neutral-700 dark:text-white/80">
-                                {isFolder ? (
-                                    <IconFolder className="h-4 w-4" />
-                                ) : (
-                                    <IconFile className="h-4 w-4" />
-                                )}
+                                {isFolder ? <IconFolder className="h-4 w-4" /> : <IconFile className="h-4 w-4" />}
                             </div>
 
-                            {/* name */}
                             <button
                                 type="button"
                                 className="min-w-0 flex-1 text-left"
@@ -388,7 +406,6 @@ function Tree(props: {
                                 </div>
                             </button>
 
-                            {/* entry badge */}
                             {isEntry ? (
                                 <div className="mr-1 ui-pill ui-pill--good" title="Runs when you click Run">
                                     <IconPlay className="h-3 w-3" />
@@ -396,7 +413,6 @@ function Tree(props: {
                                 </div>
                             ) : null}
 
-                            {/* 3-dot menu */}
                             <div className="ml-1 flex items-center">
                                 <NodeMenu
                                     actions={
@@ -413,22 +429,7 @@ function Tree(props: {
                                                     disabled: disableDelete,
                                                 },
                                             ]
-                                            : [
-                                                {
-                                                    label: isEntry ? "Entry file" : "Set as Entry",
-                                                    onClick: () => setEntry(n.id),
-                                                    icon: <IconPlay className="h-4 w-4" />,
-                                                    disabled: isEntry,
-                                                },
-                                                { label: "Rename", onClick: () => startRename(n.id), icon: <IconPencil className="h-4 w-4" /> },
-                                                {
-                                                    label: "Delete",
-                                                    onClick: () => requestDelete(n.id),
-                                                    icon: <IconTrash className="h-4 w-4" />,
-                                                    danger: true,
-                                                    disabled: disableDelete,
-                                                },
-                                            ]
+                                            : fileActions
                                     }
                                 />
                             </div>
@@ -443,6 +444,7 @@ function Tree(props: {
                                     expanded={expanded}
                                     activeFileId={activeFileId}
                                     entryFileId={entryFileId}
+                                    isSql={isSql}
                                     filterLower={filterLower}
                                     nodeMatchesFilter={nodeMatchesFilter}
                                     folderHasMatch={folderHasMatch}
@@ -467,14 +469,12 @@ function Tree(props: {
     );
 }
 
-// --------------------
-// Main component
-// --------------------
 export default function ExplorerTree(props: {
     nodes: FSNode[];
     expanded: Set<NodeId>;
     activeFileId: NodeId;
     entryFileId: NodeId;
+    isSql?: boolean;
 
     filter: string;
     inlineEdit: InlineEdit;
@@ -498,6 +498,7 @@ export default function ExplorerTree(props: {
         expanded,
         activeFileId,
         entryFileId,
+        isSql = false,
         filter,
         inlineEdit,
         setInlineEdit,
@@ -532,6 +533,7 @@ export default function ExplorerTree(props: {
             expanded={expanded}
             activeFileId={activeFileId}
             entryFileId={entryFileId}
+            isSql={isSql}
             filterLower={filterLower}
             nodeMatchesFilter={nodeMatchesFilter}
             folderHasMatch={folderHasMatch}

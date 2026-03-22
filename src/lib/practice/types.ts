@@ -285,4 +285,12 @@ export type ValidateResponse = {
     explanation?: string;
 };
 export type PoolKind = PracticeKind;
-export type CodeLanguage = "python" | "java" | "javascript" | "c" | "cpp";
+export type SqlDialect = "postgres" | "mysql" | "sqlite" | "mssql";
+
+export type CodeLanguage =
+    | "python"
+    | "java"
+    | "javascript"
+    | "c"
+    | "cpp"
+    | "sql";

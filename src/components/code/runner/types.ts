@@ -1,6 +1,5 @@
-// src/components/code/runner/types.ts
-import type { RunResult } from "@/lib/code/runCode";
-import { CodeLanguage } from "@/lib/practice/types";
+import type { RunResult } from "@/lib/code/types";
+import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 
 export type TerminalDock = "bottom" | "right";
 
@@ -10,12 +9,29 @@ export type TermLine =
     | { type: "in"; text: string; runId?: number }
     | { type: "err"; text: string; runId?: number };
 
-export type OnRun = (args: {
-    language: CodeLanguage;
+export type OnRunArgs =
+    | {
+    language: Exclude<CodeLanguage, "sql">;
     code: string;
     stdin: string;
     signal?: AbortSignal;
-}) => Promise<RunResult>;
+}
+    | {
+    language: "sql";
+    code: string;
+    stdin?: string;
+    sqlDialect: SqlDialect;
+
+    sqlSchemaSql?: string;
+    sqlSeedSql?: string;
+
+    setupSql?: string;
+
+    datasetId?: string;
+    signal?: AbortSignal;
+};
+
+export type OnRun = (args: OnRunArgs) => Promise<RunResult>;
 
 export type ControlledProps = {
     language: CodeLanguage;
@@ -23,6 +39,9 @@ export type ControlledProps = {
 
     code: string;
     onChangeCode: (code: string) => void;
+
+    sqlDialect?: SqlDialect;
+    onChangeSqlDialect?: (d: SqlDialect) => void;
 
     terminalDock?: TerminalDock;
     onChangeTerminalDock?: (d: TerminalDock) => void;
@@ -32,23 +51,36 @@ export type UncontrolledProps = {
     initialLanguage?: CodeLanguage;
     initialCode?: string;
 
+    initialSqlDialect?: SqlDialect;
+
     initialTerminalDock?: TerminalDock;
     initialTerminalSize?: number;
 };
 
 export type CodeRunnerFrame = "card" | "plain";
+
 export type RunnerState =
     | "idle"
     | "starting"
     | "running"
     | "awaiting_input"
     | "canceling";
+
 export type CommonProps = {
     title?: string;
     height?: number | "auto";
     frame?: CodeRunnerFrame;
     className?: string;
     hintMarkdown?: string;
+    editorModelKey?: string;
+
+    /**
+     * Preserve the current editor contents when switching languages,
+     * including the empty string.
+     *
+     * DEFAULT_CODE should only be used on first mount or explicit Reset.
+     */
+    preserveCodeOnLanguageSwitch?: boolean;
 
     showHeaderBar?: boolean;
     showEditor?: boolean;
@@ -58,6 +90,17 @@ export type CommonProps = {
     fixedLanguage?: CodeLanguage;
     allowedLanguages?: CodeLanguage[];
     showLanguagePicker?: boolean;
+
+    fixedSqlDialect?: SqlDialect;
+    allowedSqlDialects?: SqlDialect[];
+    showSqlDialectPicker?: boolean;
+
+    sqlSchemaSql?: string;
+    sqlSeedSql?: string;
+
+    sqlSetupSql?: string;
+
+    sqlDatasetId?: string;
 
     allowReset?: boolean;
     allowRun?: boolean;
@@ -77,6 +120,8 @@ export type CodeRunnerProps =
     | (CommonProps & ControlledProps)
     | (CommonProps & UncontrolledProps);
 
-export function isControlled(p: CodeRunnerProps): p is CommonProps & ControlledProps {
+export function isControlled(
+    p: CodeRunnerProps,
+): p is CommonProps & ControlledProps {
     return (p as any).code !== undefined && typeof (p as any).onChangeCode === "function";
 }

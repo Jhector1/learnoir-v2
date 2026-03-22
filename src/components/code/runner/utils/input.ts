@@ -1,12 +1,14 @@
-// src/components/code/runner/utils/input/index.ts
-
 import { extractInputPromptsPython, countPythonInputs } from "./input.python";
 import { extractJavaPrintPrompts, countJavaInputs } from "./input.java";
 import { extractCPrintfPrompts, countCInputs } from "./input.c";
 import { extractCppCoutPrompts, countCppInputs } from "./input.cpp";
-import {CodeLanguage} from "@/lib/practice/types";
+import type { CodeLanguage } from "@/lib/practice/types";
 
 export function inferInputPlan(lang: CodeLanguage, code: string) {
+    if (lang === "sql") {
+        return { expected: 0, prompts: [] as string[] };
+    }
+
     if (lang === "python") {
         const prompts = extractInputPromptsPython(code);
         const expected = Math.max(countPythonInputs(code), prompts.length);

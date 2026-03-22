@@ -1,22 +1,44 @@
-import type { RunPollResult, RunReq, RunResult, RunSubmitResult } from "@/lib/code/runCode";
+import type { RunPollResult, RunReq, RunResult, RunSubmitResult } from "@/lib/code/types";
+
+const POLL_INTERVAL_MS = 250;
+const MAX_POLLS = 120;
 
 function sleep(ms: number, signal?: AbortSignal) {
     return new Promise<void>((resolve, reject) => {
         const cleanup = () => signal?.removeEventListener("abort", onAbort);
 
-        const id = window.setTimeout(() => {
+        const id = globalThis.setTimeout(() => {
             cleanup();
             resolve();
         }, ms);
 
         const onAbort = () => {
-            window.clearTimeout(id);
+            globalThis.clearTimeout(id);
             cleanup();
             reject(new DOMException("Aborted", "AbortError"));
         };
 
         signal?.addEventListener("abort", onAbort);
     });
+}
+
+async function parseJsonResponse<T>(
+    res: Response,
+    fallbackPrefix: string,
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+    const text = await res.text();
+
+    try {
+        return {
+            ok: true,
+            data: JSON.parse(text) as T,
+        };
+    } catch {
+        return {
+            ok: false,
+            error: `${fallbackPrefix} (${res.status}): ${text.slice(0, 300)}`,
+        };
+    }
 }
 
 export async function runViaApi(req: RunReq, signal?: AbortSignal): Promise<RunResult> {
@@ -28,18 +50,20 @@ export async function runViaApi(req: RunReq, signal?: AbortSignal): Promise<RunR
             signal,
         });
 
-        const submitText = await submitRes.text();
+        const submitParsed = await parseJsonResponse<RunSubmitResult>(
+            submitRes,
+            "Non-JSON submit response",
+        );
 
-        let submitData: RunSubmitResult;
-        try {
-            submitData = JSON.parse(submitText) as RunSubmitResult;
-        } catch {
+        if (!submitParsed.ok) {
             return {
                 ok: false,
                 status: "Error",
-                error: `Non-JSON submit response (${submitRes.status}): ${submitText.slice(0, 300)}`,
+                error: submitParsed.error,
             };
         }
+
+        const submitData = submitParsed.data;
 
         if (!submitData.ok) {
             return {
@@ -49,30 +73,34 @@ export async function runViaApi(req: RunReq, signal?: AbortSignal): Promise<RunR
             };
         }
 
-        const maxPolls = 120;
+        if (submitData.mode === "immediate") {
+            return submitData.result;
+        }
 
-        for (let i = 0; i < maxPolls; i++) {
+        for (let i = 0; i < MAX_POLLS; i++) {
             const pollRes = await fetch(`/api/run/${encodeURIComponent(submitData.token)}`, {
                 method: "GET",
                 signal,
             });
 
-            const pollText = await pollRes.text();
+            const pollParsed = await parseJsonResponse<RunPollResult>(
+                pollRes,
+                "Non-JSON poll response",
+            );
 
-            let pollData: RunPollResult;
-            try {
-                pollData = JSON.parse(pollText) as RunPollResult;
-            } catch {
+            if (!pollParsed.ok) {
                 return {
                     ok: false,
                     status: "Error",
-                    error: `Non-JSON poll response (${pollRes.status}): ${pollText.slice(0, 300)}`,
+                    error: pollParsed.error,
                 };
             }
 
+            const pollData = pollParsed.data;
+
             if (pollData.done) return pollData;
 
-            await sleep(250, signal);
+            await sleep(POLL_INTERVAL_MS, signal);
         }
 
         return {

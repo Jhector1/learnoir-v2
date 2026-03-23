@@ -162,7 +162,7 @@ export default function EditorPane(props: {
             scrollBeyondLastLine: false,
             wordWrap: "on",
             automaticLayout: true,
-            readOnly: false,
+            readOnly: disabled,
             formatOnPaste: false,
             formatOnType: false,
             glyphMargin: false,

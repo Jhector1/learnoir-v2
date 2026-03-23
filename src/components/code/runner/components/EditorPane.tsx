@@ -173,22 +173,27 @@ export default function EditorPane(props: {
     }, [isNarrowScreen, disabled]);
 
     return (
-        <Monaco
-            height={height}
-            path={path}
-            language={monacoLang(lang)}
-            defaultValue={String(code ?? "")}
-            theme={theme}
-            saveViewState
-            onMount={(ed: any) => {
-                editorRef.current = ed;
-                onMount?.(ed);
-            }}
-            onChange={(v) => {
-                if (applyingExternalRef.current) return;
-                onChange(v ?? "");
-            }}
-            options={options}
-        />
+        <div
+            className="h-full w-full min-w-0"
+            style={{ touchAction: isNarrowScreen ? "pan-y" : "auto" }}
+        >
+            <Monaco
+                height={height}
+                path={path}
+                language={monacoLang(lang)}
+                defaultValue={String(code ?? "")}
+                theme={theme}
+                saveViewState
+                onMount={(ed: any) => {
+                    editorRef.current = ed;
+                    onMount?.(ed);
+                }}
+                onChange={(v) => {
+                    if (applyingExternalRef.current) return;
+                    onChange(v ?? "");
+                }}
+                options={options}
+            />
+        </div>
     );
 }

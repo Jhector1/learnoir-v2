@@ -395,7 +395,10 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     };
 
     const renderEditorPane = (editorHeight: number) => (
-        <div className="h-full bg-white/70 dark:bg-black/10">
+        <div
+            className="h-full bg-white/70 dark:bg-black/10"
+            style={{ touchAction: isNarrowScreen ? "pan-y" : "auto" }}
+        >
             <EditorPane
                 lang={lang}
                 code={code}
@@ -474,7 +477,8 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         "mt-3 overflow-hidden rounded-xl border sm:rounded-2xl",
                         "border-neutral-200 bg-neutral-50/60",
                         "dark:border-white/10 dark:bg-black/20",
-                        "min-h-0 overscroll-contain",
+                        "min-h-0",
+                        isNarrowScreen ? "overscroll-y-auto touch-pan-y" : "overscroll-contain",
                         height === "auto" ? "h-auto" : "",
                     ].join(" ")}
                 >

@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useId, useState } from "react";
 import dynamic from "next/dynamic";
 import { monacoLang } from "../utils/monaco";
 import { CodeLanguage } from "@/lib/practice/types";
+import { cn } from "@/components/ide/fullide/utils";
 import {editor} from "monaco-editor";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -72,6 +73,7 @@ export default function EditorPane(props: {
     const editorRef = useRef<any>(null);
     const applyingExternalRef = useRef(false);
     const [isNarrowScreen, setIsNarrowScreen] = useState(false);
+    const [mobileEditing, setMobileEditing] = useState(false);
 
     const path = useMemo(() => {
         return buildModelPath({
@@ -97,6 +99,10 @@ export default function EditorPane(props: {
         mq.addListener(update);
         return () => mq.removeListener(update);
     }, []);
+
+    useEffect(() => {
+        if (disabled) setMobileEditing(false);
+    }, [disabled]);
 
     useEffect(() => {
         const ed = editorRef.current;
@@ -135,11 +141,19 @@ export default function EditorPane(props: {
         applyingExternalRef.current = false;
     }, [code, path]);
 
+    const effectiveReadOnly = disabled || (isNarrowScreen && !mobileEditing);
+    const passThroughOnMobile = isNarrowScreen && effectiveReadOnly;
+
     useEffect(() => {
         const ed = editorRef.current;
         if (!ed) return;
-        ed.updateOptions?.({ readOnly: disabled });
-    }, [disabled]);
+        ed.updateOptions?.({
+            readOnly: effectiveReadOnly,
+            readOnlyMessage: { value: "" },
+            domReadOnly: true,
+        });
+    }, [effectiveReadOnly]);
+
 
     const options = useMemo<editor.IStandaloneEditorConstructionOptions>(() => {
         return {
@@ -148,7 +162,7 @@ export default function EditorPane(props: {
             scrollBeyondLastLine: false,
             wordWrap: "on",
             automaticLayout: true,
-            readOnly: disabled,
+            readOnly: false,
             formatOnPaste: false,
             formatOnType: false,
             glyphMargin: false,
@@ -173,27 +187,54 @@ export default function EditorPane(props: {
     }, [isNarrowScreen, disabled]);
 
     return (
-        <div
-            className="h-full w-full min-w-0"
-            style={{ touchAction: isNarrowScreen ? "pan-y" : "auto" }}
-        >
-            <Monaco
-                height={height}
-                path={path}
-                language={monacoLang(lang)}
-                defaultValue={String(code ?? "")}
-                theme={theme}
-                saveViewState
-                onMount={(ed: any) => {
-                    editorRef.current = ed;
-                    onMount?.(ed);
-                }}
-                onChange={(v) => {
-                    if (applyingExternalRef.current) return;
-                    onChange(v ?? "");
-                }}
-                options={options}
-            />
+        <div className="relative h-full w-full min-w-0">
+            <div
+                className={cn(
+                    "h-full w-full min-w-0",
+                    passThroughOnMobile && "pointer-events-none",
+                )}
+                style={{ touchAction: isNarrowScreen ? "pan-y" : "auto" }}
+            >
+                <Monaco
+                    height={height}
+                    path={path}
+                    language={monacoLang(lang)}
+                    defaultValue={String(code ?? "")}
+                    theme={theme}
+                    saveViewState
+                    onMount={(ed: any) => {
+                        editorRef.current = ed;
+                        onMount?.(ed);
+
+                        ed.onDidBlurEditorWidget?.(() => {
+                            if (isNarrowScreen) setMobileEditing(false);
+                        });
+                    }}
+                    onChange={(v) => {
+                        if (applyingExternalRef.current) return;
+                        onChange(v ?? "");
+                    }}
+                    options={options}
+                />
+            </div>
+
+            {isNarrowScreen && !disabled ? (
+                <button
+                    type="button"
+                    onClick={() => {
+                        setMobileEditing((v) => {
+                            const next = !v;
+                            if (next) {
+                                requestAnimationFrame(() => editorRef.current?.focus?.());
+                            }
+                            return next;
+                        });
+                    }}
+                    className="absolute bottom-3 right-3 z-20 rounded-lg border border-neutral-200 bg-white/95 px-3 py-2 text-xs font-extrabold text-neutral-800 shadow-sm backdrop-blur dark:border-white/10 dark:bg-black/70 dark:text-white/85"
+                >
+                    {mobileEditing ? "Done" : "Edit"}
+                </button>
+            ) : null}
         </div>
     );
 }

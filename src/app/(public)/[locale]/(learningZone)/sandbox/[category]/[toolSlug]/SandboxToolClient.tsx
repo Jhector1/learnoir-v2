@@ -10,12 +10,19 @@ import {
 } from "@/lib/sandbox/toolRegistry";
 import type { CodeLanguage } from "@/lib/practice/types";
 
+export type SandboxAccess = {
+    hasUser: boolean;
+    canUseMultiFile: boolean;
+    canSaveCloud: boolean;
+    canCreateProjects: boolean;
+};
+
 const ProgrammingSandbox = dynamic(
     () => import("@/components/sandbox/ProgrammingSandbox"),
     {
         ssr: false,
         loading: () => <ProgrammingSandboxSkeleton />,
-    }
+    },
 );
 
 const LinearAlgebraSandbox = dynamic(
@@ -23,15 +30,17 @@ const LinearAlgebraSandbox = dynamic(
     {
         ssr: false,
         loading: () => <div className="ui-soft p-4">Loading Linear Algebra…</div>,
-    }
+    },
 );
 
 export default function SandboxToolClient({
                                               locale,
                                               entry,
+                                              access,
                                           }: {
     locale: string;
     entry: SandboxToolEntry;
+    access: SandboxAccess;
 }) {
     if (entry.kind === "programming") {
         const routeLanguageMap: Partial<Record<CodeLanguage, string>> =
@@ -39,9 +48,11 @@ export default function SandboxToolClient({
                 PROGRAMMING_TOOL_ORDER.map((tool) => [
                     tool,
                     buildProgrammingToolHref(locale, tool),
-                ])
+                ]),
             );
+
         const localizedLessonHref = `/${locale}${entry.lessonPath}`;
+
         return (
             <ProgrammingSandbox
                 initialLanguage={entry.initialLanguage}
@@ -50,7 +61,7 @@ export default function SandboxToolClient({
                 routeLanguageMap={routeLanguageMap}
                 lessonHref={localizedLessonHref}
                 lessonLabel="Lesson"
-
+                access={access}
             />
         );
     }

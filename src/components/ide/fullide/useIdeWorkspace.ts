@@ -25,10 +25,21 @@ import {
 } from "./storage";
 import type { CodeLanguage } from "@/lib/practice/types";
 
+export type IdeWorkspaceAccess = {
+    hasUser: boolean;
+    canUseMultiFile: boolean;
+    canSaveCloud: boolean;
+    canCreateProjects: boolean;
+};
+
 export type UseIdeWorkspaceOpts = {
     storageKey?: string;
     forcedLanguage?: CodeLanguage;
     resetOnForcedLanguageChange?: boolean;
+
+    access?: IdeWorkspaceAccess;
+    draftStorageMode?: "off" | "local";
+    initialWorkspace?: WorkspaceStateV2 | null;
 };
 
 const ALL_LANGUAGES: CodeLanguage[] = [
@@ -48,6 +59,13 @@ const MIN_RIGHT_PX = 520;
 
 type WorkspaceMeta = {
     lastLanguage: CodeLanguage;
+};
+
+const DEFAULT_ACCESS: IdeWorkspaceAccess = {
+    hasUser: true,
+    canUseMultiFile: true,
+    canSaveCloud: false,
+    canCreateProjects: false,
 };
 
 function isCodeLanguage(v: unknown): v is CodeLanguage {
@@ -91,6 +109,65 @@ function createDefaultStateForLanguage(lang: CodeLanguage): WorkspaceStateV2 {
     return buildDefaultWorkspace(lang);
 }
 
+function buildSingleFileWorkspace(
+    lang: CodeLanguage,
+    source?: WorkspaceStateV2 | null,
+): WorkspaceStateV2 {
+    const seed = buildDefaultWorkspace(lang);
+
+    const seedMain =
+        seed.nodes.find((n): n is FileNode => n.kind === "file") ??
+        ({
+            id: uid(),
+            kind: "file",
+            name: `main${defaultExt(lang)}`,
+            parentId: null,
+            content: "",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        } satisfies FileNode);
+
+    const sourceFile =
+        source?.nodes.find((n): n is FileNode => n.kind === "file" && n.id === source.activeFileId) ??
+        source?.nodes.find((n): n is FileNode => n.kind === "file" && n.id === source.entryFileId) ??
+        source?.nodes.find((n): n is FileNode => n.kind === "file") ??
+        null;
+
+    const file: FileNode = {
+        id: seedMain.id,
+        kind: "file",
+        name: seedMain.name,
+        parentId: null,
+        content: sourceFile?.content ?? seedMain.content ?? "",
+        createdAt: seedMain.createdAt ?? Date.now(),
+        updatedAt: Date.now(),
+    };
+
+    return {
+        version: 2,
+        language: lang,
+        nodes: [file],
+        openTabs: [file.id],
+        activeFileId: file.id,
+        entryFileId: file.id,
+        stdin: source?.stdin ?? "",
+        expanded: [],
+        leftPct: source?.leftPct ?? 26,
+    };
+}
+
+function normalizeWorkspaceForAccess(
+    ws: WorkspaceStateV2,
+    access: IdeWorkspaceAccess,
+): WorkspaceStateV2 {
+    if (access.canUseMultiFile) return ws;
+
+    const fileCount = ws.nodes.filter((n): n is FileNode => n.kind === "file").length;
+    if (fileCount <= 1) return ws;
+
+    return buildSingleFileWorkspace(ws.language, ws);
+}
+
 function fileIdsOf(nodes: FSNode[]) {
     return new Set(
         nodes.filter((n): n is FileNode => n.kind === "file").map((n) => n.id),
@@ -115,6 +192,9 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     const baseStorageKey = opts?.storageKey ?? STORAGE_KEY_V2;
     const forcedLanguage = opts?.forcedLanguage;
     const resetOnForcedLanguageChange = !!opts?.resetOnForcedLanguageChange;
+    const access = opts?.access ?? DEFAULT_ACCESS;
+    const draftStorageMode = opts?.draftStorageMode ?? "local";
+    const initialWorkspace = opts?.initialWorkspace ?? null;
 
     const [language, setLanguageState] = useState<CodeLanguage>("python");
     const [nodes, setNodes] = useState<FSNode[]>([]);
@@ -148,20 +228,31 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }, []);
 
     const hydrateWorkspace = useCallback((ws: WorkspaceStateV2) => {
-        setLanguageState(ws.language);
-        setNodes(ws.nodes);
-        setOpenTabs(ws.openTabs?.length ? ws.openTabs : [ws.activeFileId]);
-        setActiveFileId(ws.activeFileId);
-        setEntryFileId(ws.entryFileId);
-        setStdin(ws.stdin ?? "");
-        setExpanded(new Set(ws.expanded ?? []));
-        setLeftPct(ws.leftPct ?? 26);
-    }, []);
+        const normalized = normalizeWorkspaceForAccess(ws, access);
+
+        setLanguageState(normalized.language);
+        setNodes(normalized.nodes);
+        setOpenTabs(normalized.openTabs?.length ? normalized.openTabs : [normalized.activeFileId]);
+        setActiveFileId(normalized.activeFileId);
+        setEntryFileId(normalized.entryFileId);
+        setStdin(normalized.stdin ?? "");
+        setExpanded(new Set(normalized.expanded ?? []));
+        setLeftPct(normalized.leftPct ?? 26);
+    }, [access]);
+
+    const replaceWorkspace = useCallback((ws: WorkspaceStateV2) => {
+        hydrateWorkspace(ws);
+        clearTransientUi();
+        setToast(null);
+    }, [hydrateWorkspace, clearTransientUi]);
 
     const resetWorkspaceForLanguage = useCallback((next: CodeLanguage) => {
-        hydrateWorkspace(createDefaultStateForLanguage(next));
+        const base = createDefaultStateForLanguage(next);
+        hydrateWorkspace(
+            access.canUseMultiFile ? base : buildSingleFileWorkspace(next, base),
+        );
         clearTransientUi();
-    }, [hydrateWorkspace, clearTransientUi]);
+    }, [hydrateWorkspace, clearTransientUi, access.canUseMultiFile]);
 
     const currentWorkspace = useMemo<WorkspaceStateV2 | null>(() => {
         if (!nodes.length || !activeFileId || !entryFileId) return null;
@@ -185,16 +276,19 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }, [currentWorkspace]);
 
     const loadWorkspaceForLanguage = useCallback((next: CodeLanguage) => {
+        if (draftStorageMode !== "local") return null;
         const key = storageKeyForLanguage(baseStorageKey, next);
-        return loadV2(key, next);
-    }, [baseStorageKey]);
+        return loadV2(key as any, next as any);
+    }, [baseStorageKey, draftStorageMode]);
 
     const saveWorkspaceForLanguage = useCallback((ws: WorkspaceStateV2 | null) => {
         if (!ws) return;
+        if (draftStorageMode !== "local") return;
+
         const key = storageKeyForLanguage(baseStorageKey, ws.language);
         saveV2(key, ws);
         saveWorkspaceMeta(baseStorageKey, { lastLanguage: ws.language });
-    }, [baseStorageKey]);
+    }, [baseStorageKey, draftStorageMode]);
 
     const switchLanguage = useCallback((next: CodeLanguage) => {
         if (!isCodeLanguage(next)) return;
@@ -206,7 +300,10 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
         if (loaded) {
             hydrateWorkspace(loaded);
         } else {
-            hydrateWorkspace(createDefaultStateForLanguage(next));
+            const base = createDefaultStateForLanguage(next);
+            hydrateWorkspace(
+                access.canUseMultiFile ? base : buildSingleFileWorkspace(next, base),
+            );
         }
 
         clearTransientUi();
@@ -217,12 +314,20 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
         loadWorkspaceForLanguage,
         hydrateWorkspace,
         clearTransientUi,
+        access.canUseMultiFile,
     ]);
 
     useEffect(() => {
+        if (initialWorkspace) {
+            hydrateWorkspace(initialWorkspace);
+            hydratedRef.current = true;
+            prevForcedRef.current = forcedLanguage ?? null;
+            return;
+        }
+
         const wanted =
             forcedLanguage ??
-            readWorkspaceMeta(baseStorageKey)?.lastLanguage ??
+            (draftStorageMode === "local" ? readWorkspaceMeta(baseStorageKey)?.lastLanguage : null) ??
             "python";
 
         const initialLanguage = isCodeLanguage(wanted) ? wanted : "python";
@@ -236,7 +341,7 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
 
         let ws = loadWorkspaceForLanguage(initialLanguage);
 
-        if (!ws && baseStorageKey === STORAGE_KEY_V2) {
+        if (!ws && draftStorageMode === "local" && baseStorageKey === STORAGE_KEY_V2) {
             const migrated = tryMigrateV1(initialLanguage);
             if (migrated) {
                 saveWorkspaceForLanguage(migrated);
@@ -246,10 +351,19 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             }
         }
 
-        hydrateWorkspace(ws ?? createDefaultStateForLanguage(initialLanguage));
+        if (ws) {
+            hydrateWorkspace(ws);
+        } else {
+            const base = createDefaultStateForLanguage(initialLanguage);
+            hydrateWorkspace(
+                access.canUseMultiFile ? base : buildSingleFileWorkspace(initialLanguage, base),
+            );
+        }
+
         hydratedRef.current = true;
         prevForcedRef.current = forcedLanguage ?? null;
     }, [
+        initialWorkspace,
         baseStorageKey,
         forcedLanguage,
         resetOnForcedLanguageChange,
@@ -257,6 +371,8 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
         saveWorkspaceForLanguage,
         hydrateWorkspace,
         resetWorkspaceForLanguage,
+        access.canUseMultiFile,
+        draftStorageMode,
     ]);
 
     useEffect(() => {
@@ -279,16 +395,18 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
 
     useEffect(() => {
         if (!hydratedRef.current || !currentWorkspace) return;
+        if (draftStorageMode !== "local") return;
 
         const id = window.setTimeout(() => {
             saveWorkspaceForLanguage(currentWorkspace);
         }, SAVE_DEBOUNCE_MS);
 
         return () => window.clearTimeout(id);
-    }, [currentWorkspace, saveWorkspaceForLanguage]);
+    }, [currentWorkspace, saveWorkspaceForLanguage, draftStorageMode]);
 
     useEffect(() => {
         if (!hydratedRef.current) return;
+        if (draftStorageMode !== "local") return;
 
         const flush = () => {
             saveWorkspaceForLanguage(currentWorkspaceRef.current);
@@ -301,7 +419,27 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             window.removeEventListener("pagehide", flush);
             window.removeEventListener("beforeunload", flush);
         };
-    }, [saveWorkspaceForLanguage]);
+    }, [saveWorkspaceForLanguage, draftStorageMode]);
+
+    useEffect(() => {
+        if (!hydratedRef.current) return;
+        if (access.canUseMultiFile) return;
+
+        const ws = currentWorkspaceRef.current;
+        if (!ws) return;
+
+        const fileCount = ws.nodes.filter((n): n is FileNode => n.kind === "file").length;
+        if (fileCount <= 1) return;
+
+        hydrateWorkspace(normalizeWorkspaceForAccess(ws, access));
+        clearTransientUi();
+        setToast({
+            kind: "error",
+            text: access.hasUser
+                ? "This workspace was reduced to one file because multi-file is locked."
+                : "Log in to unlock multiple files.",
+        });
+    }, [access, hydrateWorkspace, clearTransientUi]);
 
     const activeFile = useMemo(
         () => findFile(nodes, activeFileId),
@@ -328,6 +466,19 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             (n) => n.kind === "folder" && n.name === "src" && n.parentId === null,
         ) as FolderNode | undefined;
     }, [nodes]);
+
+    const canManageFiles = access.canUseMultiFile;
+
+    function denyMultiFile(message?: string) {
+        setToast({
+            kind: "error",
+            text:
+                message ??
+                (access.hasUser
+                    ? "Multiple files are not available for this user."
+                    : "Log in to unlock multiple files."),
+        });
+    }
 
     function openFile(id: NodeId) {
         const f = findFile(nodes, id);
@@ -372,6 +523,11 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }
 
     function startNewFile(parentId: NodeId | null) {
+        if (!canManageFiles) {
+            denyMultiFile();
+            return;
+        }
+
         const desired = ensureUniqueSiblingName(
             nodes,
             parentId,
@@ -390,6 +546,11 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }
 
     function startNewFolder(parentId: NodeId | null) {
+        if (!canManageFiles) {
+            denyMultiFile();
+            return;
+        }
+
         const desired = ensureUniqueSiblingName(nodes, parentId, "folder");
 
         if (parentId) {
@@ -404,6 +565,11 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }
 
     function startRename(nodeId: NodeId) {
+        if (!canManageFiles) {
+            denyMultiFile();
+            return;
+        }
+
         const n = nodes.find((x) => x.id === nodeId);
         if (!n) return;
 
@@ -421,6 +587,12 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
         const raw = inlineEdit.value.trim();
         if (!raw) {
             setToast({ kind: "error", text: "Name can’t be empty." });
+            return;
+        }
+
+        if (!canManageFiles) {
+            denyMultiFile();
+            setInlineEdit(null);
             return;
         }
 
@@ -505,6 +677,11 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
     }
 
     function requestDelete(id: NodeId) {
+        if (!canManageFiles) {
+            denyMultiFile();
+            return;
+        }
+
         const n = nodes.find((x) => x.id === id);
         if (!n) return;
 
@@ -601,37 +778,32 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             if (!rect.width) return;
 
             const dx = ev.clientX - d.startX;
-            const nextPctRaw = d.startPct + (dx / rect.width) * 100;
-
-            setLeftPct(clampLeftPctFromWidth(nextPctRaw, rect.width));
-            requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+            const pctDelta = (dx / rect.width) * 100;
+            setLeftPct(clampLeftPctFromWidth(d.startPct + pctDelta, rect.width));
         };
 
         const onUp = () => {
             dragRef.current = null;
-            window.removeEventListener("mousemove", onMove as EventListener);
-            window.removeEventListener("mouseup", onUp);
-            window.removeEventListener("pointermove", onMove as EventListener);
-            window.removeEventListener("pointerup", onUp);
-
             document.body.style.userSelect = prevSelect;
             document.body.style.cursor = prevCursor;
+            window.removeEventListener("pointermove", onMove as EventListener);
+            window.removeEventListener("pointerup", onUp);
+            window.removeEventListener("mousemove", onMove as EventListener);
+            window.removeEventListener("mouseup", onUp);
         };
 
-        window.addEventListener("mousemove", onMove as EventListener);
-        window.addEventListener("mouseup", onUp);
         window.addEventListener("pointermove", onMove as EventListener);
         window.addEventListener("pointerup", onUp);
+        window.addEventListener("mousemove", onMove as EventListener);
+        window.addEventListener("mouseup", onUp);
     }, [leftPct]);
 
     function onMouseDownDivider(e: React.MouseEvent, rootEl: HTMLElement | null) {
-        if (!rootEl) return;
         e.preventDefault();
         startDividerDrag(e.clientX, rootEl);
     }
 
     function onPointerDownDivider(e: React.PointerEvent, rootEl: HTMLElement | null) {
-        if (!rootEl) return;
         e.preventDefault();
         startDividerDrag(e.clientX, rootEl);
     }
@@ -700,12 +872,15 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             inlineEdit,
             pendingDeleteId,
             toast,
+            access,
         },
         derived: {
             activeFile,
             entryFile,
             tabFiles,
             rootSrc,
+            currentWorkspace,
+            isSingleFileMode: !access.canUseMultiFile,
         },
         actions: {
             setLanguage: switchLanguage,
@@ -721,6 +896,7 @@ export function useIdeWorkspace(opts?: UseIdeWorkspaceOpts) {
             setPendingDeleteId,
             setToast,
 
+            replaceWorkspace,
             resetWorkspaceForLanguage,
             switchLanguage,
 

@@ -45,4 +45,9 @@ export type InlineEdit =
 }
     | null;
 
-export type Toast = { kind: "info" | "error"; text: string } | null;
+type ToastKind = "info" | "success" | "error";
+
+export type Toast = {
+    kind: ToastKind;
+    text: string;
+} | null;

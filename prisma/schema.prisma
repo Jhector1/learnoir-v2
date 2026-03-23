@@ -52,6 +52,44 @@ enum PracticeRunPresetKey {
   // add more as you grow
 }
 
+
+
+enum FeatureKey {
+  ide_multi_file
+  ide_save_cloud
+  ide_project_create
+  ide_project_revisions
+  ide_project_scope_module
+  ide_project_scope_assignment
+  ide_project_share
+  ide_project_unlimited
+}
+
+enum CodeProjectScopeKind {
+  personal
+  module
+  assignment
+  template
+}
+
+enum CodeProjectVisibility {
+  private
+  unlisted
+  shared
+}
+
+enum CodeProjectRole {
+  owner
+  editor
+  viewer
+}
+
+
+
+
+
+
+
 model PracticeRunPreset {
   id  String               @id @default(cuid())
   key PracticeRunPresetKey @unique
@@ -69,6 +107,161 @@ model PracticeRunPreset {
   modules  PracticeModule[]
   sessions PracticeSession[]
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+model FeatureGrant {
+  id String @id @default(cuid())
+
+  actorKey String
+
+  userId String?
+  user   User?   @relation("UserFeatureGrants", fields: [userId], references: [id], onDelete: SetNull)
+
+  feature FeatureKey
+  type    AccessGrantType
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+  revokedAt DateTime?
+  meta      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([actorKey, feature, revokedAt])
+  @@index([actorKey, feature, endsAt])
+  @@index([actorKey])
+  @@index([userId])
+  @@index([feature])
+  @@index([type])
+}
+
+model CodeProject {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation("UserCodeProjects", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  language    String
+
+  scopeKind CodeProjectScopeKind @default(personal)
+
+  subjectId String?
+  subject   PracticeSubject? @relation("SubjectCodeProjects", fields: [subjectId], references: [id], onDelete: SetNull)
+
+  moduleId String?
+  module   PracticeModule? @relation("ModuleCodeProjects", fields: [moduleId], references: [id], onDelete: SetNull)
+
+  assignmentId String?
+  assignment   Assignment? @relation("AssignmentCodeProjects", fields: [assignmentId], references: [id], onDelete: SetNull)
+
+  scopeKey String?
+
+  visibility CodeProjectVisibility @default(private)
+  shareToken String? @unique
+
+  schemaVersion Int @default(1)
+  currentVersion Int @default(1)
+
+  entryPath  String?
+  activePath String?
+
+  workspaceHash String? @db.VarChar(64)
+
+  workspace Json
+  settings  Json?
+  meta      Json?
+
+  archivedAt   DateTime?
+  lastOpenedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  revisions CodeProjectRevision[]
+  grants    CodeProjectGrant[]
+
+  @@index([ownerId, updatedAt])
+  @@index([ownerId, scopeKind, updatedAt])
+  @@index([subjectId, updatedAt])
+  @@index([moduleId, updatedAt])
+  @@index([assignmentId, updatedAt])
+  @@index([visibility])
+  @@index([archivedAt])
+}
+
+model CodeProjectRevision {
+  id String @id @default(cuid())
+
+  projectId String
+  project   CodeProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  version Int
+  workspaceHash String? @db.VarChar(64)
+
+  snapshot Json
+  settings Json?
+  note     String?
+  meta     Json?
+
+  createdById String?
+  createdBy   User? @relation("UserCodeProjectRevisions", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, version])
+  @@index([projectId, createdAt])
+  @@index([projectId, workspaceHash])
+}
+
+model CodeProjectGrant {
+  id String @id @default(cuid())
+
+  projectId String
+  project   CodeProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  actorKey String
+
+  userId String?
+  user   User? @relation("UserCodeProjectGrants", fields: [userId], references: [id], onDelete: SetNull)
+
+  role CodeProjectRole @default(viewer)
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+  revokedAt DateTime?
+  meta      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, actorKey, revokedAt])
+  @@index([projectId, actorKey, endsAt])
+  @@index([actorKey])
+  @@index([userId])
+  @@index([role])
+}
+
+
+
+
+
+
+
+
 
 model ModuleAccessGrant {
   id String @id @default(cuid())
@@ -125,7 +318,7 @@ model PracticeModule {
   practicePresetId   String?
   practicePreset     PracticeRunPreset?  @relation(fields: [practicePresetId], references: [id])
   moduleAccessGrants ModuleAccessGrant[]
-
+  codeProjects CodeProject[] @relation("ModuleCodeProjects")
   @@index([practicePresetId])
   @@index([order])
   @@index([subjectId, order])
@@ -443,7 +636,7 @@ model Assignment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  codeProjects CodeProject[] @relation("AssignmentCodeProjects")
   sessions PracticeSession[] @relation("AssignmentSessions")
 
   @@index([sectionId])
@@ -475,6 +668,11 @@ model User {
   moduleAccessGrants  ModuleAccessGrant[]
 
   onboardingProfile UserOnboardingProfile?
+
+    featureGrants         FeatureGrant[]        @relation("UserFeatureGrants")
+    codeProjects          CodeProject[]         @relation("UserCodeProjects")
+    codeProjectGrants     CodeProjectGrant[]    @relation("UserCodeProjectGrants")
+    codeProjectRevisions  CodeProjectRevision[] @relation("UserCodeProjectRevisions")
 }
 
 model Account {
@@ -582,7 +780,7 @@ model PracticeSubject {
   accessGrants SubjectAccessGrant[]
 
   onboardingInterests UserOnboardingInterest[]
-
+  codeProjects CodeProject[] @relation("SubjectCodeProjects")
   @@index([order])
   @@index([status, order])
   @@index([showInOnboarding, status, order])

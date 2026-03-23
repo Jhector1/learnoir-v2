@@ -7,6 +7,13 @@ import { LangRail, LANGS } from "@/components/ide/lang/LangRail";
 import { CodeLanguage } from "@/lib/practice/types";
 import { cn } from "@/components/ide/fullide/utils";
 
+export type ProgrammingSandboxAccess = {
+    hasUser: boolean;
+    canUseMultiFile: boolean;
+    canSaveCloud: boolean;
+    canCreateProjects: boolean;
+};
+
 export default function ProgrammingIdeSandbox({
                                                   initialLanguage = "python",
                                                   toolSlug = "python",
@@ -14,6 +21,7 @@ export default function ProgrammingIdeSandbox({
                                                   routeLanguageMap,
                                                   lessonHref,
                                                   lessonLabel = "Lesson",
+                                                  access,
                                               }: {
     initialLanguage?: CodeLanguage;
     toolSlug?: string;
@@ -21,6 +29,7 @@ export default function ProgrammingIdeSandbox({
     routeLanguageMap?: Partial<Record<CodeLanguage, string>>;
     lessonHref?: string;
     lessonLabel?: string;
+    access: ProgrammingSandboxAccess;
 }) {
     const router = useRouter();
 
@@ -47,8 +56,6 @@ export default function ProgrammingIdeSandbox({
         setLang(next);
     };
 
-    // Stable per tool route. Do NOT append `lang` here.
-    // useIdeWorkspace already namespaces by language internally.
     const storageKey =
         `${process.env.NEXT_PUBLIC_APP_NAME ?? "learnoir"}.ide.workspace.v2.sandbox.programming.${toolSlug}`;
 
@@ -123,6 +130,11 @@ export default function ProgrammingIdeSandbox({
                             showTopLanguageButtons={false}
                             lessonHref={lessonHref}
                             lessonLabel={lessonLabel}
+                            access={access}
+                            loginHref="/authenticate"
+                            billingHref="/billing"
+                            draftStorageMode="local"
+                            projectTitle={`${title} Project`}
                         />
                     </main>
                 </div>

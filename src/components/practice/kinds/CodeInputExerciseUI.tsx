@@ -4,7 +4,7 @@
 import React, { useEffect, useRef } from "react";
 import type {CodeLanguage, Exercise} from "@/lib/practice/types";
 import type {  RunResult } from "@/lib/code/types";
-import CodeRunner from "@/components/code/CodeRunner";
+import CodeRunner, {CodeRunnerFrame} from "@/components/code/CodeRunner";
 import { ExercisePrompt } from "@/components/practice/kinds/KindHelper";
 import {useTaggedT} from "@/i18n/tagged";
 import CodeRunnerBoundary from "@/components/code/runner/CodeRunnerBoundary";
@@ -37,7 +37,7 @@ export default function CodeInputExerciseUI({
                                                 onSyncTools,
 
                                                 autoBindMode = "whenUnbound",
-
+frame="plain",
                                                 // ✅ NEW
                                                 showPrompt = true,
                                             }: {
@@ -68,6 +68,7 @@ export default function CodeInputExerciseUI({
 
     // ✅ NEW
     showPrompt?: boolean;
+    frame?:CodeRunnerFrame;
 }) {
     const showCorrect =
         checked && ok === false && reviewCorrect && typeof reviewCorrect.code === "string";
@@ -185,7 +186,7 @@ export default function CodeInputExerciseUI({
 
             <CodeRunner
                 title={runnerTitle as any}
-                frame="plain"
+                frame={frame}
                 hintMarkdown={exercise.hint}
                 height={320}
                 disabled={disabled || readOnly}

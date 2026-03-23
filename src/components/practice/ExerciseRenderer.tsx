@@ -580,6 +580,7 @@ export default function ExerciseRenderer({
                 exercise={ex as any}
                 code={curCode}
                 stdin={curStdin}
+frame={"card"}
                 language={curLang}
                 onChangeCode={(code) => updateCurrent({code, ...resetCheckPatch()})}
                 onChangeStdin={(codeStdin) => updateCurrent({codeStdin, ...resetCheckPatch()})}

@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useId, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import dynamic from "next/dynamic";
 import { monacoLang } from "../utils/monaco";
 import { CodeLanguage } from "@/lib/practice/types";
@@ -8,6 +15,9 @@ import { cn } from "@/components/ide/fullide/utils";
 import {editor} from "monaco-editor";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+type RunnerFrame = "plain" | "card";
+type MobileEditMode = "auto" | "always" | "never";
 
 function extForLang(lang: CodeLanguage) {
     switch (lang) {
@@ -56,6 +66,8 @@ export default function EditorPane(props: {
     disabled?: boolean;
     onMount?: (ed: any) => void;
     modelKey?: string;
+    frame?: RunnerFrame;
+    mobileEditMode?: MobileEditMode;
 }) {
     const {
         lang,
@@ -66,14 +78,18 @@ export default function EditorPane(props: {
         disabled = false,
         onMount,
         modelKey,
+        frame = "card",
+        mobileEditMode = "auto",
     } = props;
 
     const reactId = useId();
     const instanceKeyRef = useRef(`editor-${reactId.replace(/[:]/g, "")}`);
     const editorRef = useRef<any>(null);
     const applyingExternalRef = useRef(false);
+
     const [isNarrowScreen, setIsNarrowScreen] = useState(false);
     const [mobileEditing, setMobileEditing] = useState(false);
+    const [needsMobileEditToggle, setNeedsMobileEditToggle] = useState(false);
 
     const path = useMemo(() => {
         return buildModelPath({
@@ -100,9 +116,74 @@ export default function EditorPane(props: {
         return () => mq.removeListener(update);
     }, []);
 
+    const refreshMobileEditNeed = useCallback(() => {
+        const ed = editorRef.current;
+        if (!ed) {
+            setNeedsMobileEditToggle(false);
+            return;
+        }
+
+        if (!isNarrowScreen || frame !== "card" || mobileEditMode !== "auto") {
+            setNeedsMobileEditToggle(false);
+            return;
+        }
+
+        try {
+            const scrollHeight = ed.getScrollHeight?.() ?? 0;
+            const layoutInfo = ed.getLayoutInfo?.();
+            const viewportHeight = layoutInfo?.height ?? height ?? 0;
+
+            setNeedsMobileEditToggle(scrollHeight > viewportHeight + 12);
+        } catch {
+            setNeedsMobileEditToggle(false);
+        }
+    }, [frame, height, isNarrowScreen, mobileEditMode]);
+
     useEffect(() => {
-        if (disabled) setMobileEditing(false);
+        if (disabled) {
+            setMobileEditing(false);
+        }
     }, [disabled]);
+
+    useEffect(() => {
+        refreshMobileEditNeed();
+    }, [refreshMobileEditNeed, code, height, path]);
+
+    const canUseMobileEditGuard =
+        frame === "card" &&
+        isNarrowScreen &&
+        mobileEditMode !== "never";
+
+    const useMobileScrollGuard =
+        canUseMobileEditGuard &&
+        (mobileEditMode === "always" || needsMobileEditToggle);
+
+    const showMobileEditButton = !disabled && useMobileScrollGuard;
+
+    const effectiveReadOnly =
+        disabled || (useMobileScrollGuard && !mobileEditing);
+
+    const passThroughOnMobile =
+        frame === "card" &&
+        isNarrowScreen &&
+        effectiveReadOnly;
+
+    useEffect(() => {
+        if (!showMobileEditButton) {
+            setMobileEditing(false);
+        }
+    }, [showMobileEditButton]);
+
+    useEffect(() => {
+        const ed = editorRef.current;
+        if (!ed) return;
+
+        ed.updateOptions?.({
+            readOnly: effectiveReadOnly,
+            readOnlyMessage: { value: "" },
+            domReadOnly: true,
+        });
+    }, [effectiveReadOnly]);
 
     useEffect(() => {
         const ed = editorRef.current;
@@ -139,30 +220,19 @@ export default function EditorPane(props: {
         if (selection) ed.setSelection?.(selection);
 
         applyingExternalRef.current = false;
-    }, [code, path]);
-
-    const effectiveReadOnly = disabled || (isNarrowScreen && !mobileEditing);
-    const passThroughOnMobile = isNarrowScreen && effectiveReadOnly;
-
-    useEffect(() => {
-        const ed = editorRef.current;
-        if (!ed) return;
-        ed.updateOptions?.({
-            readOnly: effectiveReadOnly,
-            readOnlyMessage: { value: "" },
-            domReadOnly: true,
-        });
-    }, [effectiveReadOnly]);
-
+        refreshMobileEditNeed();
+    }, [code, path, refreshMobileEditNeed]);
 
     const options = useMemo<editor.IStandaloneEditorConstructionOptions>(() => {
         return {
             minimap: { enabled: false },
             fontSize: isNarrowScreen ? 14 : 13,
             scrollBeyondLastLine: false,
-            wordWrap: "on",
+            wordWrap: "on" as const,
             automaticLayout: true,
-            readOnly: disabled,
+            readOnly: effectiveReadOnly,
+            readOnlyMessage: { value: "" },
+            domReadOnly: true,
             formatOnPaste: false,
             formatOnType: false,
             glyphMargin: false,
@@ -184,7 +254,7 @@ export default function EditorPane(props: {
                 bottom: 16,
             },
         };
-    }, [isNarrowScreen, disabled]);
+    }, [effectiveReadOnly, isNarrowScreen]);
 
     return (
         <div className="relative h-full w-full min-w-0">
@@ -206,8 +276,18 @@ export default function EditorPane(props: {
                         editorRef.current = ed;
                         onMount?.(ed);
 
+                        refreshMobileEditNeed();
+
                         ed.onDidBlurEditorWidget?.(() => {
                             if (isNarrowScreen) setMobileEditing(false);
+                        });
+
+                        ed.onDidContentSizeChange?.(() => {
+                            refreshMobileEditNeed();
+                        });
+
+                        ed.onDidLayoutChange?.(() => {
+                            refreshMobileEditNeed();
                         });
                     }}
                     onChange={(v) => {
@@ -218,15 +298,19 @@ export default function EditorPane(props: {
                 />
             </div>
 
-            {isNarrowScreen && !disabled ? (
+            {showMobileEditButton ? (
                 <button
                     type="button"
                     onClick={() => {
-                        setMobileEditing((v) => {
-                            const next = !v;
+                        setMobileEditing((prev) => {
+                            const next = !prev;
+
                             if (next) {
-                                requestAnimationFrame(() => editorRef.current?.focus?.());
+                                requestAnimationFrame(() => {
+                                    editorRef.current?.focus?.();
+                                });
                             }
+
                             return next;
                         });
                     }}

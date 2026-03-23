@@ -10,7 +10,7 @@ import {
     DEFAULT_SQL_DIALECT,
     DEFAULT_SQL_DIALECTS,
 } from "./constants";
-import { isControlled, type CodeRunnerProps, type TerminalDock } from "./types";
+import {isControlled, type CodeRunnerProps, type TerminalDock, CodeRunnerFrame} from "./types";
 import HeaderBar from "./components/HeaderBar";
 import EditorPane from "./components/EditorPane";
 import TerminalPane from "./components/TerminalPane";
@@ -25,7 +25,7 @@ type MobilePane = "editor" | "output";
 
 function CodeRunnerContent(props: CodeRunnerProps) {
     const {
-        frame = "card",
+        frame = "card" as CodeRunnerFrame,
         title = "Try it",
         height = 320,
         hintMarkdown,
@@ -400,7 +400,9 @@ function CodeRunnerContent(props: CodeRunnerProps) {
             style={{ touchAction: isNarrowScreen ? "pan-y" : "auto" }}
         >
             <EditorPane
+                frame={frame}
                 lang={lang}
+                mobileEditMode="auto"
                 code={code}
                 onChange={setCode}
                 theme={editorTheme}

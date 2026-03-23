@@ -1,25 +1,55 @@
 "use client";
 
 import FullIDE from "@/components/ide/fullide/FullIDE";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LangRail, LANGS } from "@/components/ide/lang/LangRail";
 import { CodeLanguage } from "@/lib/practice/types";
 import { cn } from "@/components/ide/fullide/utils";
 
-export default function ProgrammingIdeSandbox() {
-    const [lang, setLang] = useState<CodeLanguage>("python");
+export default function ProgrammingIdeSandbox({
+                                                  initialLanguage = "python",
+                                                  toolSlug = "python",
+                                                  title = "Programming IDE",
+                                                  routeLanguageMap,
+                                              }: {
+    initialLanguage?: CodeLanguage;
+    toolSlug?: string;
+    title?: string;
+    routeLanguageMap?: Partial<Record<CodeLanguage, string>>;
+}) {
+    const router = useRouter();
+
+    const [lang, setLang] = useState<CodeLanguage>(initialLanguage);
     const [railCollapsed, setRailCollapsed] = useState(false);
+
+    useEffect(() => {
+        setLang(initialLanguage);
+    }, [initialLanguage]);
 
     const active = useMemo(
         () => LANGS.find((x) => x.id === lang) ?? LANGS[0],
         [lang],
     );
 
+    const handleLanguageChange = (next: CodeLanguage) => {
+        const href = routeLanguageMap?.[next];
+
+        if (href) {
+            router.push(href);
+            return;
+        }
+
+        setLang(next);
+    };
+
+    // Stable per tool route. Do NOT append `lang` here.
+    // useIdeWorkspace already namespaces by language internally.
     const storageKey =
-        `${process.env.NEXT_PUBLIC_APP_NAME ?? "learnoir"}.ide.workspace.v2.programming-sandbox`;
+        `${process.env.NEXT_PUBLIC_APP_NAME ?? "learnoir"}.ide.workspace.v2.sandbox.programming.${toolSlug}`;
 
     return (
-        <div className="h-[100dvh] w-full min-w-0 overflow-hidden bg-transparent">
+        <div className="h-dvh w-full min-w-0 overflow-hidden bg-transparent">
             <div className="grid h-full min-h-0 min-w-0 w-full grid-rows-[auto_1fr]">
                 <div className="border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-950/95 lg:hidden">
                     <div className="w-full min-w-0 px-2 py-2">
@@ -42,7 +72,9 @@ export default function ProgrammingIdeSandbox() {
                                         <button
                                             key={item.id}
                                             type="button"
-                                            onClick={() => setLang(item.id as CodeLanguage)}
+                                            onClick={() =>
+                                                handleLanguageChange(item.id as CodeLanguage)
+                                            }
                                             aria-pressed={selected}
                                             className={cn(
                                                 "shrink-0 whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors",
@@ -69,7 +101,7 @@ export default function ProgrammingIdeSandbox() {
                     >
                         <LangRail
                             lang={lang}
-                            setLang={setLang}
+                            setLang={handleLanguageChange}
                             collapsed={railCollapsed}
                             onToggleCollapsed={() => setRailCollapsed((v) => !v)}
                         />
@@ -78,11 +110,11 @@ export default function ProgrammingIdeSandbox() {
                     <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
                         <FullIDE
                             className="h-full"
-                            title="Programming IDE"
+                            title={title}
                             fullHeight
                             storageKey={storageKey}
                             language={lang}
-                            onChangeLanguage={setLang}
+                            onChangeLanguage={handleLanguageChange}
                             resetOnForcedLanguageChange={false}
                             showTopLanguageButtons={false}
                         />

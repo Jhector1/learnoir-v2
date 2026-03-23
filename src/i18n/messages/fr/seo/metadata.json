@@ -141,6 +141,54 @@
         "ogDescription": "Enfòmasyon sou vi prive ak dwa done pou {appName}.",
         "twitterTitle": "Règleman sou dwa done — {appName}",
         "twitterDescription": "Enfòmasyon sou vi prive ak dwa done pou {appName}."
+      },
+      "online-python-compiler": {
+        "title": "Compilateur Python en ligne — {appName}",
+        "description": "Écrivez, exécutez et testez du code Python en ligne avec {appName}.",
+        "ogTitle": "Compilateur Python en ligne — {appName}",
+        "ogDescription": "Écrivez, exécutez et testez du code Python en ligne avec {appName}.",
+        "twitterTitle": "Compilateur Python en ligne — {appName}",
+        "twitterDescription": "Écrivez, exécutez et testez du code Python en ligne avec {appName}."
+      },
+      "online-java-compiler": {
+        "title": "Compilateur Java en ligne — {appName}",
+        "description": "Écrivez, compilez et exécutez du code Java en ligne avec {appName}.",
+        "ogTitle": "Compilateur Java en ligne — {appName}",
+        "ogDescription": "Écrivez, compilez et exécutez du code Java en ligne avec {appName}.",
+        "twitterTitle": "Compilateur Java en ligne — {appName}",
+        "twitterDescription": "Écrivez, compilez et exécutez du code Java en ligne avec {appName}."
+      },
+      "online-javascript-editor": {
+        "title": "Éditeur JavaScript en ligne — {appName}",
+        "description": "Écrivez et exécutez du JavaScript en ligne avec l’éditeur de code {appName}.",
+        "ogTitle": "Éditeur JavaScript en ligne — {appName}",
+        "ogDescription": "Écrivez et exécutez du JavaScript en ligne avec l’éditeur de code {appName}.",
+        "twitterTitle": "Éditeur JavaScript en ligne — {appName}",
+        "twitterDescription": "Écrivez et exécutez du JavaScript en ligne avec l’éditeur de code {appName}."
+      },
+      "online-c-compiler": {
+        "title": "Compilateur C en ligne — {appName}",
+        "description": "Écrivez, compilez et exécutez du code C en ligne avec {appName}.",
+        "ogTitle": "Compilateur C en ligne — {appName}",
+        "ogDescription": "Écrivez, compilez et exécutez du code C en ligne avec {appName}.",
+        "twitterTitle": "Compilateur C en ligne — {appName}",
+        "twitterDescription": "Écrivez, compilez et exécutez du code C en ligne avec {appName}."
+      },
+      "online-cpp-compiler": {
+        "title": "Compilateur C++ en ligne — {appName}",
+        "description": "Écrivez, compilez et exécutez du code C++ en ligne avec {appName}.",
+        "ogTitle": "Compilateur C++ en ligne — {appName}",
+        "ogDescription": "Écrivez, compilez et exécutez du code C++ en ligne avec {appName}.",
+        "twitterTitle": "Compilateur C++ en ligne — {appName}",
+        "twitterDescription": "Écrivez, compilez et exécutez du code C++ en ligne avec {appName}."
+      },
+      "online-sql-editor": {
+        "title": "Éditeur SQL en ligne — {appName}",
+        "description": "Écrivez et exécutez des requêtes SQL en ligne avec l’éditeur SQL {appName}.",
+        "ogTitle": "Éditeur SQL en ligne — {appName}",
+        "ogDescription": "Écrivez et exécutez des requêtes SQL en ligne avec l’éditeur SQL {appName}.",
+        "twitterTitle": "Éditeur SQL en ligne — {appName}",
+        "twitterDescription": "Écrivez et exécutez des requêtes SQL en ligne avec l’éditeur SQL {appName}."
       }
     },
     "subjects": {

@@ -141,6 +141,54 @@
         "ogDescription": "Informations sur la confidentialité et les droits sur les données pour {appName}.",
         "twitterTitle": "Politique relative aux droits sur les données — {appName}",
         "twitterDescription": "Informations sur la confidentialité et les droits sur les données pour {appName}."
+      },
+      "online-python-compiler": {
+        "title": "Konpilatè Python sou entènèt — {appName}",
+        "description": "Ekri, kouri, epi teste kòd Python sou entènèt ak {appName}.",
+        "ogTitle": "Konpilatè Python sou entènèt — {appName}",
+        "ogDescription": "Ekri, kouri, epi teste kòd Python sou entènèt ak {appName}.",
+        "twitterTitle": "Konpilatè Python sou entènèt — {appName}",
+        "twitterDescription": "Ekri, kouri, epi teste kòd Python sou entènèt ak {appName}."
+      },
+      "online-java-compiler": {
+        "title": "Konpilatè Java sou entènèt — {appName}",
+        "description": "Ekri, konpile, epi kouri kòd Java sou entènèt ak {appName}.",
+        "ogTitle": "Konpilatè Java sou entènèt — {appName}",
+        "ogDescription": "Ekri, konpile, epi kouri kòd Java sou entènèt ak {appName}.",
+        "twitterTitle": "Konpilatè Java sou entènèt — {appName}",
+        "twitterDescription": "Ekri, konpile, epi kouri kòd Java sou entènèt ak {appName}."
+      },
+      "online-javascript-editor": {
+        "title": "Editè JavaScript sou entènèt — {appName}",
+        "description": "Ekri epi kouri JavaScript sou entènèt ak editè kòd {appName}.",
+        "ogTitle": "Editè JavaScript sou entènèt — {appName}",
+        "ogDescription": "Ekri epi kouri JavaScript sou entènèt ak editè kòd {appName}.",
+        "twitterTitle": "Editè JavaScript sou entènèt — {appName}",
+        "twitterDescription": "Ekri epi kouri JavaScript sou entènèt ak editè kòd {appName}."
+      },
+      "online-c-compiler": {
+        "title": "Konpilatè C sou entènèt — {appName}",
+        "description": "Ekri, konpile, epi kouri kòd C sou entènèt ak {appName}.",
+        "ogTitle": "Konpilatè C sou entènèt — {appName}",
+        "ogDescription": "Ekri, konpile, epi kouri kòd C sou entènèt ak {appName}.",
+        "twitterTitle": "Konpilatè C sou entènèt — {appName}",
+        "twitterDescription": "Ekri, konpile, epi kouri kòd C sou entènèt ak {appName}."
+      },
+      "online-cpp-compiler": {
+        "title": "Konpilatè C++ sou entènèt — {appName}",
+        "description": "Ekri, konpile, epi kouri kòd C++ sou entènèt ak {appName}.",
+        "ogTitle": "Konpilatè C++ sou entènèt — {appName}",
+        "ogDescription": "Ekri, konpile, epi kouri kòd C++ sou entènèt ak {appName}.",
+        "twitterTitle": "Konpilatè C++ sou entènèt — {appName}",
+        "twitterDescription": "Ekri, konpile, epi kouri kòd C++ sou entènèt ak {appName}."
+      },
+      "online-sql-editor": {
+        "title": "Editè SQL sou entènèt — {appName}",
+        "description": "Ekri epi kouri kestyon SQL sou entènèt ak editè SQL {appName}.",
+        "ogTitle": "Editè SQL sou entènèt — {appName}",
+        "ogDescription": "Ekri epi kouri kestyon SQL sou entènèt ak editè SQL {appName}.",
+        "twitterTitle": "Editè SQL sou entènèt — {appName}",
+        "twitterDescription": "Ekri epi kouri kestyon SQL sou entènèt ak editè SQL {appName}."
       }
     },
     "subjects": {

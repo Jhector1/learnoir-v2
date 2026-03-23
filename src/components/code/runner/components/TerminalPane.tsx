@@ -389,7 +389,7 @@ export default function TerminalPane(props: {
                             const isLast = i === terminal.length - 1;
                             return (
                                 <React.Fragment key={i}>
-                                    <span className={lineCls(l.type)}>{cleanTermText(l.text)}</span>
+                                    <span className={`${lineCls(l.type)} pb-[10rem]`}>{cleanTermText(l.text)}</span>
                                     {!isLast ? "\n" : null}
                                 </React.Fragment>
                             );

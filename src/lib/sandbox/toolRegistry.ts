@@ -1,0 +1,144 @@
+import type { CodeLanguage } from "@/lib/practice/types";
+
+export type SandboxCategory = "programming" | "math";
+
+export type ProgrammingToolSlug =
+    | "python"
+    | "java"
+    | "javascript"
+    | "c"
+    | "cpp"
+    | "sql";
+
+export type MathToolSlug = "linear-algebra";
+
+export type SandboxToolSlug = ProgrammingToolSlug | MathToolSlug;
+
+export type SandboxToolEntry =
+    | {
+    kind: "programming";
+    category: "programming";
+    toolSlug: ProgrammingToolSlug;
+    title: string;
+    initialLanguage: CodeLanguage;
+    seoKey:
+        | "online-python-compiler"
+        | "online-java-compiler"
+        | "online-javascript-editor"
+        | "online-c-compiler"
+        | "online-cpp-compiler"
+        | "online-sql-editor";
+}
+    | {
+    kind: "math";
+    category: "math";
+    toolSlug: "linear-algebra";
+    title: string;
+    seoKey: "sandbox-linear-algebra";
+};
+
+export const PROGRAMMING_TOOL_ORDER: ProgrammingToolSlug[] = [
+    "python",
+    "java",
+    "javascript",
+    "c",
+    "cpp",
+    "sql",
+];
+
+export function buildSandboxToolHref(
+    locale: string,
+    category: SandboxCategory,
+    toolSlug: SandboxToolSlug,
+) {
+    return `/${locale}/sandbox/${category}/${toolSlug}`;
+}
+
+export function buildProgrammingToolHref(
+    locale: string,
+    toolSlug: ProgrammingToolSlug,
+) {
+    return buildSandboxToolHref(locale, "programming", toolSlug);
+}
+
+export function resolveSandboxToolEntry(
+    category: string,
+    toolSlug: string,
+): SandboxToolEntry | null {
+    if (category === "programming") {
+        switch (toolSlug) {
+            case "python":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "python",
+                    title: "Online Python Compiler",
+                    initialLanguage: "python",
+                    seoKey: "online-python-compiler",
+                };
+            case "java":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "java",
+                    title: "Online Java Compiler",
+                    initialLanguage: "java",
+                    seoKey: "online-java-compiler",
+                };
+            case "javascript":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "javascript",
+                    title: "Online JavaScript Editor",
+                    initialLanguage: "javascript",
+                    seoKey: "online-javascript-editor",
+                };
+            case "c":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "c",
+                    title: "Online C Compiler",
+                    initialLanguage: "c",
+                    seoKey: "online-c-compiler",
+                };
+            case "cpp":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "cpp",
+                    title: "Online C++ Compiler",
+                    initialLanguage: "cpp",
+                    seoKey: "online-cpp-compiler",
+                };
+            case "sql":
+                return {
+                    kind: "programming",
+                    category: "programming",
+                    toolSlug: "sql",
+                    title: "Online SQL Editor",
+                    initialLanguage: "sql",
+                    seoKey: "online-sql-editor",
+                };
+            default:
+                return null;
+        }
+    }
+
+    if (category === "math") {
+        if (toolSlug === "linear-algebra") {
+            return {
+                kind: "math",
+                category: "math",
+                toolSlug: "linear-algebra",
+                title: "Linear Algebra Sandbox",
+                seoKey: "sandbox-linear-algebra",
+            };
+        }
+
+        return null;
+    }
+
+    return null;
+}

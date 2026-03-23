@@ -12,6 +12,7 @@ type SandboxOption = {
     title: string;
     description: string;
     icon: React.ReactNode;
+    path:string;
     tags: string[];
     badge?: { text: string; tone: "good" | "warn" | "neutral" };
 };
@@ -55,7 +56,9 @@ export default function SandboxChooserClient({ locale }: { locale: string }) {
                     "Run code, test ideas, and practice in one place (Python, Java, JS, C/C++…).",
                 icon: <Code2 className="h-5 w-5" />,
                 tags: ["Python", "Java", "JavaScript", "C", "C++"],
+                path:"programming/python",
                 badge: { text: "All languages", tone: "good" },
+
             },
             {
                 slug: "sql",
@@ -64,11 +67,15 @@ export default function SandboxChooserClient({ locale }: { locale: string }) {
                     "Write queries, learn joins/aggregations, and test answers against datasets.",
                 icon: <Database className="h-5 w-5" />,
                 tags: ["SELECT", "JOIN", "GROUP BY", "Views"],
+                path:"programming/sql",
+
                 badge: { text: "Query mode", tone: "neutral" },
             },
             {
                 slug: "linear-algebra",
                 title: "Linear Algebra Lab",
+                path:"math/linear-algebra",
+
                 description:
                     "Interactive vectors, matrices, transforms, and geometry sketches + practice.",
                 icon: <Sigma className="h-5 w-5" />,
@@ -78,6 +85,7 @@ export default function SandboxChooserClient({ locale }: { locale: string }) {
             {
                 slug: "tools",
                 title: "More Tools",
+                path:"programming/python",
                 description:
                     "Extra sandboxes you’ll add over time: regex, stats, networking, notebooks, etc.",
                 icon: <Sparkles className="h-5 w-5" />,
@@ -102,7 +110,7 @@ export default function SandboxChooserClient({ locale }: { locale: string }) {
             window.localStorage.setItem(STORAGE_KEY, opt.slug);
             setLastSlug(opt.slug);
         } catch {}
-        router.push(`/sandbox/${opt.slug}`);
+        router.push(`/sandbox/${opt.path}`);
     };
 
     const lastOpt = lastSlug ? options.find((o) => o.slug === lastSlug) : null;

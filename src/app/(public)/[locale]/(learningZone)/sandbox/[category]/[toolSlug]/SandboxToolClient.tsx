@@ -41,13 +41,16 @@ export default function SandboxToolClient({
                     buildProgrammingToolHref(locale, tool),
                 ])
             );
-
+        const localizedLessonHref = `/${locale}${entry.lessonPath}`;
         return (
             <ProgrammingSandbox
                 initialLanguage={entry.initialLanguage}
                 toolSlug={entry.toolSlug}
                 title={entry.title}
                 routeLanguageMap={routeLanguageMap}
+                lessonHref={localizedLessonHref}
+                lessonLabel="Lesson"
+
             />
         );
     }

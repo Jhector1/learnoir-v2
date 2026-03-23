@@ -12,11 +12,15 @@ export default function ProgrammingIdeSandbox({
                                                   toolSlug = "python",
                                                   title = "Programming IDE",
                                                   routeLanguageMap,
+                                                  lessonHref,
+                                                  lessonLabel = "Lesson",
                                               }: {
     initialLanguage?: CodeLanguage;
     toolSlug?: string;
     title?: string;
     routeLanguageMap?: Partial<Record<CodeLanguage, string>>;
+    lessonHref?: string;
+    lessonLabel?: string;
 }) {
     const router = useRouter();
 
@@ -117,6 +121,8 @@ export default function ProgrammingIdeSandbox({
                             onChangeLanguage={handleLanguageChange}
                             resetOnForcedLanguageChange={false}
                             showTopLanguageButtons={false}
+                            lessonHref={lessonHref}
+                            lessonLabel={lessonLabel}
                         />
                     </main>
                 </div>

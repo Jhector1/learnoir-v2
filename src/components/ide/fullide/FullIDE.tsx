@@ -15,6 +15,7 @@ import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 import { runViaApi } from "@/lib/code/runClient";
 import { DEFAULT_SQL_DIALECT } from "@/components/code/runner/constants";
 import {useRouter} from "next/navigation";
+import Link from "next/link";
 
 type FullIDEProps = {
     title?: string;
@@ -26,6 +27,8 @@ type FullIDEProps = {
     onChangeLanguage?: (l: CodeLanguage) => void;
     resetOnForcedLanguageChange?: boolean;
     showTopLanguageButtons?: boolean;
+    lessonHref?: string;
+    lessonLabel?: string;
 };
 
 const SQL_DIALECT_LABEL: Record<SqlDialect, string> = {
@@ -46,6 +49,8 @@ export default function FullIDE(props: FullIDEProps) {
         onChangeLanguage,
         resetOnForcedLanguageChange = false,
         showTopLanguageButtons = true,
+        lessonHref,
+        lessonLabel = "Lesson",
     } = props;
 
     const splitRef = useRef<HTMLDivElement | null>(null);
@@ -451,8 +456,19 @@ export default function FullIDE(props: FullIDEProps) {
                             {activeFile ? pathOf(nodes, activeFile.id) : "No file selected"}
                         </div>
                     </div>
-                </div>
 
+                    {lessonHref ? (
+                        <Link
+                            href={lessonHref}
+                            className={actionBtn}
+                            aria-label={lessonLabel}
+                            title={lessonLabel}
+                        >
+                            <span aria-hidden="true" className="text-sm leading-none">📘</span>
+                            <span className="ml-1 hidden sm:inline">{lessonLabel}</span>
+                        </Link>
+                    ) : null}
+                </div>
                 {(showTopLanguageButtons || !isDesktop) ? (
                     <div className="border-t border-neutral-200 px-2 py-2 dark:border-white/10">
                         {languageScroller}

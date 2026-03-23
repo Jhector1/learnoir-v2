@@ -28,6 +28,7 @@ export type SandboxToolEntry =
         | "online-c-compiler"
         | "online-cpp-compiler"
         | "online-sql-editor";
+    lessonPath: string;
 }
     | {
     kind: "math";
@@ -35,6 +36,7 @@ export type SandboxToolEntry =
     toolSlug: "linear-algebra";
     title: string;
     seoKey: "sandbox-linear-algebra";
+    lessonPath?: string;
 };
 
 export const PROGRAMMING_TOOL_ORDER: ProgrammingToolSlug[] = [
@@ -68,6 +70,7 @@ export function resolveSandboxToolEntry(
     if (category === "programming") {
         switch (toolSlug) {
             case "python":
+
                 return {
                     kind: "programming",
                     category: "programming",
@@ -75,6 +78,8 @@ export function resolveSandboxToolEntry(
                     title: "Online Python Compiler",
                     initialLanguage: "python",
                     seoKey: "online-python-compiler",
+                    lessonPath: "/subjects/python/modules",
+
                 };
             case "java":
                 return {
@@ -84,6 +89,8 @@ export function resolveSandboxToolEntry(
                     title: "Online Java Compiler",
                     initialLanguage: "java",
                     seoKey: "online-java-compiler",
+                    lessonPath: "/subjects/java/modules",
+
                 };
             case "javascript":
                 return {
@@ -93,6 +100,8 @@ export function resolveSandboxToolEntry(
                     title: "Online JavaScript Editor",
                     initialLanguage: "javascript",
                     seoKey: "online-javascript-editor",
+                    lessonPath: "/subjects/javascript/modules",
+
                 };
             case "c":
                 return {
@@ -102,6 +111,8 @@ export function resolveSandboxToolEntry(
                     title: "Online C Compiler",
                     initialLanguage: "c",
                     seoKey: "online-c-compiler",
+                    lessonPath: "/subjects/programming/modules",
+
                 };
             case "cpp":
                 return {
@@ -111,6 +122,8 @@ export function resolveSandboxToolEntry(
                     title: "Online C++ Compiler",
                     initialLanguage: "cpp",
                     seoKey: "online-cpp-compiler",
+                    lessonPath: "/subjects/cpp/modules",
+
                 };
             case "sql":
                 return {
@@ -120,6 +133,8 @@ export function resolveSandboxToolEntry(
                     title: "Online SQL Editor",
                     initialLanguage: "sql",
                     seoKey: "online-sql-editor",
+                    lessonPath: "/subjects/sql/modules",
+
                 };
             default:
                 return null;

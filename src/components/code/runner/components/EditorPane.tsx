@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useId } from "react";
+import React, { useEffect, useMemo, useRef, useId, useState } from "react";
 import dynamic from "next/dynamic";
 import { monacoLang } from "../utils/monaco";
 import { CodeLanguage } from "@/lib/practice/types";
+import {editor} from "monaco-editor";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -70,6 +71,7 @@ export default function EditorPane(props: {
     const instanceKeyRef = useRef(`editor-${reactId.replace(/[:]/g, "")}`);
     const editorRef = useRef<any>(null);
     const applyingExternalRef = useRef(false);
+    const [isNarrowScreen, setIsNarrowScreen] = useState(false);
 
     const path = useMemo(() => {
         return buildModelPath({
@@ -78,6 +80,23 @@ export default function EditorPane(props: {
             lang,
         });
     }, [modelKey, lang]);
+
+    useEffect(() => {
+        if (typeof window === "undefined" || !window.matchMedia) return;
+
+        const mq = window.matchMedia("(max-width: 767px)");
+        const update = () => setIsNarrowScreen(mq.matches);
+
+        update();
+
+        if (typeof mq.addEventListener === "function") {
+            mq.addEventListener("change", update);
+            return () => mq.removeEventListener("change", update);
+        }
+
+        mq.addListener(update);
+        return () => mq.removeListener(update);
+    }, []);
 
     useEffect(() => {
         const ed = editorRef.current;
@@ -122,6 +141,37 @@ export default function EditorPane(props: {
         ed.updateOptions?.({ readOnly: disabled });
     }, [disabled]);
 
+    const options = useMemo<editor.IStandaloneEditorConstructionOptions>(() => {
+        return {
+            minimap: { enabled: false },
+            fontSize: isNarrowScreen ? 14 : 13,
+            scrollBeyondLastLine: false,
+            wordWrap: "on",
+            automaticLayout: true,
+            readOnly: disabled,
+            formatOnPaste: false,
+            formatOnType: false,
+            glyphMargin: false,
+            folding: !isNarrowScreen,
+            stickyScroll: { enabled: false },
+            renderLineHighlight: isNarrowScreen ? "none" : "line",
+            lineNumbers: isNarrowScreen ? "off" : "on",
+            lineNumbersMinChars: isNarrowScreen ? 2 : 3,
+            lineDecorationsWidth: isNarrowScreen ? 8 : 10,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            scrollbar: {
+                alwaysConsumeMouseWheel: false,
+                verticalScrollbarSize: isNarrowScreen ? 10 : 12,
+                horizontalScrollbarSize: isNarrowScreen ? 10 : 12,
+            },
+            padding: {
+                top: 12,
+                bottom: 16,
+            },
+        };
+    }, [isNarrowScreen, disabled]);
+
     return (
         <Monaco
             height={height}
@@ -138,17 +188,7 @@ export default function EditorPane(props: {
                 if (applyingExternalRef.current) return;
                 onChange(v ?? "");
             }}
-            options={{
-                minimap: { enabled: false },
-                fontSize: 13,
-                scrollBeyondLastLine: false,
-                wordWrap: "on",
-                automaticLayout: true,
-                readOnly: disabled,
-                scrollbar: { alwaysConsumeMouseWheel: false },
-                formatOnPaste: false,
-                formatOnType: false,
-            }}
+            options={options}
         />
     );
 }

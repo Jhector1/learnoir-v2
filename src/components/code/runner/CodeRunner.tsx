@@ -21,6 +21,8 @@ import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 import { isSqlRunResult } from "@/lib/code/types";
 import { runViaApi } from "@/lib/code/runClient";
 
+type MobilePane = "editor" | "output";
+
 function CodeRunnerContent(props: CodeRunnerProps) {
     const {
         frame = "card",
@@ -65,6 +67,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     const { resolvedTheme } = useTheme();
     const [editorTheme, setEditorTheme] = useState<"vs" | "vs-dark">("vs-dark");
     const [isNarrowScreen, setIsNarrowScreen] = useState(false);
+    const [mobilePane, setMobilePane] = useState<MobilePane>("editor");
 
     useEffect(() => {
         if (!showEditorThemeToggle) {
@@ -248,6 +251,24 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         requestLayout();
     }, [effectiveDock, split.termW, split.bottomEditorH, split.bottomTermH, split.rightTotalH]);
 
+    useEffect(() => {
+        if (!showEditor && showTerminal) {
+            setMobilePane("output");
+            return;
+        }
+        if (showEditor && !showTerminal) {
+            setMobilePane("editor");
+        }
+    }, [showEditor, showTerminal]);
+
+    useEffect(() => {
+        if (!isNarrowScreen) return;
+        if (!showEditor || !showTerminal) return;
+        if (term.runState !== "idle") {
+            setMobilePane("output");
+        }
+    }, [isNarrowScreen, showEditor, showTerminal, term.runState]);
+
     const onSwitchLang = React.useCallback((next: CodeLanguage) => {
         if (fixedLanguage) return;
         if (!allowedLangs.includes(next)) return;
@@ -257,6 +278,10 @@ function CodeRunnerContent(props: CodeRunnerProps) {
 
         if (!preserveCodeOnLanguageSwitch && !controlled) {
             setCode(DEFAULT_CODE[next]);
+        }
+
+        if (isNarrowScreen && showEditor && showTerminal) {
+            setMobilePane("editor");
         }
 
         term.resetTerminal();
@@ -269,6 +294,9 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         setLang,
         setCode,
         term,
+        isNarrowScreen,
+        showEditor,
+        showTerminal,
     ]);
 
     const showPickerUI = showLanguagePicker && !fixedLanguage && allowedLangs.length > 1;
@@ -293,7 +321,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
     const regionStyle: React.CSSProperties | undefined =
         typeof height === "number"
             ? {
-                height: isNarrowScreen ? `min(${numericHeight}px, 72dvh)` : numericHeight,
+                height: isNarrowScreen ? `min(${numericHeight}px, 78dvh)` : numericHeight,
             }
             : undefined;
 
@@ -311,6 +339,10 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         !isSqlRunResult(term.lastResult)
             ? term.lastResult
             : null;
+
+    const outputLabel = lang === "sql" ? "Results" : "Terminal";
+    const mobileTabAttention = term.runState !== "idle" || !!term.lastResult;
+    const mobileBodyHeight = Math.max(240, (split.mainH || numericHeight) - 52);
 
     const renderOutputPane = (panelHeight?: number, panelWidth?: number) => {
         if (lang === "sql") {
@@ -362,6 +394,24 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         );
     };
 
+    const renderEditorPane = (editorHeight: number) => (
+        <div className="h-full bg-white/70 dark:bg-black/10">
+            <EditorPane
+                lang={lang}
+                code={code}
+                onChange={setCode}
+                theme={editorTheme}
+                height={editorHeight}
+                disabled={disabled || term.busy}
+                modelKey={editorModelKey}
+                onMount={(ed) => {
+                    monacoEditorRef.current = ed;
+                    requestLayout();
+                }}
+            />
+        </div>
+    );
+
     return (
         <div className={outerCls}>
             {showHeaderBar ? (
@@ -373,10 +423,14 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         runState={term.runState}
                         onCancel={term.cancelRun}
                         editorTheme={editorTheme}
-                        onToggleTheme={() => setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))}
+                        onToggleTheme={() =>
+                            setEditorTheme((t) => (t === "vs-dark" ? "vs" : "vs-dark"))
+                        }
                         showEditorThemeToggle={showEditorThemeToggleUI}
                         dock={effectiveDock}
-                        onToggleDock={() => setDock(effectiveDock === "bottom" ? "right" : "bottom")}
+                        onToggleDock={() =>
+                            setDock(effectiveDock === "bottom" ? "right" : "bottom")
+                        }
                         showDockToggle={showDockToggleUI}
                         showPicker={showPickerUI}
                         allowedLangs={allowedLangs}
@@ -390,9 +444,17 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                         onReset={() => {
                             setCode(DEFAULT_CODE[lang]);
                             term.resetTerminal();
+                            if (isNarrowScreen && showEditor && showTerminal) {
+                                setMobilePane("editor");
+                            }
                         }}
                         allowRun={allowRun}
-                        onRun={term.startRun}
+                        onRun={() => {
+                            if (isNarrowScreen && showEditor && showTerminal) {
+                                setMobilePane("output");
+                            }
+                            term.startRun();
+                        }}
                     />
                 </div>
             ) : null}
@@ -409,98 +471,114 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                     style={regionStyle}
                     className={[
                         "relative z-0",
-                        "mt-3 overflow-hidden rounded-2xl border",
+                        "mt-3 overflow-hidden rounded-xl border sm:rounded-2xl",
                         "border-neutral-200 bg-neutral-50/60",
                         "dark:border-white/10 dark:bg-black/20",
-                        "min-h-0",
-                        "overscroll-contain",
+                        "min-h-0 overscroll-contain",
                         height === "auto" ? "h-auto" : "",
                     ].join(" ")}
                 >
-                    {showEditor && !showTerminal ? (
-                        <div className="h-full bg-white/70 dark:bg-black/10">
-                            <EditorPane
-                                lang={lang}
-                                code={code}
-                                onChange={setCode}
-                                theme={editorTheme}
-                                height={numericHeight}
-                                disabled={disabled || term.busy}
-                                modelKey={editorModelKey}
-                                onMount={(ed) => {
-                                    monacoEditorRef.current = ed;
-                                    requestLayout();
-                                }}
-                            />
-                        </div>
-                    ) : null}
+                    {showEditor && !showTerminal ? renderEditorPane(numericHeight) : null}
 
                     {!showEditor && showTerminal ? renderOutputPane() : null}
 
                     {showEditor && showTerminal ? (
-                        effectiveDock === "bottom" ? (
+                        isNarrowScreen ? (
                             <div className="flex h-full min-h-0 flex-col">
-                                <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
-                                    <EditorPane
-                                        lang={lang}
-                                        code={code}
-                                        onChange={setCode}
-                                        theme={editorTheme}
-                                        height={split.bottomEditorH}
-                                        disabled={disabled || term.busy}
-                                        modelKey={editorModelKey}
-                                        onMount={(ed) => {
-                                            monacoEditorRef.current = ed;
-                                            requestLayout();
-                                        }}
-                                    />
+                                <div className="border-b border-neutral-200 bg-white/85 p-2 dark:border-white/10 dark:bg-black/25">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMobilePane("editor")}
+                                            className={[
+                                                "inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-extrabold transition",
+                                                mobilePane === "editor"
+                                                    ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"
+                                                    : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",
+                                            ].join(" ")}
+                                            aria-pressed={mobilePane === "editor"}
+                                        >
+                                            Editor
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setMobilePane("output")}
+                                            className={[
+                                                "inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-extrabold transition",
+                                                mobilePane === "output"
+                                                    ? "border-sky-300/30 bg-sky-300/10 text-neutral-900 dark:text-white/90"
+                                                    : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.10]",
+                                            ].join(" ")}
+                                            aria-pressed={mobilePane === "output"}
+                                        >
+                                            <span>{outputLabel}</span>
+                                            {mobileTabAttention ? (
+                                                <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" />
+                                            ) : null}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {!isNarrowScreen ? (
-                                    <div
-                                        {...split.separatorProps}
-                                        aria-disabled={term.runState !== "idle"}
-                                        onPointerDown={term.runState !== "idle" ? undefined : split.onPointerDownSplit}
-                                        onKeyDown={term.runState !== "idle" ? undefined : split.separatorProps.onKeyDown}
-                                        className={[
-                                            "h-2 bg-neutral-200/60 outline-none dark:bg-white/5",
-                                            term.runState !== "idle"
-                                                ? "cursor-not-allowed opacity-60"
-                                                : "cursor-row-resize hover:bg-neutral-200 focus:bg-neutral-200 dark:hover:bg-white/10 dark:focus:bg-white/10",
-                                        ].join(" ")}
-                                        title={
-                                            term.runState !== "idle"
-                                                ? "Cannot resize while a run session is active"
-                                                : "Drag or use arrow keys to resize terminal"
-                                        }
-                                    />
-                                ) : null}
+                                <div className="min-h-0 flex-1 overflow-hidden">
+                                    {mobilePane === "editor"
+                                        ? renderEditorPane(mobileBodyHeight)
+                                        : renderOutputPane(mobileBodyHeight)}
+                                </div>
+                            </div>
+                        ) : effectiveDock === "bottom" ? (
+                            <div className="flex h-full min-h-0 flex-col">
+                                <div className="min-h-0 border-b border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
+                                    {renderEditorPane(split.bottomEditorH)}
+                                </div>
+
+                                <div
+                                    {...split.separatorProps}
+                                    aria-disabled={term.runState !== "idle"}
+                                    onPointerDown={
+                                        term.runState !== "idle"
+                                            ? undefined
+                                            : split.onPointerDownSplit
+                                    }
+                                    onKeyDown={
+                                        term.runState !== "idle"
+                                            ? undefined
+                                            : split.separatorProps.onKeyDown
+                                    }
+                                    className={[
+                                        "h-2 bg-neutral-200/60 outline-none dark:bg-white/5",
+                                        term.runState !== "idle"
+                                            ? "cursor-not-allowed opacity-60"
+                                            : "cursor-row-resize hover:bg-neutral-200 focus:bg-neutral-200 dark:hover:bg-white/10 dark:focus:bg-white/10",
+                                    ].join(" ")}
+                                    title={
+                                        term.runState !== "idle"
+                                            ? "Cannot resize while a run session is active"
+                                            : "Drag or use arrow keys to resize terminal"
+                                    }
+                                />
 
                                 {renderOutputPane(split.bottomTermH)}
                             </div>
                         ) : (
                             <div className="flex h-full min-h-0">
                                 <div className="min-w-0 flex-1 border-r border-neutral-200 bg-white/70 dark:border-white/10 dark:bg-black/10">
-                                    <EditorPane
-                                        lang={lang}
-                                        code={code}
-                                        onChange={setCode}
-                                        theme={editorTheme}
-                                        height={split.rightTotalH}
-                                        disabled={disabled || term.busy}
-                                        modelKey={editorModelKey}
-                                        onMount={(ed) => {
-                                            monacoEditorRef.current = ed;
-                                            requestLayout();
-                                        }}
-                                    />
+                                    {renderEditorPane(split.rightTotalH)}
                                 </div>
 
                                 <div
                                     {...split.separatorProps}
                                     aria-disabled={term.runState !== "idle"}
-                                    onPointerDown={term.runState !== "idle" ? undefined : split.onPointerDownSplit}
-                                    onKeyDown={term.runState !== "idle" ? undefined : split.separatorProps.onKeyDown}
+                                    onPointerDown={
+                                        term.runState !== "idle"
+                                            ? undefined
+                                            : split.onPointerDownSplit
+                                    }
+                                    onKeyDown={
+                                        term.runState !== "idle"
+                                            ? undefined
+                                            : split.separatorProps.onKeyDown
+                                    }
                                     className={[
                                         "w-2 bg-neutral-200/60 outline-none dark:bg-white/5",
                                         term.runState !== "idle"

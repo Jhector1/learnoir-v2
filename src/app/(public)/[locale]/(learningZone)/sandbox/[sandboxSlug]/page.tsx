@@ -5,9 +5,7 @@ export default async function SandboxSlugPage({
                                               }: {
     params: Promise<{ locale: string; sandboxSlug: string }>;
 }) {
-    const {locale, sandboxSlug} = await params;
-    return (
+    const { locale, sandboxSlug } = await params;
 
-        <SandboxSlugClient locale={locale} sandboxSlug={sandboxSlug}/>
-    );
+    return <SandboxSlugClient locale={locale} sandboxSlug={sandboxSlug} />;
 }

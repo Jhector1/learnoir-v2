@@ -19,17 +19,22 @@ export default function ProgrammingIdeSandbox() {
         `${process.env.NEXT_PUBLIC_APP_NAME ?? "learnoir"}.ide.workspace.v2.programming-sandbox`;
 
     return (
-        <div className="h-[100dvh] w-full overflow-hidden bg-transparent">
-            <div className="grid h-full min-h-0 w-full grid-rows-[auto_1fr]">
-                {/* Mobile language strip */}
+        <div className="h-[100dvh] w-full min-w-0 overflow-hidden bg-transparent">
+            <div className="grid h-full min-h-0 min-w-0 w-full grid-rows-[auto_1fr]">
                 <div className="border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-950/95 lg:hidden">
-                    <div className="flex items-center gap-2 px-2 py-2">
-                        <div className="shrink-0 text-[11px] font-black uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
-                            IDE
+                    <div className="w-full min-w-0 px-2 py-2">
+                        <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+                            <div className="shrink-0 text-[11px] font-black uppercase tracking-[0.14em] text-neutral-500 dark:text-white/45">
+                                IDE
+                            </div>
+
+                            <div className="min-w-0 max-w-[45%] truncate text-right text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
+                                {active.label}
+                            </div>
                         </div>
 
-                        <div className="min-w-0 flex-1 overflow-x-auto">
-                            <div className="flex min-w-max items-center gap-2 pr-1">
+                        <div className="w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="inline-flex w-[90vw] items-center gap-2 pr-2">
                                 {LANGS.map((item) => {
                                     const selected = item.id === lang;
 
@@ -40,7 +45,7 @@ export default function ProgrammingIdeSandbox() {
                                             onClick={() => setLang(item.id as CodeLanguage)}
                                             aria-pressed={selected}
                                             className={cn(
-                                                "shrink-0 rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors",
+                                                "shrink-0 whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors",
                                                 selected
                                                     ? "border-emerald-600/25 bg-emerald-500/10 text-emerald-950 dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-white/90"
                                                     : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-white/10 dark:bg-neutral-950 dark:text-white/75 dark:hover:bg-white/[0.05]",
@@ -51,10 +56,6 @@ export default function ProgrammingIdeSandbox() {
                                     );
                                 })}
                             </div>
-                        </div>
-
-                        <div className="shrink-0 text-[11px] font-extrabold text-neutral-500 dark:text-white/50">
-                            {active.label}
                         </div>
                     </div>
                 </div>

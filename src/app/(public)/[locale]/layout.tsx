@@ -25,15 +25,15 @@ export const viewport: Viewport = {
     colorScheme: "light dark",
     themeColor: [
         { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-        { media: "(prefers-color-scheme: dark)", color: "#070A12" }
-    ]
+        { media: "(prefers-color-scheme: dark)", color: "#070A12" },
+    ],
 };
 
 export const metadata: Metadata = {
     metadataBase: getSiteUrl(),
-    applicationName: process.env.APP_NAME||"ZoeSkoul",
+    applicationName: process.env.APP_NAME || "ZoeSkoul",
     creator: "Jean Yves Hector",
-    publisher: process.env.APP_NAME||"ZoeSkoul",
+    publisher: process.env.APP_NAME || "ZoeSkoul",
     classification: "Education",
     referrer: "origin-when-cross-origin",
     manifest: "/site.webmanifest",
@@ -41,27 +41,27 @@ export const metadata: Metadata = {
         icon: [
             { url: "/favicon.ico" },
             { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-            { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }
+            { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
         ],
         shortcut: "/favicon.ico",
         apple: [
             {
                 url: "/icons/apple-touch-icon.png",
                 sizes: "180x180",
-                type: "image/png"
-            }
-        ]
+                type: "image/png",
+            },
+        ],
     },
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
-        title: process.env.APP_NAME||"ZoeSkoul"
+        title: process.env.APP_NAME || "ZoeSkoul",
     },
     formatDetection: {
         telephone: false,
         address: false,
-        email: false
-    }
+        email: false,
+    },
 };
 
 export default async function LocaleLayout({ children, params }: LayoutProps) {
@@ -76,11 +76,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
     return (
         <html
             lang={locale}
-            className={`${inter.variable} ${playfair.variable} ${greatVibes.variable}`}
+            className={`${inter.variable} ${playfair.variable} ${greatVibes.variable} h-full w-full overflow-x-hidden`}
             suppressHydrationWarning
         >
-        <body className="min-h-screen text-neutral-900 dark:text-white bg-[var(--app-bg)]">
-        <div className="min-h-screen bg-[radial-gradient(1200px_700px_at_20%_0%,var(--app-bg-ink)_0%,transparent_60%)]">
+        <body className="min-h-dvh w-full min-w-0 overflow-x-hidden bg-[var(--app-bg)] text-neutral-900 dark:text-white">
+        <div className="min-h-dvh w-full min-w-0 overflow-x-hidden bg-[radial-gradient(1200px_700px_at_20%_0%,var(--app-bg-ink)_0%,transparent_60%)]">
             <Providers session={session}>
                 <NextIntlClientProvider messages={messages}>
                     <SfxProvider>{children}</SfxProvider>

@@ -14,7 +14,7 @@ import DeleteModal from "./DeleteModal";
 import type { CodeLanguage, SqlDialect } from "@/lib/practice/types";
 import { runViaApi } from "@/lib/code/runClient";
 import { DEFAULT_SQL_DIALECT } from "@/components/code/runner/constants";
-import HeaderSlick from "@/components/HeaderSlick";
+import {useRouter} from "next/navigation";
 
 type FullIDEProps = {
     title?: string;
@@ -61,7 +61,15 @@ export default function FullIDE(props: FullIDEProps) {
         forcedLanguage,
         resetOnForcedLanguageChange,
     });
+    const router = useRouter();
 
+    const goBack = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+        }
+        router.push("/");
+    };
     const {
         language,
         nodes,
@@ -199,16 +207,22 @@ export default function FullIDE(props: FullIDEProps) {
         else actions.switchLanguage(l);
     };
 
-    const runnerHeight = Math.max(isDesktop ? 360 : 300, editorHeight || height);
+    const runnerHeight = Math.max(isDesktop ? 360 : 320, editorHeight || height);
 
-    const actionBtn =
-        "inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]";
+    const actionBtn ="ui-btn ui-btn-secondary"
+        // "inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-extrabold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.10]";
 
     const chipBtn =
         "shrink-0 rounded-lg border px-3 py-1.5 text-xs font-extrabold transition";
 
     const panelCard =
         "rounded-none border border-neutral-200 bg-white shadow-sm sm:rounded-xl dark:border-white/10 dark:bg-white/[0.04]";
+
+    const runnerTitle = activeFile
+        ? isDesktop
+            ? pathOf(nodes, activeFile.id)
+            : activeFile.name
+        : title;
 
     const explorerPanel = (
         <div className="flex h-full min-h-0 flex-col bg-neutral-50/70 dark:bg-black/20">
@@ -339,26 +353,6 @@ export default function FullIDE(props: FullIDEProps) {
         <div className="flex-1" />
     );
 
-    const mobileActions = (
-        <div className="flex shrink-0 items-center gap-2">
-            <button
-                type="button"
-                onClick={() => actions.startNewFile(rootSrc?.id ?? null)}
-                className={actionBtn}
-            >
-                + File
-            </button>
-
-            <button
-                type="button"
-                onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}
-                className={actionBtn}
-            >
-                + Folder
-            </button>
-        </div>
-    );
-
     const editorPanel = (
         <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden p-2 sm:p-3">
             <div className={cn("mb-2 sm:mb-3", panelCard)}>
@@ -373,14 +367,10 @@ export default function FullIDE(props: FullIDEProps) {
 
             <div ref={editorHostRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
                 {activeFile ? (
-                    <div className={cn("h-full pt-2 px-2 overflow-hidden", panelCard)}>
+                    <div className={cn("h-full px-2 pt-2 overflow-hidden", panelCard)}>
                         <CodeRunner
                             frame="plain"
-                            title={
-                                isSql
-                                    ? `SQL Editor · ${pathOf(nodes, activeFile.id)}`
-                                    : pathOf(nodes, activeFile.id)
-                            }
+                            title={isSql ? `SQL · ${runnerTitle}` : runnerTitle}
                             height={runnerHeight}
                             language={language}
                             onChangeLanguage={actions.switchLanguage}
@@ -390,8 +380,10 @@ export default function FullIDE(props: FullIDEProps) {
                             onChangeSqlDialect={setSqlDialect}
                             showLanguagePicker={false}
                             showSqlDialectPicker
-                            allowReset={false}
+                            allowReset={isDesktop}
                             allowRun
+                            showEditorThemeToggle={false}
+                            showTerminalDockToggle={isDesktop}
                             resetTerminalOnRun
                             onRun={onRunProject}
                             editorModelKey={activeFileId}
@@ -427,46 +419,46 @@ export default function FullIDE(props: FullIDEProps) {
                 </div>
             ) : null}
 
-            <HeaderSlick
-                slot={
-                    <div className="border-b border-neutral-200 dark:border-white/10">
-                        <div className="flex flex-col gap-2 px-2 py-2 sm:px-3">
-                            <div className="flex items-center gap-2">
-                                {!isDesktop ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowMobileExplorer(true)}
-                                        className={actionBtn}
-                                    >
-                                        Files
-                                    </button>
-                                ) : null}
+            <div className="border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-neutral-950/95">
+                <div className="flex items-center gap-2 px-3 py-2">
+                    <button
+                        type="button"
+                        onClick={goBack}
+                        className={actionBtn}
+                        aria-label="Go back"
+                        title="Go back"
+                    >
+                        <span aria-hidden="true" className="text-sm leading-none">←</span>
+                        <span className="ml-1 hidden sm:inline">Back</span>
+                    </button>
 
-                                <div className="min-w-0 flex-1 truncate text-sm font-black text-neutral-900 dark:text-white/90">
-                                    {isSql ? `${title} · SQL` : title}
-                                </div>
+                    {!isDesktop ? (
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileExplorer(true)}
+                            className={actionBtn}
+                        >
+                            Files
+                        </button>
+                    ) : null}
 
-                                <div className="hidden sm:flex sm:items-center sm:gap-2">
-                                    {mobileActions}
-                                </div>
-                            </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-black text-neutral-900 dark:text-white/90">
+                            {isSql ? `${title} · SQL` : title}
+                        </div>
 
-                            {(showTopLanguageButtons || !isDesktop) ? (
-                                <div className="flex items-center gap-2">
-                                    {languageScroller}
-                                    <div className="sm:hidden">{mobileActions}</div>
-                                </div>
-                            ) : null}
+                        <div className="truncate text-[11px] font-semibold text-neutral-500 dark:text-white/50">
+                            {activeFile ? pathOf(nodes, activeFile.id) : "No file selected"}
                         </div>
                     </div>
-                }
-                isBillingStatus={false}
-                brand={process.env.NEXT_PUBLIC_APP_NAME}
-                badge="MVP"
-                isUser={false}
-                isNav={false}
-            />
+                </div>
 
+                {(showTopLanguageButtons || !isDesktop) ? (
+                    <div className="border-t border-neutral-200 px-2 py-2 dark:border-white/10">
+                        {languageScroller}
+                    </div>
+                ) : null}
+            </div>
             <div className="min-h-0 flex-1">
                 {isDesktop ? (
                     <div
@@ -489,9 +481,7 @@ export default function FullIDE(props: FullIDEProps) {
                             aria-valuemax={40}
                             aria-valuenow={Math.round(state.leftPct)}
                             onMouseDown={(e) => actions.onMouseDownDivider(e, splitRef.current)}
-                            onPointerDown={(e) =>
-                                actions.onPointerDownDivider(e, splitRef.current)
-                            }
+                            onPointerDown={(e) => actions.onPointerDownDivider(e, splitRef.current)}
                             onKeyDown={(e) => actions.onKeyDownDivider(e, splitRef.current)}
                             className={[
                                 "w-2 shrink-0 cursor-col-resize bg-neutral-200/60 outline-none",
@@ -513,21 +503,41 @@ export default function FullIDE(props: FullIDEProps) {
                                 aria-labelledby="ide-mobile-files-title"
                             >
                                 <div className="flex h-full w-[92vw] max-w-[400px] flex-col border-r border-neutral-200 bg-white shadow-2xl dark:border-white/10 dark:bg-neutral-950">
-                                    <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-3 dark:border-white/10">
-                                        <div
-                                            id="ide-mobile-files-title"
-                                            className="text-sm font-black text-neutral-900 dark:text-white/90"
-                                        >
-                                            {isSql ? "SQL Workspace" : "Files"}
+                                    <div className="border-b border-neutral-200 px-3 py-3 dark:border-white/10">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div
+                                                id="ide-mobile-files-title"
+                                                className="text-sm font-black text-neutral-900 dark:text-white/90"
+                                            >
+                                                {isSql ? "SQL Workspace" : "Files"}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowMobileExplorer(false)}
+                                                className={actionBtn}
+                                            >
+                                                Close
+                                            </button>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowMobileExplorer(false)}
-                                            className={actionBtn}
-                                        >
-                                            Close
-                                        </button>
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => actions.startNewFile(rootSrc?.id ?? null)}
+                                                className={actionBtn}
+                                            >
+                                                + File
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => actions.startNewFolder(rootSrc?.id ?? null)}
+                                                className={actionBtn}
+                                            >
+                                                + Folder
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="min-h-0 flex-1">{explorerPanel}</div>

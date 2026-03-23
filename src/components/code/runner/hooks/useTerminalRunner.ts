@@ -23,7 +23,11 @@ function needsMoreInput(lang: CodeLanguage, r: RunResult) {
     if (lang === "java") return /NoSuchElementException/.test(blob);
     return false;
 }
-
+function readAbortKind(
+    ref: React.MutableRefObject<AbortKind>,
+): AbortKind {
+    return ref.current;
+}
 function isCanceledResult(r: RunResult | null | undefined) {
     return r?.status === "Canceled";
 }
@@ -32,6 +36,20 @@ function errorMessage(err: unknown) {
     if (err instanceof Error) return err.message;
     if (typeof err === "string") return err;
     return "Run failed.";
+}
+
+function isAbortLike(err: unknown, signal?: AbortSignal) {
+    if (signal?.aborted) return true;
+    if (err instanceof DOMException && err.name === "AbortError") return true;
+
+    const message =
+        err instanceof Error
+            ? err.message
+            : typeof err === "string"
+                ? err
+                : "";
+
+    return /abort|aborted|cancel|cancelled/i.test(message);
 }
 
 function toOutTermLines(seg: string): TermLine[] {
@@ -132,6 +150,8 @@ function extractPreOutputForCCpp(lang: CodeLanguage, code: string, prompts: stri
     return lines;
 }
 
+type AbortKind = "none" | "silent" | "user";
+
 export function useTerminalRunner(args: {
     lang: CodeLanguage;
     code: string;
@@ -179,16 +199,23 @@ export function useTerminalRunner(args: {
     const probeStdoutRef = React.useRef<string>("");
 
     const abortRef = React.useRef<AbortController | null>(null);
+    const abortKindRef = React.useRef<AbortKind>("none");
     const mountedRef = React.useRef(true);
+
+    const abortActiveRun = React.useCallback((kind: AbortKind) => {
+        if (!abortRef.current) return;
+        abortKindRef.current = kind;
+        abortRef.current.abort();
+    }, []);
 
     React.useEffect(() => {
         mountedRef.current = true;
 
         return () => {
             mountedRef.current = false;
-            abortRef.current?.abort();
+            abortActiveRun("silent");
         };
-    }, []);
+    }, [abortActiveRun]);
 
     const inputPlan = React.useMemo(() => inferInputPlan(lang, code), [lang, code]);
     const isSql = lang === "sql";
@@ -250,7 +277,7 @@ export function useTerminalRunner(args: {
     }, []);
 
     const resetTerminal = React.useCallback(() => {
-        abortRef.current?.abort();
+        abortActiveRun("silent");
 
         setTerminal([]);
         clearInputUi();
@@ -262,15 +289,15 @@ export function useTerminalRunner(args: {
 
         activeRunIdRef.current = null;
         probeStdoutRef.current = "";
-    }, [clearInputUi]);
+    }, [abortActiveRun, clearInputUi]);
 
     const runOnce = React.useCallback(
-        async (stdinToUse: string) => {
+        async (stdinToUse: string): Promise<RunResult | null> => {
             if (runLockRef.current) return null;
 
             const ctrl = new AbortController();
             abortRef.current = ctrl;
-
+            abortKindRef.current = "none";
             runLockRef.current = true;
 
             if (mountedRef.current) {
@@ -306,29 +333,58 @@ export function useTerminalRunner(args: {
                 }
 
                 return data;
-            } catch (e: any) {
-                const data: RunResult =
-                    e?.name === "AbortError"
+            } catch (e: unknown) {
+                const aborted = isAbortLike(e, ctrl.signal);
+
+                if (aborted) {
+                    const wasUserCancel = readAbortKind(abortKindRef) === "user";
+
+                    if (mountedRef.current) {
+                        if (wasUserCancel) {
+                            setLastResult({
+                                ok: false,
+                                status: "Canceled",
+                                error: "Run canceled by user.",
+                            });
+                        } else {
+                            setLastResult(null);
+                        }
+
+                        setRunState("idle");
+                    }
+
+                    return wasUserCancel
                         ? {
                             ok: false,
                             status: "Canceled",
                             error: "Run canceled by user.",
                         }
-                        : {
-                            ok: false,
-                            status: "Error",
-                            error: errorMessage(e),
-                        };
+                        : null;
+                }
+
+                const data: RunResult = {
+                    ok: false,
+                    status: "Error",
+                    error: errorMessage(e),
+                };
 
                 if (mountedRef.current) {
                     setLastResult(data);
+                    setRunState("idle");
                 }
 
                 return data;
             } finally {
-                if (abortRef.current === ctrl) abortRef.current = null;
+                if (abortRef.current === ctrl) {
+                    abortRef.current = null;
+                    abortKindRef.current = "none";
+                }
+
                 runLockRef.current = false;
-                if (mountedRef.current) setBusy(false);
+
+                if (mountedRef.current) {
+                    setBusy(false);
+                }
             }
         },
         [
@@ -442,13 +498,13 @@ export function useTerminalRunner(args: {
         }
 
         clearInputUi();
-        setLastResult({
-            ok: false,
-            status: "Canceled",
-            error: "Run canceled by user.",
-        });
 
         if (!busy || !abortRef.current) {
+            setLastResult({
+                ok: false,
+                status: "Canceled",
+                error: "Run canceled by user.",
+            });
             activeRunIdRef.current = null;
             setRunState("idle");
             setBusy(false);
@@ -456,8 +512,8 @@ export function useTerminalRunner(args: {
         }
 
         setRunState("canceling");
-        abortRef.current.abort();
-    }, [runState, busy, isSql, appendSysLine, clearInputUi]);
+        abortActiveRun("user");
+    }, [runState, busy, isSql, appendSysLine, clearInputUi, abortActiveRun]);
 
     const startRun = React.useCallback(async () => {
         if (disabled || runLockRef.current || busy || !allowRun) return;
@@ -487,7 +543,10 @@ export function useTerminalRunner(args: {
                 setTerminal([]);
                 clearInputUi();
                 const r = await runOnce("");
-                if (!r) return;
+                if (!r) {
+                    setRunState("idle");
+                    return;
+                }
 
                 clearInputUi();
                 replaceRunLines(runId, []);
@@ -509,7 +568,11 @@ export function useTerminalRunner(args: {
                 replaceRunLines(runId, [{ type: "sys", text: "Processing...", runId }]);
 
                 const r = await runOnce("");
-                if (!r) return;
+                if (!r) {
+                    clearInputUi();
+                    setRunState("idle");
+                    return;
+                }
                 if (isCanceledResult(r)) {
                     clearInputUi();
                     setRunState("idle");
@@ -524,7 +587,11 @@ export function useTerminalRunner(args: {
                 replaceRunLines(runId, [{ type: "sys", text: "Processing...", runId }]);
 
                 const r = await runOnce("");
-                if (!r) return;
+                if (!r) {
+                    clearInputUi();
+                    setRunState("idle");
+                    return;
+                }
                 if (isCanceledResult(r)) {
                     clearInputUi();
                     setRunState("idle");
@@ -629,7 +696,11 @@ export function useTerminalRunner(args: {
             setRunState("starting");
 
             const r = await runOnce(stdin);
-            if (!r) return;
+            if (!r) {
+                clearInputUi();
+                setRunState("idle");
+                return;
+            }
             if (isCanceledResult(r)) {
                 clearInputUi();
                 setRunState("idle");

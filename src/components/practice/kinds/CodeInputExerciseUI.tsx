@@ -187,7 +187,7 @@ export default function CodeInputExerciseUI({
                 title={runnerTitle as any}
                 frame="plain"
                 hintMarkdown={exercise.hint}
-                height={620}
+                height={320}
                 disabled={disabled || readOnly}
                 allowReset={!readOnly}
                 allowRun={!readOnly}

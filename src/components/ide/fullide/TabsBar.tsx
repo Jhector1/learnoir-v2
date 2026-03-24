@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import type { FileNode, FSNode, NodeId } from "./types";
-import { cn } from "./utils";
-import { pathOf } from "./fsTree";
+import type { FileNode, FSNode, NodeId } from "../types";
+import { cn } from "../utils";
+import { pathOf } from "../fsTree";
 
 export default function TabsBar(props: {
     nodes: FSNode[];
     tabFiles: FileNode[];
-    activeFileId: NodeId;
+    activeFileId: NodeId|null;
     setActiveFileId: (id: NodeId) => void;
     closeTab: (id: NodeId) => void;
 }) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/components/ide/fullide/utils";
+import { cn } from "@/components/ide/utils";
 
 export default function ProjectSwitcherButton(props: {
     title: string;

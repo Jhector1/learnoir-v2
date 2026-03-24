@@ -1,10 +1,10 @@
-import type { FSNode, NodeId } from "./types";
+import type { FSNode, NodeId } from "../types";
 import {
     buildFsIndex,
     childrenOf as _childrenOf,
     pathOf as _pathOf,
     subtreeIds as _subtreeIds,
-} from "./fsTree";
+} from "../fsTree";
 
 export const childrenOf = _childrenOf;
 export const pathOf = _pathOf;

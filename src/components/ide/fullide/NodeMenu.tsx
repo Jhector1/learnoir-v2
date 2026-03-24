@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "./utils";
+import { cn } from "../utils";
 import { IconDots } from "./icons";
 import { CodeLanguage } from "@/lib/practice/types";
 

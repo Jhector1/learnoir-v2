@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { FSNode, NodeId } from "./types";
+import type { FSNode, NodeId } from "../types";
 
 export default function DeleteModal(props: {
     nodes: FSNode[];

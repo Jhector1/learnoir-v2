@@ -11,7 +11,7 @@ import React, {
 import dynamic from "next/dynamic";
 import { monacoLang } from "../utils/monaco";
 import { CodeLanguage } from "@/lib/practice/types";
-import { cn } from "@/components/ide/fullide/utils";
+import { cn } from "@/components/ide/utils";
 import {editor} from "monaco-editor";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });

@@ -61,7 +61,7 @@ export function childrenOf(nodes: FSNode[], parentId: NodeId | null) {
 
 export function findFile(nodes: FSNode[], id: NodeId) {
     const n = nodes.find((x) => x.id === id);
-    return n && n.kind === "file" ? (n as FileNode) : null;
+    return n && n.kind === "file" ? (n as FileNode) : undefined;
 }
 
 export function subtreeIds(nodes: FSNode[], rootId: NodeId) {

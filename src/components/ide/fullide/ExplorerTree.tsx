@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
-import type { FSNode, InlineEdit, NodeId } from "./types";
-import { cn } from "./utils";
+import type { FSNode, InlineEdit, NodeId } from "../types";
+import { cn } from "../utils";
 import {
     childrenOf,
     folderHasMatchFactory,

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LangRail, LANGS } from "@/components/ide/lang/LangRail";
 import { CodeLanguage } from "@/lib/practice/types";
-import { cn } from "@/components/ide/fullide/utils";
+import { cn } from "@/components/ide/utils";
 
 export type ProgrammingSandboxAccess = {
     hasUser: boolean;

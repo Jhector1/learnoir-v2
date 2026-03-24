@@ -6,7 +6,7 @@ import type {
     CodeProjectVisibility,
     CodeProjectRole,
 } from "@prisma/client";
-import {WorkspaceStateV2} from "@/components/ide/fullide/types";
+import {WorkspaceStateV2} from "@/components/ide/types";
 
 export type ProjectScopeInput = {
     kind?: CodeProjectScopeKind;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { WorkspaceStateV2 } from "@/components/ide/fullide/types";
+import type { WorkspaceStateV2 } from "@/components/ide/types";
 
 function snapshotOfWorkspace(ws: WorkspaceStateV2 | null | undefined) {
     return JSON.stringify(ws ?? null);

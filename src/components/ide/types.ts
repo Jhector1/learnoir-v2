@@ -164,7 +164,7 @@ export type PersistProjectResult = { ok: true; data: any } | { ok: false };
 
 export type UseIdeProjectSessionArgs = {
     title: string;
-    projectTitle?: string;
+    projectTitle?: string | null;
     projectDescription?: string | null;
     projectScope?: ProjectScopeInput;
     initialProjectId?: string | null;

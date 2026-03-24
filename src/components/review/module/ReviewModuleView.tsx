@@ -201,22 +201,9 @@ export default function ReviewModuleView({
             panels.setRightCollapsed(false);
         }
     }, [panels.rightCollapsed, panels.setRightCollapsed]);
-
     const handleBindToToolsPanel = useCallback(
-        ({
-             id,
-             lang,
-             code,
-             stdin,
-             onPatch,
-         }: {
-            id: string;
-            lang: CodeLanguage;
-            code: string;
-            stdin: string;
-            onPatch: (patch: any) => void;
-        }) => {
-            tool.bindCodeInput({ id, lang, code, stdin, onPatch });
+        (args: Parameters<typeof tool.bindCodeInput>[0]) => {
+            tool.bindCodeInput(args);
         },
         [tool.bindCodeInput]
     );

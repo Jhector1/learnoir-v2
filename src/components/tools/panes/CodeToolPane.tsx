@@ -39,8 +39,8 @@ export default function CodeToolPane(props: {
                 showLanguagePicker={false}
                 code={toolCode}
                 onChangeCode={onChangeCode}
-                stdin={toolStdin}
-                onChangeStdin={onChangeStdin}
+                // stdin={toolStdin}
+                // onChangeStdin={onChangeStdin}
                 onBeforeRun={onBeforeRun}
             />
         </div>

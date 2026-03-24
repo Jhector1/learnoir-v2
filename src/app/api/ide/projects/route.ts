@@ -1,3 +1,4 @@
+// src/app/api/ide/projects/route.ts
 import { saveCodeProject } from "@/lib/projects/saveCodeProject";
 import { prisma } from "@/lib/prisma";
 import type { ProjectListResponse } from "@/lib/projects/projectApiTypes";
@@ -88,6 +89,8 @@ export async function POST(req: Request) {
             createdById: gate.actor.userId,
             settings: toPrismaNullableJson(body.settings ?? null),
             meta: toPrismaNullableJson(body.meta ?? null),
+            clientInstanceId: body.clientInstanceId ?? null,
+            clientDraftUpdatedAt: body.clientDraftUpdatedAt ?? null,
         });
 
         return jsonNoStore(

@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 import { monacoLang } from "../utils/monaco";
 import { CodeLanguage } from "@/lib/practice/types";
 import { cn } from "@/components/ide/utils";
-import {editor} from "monaco-editor";
+import { editor } from "monaco-editor";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -85,7 +85,11 @@ export default function EditorPane(props: {
     const reactId = useId();
     const instanceKeyRef = useRef(`editor-${reactId.replace(/[:]/g, "")}`);
     const editorRef = useRef<any>(null);
+
     const applyingExternalRef = useRef(false);
+    const isEditorFocusedRef = useRef(false);
+    const pendingExternalValueRef = useRef<string | null>(null);
+    const lastLocalValueRef = useRef<string>(String(code ?? ""));
 
     const [isNarrowScreen, setIsNarrowScreen] = useState(false);
     const [mobileEditing, setMobileEditing] = useState(false);
@@ -139,6 +143,57 @@ export default function EditorPane(props: {
         }
     }, [frame, height, isNarrowScreen, mobileEditMode]);
 
+    const applyExternalValue = useCallback(
+        (next: string) => {
+            const ed = editorRef.current;
+            if (!ed) return;
+
+            const model = ed.getModel?.();
+            if (!model) return;
+
+            const current = model.getValue?.() ?? "";
+            if (current === next) {
+                lastLocalValueRef.current = next;
+                pendingExternalValueRef.current = null;
+                return;
+            }
+
+            applyingExternalRef.current = true;
+
+            const viewState = ed.saveViewState?.();
+            const selection = ed.getSelection?.();
+
+            try {
+                ed.pushUndoStop?.();
+                ed.executeEdits?.("external-sync", [
+                    {
+                        range: model.getFullModelRange(),
+                        text: next,
+                        forceMoveMarkers: true,
+                    },
+                ]);
+                ed.pushUndoStop?.();
+            } catch {
+                model.setValue?.(next);
+            }
+
+            if (viewState) ed.restoreViewState?.(viewState);
+            if (selection) ed.setSelection?.(selection);
+
+            applyingExternalRef.current = false;
+            lastLocalValueRef.current = next;
+            pendingExternalValueRef.current = null;
+            refreshMobileEditNeed();
+        },
+        [refreshMobileEditNeed],
+    );
+
+    const flushPendingExternal = useCallback(() => {
+        const pending = pendingExternalValueRef.current;
+        if (pending == null) return;
+        applyExternalValue(pending);
+    }, [applyExternalValue]);
+
     useEffect(() => {
         if (disabled) {
             setMobileEditing(false);
@@ -186,42 +241,33 @@ export default function EditorPane(props: {
     }, [effectiveReadOnly]);
 
     useEffect(() => {
-        const ed = editorRef.current;
-        if (!ed) return;
-
-        const model = ed.getModel?.();
-        if (!model) return;
-
-        const current = model.getValue?.() ?? "";
         const next = String(code ?? "");
-
-        if (current === next) return;
-
-        applyingExternalRef.current = true;
-
-        const viewState = ed.saveViewState?.();
-        const selection = ed.getSelection?.();
-
-        try {
-            ed.pushUndoStop?.();
-            ed.executeEdits?.("external-sync", [
-                {
-                    range: model.getFullModelRange(),
-                    text: next,
-                    forceMoveMarkers: true,
-                },
-            ]);
-            ed.pushUndoStop?.();
-        } catch {
-            model.setValue?.(next);
+        const ed = editorRef.current;
+        if (!ed) {
+            lastLocalValueRef.current = next;
+            return;
         }
 
-        if (viewState) ed.restoreViewState?.(viewState);
-        if (selection) ed.setSelection?.(selection);
+        const model = ed.getModel?.();
+        if (!model) {
+            lastLocalValueRef.current = next;
+            return;
+        }
 
-        applyingExternalRef.current = false;
-        refreshMobileEditNeed();
-    }, [code, path, refreshMobileEditNeed]);
+        const current = model.getValue?.() ?? "";
+        if (current === next) {
+            lastLocalValueRef.current = next;
+            pendingExternalValueRef.current = null;
+            return;
+        }
+
+        if (isEditorFocusedRef.current) {
+            pendingExternalValueRef.current = next;
+            return;
+        }
+
+        applyExternalValue(next);
+    }, [code, path, applyExternalValue]);
 
     const options = useMemo<editor.IStandaloneEditorConstructionOptions>(() => {
         return {
@@ -274,12 +320,27 @@ export default function EditorPane(props: {
                     saveViewState
                     onMount={(ed: any) => {
                         editorRef.current = ed;
+                        lastLocalValueRef.current = ed.getValue?.() ?? String(code ?? "");
                         onMount?.(ed);
 
                         refreshMobileEditNeed();
 
-                        ed.onDidBlurEditorWidget?.(() => {
+                        ed.onDidFocusEditorText?.(() => {
+                            isEditorFocusedRef.current = true;
+                        });
+
+                        ed.onDidBlurEditorText?.(() => {
+                            isEditorFocusedRef.current = false;
+
                             if (isNarrowScreen) setMobileEditing(false);
+                            flushPendingExternal();
+                        });
+
+                        ed.onDidBlurEditorWidget?.(() => {
+                            isEditorFocusedRef.current = false;
+
+                            if (isNarrowScreen) setMobileEditing(false);
+                            flushPendingExternal();
                         });
 
                         ed.onDidContentSizeChange?.(() => {
@@ -292,7 +353,9 @@ export default function EditorPane(props: {
                     }}
                     onChange={(v) => {
                         if (applyingExternalRef.current) return;
-                        onChange(v ?? "");
+                        const next = v ?? "";
+                        lastLocalValueRef.current = next;
+                        onChange(next);
                     }}
                     options={options}
                 />

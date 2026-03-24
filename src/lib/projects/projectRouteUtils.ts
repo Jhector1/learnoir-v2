@@ -1,3 +1,4 @@
+// src/lib/projects/projectRouteUtils.ts
 import { NextResponse } from "next/server";
 import { CodeProjectScopeKind, CodeProjectVisibility, Prisma } from "@prisma/client";
 
@@ -76,6 +77,10 @@ export function parseVisibility(raw: unknown): CodeProjectVisibility {
         : CodeProjectVisibility.private;
 }
 
+function parseBaseVersion(raw: unknown): number | null {
+    return typeof raw === "number" && Number.isInteger(raw) && raw > 0 ? raw : null;
+}
+
 export function parseSaveProjectRequest(raw: unknown): SaveProjectRequest {
     const body = isPlainObject(raw) ? raw : {};
 
@@ -108,6 +113,13 @@ export function parseSaveProjectRequest(raw: unknown): SaveProjectRequest {
         meta: isPlainObject(body.meta)
             ? (body.meta as SaveProjectRequest["meta"])
             : null,
+        baseVersion: parseBaseVersion(body.baseVersion),
+        clientInstanceId:
+            typeof body.clientInstanceId === "string" ? body.clientInstanceId : null,
+        clientDraftUpdatedAt:
+            typeof body.clientDraftUpdatedAt === "string"
+                ? body.clientDraftUpdatedAt
+                : null,
     };
 }
 

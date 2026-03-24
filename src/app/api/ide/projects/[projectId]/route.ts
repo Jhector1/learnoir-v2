@@ -1,6 +1,13 @@
+// src/app/api/ide/projects/[projectId]/route.ts
 import { getCodeProjectForActor } from "@/lib/projects/getCodeProjectForActor";
-import type { ProjectResponse } from "@/lib/projects/projectApiTypes";
-import { saveCodeProject } from "@/lib/projects/saveCodeProject";
+import type {
+    ProjectConflictResponse,
+    ProjectResponse,
+} from "@/lib/projects/projectApiTypes";
+import {
+    ProjectVersionConflictError,
+    saveCodeProject,
+} from "@/lib/projects/saveCodeProject";
 import { prisma } from "@/lib/prisma";
 import {
     jsonNoStore,
@@ -73,6 +80,8 @@ export async function PATCH(
     req: Request,
     ctx: { params: Promise<{ projectId: string }> },
 ) {
+    let parsedBody: ReturnType<typeof parseSaveProjectRequest> | null = null;
+
     try {
         const gate = await requireProjectCapability("save_cloud");
         if (!gate.ok) return gate.res;
@@ -85,27 +94,30 @@ export async function PATCH(
         }
 
         const { projectId } = await ctx.params;
-        const body = parseSaveProjectRequest(await req.json());
+        parsedBody = parseSaveProjectRequest(await req.json());
 
-        const scopeRes = await requireProjectScopeCapability(body.scope);
+        const scopeRes = await requireProjectScopeCapability(parsedBody.scope);
         if (scopeRes) return scopeRes;
 
         const saved = await saveCodeProject(prisma, {
             projectId,
             ownerId: gate.actor.userId,
-            title: body.title,
-            description: body.description,
-            language: body.language,
-            workspace: toPrismaJson(body.workspace),
-            entryPath: body.entryPath,
-            activePath: body.activePath,
-            visibility: body.visibility,
-            scope: body.scope,
-            createRevision: body.createRevision ?? false,
-            revisionNote: body.revisionNote,
+            title: parsedBody.title,
+            description: parsedBody.description,
+            language: parsedBody.language,
+            workspace: toPrismaJson(parsedBody.workspace),
+            entryPath: parsedBody.entryPath,
+            activePath: parsedBody.activePath,
+            visibility: parsedBody.visibility,
+            scope: parsedBody.scope,
+            createRevision: parsedBody.createRevision ?? false,
+            revisionNote: parsedBody.revisionNote,
             createdById: gate.actor.userId,
-            settings: toPrismaNullableJson(body.settings ?? null),
-            meta: toPrismaNullableJson(body.meta ?? null),
+            settings: toPrismaNullableJson(parsedBody.settings ?? null),
+            meta: toPrismaNullableJson(parsedBody.meta ?? null),
+            baseVersion: parsedBody.baseVersion ?? null,
+            clientInstanceId: parsedBody.clientInstanceId ?? null,
+            clientDraftUpdatedAt: parsedBody.clientDraftUpdatedAt ?? null,
         });
 
         return jsonNoStore({
@@ -122,6 +134,34 @@ export async function PATCH(
             },
         });
     } catch (e: any) {
+        if (e instanceof ProjectVersionConflictError) {
+            const gate = await requireProjectCapability("save_cloud");
+            if (!gate.ok) return gate.res;
+
+            const found = gate.actor
+                ? await getCodeProjectForActor(prisma, {
+                    actor: gate.actor,
+                    projectId: e.projectId,
+                })
+                : null;
+
+            const body: ProjectConflictResponse = {
+                ok: false,
+                code: "PROJECT_CONFLICT",
+                error: e.message,
+                conflict: {
+                    projectId: e.projectId,
+                    clientBaseVersion: parsedBody?.baseVersion ?? null,
+                    serverVersion: e.serverVersion,
+                    serverUpdatedAt: e.serverUpdatedAt.toISOString(),
+                    title: e.title,
+                },
+                project: found ? toProjectPayload(found.role, found.project) : null,
+            };
+
+            return jsonNoStore(body, 409);
+        }
+
         return jsonNoStore(
             {
                 ok: false,

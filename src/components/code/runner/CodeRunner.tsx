@@ -60,6 +60,7 @@ function CodeRunnerContent(props: CodeRunnerProps) {
         sqlDatasetId,
         onRun,
         editorModelKey,
+        onBeforeRun,
     } = props as any;
 
     const controlled = isControlled(props);
@@ -454,10 +455,12 @@ function CodeRunnerContent(props: CodeRunnerProps) {
                             }
                         }}
                         allowRun={allowRun}
-                        onRun={() => {
+                        onRun={async () => {
                             if (isNarrowScreen && showEditor && showTerminal) {
                                 setMobilePane("output");
                             }
+
+                            await onBeforeRun?.();
                             term.startRun();
                         }}
                     />

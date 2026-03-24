@@ -76,7 +76,7 @@ export default function IdeEditorPane({
                     allowRun
                     showEditorThemeToggle={false}
                     showTerminalDockToggle={isDesktop}
-                    resetTerminalOnRun={false}
+                    resetTerminalOnRun={true}
                     onRun={onRun}
                     editorModelKey={activeFileId ?? "no-file"}
                 />

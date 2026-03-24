@@ -1,4 +1,4 @@
-// import type { WorkspaceStateV2 } from "@/components/code/ide/types";
+// src/lib/projects/projectApiTypes.ts
 import type { CodeLanguage } from "@/lib/practice/types";
 import type { JsonObject } from "@/lib/types/json";
 import type {
@@ -6,7 +6,7 @@ import type {
     CodeProjectVisibility,
     CodeProjectRole,
 } from "@prisma/client";
-import {WorkspaceStateV2} from "@/components/ide/types";
+import { WorkspaceStateV2 } from "@/components/ide/types";
 
 export type ProjectScopeInput = {
     kind?: CodeProjectScopeKind;
@@ -29,6 +29,11 @@ export type SaveProjectRequest = {
     revisionNote?: string | null;
     settings?: JsonObject | null;
     meta?: JsonObject | null;
+
+    // optimistic concurrency + future collaboration metadata
+    baseVersion?: number | null;
+    clientInstanceId?: string | null;
+    clientDraftUpdatedAt?: string | null;
 };
 
 export type ProjectSummary = {
@@ -61,17 +66,33 @@ export type ProjectResponse = {
     project: ProjectPayload;
 };
 
+export type ProjectConflictResponse = {
+    ok: false;
+    code: "PROJECT_CONFLICT";
+    error: string;
+    conflict: {
+        projectId: string;
+        clientBaseVersion: number | null;
+        serverVersion: number;
+        serverUpdatedAt: string;
+        title: string;
+    };
+    project: ProjectPayload | null;
+};
+
 export type ProjectErrorResponse = {
     ok: false;
     error: string;
     paywall?: boolean;
     reason?: "requires_login" | "requires_payment";
     capability?: string;
+    code?: "PROJECT_CONFLICT";
+    conflict?: {
+        projectId: string;
+        clientBaseVersion: number | null;
+        serverVersion: number;
+        serverUpdatedAt: string;
+        title: string;
+    };
+    project?: ProjectPayload | null;
 };
-
-
-
-//
-// export type JsonPrimitive = string | number | boolean | null;
-// export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
-// export type JsonObject = { [key: string]: JsonValue };

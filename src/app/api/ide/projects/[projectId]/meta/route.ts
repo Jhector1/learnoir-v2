@@ -1,8 +1,8 @@
+// src/app/api/ide/projects/[projectId]/meta/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// import { getCurrentActor } from "@/lib/auth/getCurrentActor";
 import { checkIdeCapability } from "@/lib/access/ideCapabilityServer";
-import {getActor} from "@/lib/practice/actor";
+import { getActor } from "@/lib/practice/actor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +31,13 @@ function parseBody(raw: unknown) {
                 ? null
                 : undefined;
 
+    const baseVersion =
+        typeof body.baseVersion === "number" &&
+        Number.isInteger(body.baseVersion) &&
+        body.baseVersion > 0
+            ? body.baseVersion
+            : null;
+
     if (!title) {
         throw new Error("Project title is required.");
     }
@@ -38,6 +45,7 @@ function parseBody(raw: unknown) {
     return {
         title,
         description,
+        baseVersion,
     };
 }
 
@@ -78,44 +86,99 @@ export async function PATCH(
         const { projectId } = await ctx.params;
         const body = parseBody(await req.json());
 
-        const project = await prisma.codeProject.updateMany({
+        const existing = await prisma.codeProject.findFirst({
             where: {
                 id: projectId,
                 ownerId: actor.userId,
                 archivedAt: null,
             },
-            data: {
-                title: body.title,
-                ...(body.description !== undefined
-                    ? { description: body.description }
-                    : {}),
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                currentVersion: true,
+                updatedAt: true,
             },
         });
 
-        if (!project.count) {
+        if (!existing) {
             return jsonNoStore(
                 { ok: false, error: "Project not found." },
                 404,
             );
         }
 
-        const updated = await prisma.codeProject.findUnique({
-            where: { id: projectId },
+        const nextDescription =
+            body.description !== undefined ? body.description : existing.description;
+
+        const hasHeadChanged =
+            existing.title !== body.title ||
+            existing.description !== nextDescription;
+
+        if (hasHeadChanged && body.baseVersion !== existing.currentVersion) {
+            return jsonNoStore(
+                {
+                    ok: false,
+                    code: "PROJECT_CONFLICT",
+                    error: "A newer cloud version already exists.",
+                    conflict: {
+                        projectId: existing.id,
+                        clientBaseVersion: body.baseVersion ?? null,
+                        serverVersion: existing.currentVersion,
+                        serverUpdatedAt: existing.updatedAt.toISOString(),
+                        title: existing.title,
+                    },
+                    project: {
+                        id: existing.id,
+                        title: existing.title,
+                        description: existing.description ?? null,
+                        updatedAt: existing.updatedAt.toISOString(),
+                        currentVersion: existing.currentVersion,
+                    },
+                },
+                409,
+            );
+        }
+
+        if (!hasHeadChanged) {
+            return jsonNoStore({
+                ok: true,
+                project: {
+                    id: existing.id,
+                    title: existing.title,
+                    description: existing.description ?? null,
+                    updatedAt: existing.updatedAt.toISOString(),
+                    currentVersion: existing.currentVersion,
+                },
+            });
+        }
+
+        const updated = await prisma.codeProject.update({
+            where: { id: existing.id },
+            data: {
+                title: body.title,
+                ...(body.description !== undefined
+                    ? { description: body.description }
+                    : {}),
+                currentVersion: existing.currentVersion + 1,
+            },
             select: {
                 id: true,
                 title: true,
                 description: true,
                 updatedAt: true,
+                currentVersion: true,
             },
         });
 
         return jsonNoStore({
             ok: true,
             project: {
-                id: updated?.id,
-                title: updated?.title,
-                description: updated?.description ?? null,
-                updatedAt: updated?.updatedAt.toISOString(),
+                id: updated.id,
+                title: updated.title,
+                description: updated.description ?? null,
+                updatedAt: updated.updatedAt.toISOString(),
+                currentVersion: updated.currentVersion,
             },
         });
     } catch (e: any) {

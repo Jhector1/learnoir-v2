@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { DEFAULT_SQL_DIALECT } from "@/components/code/runner/constants";
@@ -15,6 +15,7 @@ import IdeHeader from "@/components/ide/fullide/chrome/IdeHeader";
 import IdeMobileLayout from "@/components/ide/fullide/chrome/IdeMobileLayout";
 import IdeStatusBanners from "@/components/ide/fullide/chrome/IdeStatusBanners";
 import IdeToastHost from "@/components/ide/fullide/chrome/IdeToastHost";
+import IdeConflictBanner from "@/components/ide/fullide/chrome/IdeConflictBanner";
 import { useIdeProjectSession } from "@/components/ide/fullide/hooks/useIdeProjectSession";
 import { useIdeRunner } from "@/components/ide/fullide/hooks/useIdeRunner";
 import { useIdeViewport } from "@/components/ide/fullide/hooks/useIdeViewport";
@@ -23,44 +24,59 @@ import IdeEditorPane from "@/components/ide/fullide/panes/IdeEditorPane";
 import IdeExplorerPane from "@/components/ide/fullide/panes/IdeExplorerPane";
 import type { FullIDEProps } from "../types";
 
-export default function FullIDE(props: FullIDEProps) {
-    const {
-        title = "IDE",
-        height = 720,
-        className,
-        fullHeight = false,
-        storageKey = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v2`,
-        language: forcedLanguage,
-        onChangeLanguage,
-        resetOnForcedLanguageChange = false,
-        showTopLanguageButtons = true,
-        lessonHref,
-        lessonLabel = "Lesson",
-        access,
-        loginHref = "/authenticate",
-        billingHref = "/billing",
-        initialProjectId = null,
-        projectTitle,
-        projectDescription = null,
-        projectScope,
-        draftStorageMode = "off",
-    } = props;
+type WorkspaceHookResult = ReturnType<typeof useIdeWorkspace>;
 
-    const router = useRouter();
-    const splitRef = useRef<HTMLDivElement | null>(null);
-    const editorHostRef = useRef<HTMLDivElement | null>(null);
+type FullIDEInnerProps = {
+    title: string;
+    height: number;
+    lessonHref?: string;
+    lessonLabel: string;
+    access: FullIDEProps["access"];
+    loginHref: string;
+    billingHref: string;
+    initialProjectId: string | null;
+    projectTitle?: string | null;
+    projectDescription?: string | null;
+    projectScope: FullIDEProps["projectScope"];
+    showTopLanguageButtons: boolean;
+    router: ReturnType<typeof useRouter>;
+    splitRef: React.RefObject<HTMLDivElement | null>;
+    editorHostRef: React.RefObject<HTMLDivElement | null>;
+    showMobileExplorer: boolean;
+    setShowMobileExplorer: React.Dispatch<React.SetStateAction<boolean>>;
+    sqlDialect: any;
+    setSqlDialect: React.Dispatch<React.SetStateAction<any>>;
+    onChangeLanguage?: FullIDEProps["onChangeLanguage"];
+    state: WorkspaceHookResult["state"];
+    derived: WorkspaceHookResult["derived"];
+    actions: WorkspaceHookResult["actions"];
+};
 
-    const [showMobileExplorer, setShowMobileExplorer] = useState(false);
-    const [sqlDialect, setSqlDialect] = useState(DEFAULT_SQL_DIALECT);
-
-    const { state, derived, actions } = useIdeWorkspace({
-        storageKey,
-        forcedLanguage,
-        resetOnForcedLanguageChange,
-        access,
-        draftStorageMode,
-    });
-
+function FullIDEInner({
+                          title,
+                          height,
+                          lessonHref,
+                          lessonLabel,
+                          access,
+                          loginHref,
+                          billingHref,
+                          initialProjectId,
+                          projectTitle,
+                          projectDescription,
+                          projectScope,
+                          showTopLanguageButtons,
+                          router,
+                          splitRef,
+                          editorHostRef,
+                          showMobileExplorer,
+                          setShowMobileExplorer,
+                          sqlDialect,
+                          setSqlDialect,
+                          onChangeLanguage,
+                          state,
+                          derived,
+                          actions,
+                      }: FullIDEInnerProps) {
     const {
         language,
         nodes,
@@ -77,11 +93,16 @@ export default function FullIDE(props: FullIDEProps) {
 
     const { activeFile, entryFile, tabFiles, currentWorkspace } = derived;
 
-    const dirty = useProjectDirtyState(currentWorkspace);
+    const dirty = useProjectDirtyState(currentWorkspace, language);
 
     const projects = useProjectsList({
         enabled: access.canSaveCloud,
     });
+
+    const visibleProjects = useMemo(
+        () => projects.projects.filter((p) => p.language === language),
+        [projects.projects, language],
+    );
 
     const projectSession = useIdeProjectSession({
         title,
@@ -128,18 +149,25 @@ export default function FullIDE(props: FullIDEProps) {
     });
 
     const isSql = language === "sql";
-    const runnerHeight = Math.max(viewport.isDesktop ? 360 : 320, viewport.editorHeight || height);
+    const runnerHeight = Math.max(
+        viewport.isDesktop ? 360 : 320,
+        viewport.editorHeight || height,
+    );
+
     const upgradeText = !access.hasUser
         ? "Log in to unlock multiple files and cloud save."
         : !access.canSaveCloud
             ? "Subscribe to save projects to your account."
             : null;
+
     const runnerTitle = activeFile
         ? viewport.isDesktop
             ? pathOf(nodes, activeFile.id)
             : activeFile.name
         : title;
-    const headerProjectTitle = projectSession.currentProjectName || projectTitle || title;
+
+    const headerProjectTitle =
+        projectSession.currentProjectName || projectTitle || title;
 
     const setLangUI = useCallback(
         (nextLanguage: any) => {
@@ -186,7 +214,6 @@ export default function FullIDE(props: FullIDEProps) {
     );
 
     const editorPane = (
-    // const editorPane = (
         <IdeEditorPane
             panelRef={editorHostRef}
             nodes={nodes}
@@ -206,25 +233,49 @@ export default function FullIDE(props: FullIDEProps) {
             closeTab={actions.closeTab}
             isDesktop={viewport.isDesktop}
         />
-    // );
     );
+
     const handleConfirmDelete = () => {
         if (!pendingDeleteId) return;
         actions.performDelete(pendingDeleteId);
     };
+
+    const handlePrimarySave = () => {
+        if (!access.canSaveCloud) {
+            router.push(access.hasUser ? billingHref : loginHref);
+            return;
+        }
+        void projectSession.saveProject();
+    };
+
+    const handleSaveAsIntent = () => {
+        if (!access.canSaveCloud) {
+            router.push(access.hasUser ? billingHref : loginHref);
+            return;
+        }
+        projectSession.setSaveAsOpen(true);
+    };
+
     return (
-        <div
-            className={cn(
-                "relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-none border border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
-                className,
-            )}
-            style={fullHeight ? { height: "100%" } : { minHeight: height }}
-        >
+        <>
             <IdeToastHost toast={toast} />
+
             <IdeStatusBanners
                 loadingProject={projectSession.loadingProject}
                 saveError={projectSession.saveError}
             />
+
+            {projectSession.conflictInfo ? (
+                <IdeConflictBanner
+                    projectTitle={projectSession.conflictInfo.title || headerProjectTitle}
+                    serverVersion={projectSession.conflictInfo.serverVersion}
+                    clientBaseVersion={projectSession.conflictInfo.clientBaseVersion}
+                    serverUpdatedAt={projectSession.conflictInfo.serverUpdatedAt}
+                    onReloadCloud={() => void projectSession.reloadProjectFromCloud()}
+                    onSaveAsCopy={handleSaveAsIntent}
+                    onDismiss={projectSession.dismissConflict}
+                />
+            ) : null}
 
             <IdeHeader
                 isDesktop={viewport.isDesktop}
@@ -239,28 +290,21 @@ export default function FullIDE(props: FullIDEProps) {
                 activePath={activeFile ? pathOf(nodes, activeFile.id) : "No file selected"}
                 projectTitle={headerProjectTitle}
                 dirty={dirty.isDirty}
+                conflict={!!projectSession.conflictInfo}
                 lastSavedAt={projectSession.lastSavedAt}
                 lessonHref={lessonHref}
                 lessonLabel={lessonLabel}
-                saveDisabled={projectSession.isSavingProject || projectSession.loadingProject || !currentWorkspace}
+                saveDisabled={
+                    projectSession.isSavingProject ||
+                    projectSession.loadingProject ||
+                    !currentWorkspace
+                }
                 saveBusy={projectSession.isSavingProject}
                 saveAsDisabled={projectSession.loadingProject || !currentWorkspace}
                 canSaveCloud={access.canSaveCloud}
                 hasUser={access.hasUser}
-                onSave={() => {
-                    if (!access.canSaveCloud) {
-                        router.push(access.hasUser ? billingHref : loginHref);
-                        return;
-                    }
-                    void projectSession.saveProject();
-                }}
-                onSaveAs={() => {
-                    if (!access.canSaveCloud) {
-                        router.push(access.hasUser ? billingHref : loginHref);
-                        return;
-                    }
-                    projectSession.setSaveAsOpen(true);
-                }}
+                onSave={handlePrimarySave}
+                onSaveAs={handleSaveAsIntent}
             />
 
             <div className="min-h-0 flex-1">
@@ -298,17 +342,11 @@ export default function FullIDE(props: FullIDEProps) {
                 canCreateProjects={access.canCreateProjects}
                 loadingProjects={projects.loading}
                 projectsError={projects.error}
-                projects={projects.projects}
+                projects={visibleProjects}
                 onRefreshProjects={projects.refresh}
                 onSelectProject={projectSession.requestOpenProject}
                 onCreateBlankProject={projectSession.startBlankProject}
-                onSaveAsIntent={() => {
-                    if (!access.canSaveCloud) {
-                        router.push(access.hasUser ? billingHref : loginHref);
-                        return;
-                    }
-                    projectSession.setSaveAsOpen(true);
-                }}
+                onSaveAsIntent={handleSaveAsIntent}
                 onRenameIntent={(project: any) => {
                     projectSession.setRenamingProject(project);
                     projectSession.setRenameOpen(true);
@@ -331,6 +369,87 @@ export default function FullIDE(props: FullIDEProps) {
                     projectSession.setRenameOpen(false);
                     projectSession.setRenamingProject(null);
                 }}
+            />
+        </>
+    );
+}
+
+export default function FullIDE(props: FullIDEProps) {
+    const {
+        title = "IDE",
+        height = 720,
+        className,
+        fullHeight = false,
+        storageKey = `${process.env.NEXT_PUBLIC_APP_NAME}.ide.workspace.v2`,
+        language: forcedLanguage,
+        onChangeLanguage,
+        resetOnForcedLanguageChange = false,
+        showTopLanguageButtons = true,
+        lessonHref,
+        lessonLabel = "Lesson",
+        access,
+        loginHref = "/authenticate",
+        billingHref = "/billing",
+        initialProjectId = null,
+        projectTitle,
+        projectDescription = null,
+        projectScope,
+        draftStorageMode = "off",
+    } = props;
+
+    const router = useRouter();
+    const splitRef = useRef<HTMLDivElement | null>(null);
+    const editorHostRef = useRef<HTMLDivElement | null>(null);
+
+    const [showMobileExplorer, setShowMobileExplorer] = useState(false);
+    const [sqlDialect, setSqlDialect] = useState(DEFAULT_SQL_DIALECT);
+
+    const workspace = useIdeWorkspace({
+        storageKey,
+        forcedLanguage,
+        resetOnForcedLanguageChange,
+        access,
+        draftStorageMode,
+    });
+
+    const sessionRemountKey = useMemo(
+        () => `${workspace.state.language}::${JSON.stringify(projectScope ?? null)}`,
+        [workspace.state.language, projectScope],
+    );
+
+    return (
+        <div
+            className={cn(
+                "relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-none border border-neutral-200 bg-white dark:border-white/10 dark:bg-white/[0.04]",
+                className,
+            )}
+            style={fullHeight ? { height: "100%" } : { minHeight: height }}
+        >
+            <FullIDEInner
+                key={sessionRemountKey}
+                title={title}
+                height={height}
+                lessonHref={lessonHref}
+                lessonLabel={lessonLabel}
+                access={access}
+                loginHref={loginHref}
+                billingHref={billingHref}
+                initialProjectId={initialProjectId}
+                projectTitle={projectTitle}
+                projectDescription={projectDescription}
+                projectScope={projectScope}
+                showTopLanguageButtons={showTopLanguageButtons}
+                router={router}
+                splitRef={splitRef}
+                editorHostRef={editorHostRef}
+                showMobileExplorer={showMobileExplorer}
+                setShowMobileExplorer={setShowMobileExplorer}
+                sqlDialect={sqlDialect}
+                setSqlDialect={setSqlDialect}
+                onChangeLanguage={onChangeLanguage}
+                state={workspace.state}
+                derived={workspace.derived}
+                actions={workspace.actions}
             />
         </div>
     );

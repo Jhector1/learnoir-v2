@@ -65,7 +65,7 @@ export function useToolCodeRunnerState(args: {
     const clearBoundState = useCallback(() => {
         boundRef.current = null;
         boundDirtyRef.current = false;
-        setBoundId(null);
+        setBoundId((prev) => (prev === null ? prev : null));
     }, []);
 
     const saved = useMemo(() => {
@@ -82,6 +82,13 @@ export function useToolCodeRunnerState(args: {
     const [toolStdin, setToolStdin0] = useState<string>(initialStdin);
     const [toolSqlDialect, setToolSqlDialect0] = useState<SqlDialect>(initialSqlDialect);
 
+    const latestSnapRef = useRef<ToolSnap>({
+        lang: initialLang,
+        code: initialCode,
+        stdin: initialStdin,
+        sqlDialect: initialSqlDialect,
+    });
+
     const toolSnap = useMemo<ToolSnap>(
         () => ({
             lang: toolLang,
@@ -95,9 +102,19 @@ export function useToolCodeRunnerState(args: {
     const commitToolToProgress = useCallback(
         async (latest: ToolSnap) => {
             setProgress((p: any) => {
-                const tp0: any = p.topics?.[viewTid] ?? {};
-                const toolState = { ...(tp0.toolState ?? {}) };
+                const tp0: any = p?.topics?.[viewTid] ?? {};
+                const prevToolState = tp0?.toolState?.[toolKey] ?? null;
 
+                if (
+                    prevToolState?.lang === latest.lang &&
+                    prevToolState?.code === latest.code &&
+                    prevToolState?.stdin === latest.stdin &&
+                    prevToolState?.sqlDialect === latest.sqlDialect
+                ) {
+                    return p;
+                }
+
+                const toolState = { ...(tp0.toolState ?? {}) };
                 toolState[toolKey] = {
                     lang: latest.lang,
                     code: latest.code,
@@ -108,7 +125,7 @@ export function useToolCodeRunnerState(args: {
                 return {
                     ...p,
                     topics: {
-                        ...(p.topics ?? {}),
+                        ...(p?.topics ?? {}),
                         [viewTid]: { ...tp0, toolState },
                     },
                 };
@@ -127,11 +144,20 @@ export function useToolCodeRunnerState(args: {
         },
     });
 
+    const flushLatest = useCallback(async () => {
+        cancel();
+
+        const latest = latestSnapRef.current;
+        prime(latest);
+        await commitToolToProgress(latest);
+    }, [cancel, prime, commitToolToProgress]);
+
     useEffect(() => {
         clearBoundState();
     }, [viewTid, clearBoundState]);
 
     const lastVersionRef = useRef<string | null>(null);
+
     useEffect(() => {
         if (!progressHydrated) return;
 
@@ -158,17 +184,21 @@ export function useToolCodeRunnerState(args: {
         const nextStdin = typeof s?.stdin === "string" ? s.stdin : defaultStdin;
         const nextSqlDialect = (s?.sqlDialect as SqlDialect) ?? defaultSqlDialect;
 
-        setToolLang0(nextLang);
-        setToolCode0(nextCode);
-        setToolStdin0(nextStdin);
-        setToolSqlDialect0(nextSqlDialect);
-
-        prime({
+        const nextSnap: ToolSnap = {
             lang: nextLang,
             code: nextCode,
             stdin: nextStdin,
             sqlDialect: nextSqlDialect,
-        });
+        };
+
+        latestSnapRef.current = nextSnap;
+
+        setToolLang0((prev) => (prev === nextSnap.lang ? prev : nextSnap.lang));
+        setToolCode0((prev) => (prev === nextSnap.code ? prev : nextSnap.code));
+        setToolStdin0((prev) => (prev === nextSnap.stdin ? prev : nextSnap.stdin));
+        setToolSqlDialect0((prev) => (prev === nextSnap.sqlDialect ? prev : nextSnap.sqlDialect));
+
+        prime(nextSnap);
     }, [
         viewTid,
         progressHydrated,
@@ -194,7 +224,7 @@ export function useToolCodeRunnerState(args: {
             const wasSameId = boundRef.current?.id === args2.id;
 
             boundRef.current = { id: args2.id, onPatch: args2.onPatch };
-            setBoundId(args2.id);
+            setBoundId((prev) => (prev === args2.id ? prev : args2.id));
 
             if (wasSameId && boundDirtyRef.current) return;
 
@@ -207,10 +237,14 @@ export function useToolCodeRunnerState(args: {
                 sqlDialect: args2.sqlDialect ?? defaultSqlDialect,
             };
 
-            setToolLang0(nextSnap.lang);
-            setToolCode0(nextSnap.code);
-            setToolStdin0(nextSnap.stdin);
-            setToolSqlDialect0(nextSnap.sqlDialect);
+            latestSnapRef.current = nextSnap;
+
+            setToolLang0((prev) => (prev === nextSnap.lang ? prev : nextSnap.lang));
+            setToolCode0((prev) => (prev === nextSnap.code ? prev : nextSnap.code));
+            setToolStdin0((prev) => (prev === nextSnap.stdin ? prev : nextSnap.stdin));
+            setToolSqlDialect0((prev) =>
+                prev === nextSnap.sqlDialect ? prev : nextSnap.sqlDialect
+            );
 
             prime(nextSnap);
         },
@@ -224,18 +258,23 @@ export function useToolCodeRunnerState(args: {
 
     useFlushOnPageExit(() => {
         cancel();
-        void flush();
+        void flushLatest();
     }, progressHydrated);
 
     useEffect(() => {
         return () => {
             cancel();
-            void flush();
+            void flushLatest();
         };
-    }, [cancel, flush]);
+    }, [cancel, flushLatest]);
 
     const setToolLang = useCallback((l: CodeLanguage) => {
-        setToolLang0(l);
+        latestSnapRef.current = {
+            ...latestSnapRef.current,
+            lang: l,
+        };
+
+        setToolLang0((prev) => (prev === l ? prev : l));
 
         const b = boundRef.current;
         if (b) {
@@ -245,7 +284,12 @@ export function useToolCodeRunnerState(args: {
     }, []);
 
     const setToolCode = useCallback((c: string) => {
-        setToolCode0(c);
+        latestSnapRef.current = {
+            ...latestSnapRef.current,
+            code: c,
+        };
+
+        setToolCode0((prev) => (prev === c ? prev : c));
 
         const b = boundRef.current;
         if (b) {
@@ -255,7 +299,12 @@ export function useToolCodeRunnerState(args: {
     }, []);
 
     const setToolStdin = useCallback((s: string) => {
-        setToolStdin0(s);
+        latestSnapRef.current = {
+            ...latestSnapRef.current,
+            stdin: s,
+        };
+
+        setToolStdin0((prev) => (prev === s ? prev : s));
 
         const b = boundRef.current;
         if (b) {
@@ -265,7 +314,12 @@ export function useToolCodeRunnerState(args: {
     }, []);
 
     const setToolSqlDialect = useCallback((d: SqlDialect) => {
-        setToolSqlDialect0(d);
+        latestSnapRef.current = {
+            ...latestSnapRef.current,
+            sqlDialect: d,
+        };
+
+        setToolSqlDialect0((prev) => (prev === d ? prev : d));
 
         const b = boundRef.current;
         if (b) {
@@ -274,21 +328,12 @@ export function useToolCodeRunnerState(args: {
         }
     }, []);
 
-    const saveDebounced = useCallback(
-        (nextLang: CodeLanguage, nextCode: string, nextStdin?: string, nextSqlDialect?: SqlDialect) => {
-            setToolLang0(nextLang);
-            setToolCode0(nextCode);
-            setToolStdin0(typeof nextStdin === "string" ? nextStdin : "");
-            setToolSqlDialect0(nextSqlDialect ?? defaultSqlDialect);
-        },
-        [defaultSqlDialect],
-    );
-
     const rightBodyRef = useRef<HTMLDivElement | null>(null);
     const [rightBodyH, setRightBodyH] = useState(520);
 
     useEffect(() => {
         if (rightCollapsed) return;
+
         const el = rightBodyRef.current;
         if (!el) return;
 
@@ -299,6 +344,7 @@ export function useToolCodeRunnerState(args: {
 
         const ro = new ResizeObserver(() => update());
         ro.observe(el);
+
         return () => ro.disconnect();
     }, [rightCollapsed, rightW]);
 
@@ -320,9 +366,10 @@ export function useToolCodeRunnerState(args: {
         setToolStdin,
         setToolSqlDialect,
 
-        saveDebounced,
         rightBodyRef,
         codeRunnerRegionH,
+
         flush,
+        flushLatest,
     };
 }

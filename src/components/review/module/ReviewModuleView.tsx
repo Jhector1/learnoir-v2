@@ -196,7 +196,55 @@ export default function ReviewModuleView({
         rightCollapsed: panels.rightCollapsed,
         rightW: panels.rightW,
     });
+    const handleEnsureToolsVisible = useCallback(() => {
+        if (panels.rightCollapsed) {
+            panels.setRightCollapsed(false);
+        }
+    }, [panels.rightCollapsed, panels.setRightCollapsed]);
 
+    const handleBindToToolsPanel = useCallback(
+        ({
+             id,
+             lang,
+             code,
+             stdin,
+             onPatch,
+         }: {
+            id: string;
+            lang: CodeLanguage;
+            code: string;
+            stdin: string;
+            onPatch: (patch: any) => void;
+        }) => {
+            tool.bindCodeInput({ id, lang, code, stdin, onPatch });
+        },
+        [tool.bindCodeInput]
+    );
+
+    const handleUnbindFromToolsPanel = useCallback(() => {
+        tool.unbindCodeInput();
+    }, [tool.unbindCodeInput]);
+
+    const handleToolChangeLang = useCallback(
+        (lang: CodeLanguage) => {
+            tool.setToolLang(lang);
+        },
+        [tool.setToolLang]
+    );
+
+    const handleToolChangeCode = useCallback(
+        (code: string) => {
+            tool.setToolCode(code);
+        },
+        [tool.setToolCode]
+    );
+
+    const handleToolChangeStdin = useCallback(
+        (stdin: string) => {
+            tool.setToolStdin(stdin);
+        },
+        [tool.setToolStdin]
+    );
     // versions (for forcing rerender on reset)
     const viewProg: any = (progress as any)?.topics?.[viewTid] ?? {};
     const moduleV = (progress as any)?.quizVersion ?? 0;
@@ -1156,18 +1204,10 @@ export default function ReviewModuleView({
                                                     toolLang={tool.toolLang as CodeLanguage}
                                                     toolCode={tool.toolCode}
                                                     toolStdin={tool.toolStdin}
-                                                    onChangeLang={(l: CodeLanguage) => {
-                                                        tool.setToolLang(l);
-                                                        tool.saveDebounced(l, tool.toolCode, tool.toolStdin);
-                                                    }}
-                                                    onChangeCode={(c: string) => {
-                                                        tool.setToolCode(c);
-                                                        tool.saveDebounced(tool.toolLang, c, tool.toolStdin);
-                                                    }}
-                                                    onChangeStdin={(s: string) => {
-                                                        tool.setToolStdin(s);
-                                                        tool.saveDebounced(tool.toolLang, tool.toolCode, s);
-                                                    }}
+                                                    onChangeLang={handleToolChangeLang}
+                                                    onChangeCode={handleToolChangeCode}
+                                                    onChangeStdin={handleToolChangeStdin}
+                                                    onBeforeRun={tool.flushLatest}
                                                     subjectSlug={subjectSlug}
                                                     moduleId={moduleId}
                                                     locale={locale}
@@ -1193,14 +1233,9 @@ export default function ReviewModuleView({
             mode="first_unanswered"
             resetKey={`${viewTid}:${versionStr}`}
             externalBoundId={tool.boundId}
-            ensureVisible={() => {
-                // ✅ desktop-only: expand right panel
-                if (panels.rightCollapsed) panels.setRightCollapsed(false);
-            }}
-            onBindToToolsPanel={({ id, lang, code, stdin, onPatch }) => {
-                tool.bindCodeInput({ id, lang, code, stdin, onPatch });
-            }}
-            onUnbindFromToolsPanel={() => tool.unbindCodeInput()}
+            ensureVisible={handleEnsureToolsVisible}
+            onBindToToolsPanel={handleBindToToolsPanel}
+            onUnbindFromToolsPanel={handleUnbindFromToolsPanel}
         >
             {content}
         </ReviewToolsProvider>

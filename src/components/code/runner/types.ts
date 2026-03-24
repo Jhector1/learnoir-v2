@@ -65,7 +65,7 @@ export type RunnerState =
     | "running"
     | "awaiting_input"
     | "canceling";
-
+type BeforeRunFn = () => void | Promise<void>;
 export type CommonProps = {
     title?: string;
     height?: number | "auto";
@@ -112,7 +112,7 @@ export type CommonProps = {
 
     showEditorThemeToggle?: boolean;
     showTerminalDockToggle?: boolean;
-
+    onBeforeRun?:BeforeRunFn;
     onRun?: OnRun;
 };
 

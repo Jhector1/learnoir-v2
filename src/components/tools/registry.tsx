@@ -13,6 +13,7 @@ export type CodeToolProps = {
     toolStdin: string;
     onChangeCode: (c: string) => void;
     onChangeStdin: (s: string) => void;
+    onBeforeRun?: () => void | Promise<void>;
 };
 
 export type NotesToolProps = {
@@ -20,8 +21,8 @@ export type NotesToolProps = {
         subjectSlug: string;
         moduleId: string;
         locale: string;
-        toolId: string;   // "notes"
-        scopeKey: string; // "general" | "exercise:<id>"
+        toolId: string;
+        scopeKey: string;
     };
     format?: "markdown" | "plain";
 };
@@ -31,9 +32,9 @@ export const TOOL_SPECS: ToolSpec[] = [
         id: "code",
         label: "Run",
         Icon: TerminalSquare,
-        keepMounted: true, // keep CodeRunner mounted => no flash/jump
+        keepMounted: true,
         enabled: (ctx: ToolsCtx) => ctx.codeEnabled,
-        isDefault: (ctx: ToolsCtx) => ctx.codeEnabled, // programming => default code
+        isDefault: (ctx: ToolsCtx) => ctx.codeEnabled,
         render: (props: CodeToolProps) => <CodeToolPane {...props} />,
     },
     {
@@ -42,7 +43,7 @@ export const TOOL_SPECS: ToolSpec[] = [
         Icon: NotebookPen,
         keepMounted: true,
         enabled: (_ctx: ToolsCtx) => true,
-        isDefault: (ctx: ToolsCtx) => !ctx.codeEnabled, // non-programming => default notes
+        isDefault: (ctx: ToolsCtx) => !ctx.codeEnabled,
         render: (props: NotesToolProps) => <NotesToolPane {...props} />,
     },
 ];

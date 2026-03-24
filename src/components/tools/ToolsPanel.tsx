@@ -4,14 +4,12 @@ import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { ListIcon } from "lucide-react";
 
-
-
 import { cx } from "./utils/cx";
 import ToolTabs from "./ToolTabs";
 import { TOOL_SPECS } from "./registry";
 import type { ToolsCtx, ToolId } from "./types";
 import { useActiveTool } from "./hooks/useActiveTool";
-import {CodeLanguage} from "@/lib/practice/types";
+import { CodeLanguage } from "@/lib/practice/types";
 
 const PANE_ANIM = {
     show: { opacity: 1, scale: 1, y: 0, filter: "blur(0px)" },
@@ -35,13 +33,11 @@ export default function ToolsPanel(props: {
     onChangeLang: (l: CodeLanguage) => void;
     onChangeCode: (c: string) => void;
     onChangeStdin: (s: string) => void;
+    onBeforeRun?: () => void | Promise<void>;
 
-    // ✅ required for notes saving
     subjectSlug: string;
     moduleId: string;
     locale: string;
-
-    // ✅ policy from subject
     codeEnabled: boolean;
 }) {
     const ctx: ToolsCtx = useMemo(
@@ -70,12 +66,11 @@ export default function ToolsPanel(props: {
         [props.subjectSlug, props.moduleId, props.locale, scopeKey]
     );
 
-    // Keep-mounted tools render always (hidden/shown via animation)
     const keepMounted = TOOL_SPECS.filter((t) => t.keepMounted);
 
     return (
-        <div className="h-full ui-card overflow-hidden flex flex-col">
-            <div className="shrink-0 p-3 border-b border-neutral-200 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/30">
+        <div className="flex h-full flex-col overflow-hidden ui-card">
+            <div className="shrink-0 border-b border-neutral-200 bg-white/80 p-3 backdrop-blur dark:border-white/10 dark:bg-black/30">
                 <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                         <div className="text-sm font-black text-neutral-800 dark:text-white/80">
@@ -126,12 +121,11 @@ export default function ToolsPanel(props: {
                 </div>
             </div>
 
-            <div ref={props.rightBodyRef} className="flex-1 min-h-0 overflow-hidden p-3">
+            <div ref={props.rightBodyRef} className="min-h-0 flex-1 overflow-hidden p-3">
                 <div className="relative h-full min-h-0">
                     {keepMounted.map((spec) => {
                         const isActive = active === spec.id;
 
-                        // Render props per tool (keeps each tool isolated)
                         const pane =
                             spec.id === "code"
                                 ? spec.render({
@@ -141,6 +135,7 @@ export default function ToolsPanel(props: {
                                     toolStdin: props.toolStdin,
                                     onChangeCode: props.onChangeCode,
                                     onChangeStdin: props.onChangeStdin,
+                                    onBeforeRun: props.onBeforeRun,
                                 })
                                 : spec.id === "notes"
                                     ? spec.render({ noteKey, format: "markdown" })
@@ -156,7 +151,6 @@ export default function ToolsPanel(props: {
                                 style={{ pointerEvents: isActive ? "auto" : "none" }}
                                 aria-hidden={!isActive}
                             >
-                                {/* if code is disabled, show a friendly card */}
                                 {spec.id === "code" && !ctx.codeEnabled ? (
                                     <div className="h-full rounded-xl border border-neutral-200 p-4 text-sm text-neutral-700 dark:border-white/10 dark:text-white/70">
                                         Code tool is disabled for this subject.
